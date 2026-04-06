@@ -1,0 +1,17 @@
+{
+  "Login": {
+    "title": "Chào mừng trở lại",
+    "email_placeholder": "Địa chỉ Email",
+    "password_placeholder": "Mật khẩu",
+    "remember_me": "Ghi nhớ trong 30 ngày",
+    "forgot_password": "Quên mật khẩu?",
+    "sign_in": "Đăng nhập",
+    "signing_in": "Đang đăng nhập...",
+    "no_account": "Chưa có tài khoản?",
+    "sign_up": "Đăng ký",
+    "errors": {
+      "invalid_email": "Địa chỉ email không hợp lệ",
+      "password_too_short": "Mật khẩu phải có ít nhất 6 ký tự"
+    }
+  }
+}

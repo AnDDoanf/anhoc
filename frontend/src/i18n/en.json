@@ -1,0 +1,17 @@
+{
+  "Login": {
+    "title": "Welcome back",
+    "email_placeholder": "Email address",
+    "password_placeholder": "Password",
+    "remember_me": "Remember for 30 days",
+    "forgot_password": "Forgot password",
+    "sign_in": "Sign in",
+    "signing_in": "Signing in...",
+    "no_account": "Do not have an account?",
+    "sign_up": "Sign up",
+    "errors": {
+      "invalid_email": "Invalid email address",
+      "password_too_short": "Password must be at least 6 characters"
+    }
+  }
+}

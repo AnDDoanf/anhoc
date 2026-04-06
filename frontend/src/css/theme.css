@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+@theme {
+  /* This replaces the 'extend' section of your old config */
+  --color-sol-bg: var(--bg-primary);
+  --color-sol-surface: var(--bg-secondary);
+  --color-sol-text: var(--text-primary);
+  --color-sol-muted: var(--text-secondary);
+  --color-sol-accent: var(--accent);
+  --color-sol-border: var(--border);
+  --color-sol-red: var(--sol-red);
+  --color-sol-orange: var(--sol-orange);
+}
+
+@layer base {
+  /* Solarized Shared Palette */
+  :root {
+    --sol-base03: #002b36;
+    --sol-base02: #073642;
+    --sol-base01: #586e75;
+    --sol-base00: #657b83;
+    --sol-base0: #839496;
+    --sol-base1: #93a1a1;
+    --sol-base2: #eee8d5;
+    --sol-base3: #fdf6e3;
+    --sol-yellow: #b58900;
+    --sol-orange: #cb4b16;
+    --sol-red: #dc322f;
+    --sol-magenta: #d33682;
+    --sol-violet: #6c71c4;
+    --sol-blue: #268bd2;
+    --sol-cyan: #2aa198;
+    --sol-green: #859900;
+
+    /* Default to Light Theme */
+    --bg-primary: var(--sol-base3);
+    --bg-secondary: var(--sol-base2);
+    --text-primary: var(--sol-base00);
+    --text-secondary: var(--sol-base01);
+    --accent: var(--sol-blue);
+    --border: var(--sol-base2);
+  }
+
+  /* Dark Theme Override */
+  [data-theme='dark'], .dark {
+    --bg-primary: var(--sol-base03);
+    --bg-secondary: var(--sol-base02);
+    --text-primary: var(--sol-base0);
+    --text-secondary: var(--sol-base1);
+    --accent: var(--sol-blue);
+    --border: var(--sol-base02);
+  }
+
+  body {
+    @apply transition-colors duration-300;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+  }
+}
