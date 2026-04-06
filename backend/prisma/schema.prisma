@@ -1,0 +1,163 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  user
+  admin
+}
+
+model User {
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  username      String        @unique @db.VarChar(50)
+  email         String        @unique @db.VarChar(255)
+  password_hash String
+  role_id       Int           // Changed from role enum to role_id
+  role          Role          @relation(fields: [role_id], references: [id])
+  created_at    DateTime      @default(now()) @db.Timestamptz
+  lessons       Lesson[]
+  test_attempts TestAttempt[]
+  student_stats StudentStats?
+
+  @@map("users")
+}
+
+model Role {
+  id          Int              @id @default(autoincrement())
+  name        String           @unique @db.VarChar(50) // e.g., "admin", "student"
+  permissions RolePermission[]
+  users       User[]
+
+  @@map("roles")
+}
+
+model Action {
+  id          Int              @id @default(autoincrement())
+  name        String           @unique @db.VarChar(50) // e.g., "create", "read", "update", "delete"
+  permissions RolePermission[]
+
+  @@map("actions")
+}
+
+model Resource {
+  id          Int              @id @default(autoincrement())
+  name        String           @unique @db.VarChar(50) // e.g., "lesson", "user", "test"
+  permissions RolePermission[]
+
+  @@map("resources")
+}
+
+model RolePermission {
+  id          Int      @id @default(autoincrement())
+  role_id     Int
+  action_id   Int
+  resource_id Int
+
+  role     Role     @relation(fields: [role_id], references: [id], onDelete: Cascade)
+  action   Action   @relation(fields: [action_id], references: [id], onDelete: Cascade)
+  resource Resource @relation(fields: [resource_id], references: [id], onDelete: Cascade)
+
+  @@unique([role_id, action_id, resource_id]) // Prevents duplicate permission entries
+  @@map("role_permissions")
+}
+
+model Lesson {
+  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title_vi         String             @db.VarChar(255)
+  content_markdown String
+  grade_level      Int?               @default(6)
+  order_index      Int?
+  created_by       String?            @db.Uuid
+  updated_at       DateTime           @default(now()) @db.Timestamptz
+  creator          User?              @relation(fields: [created_by], references: [id])
+  templates        QuestionTemplate[]
+
+  @@map("lessons")
+}
+
+model QuestionTemplate {
+  id                      String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  lesson_id               String?            @db.Uuid
+  template_type           String             @db.VarChar(50)
+  body_template_vi        String
+  logic_config            Json               @default("{}")
+  answer_formula          String?
+  explanation_template_vi String?
+  created_at              DateTime           @default(now()) @db.Timestamptz
+  lesson                  Lesson?            @relation(fields: [lesson_id], references: [id], onDelete: Cascade)
+  test_maps               TestTemplateMap[]
+  snapshots               QuestionSnapshot[]
+
+  @@map("question_templates")
+}
+
+model Test {
+  id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title_vi           String            @db.VarChar(255)
+  time_limit_seconds Int?
+  passing_score      Decimal?          @default(50.0) @db.Decimal(5, 2)
+  is_active          Boolean?          @default(true)
+  test_maps          TestTemplateMap[]
+  attempts           TestAttempt[]
+
+  @@map("tests")
+}
+
+model TestTemplateMap {
+  test_id     String           @db.Uuid
+  template_id String           @db.Uuid
+  weight      Int?             @default(1)
+  position    Int?
+  test        Test             @relation(fields: [test_id], references: [id], onDelete: Cascade)
+  template    QuestionTemplate @relation(fields: [template_id], references: [id], onDelete: Cascade)
+
+  @@id([test_id, template_id])
+  @@map("test_template_map")
+}
+
+model TestAttempt {
+  id           String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id      String?            @db.Uuid
+  test_id      String?            @db.Uuid
+  total_score  Decimal?           @db.Decimal(5, 2)
+  is_completed Boolean?           @default(false)
+  started_at   DateTime           @default(now()) @db.Timestamptz
+  completed_at DateTime?          @db.Timestamptz
+  user         User?              @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  test         Test?              @relation(fields: [test_id], references: [id])
+  snapshots    QuestionSnapshot[]
+
+  @@map("test_attempts")
+}
+
+model QuestionSnapshot {
+  id                  String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  attempt_id          String?          @db.Uuid
+  template_id         String?          @db.Uuid
+  generated_variables Json
+  student_answer      String?
+  is_correct          Boolean?         @default(false)
+  points_earned       Int?             @default(0)
+  responded_at        DateTime?        @db.Timestamptz
+  attempt             TestAttempt?     @relation(fields: [attempt_id], references: [id], onDelete: Cascade)
+  
+  // FIX: template_id is optional (String?), so the relation field must be optional (?)
+  template            QuestionTemplate? @relation(fields: [template_id], references: [id])
+
+  @@map("question_snapshots")
+}
+
+model StudentStats {
+  user_id           String   @id @db.Uuid
+  lessons_completed Int?     @default(0)
+  total_xp          Int?     @default(0)
+  average_score     Decimal? @default(0) @db.Decimal(5, 2)
+  last_active       DateTime @default(now()) @db.Timestamptz
+  user              User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("student_stats")
+}
