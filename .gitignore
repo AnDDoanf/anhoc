@@ -42,7 +42,7 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
-
+.dev
 # Vercel & Production
 .vercel
 .turbo
