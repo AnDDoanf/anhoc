@@ -1,4 +1,4 @@
-# 📘 Math Learning App (Next.js + Node.js + PostgreSQL)
+# 📘Anhoc Math Learning App (Next.js + Node.js + PostgreSQL)
 
 The purpose of this application is to provide a **simple, engaging, and structured platform** for children to learn and practice mathematics effectively.
 
