@@ -13,5 +13,17 @@
       "invalid_email": "Địa chỉ email không hợp lệ",
       "password_too_short": "Mật khẩu phải có ít nhất 6 ký tự"
     }
+  },
+  "Settings": {
+    "appearance": "Giao diện",
+    "accountSettings": "Cài đặt tài khoản",
+    "signOut": "Đăng xuất"
+  },
+  "Sidebar": {
+    "learning": "Học tập",
+    "practice": "Luyện tập",
+    "test": "Kiểm tra",
+    "grade1": "Lớp 1",
+    "grade6": "Lớp 6"
   }
 }

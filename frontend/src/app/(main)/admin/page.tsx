@@ -1,29 +1,23 @@
-// src/app/(user)/page.tsx
+// src/app/(main)/admin/page.tsx
 "use client";
 
 import { useAuth } from "@/hooks/useAuth";
-import ProtectedRoute from "@/components/ProtectedRoute";
+import ProtectedRoute from "@/components/guard/ProtectedRoute";
 
-export default function UserHomePage() {
-  const { user, logout } = useAuth();
+export default function AdminHomePage() {
+  const { user } = useAuth();
 
   return (
-    <ProtectedRoute requiredRole="student">
-      <div className="w-full bg-white">
+    <ProtectedRoute requiredRole="admin">
+      <div className="bg-white w-full h-full">
         <nav className="bg-white shadow">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
               <div className="flex items-center">
-                <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
+                <h1 className="text-xl font-bold text-gray-900">Admin Dashboard</h1>
               </div>
               <div className="flex items-center space-x-4">
                 <span className="text-gray-700">{user?.email}</span>
-                <button
-                  onClick={logout}
-                  className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
-                >
-                  Logout
-                </button>
               </div>
             </div>
           </div>

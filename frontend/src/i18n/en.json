@@ -13,5 +13,17 @@
       "invalid_email": "Invalid email address",
       "password_too_short": "Password must be at least 6 characters"
     }
+  },
+  "Settings": {
+    "appearance": "Appearance",
+    "accountSettings": "Account Settings",
+    "signOut": "Sign Out"
+  },
+  "Sidebar": {
+    "learning": "Learning",
+    "practice": "Practice",
+    "test": "Test",
+    "grade1": "Grade 1",
+    "grade6": "Grade 6"
   }
 }
