@@ -16,15 +16,25 @@ model User {
   username      String        @unique @db.VarChar(50)
   email         String        @unique @db.VarChar(255)
   password_hash String
-  role_id       Int           // Changed from role enum to role_id
+  role_id       Int
   role          Role          @relation(fields: [role_id], references: [id])
   created_at    DateTime      @default(now()) @db.Timestamptz
-  lessons       Lesson[]
-  test_attempts TestAttempt[]
-  student_stats StudentStats?
+  
+  // Relations to content & tracking
+  lessons_created   Lesson[]
+  test_attempts     TestAttempt[]
+  learning_sessions LearningSession[]
+  lesson_mastery    UserLessonMastery[]
+  xp_logs           XpLog[]
+  achievements      UserAchievement[]
+  student_stats     StudentStats?
+  evidence          ActivityEvidence[]
+  audit_logs        AuditLog[]
 
   @@map("users")
 }
+
+// ... No changes to Role, Action, Resource, RolePermission ...
 
 model Role {
   id          Int              @id @default(autoincrement())
@@ -37,7 +47,7 @@ model Role {
 
 model Action {
   id          Int              @id @default(autoincrement())
-  name        String           @unique @db.VarChar(50) // e.g., "create", "read", "update", "delete"
+  name        String           @unique @db.VarChar(50)
   permissions RolePermission[]
 
   @@map("actions")
@@ -45,7 +55,7 @@ model Action {
 
 model Resource {
   id          Int              @id @default(autoincrement())
-  name        String           @unique @db.VarChar(50) // e.g., "lesson", "user", "test"
+  name        String           @unique @db.VarChar(50)
   permissions RolePermission[]
 
   @@map("resources")
@@ -61,33 +71,73 @@ model RolePermission {
   action   Action   @relation(fields: [action_id], references: [id], onDelete: Cascade)
   resource Resource @relation(fields: [resource_id], references: [id], onDelete: Cascade)
 
-  @@unique([role_id, action_id, resource_id]) // Prevents duplicate permission entries
+  @@unique([role_id, action_id, resource_id])
   @@map("role_permissions")
 }
 
+// --- EDUCATION HIERARCHY ---
+
+model Grade {
+  id        Int      @id @default(autoincrement())
+  slug      String   @unique @db.VarChar(50) // e.g., "grade-6"
+  title_en  String   @db.VarChar(100)
+  title_vi  String   @db.VarChar(100)
+  lessons   Lesson[]
+
+  @@map("grades")
+}
+
+model Subject {
+  id        Int      @id @default(autoincrement())
+  slug      String   @unique @db.VarChar(50) // e.g., "math"
+  title_en  String   @db.VarChar(100)
+  title_vi  String   @db.VarChar(100)
+  color     String?  @db.VarChar(20)
+  lessons   Lesson[]
+
+  @@map("subjects")
+}
+
 model Lesson {
-  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  title_vi         String             @db.VarChar(255)
-  content_markdown String
-  grade_level      Int?               @default(6)
-  order_index      Int?
-  created_by       String?            @db.Uuid
-  updated_at       DateTime           @default(now()) @db.Timestamptz
-  creator          User?              @relation(fields: [created_by], references: [id])
-  templates        QuestionTemplate[]
+  id                  String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  grade_id            Int
+  subject_id          Int
+  title_en            String             @db.VarChar(255)
+  title_vi            String             @db.VarChar(255)
+  content_markdown_en String
+  content_markdown_vi String
+  order_index         Int?
+  created_by          String?            @db.Uuid
+  updated_at          DateTime           @default(now()) @db.Timestamptz
+  
+  grade              Grade              @relation(fields: [grade_id], references: [id])
+  subject            Subject            @relation(fields: [subject_id], references: [id])
+  creator            User?              @relation(fields: [created_by], references: [id])
+  
+  templates          QuestionTemplate[]
+  sessions           LearningSession[]
+  mastery_records    UserLessonMastery[]
 
   @@map("lessons")
 }
+
+// --- QUESTIONS & TESTS ---
 
 model QuestionTemplate {
   id                      String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   lesson_id               String?            @db.Uuid
   template_type           String             @db.VarChar(50)
+  
+  // Multilingual Templates
+  body_template_en        String
   body_template_vi        String
+  explanation_template_en String?
+  explanation_template_vi String?
+  
   logic_config            Json               @default("{}")
   answer_formula          String?
-  explanation_template_vi String?
   created_at              DateTime           @default(now()) @db.Timestamptz
+  
   lesson                  Lesson?            @relation(fields: [lesson_id], references: [id], onDelete: Cascade)
   test_maps               TestTemplateMap[]
   snapshots               QuestionSnapshot[]
@@ -98,6 +148,7 @@ model QuestionTemplate {
 model Test {
   id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   title_vi           String            @db.VarChar(255)
+  title_en           String            @db.VarChar(255)
   time_limit_seconds Int?
   passing_score      Decimal?          @default(50.0) @db.Decimal(5, 2)
   is_active          Boolean?          @default(true)
@@ -126,29 +177,100 @@ model TestAttempt {
   total_score  Decimal?           @db.Decimal(5, 2)
   is_completed Boolean?           @default(false)
   started_at   DateTime           @default(now()) @db.Timestamptz
-  completed_at DateTime?          @db.Timestamptz
+  completed_at DateTime?          @db.Timestamptz // Required to calculate Speed
+  
   user         User?              @relation(fields: [user_id], references: [id], onDelete: Cascade)
   test         Test?              @relation(fields: [test_id], references: [id])
   snapshots    QuestionSnapshot[]
+  evidence     ActivityEvidence[]
 
   @@map("test_attempts")
 }
 
 model QuestionSnapshot {
-  id                  String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  attempt_id          String?          @db.Uuid
-  template_id         String?          @db.Uuid
+  id                  String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  attempt_id          String?           @db.Uuid
+  template_id         String?           @db.Uuid
   generated_variables Json
   student_answer      String?
-  is_correct          Boolean?         @default(false)
-  points_earned       Int?             @default(0)
-  responded_at        DateTime?        @db.Timestamptz
-  attempt             TestAttempt?     @relation(fields: [attempt_id], references: [id], onDelete: Cascade)
-  
-  // FIX: template_id is optional (String?), so the relation field must be optional (?)
+  is_correct          Boolean?          @default(false)
+  points_earned       Int?              @default(0)
+  responded_at        DateTime?         @db.Timestamptz
+  attempt             TestAttempt?      @relation(fields: [attempt_id], references: [id], onDelete: Cascade)
   template            QuestionTemplate? @relation(fields: [template_id], references: [id])
 
   @@map("question_snapshots")
+}
+
+// --- TRACKING & PERFORMANCE ---
+
+model LearningSession {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id      String    @db.Uuid
+  lesson_id    String    @db.Uuid
+  started_at   DateTime  @default(now()) @db.Timestamptz
+  ended_at     DateTime? @db.Timestamptz
+  duration_sec Int?
+
+  user   User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lesson_id], references: [id], onDelete: Cascade)
+  evidence ActivityEvidence[]
+
+  @@map("learning_sessions")
+}
+
+model UserLessonMastery {
+  user_id             String   @db.Uuid
+  lesson_id           String   @db.Uuid
+  mastery_score       Decimal  @default(0.0) @db.Decimal(5, 2) // Weighted performance
+  total_study_time    Int      @default(0) // Seconds
+  total_test_time     Int      @default(0) // Seconds
+  completion_status   String   @default("not_started") // not_started, in_progress, completed
+  last_activity_at    DateTime @default(now()) @db.Timestamptz
+
+  user   User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lesson_id], references: [id], onDelete: Cascade)
+
+  @@id([user_id, lesson_id])
+  @@map("user_lesson_mastery")
+}
+
+// --- GAMIFICATION ---
+
+model XpLog {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String   @db.Uuid
+  amount      Int
+  reason      String   @db.VarChar(100) // e.g., "lesson_completion", "test_perfect_score"
+  occurred_at DateTime @default(now()) @db.Timestamptz
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("xp_logs")
+}
+
+model Achievement {
+  id        String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug      String            @unique @db.VarChar(50)
+  title_en  String
+  title_vi  String
+  xp_reward Int               @default(0)
+  icon_url  String?
+  users     UserAchievement[]
+
+  @@map("achievements")
+}
+
+model UserAchievement {
+  user_id        String   @db.Uuid
+  achievement_id String   @db.Uuid
+  earned_at      DateTime @default(now()) @db.Timestamptz
+
+  user        User        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievement_id], references: [id], onDelete: Cascade)
+
+  @@id([user_id, achievement_id])
+  @@map("user_achievements")
 }
 
 model StudentStats {
@@ -160,4 +282,34 @@ model StudentStats {
   user              User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@map("student_stats")
+}
+
+// --- EVIDENCE & AUDIT ---
+
+model ActivityEvidence {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String   @db.Uuid
+  attempt_id  String?  @db.Uuid
+  session_id  String?  @db.Uuid
+  image_url   String
+  caption     String?  @db.VarChar(255)
+  uploaded_at DateTime @default(now()) @db.Timestamptz
+
+  user    User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  attempt TestAttempt?     @relation(fields: [attempt_id], references: [id], onDelete: SetNull)
+  session LearningSession? @relation(fields: [session_id], references: [id], onDelete: SetNull)
+
+  @@map("activity_evidence")
+}
+
+model AuditLog {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String   @db.Uuid
+  event_type  String   @db.VarChar(50) // e.g., "TEST_START", "EVIDENCE_UPLOAD"
+  metadata    Json?    @default("{}")
+  occurred_at DateTime @default(now()) @db.Timestamptz
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("audit_logs")
 }
