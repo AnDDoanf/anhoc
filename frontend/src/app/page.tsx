@@ -20,9 +20,9 @@ export default function RootPage() {
     console.log("Redirecting based on role:", user.role);
 
     if (user.role === "admin") {
-      router.push("/admin");
+      router.push("/admin/dashboard");
     } else {
-      router.push("/student");
+      router.push("/student/learning");
     }
   }, [token, user, router]);
 

@@ -43,15 +43,19 @@
   "Sidebar": {
     "learning": "Learning",
     "practice": "Practice",
+    "achievements": "Achievements",
     "test": "Test",
     "grade1": "Grade 1",
     "grade6": "Grade 6",
-    "questions": "Questions"
+    "questions": "Questions",
+    "dashboard": "Dashboard"
   },
   "Practice": {
     "title": "Master Your Skills",
     "subtitle": "Select a lesson to start practicing and boost your knowledge.",
     "startBtn": "Start Practice",
+    "startPractice": "Start Practice Session",
+    "starting": "Starting...",
     "stats": "{count} exercises",
     "difficulty": "Difficulty",
     "allGrades": "All Grades",
@@ -76,6 +80,12 @@
     "explanation": "Explanation",
     "closeReview": "Close Review",
     "returnToLesson": "Return to Lesson",
+    "hubBadge": "Practice Hub",
+    "recentActivity": "Recent Activity",
+    "noHistory": "No practice sessions found yet. Start one today!",
+    "tipTitle": "Practice Tip",
+    "tipContent": "Reviewing your mistakes is the fastest way to improve. Tap any previous session to see what you missed!",
+    "footerQuote": "\"Practice makes perfect. Keep pushing forward!\"",
     "modals": {
       "finishTitle": "Finish Practice",
       "completeTitle": "Complete Practice",
@@ -99,7 +109,10 @@
     "recent": "Recent Lessons",
     "proTip": "Pro Tip",
     "proTipDescription1": "- Use the Table of Contents to quickly jump between chapters.",
-    "proTipDescription2": "- Reload page if you don't see the math geometry."
+    "proTipDescription2": "- Reload page if you don't see the math geometry.",
+    "lessonOverview": "Lesson Overview",
+    "readyChallengeTitle": "Ready for the next challenge?",
+    "readyChallengeSubtitle": "Every lesson you complete brings you closer to mastering the curriculum. Your progress is synced across all devices."
   },
   "Path": {
     "title": "Learning Path",
@@ -116,7 +129,8 @@
     "title": "Examination Hub",
     "subtitle": "Challenge yourself with formal tests to validate your progress.",
     "startBtn": "Take Test",
-    "stats": "{count} questions"
+    "stats": "{count} questions",
+    "examinationHub": "Examination Hub"
   },
   "NotFound": {
     "title": "Page Not Found",
@@ -176,6 +190,48 @@
       "acceptedFormulas": "Accepted Answer Formulas",
       "addFormula": "Add Alternative Formula",
       "altFormulaPlaceholder": "Alternative formula (e.g. y + x)"
+    }
+  },
+  "Admin": {
+    "title": "Admin Dashboard",
+    "gatheringIntelligence": "Gathering intelligence...",
+    "subtitle": "Overview of application performance and user engagement.",
+    "summary": {
+      "users": "Total Users",
+      "lessons": "Available Lessons",
+      "attempts": "Practice Sessions",
+      "avgScore": "Avg Performance"
+    },
+    "topUsers": {
+      "title": "Most Active Students",
+      "username": "Student",
+      "attempts": "Attempts",
+      "xp": "Total XP"
+    },
+    "recentActivity": {
+      "title": "Recent Live Activity",
+      "student": "Student",
+      "lesson": "Lesson",
+      "score": "Score",
+      "time": "Time"
+    }
+  },
+  "Achievements": {
+    "title": "Achievement Gallery",
+    "subtitle": "Track your progress and collect badges for your hard work.",
+    "locked": "Locked",
+    "earned": "Earned on {date}",
+    "newAchievement": "New Achievement Unlocked!",
+    "viewAll": "View All Achievements",
+    "categories": {
+      "all": "All",
+      "progress": "Progress",
+      "performance": "Performance",
+      "streak": "Streaks",
+      "time": "Timing",
+      "speed": "Speed",
+      "social": "Curiosity",
+      "recovery": "Consistency"
     }
   }
 }

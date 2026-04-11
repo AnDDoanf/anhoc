@@ -11,7 +11,7 @@ export default function NotFound() {
   const user = useSelector((state: RootState) => state.auth.user);
 
   // Dynamic path based on role
-  const homePath = user?.role === "admin" ? "/admin" : "/student/learning";
+  const homePath = user?.role === "admin" ? "/admin/dashboard" : "/student/learning";
 
   return (
     <div className="min-h-screen bg-sol-bg flex items-center justify-center px-4 overflow-hidden relative">

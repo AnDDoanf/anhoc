@@ -41,7 +41,7 @@ export default function LessonPracticeButton({ lessonId }: LessonPracticeButtonP
         ) : (
           <PlayCircle size={18} className="group-hover:scale-110 transition-transform" />
         )}
-        <span>{loading ? "Starting..." : "Start Practice Session"}</span>
+        <span>{loading ? t("starting") : t("startPractice")}</span>
       </button>
     </div>
   );

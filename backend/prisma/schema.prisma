@@ -229,13 +229,16 @@ model XpLog {
 }
 
 model Achievement {
-  id        String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  slug      String            @unique @db.VarChar(50)
-  title_en  String
-  title_vi  String
-  xp_reward Int               @default(0)
-  icon_url  String?
-  users     UserAchievement[]
+  id             String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug           String            @unique @db.VarChar(50)
+  title_en       String
+  title_vi       String
+  description_en String            @default("")
+  description_vi String            @default("")
+  category       String            @default("general") @db.VarChar(50)
+  xp_reward      Int               @default(0)
+  icon           String?           @db.VarChar(50)
+  users          UserAchievement[]
 
   @@map("achievements")
 }
@@ -256,6 +259,7 @@ model StudentStats {
   user_id           String   @id @db.Uuid
   lessons_completed Int?     @default(0)
   total_xp          Int?     @default(0)
+  level             Int      @default(1)
   average_score     Decimal? @default(0) @db.Decimal(5, 2)
   last_active       DateTime @default(now()) @db.Timestamptz
   user              User     @relation(fields: [user_id], references: [id], onDelete: Cascade)

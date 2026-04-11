@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import Image from "next/image";
 
 export default function LoginPage() {
   const t = useTranslations("Login");
@@ -44,9 +45,12 @@ export default function LoginPage() {
     <div className="w-full flex flex-col items-center justify-center px-4 py-8">
       <div className="w-full max-w-[440px]">
         <div className="bg-sol-surface border border-sol-border/30 rounded-xl p-10 shadow-sm">
-          
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold text-sol-text">
+
+          <div className="mb-4 flex flex-col items-center">
+            <div className="mb-2">
+              <Image src="/anhoc.svg" alt="Anhoc Logo" width={640} height={320} className="w-auto h-48" priority />
+            </div>
+            <h2 className="text-3xl font-black text-sol-text tracking-tight text-center">
               {t("title")}
             </h2>
           </div>

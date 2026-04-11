@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../lib/db';
+import { authenticate } from '../middleware/auth';
 
 const router = Router();
 
@@ -156,6 +157,26 @@ router.get('/permissions/:userId', async (req: Request, res: Response) => {
     });
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch permissions" });
+  }
+});
+
+// --- 4. Get Current Profile ---
+router.get('/profile', authenticate, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.id;
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        role: true,
+        student_stats: true
+      }
+    });
+
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch profile" });
   }
 });
 

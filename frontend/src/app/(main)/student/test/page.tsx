@@ -37,7 +37,7 @@ export default function TestPage() {
         <div className="relative z-10 max-w-2xl">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-sol-accent/10 border border-sol-accent/20 text-sol-accent text-xs font-bold uppercase tracking-widest mb-6">
             <Sparkles size={14} />
-            <span>Examination Hub</span>
+            <span>{t("examinationHub")}</span>
           </div>
           <h1 className="text-4xl md:text-6xl font-black text-sol-text tracking-tight mb-6 leading-tight">
             {t("title")}

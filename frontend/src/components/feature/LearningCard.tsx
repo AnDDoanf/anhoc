@@ -19,11 +19,15 @@ interface LearningCardProps {
   gradeId: string;
   title: string;
   index: number;
+  mastery?: {
+    mastery_score: number | string;
+    completion_status: string;
+  };
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
 }
 
-export default function LearningCard({ lessonId, gradeId, title, index, onEdit, onDelete }: LearningCardProps) {
+export default function LearningCard({ lessonId, gradeId, title, index, mastery, onEdit, onDelete }: LearningCardProps) {
   const t = useTranslations("Learning");
   const commonT = useTranslations("Common");
   const pathT = useTranslations("Path");
@@ -77,11 +81,28 @@ export default function LearningCard({ lessonId, gradeId, title, index, onEdit, 
           </div>
         </div>
 
-        {/* Title */}
-        <div className="flex-grow">
-          <h3 className="text-2xl font-bold text-sol-text leading-tight group-hover:text-sol-accent transition-colors mb-4">
+        {/* Title & Progress */}
+        <div className="flex-grow space-y-4">
+          <h3 className="text-2xl font-bold text-sol-text leading-tight group-hover:text-sol-accent transition-colors">
             {title}
           </h3>
+          
+          {mastery && (
+            <div className="space-y-2">
+              <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                 <span className={`${mastery.completion_status === 'completed' ? 'text-green-500' : 'text-sol-accent'}`}>
+                   {mastery.completion_status.replace('_', ' ')}
+                 </span>
+                 <span className="text-sol-muted">{Number(mastery.mastery_score).toFixed(0)}% Mastery</span>
+              </div>
+              <div className="h-1.5 w-full bg-sol-bg/50 rounded-full overflow-hidden">
+                 <div 
+                   className={`h-full transition-all duration-1000 ${mastery.completion_status === 'completed' ? 'bg-green-500' : 'bg-sol-accent'}`}
+                   style={{ width: `${mastery.mastery_score}%` }}
+                 />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Info Row */}
@@ -98,9 +119,13 @@ export default function LearningCard({ lessonId, gradeId, title, index, onEdit, 
 
         {/* Continuous Learning Button (CTA) */}
         <div className="mt-8 flex items-center justify-between text-sol-accent font-bold text-sm">
-          <span>{t("viewLesson")}</span>
-          <div className="w-10 h-10 rounded-full border border-sol-accent/20 flex items-center justify-center group-hover:bg-sol-accent group-hover:text-sol-bg transition-all duration-500">
-            <ChevronRight size={20} className="group-hover:translate-x-0.5 transition-transform" />
+          <span className="group-hover:translate-x-1 transition-transform">{t("viewLesson")}</span>
+          <div className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all duration-500
+            ${mastery?.completion_status === 'completed' 
+              ? 'bg-green-500/10 border-green-500/20 text-green-500 group-hover:bg-green-500 group-hover:text-sol-bg' 
+              : 'border-sol-accent/20 group-hover:bg-sol-accent group-hover:text-sol-bg'}
+          `}>
+             <ChevronRight size={20} />
           </div>
         </div>
       </div>

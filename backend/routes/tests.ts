@@ -2,6 +2,9 @@ import { Router } from 'express';
 import prisma from '../lib/db';
 import * as MathService from '../services/mathService';
 import { authenticate } from '../middleware/auth';
+import { checkAndAwardAchievements } from '../services/achievementService';
+import { masteryService } from '../services/masteryService';
+import { levelService } from '../services/levelService';
 
 const router = Router();
 
@@ -12,14 +15,14 @@ router.get('/attempts/:id', authenticate, async (req, res) => {
     where: { id: attemptId },
     include: {
       snapshots: {
-        include: { 
+        include: {
           template: {
             include: {
               lesson: {
                 include: { grade: true }
               }
             }
-          } 
+          }
         },
         orderBy: { id: 'asc' }
       }
@@ -63,41 +66,136 @@ router.post('/submit-answer', async (req, res) => {
 
 // 3. Finish or Abandon a Test Attempt
 router.post('/attempts/:id/finish', authenticate, async (req, res) => {
-  const attemptId = req.params.id as string;
+  const attemptId = req.params.id;
 
   try {
-    // Mark all unanswered snapshots as incorrect
-    await prisma.questionSnapshot.updateMany({
-      where: { 
-        attempt_id: attemptId,
-        student_answer: null 
-      },
-      data: {
-        is_correct: false,
-        points_earned: 0,
-        responded_at: new Date()
-      }
-    });
-
-    // Calculate total score
-    const snapshots = await prisma.questionSnapshot.findMany({
-      where: { attempt_id: attemptId }
-    });
-    
-    const correctAnswers = snapshots.filter(s => s.is_correct).length;
-    const totalScore = snapshots.length > 0 ? (correctAnswers / snapshots.length) * 100 : 0;
-
-    const attempt = await prisma.testAttempt.update({
+    // Prevent double finish
+    const existing = await prisma.testAttempt.findUnique({
       where: { id: attemptId },
-      data: {
-        is_completed: true,
-        completed_at: new Date(),
-        total_score: totalScore
-      }
+      select: { is_completed: true }
     });
 
-    res.json(attempt);
+    if (existing?.is_completed) {
+      return res.status(400).json({ error: "Attempt already completed" });
+    }
+
+    const completedAt = new Date();
+
+    const result = await prisma.$transaction(async (tx) => {
+      // Mark unanswered
+      await tx.questionSnapshot.updateMany({
+        where: {
+          attempt_id: attemptId,
+          student_answer: null
+        },
+        data: {
+          is_correct: false,
+          points_earned: 0,
+          responded_at: completedAt
+        }
+      });
+
+      const total = await tx.questionSnapshot.count({
+        where: { attempt_id: attemptId }
+      });
+
+      const correct = await tx.questionSnapshot.count({
+        where: { attempt_id: attemptId, is_correct: true }
+      });
+
+      const totalScore = total > 0 ? (correct / total) * 100 : 0;
+
+      const attempt = await tx.testAttempt.update({
+        where: { id: attemptId },
+        data: {
+          is_completed: true,
+          completed_at: completedAt,
+          total_score: totalScore
+        },
+        select: {
+          user_id: true,
+          lesson_id: true,
+          started_at: true,
+          total_score: true
+        }
+      });
+
+      return { attempt, correct };
+    });
+
+    const { attempt, correct } = result;
+
+    // Mastery
+    try {
+      if (attempt.user_id && attempt.lesson_id) {
+        const timeSpentSeconds = Math.floor((completedAt.getTime() - new Date(attempt.started_at).getTime()) / 1000);
+        await masteryService.updateMastery(attempt.user_id, attempt.lesson_id, attempt.total_score, timeSpentSeconds);
+      }
+    } catch (e) {
+      console.error("Mastery Service Error:", e); // This won't crash the request anymore
+    }
+
+    try {
+      if (attempt.user_id) {
+        await levelService.addXp(attempt.user_id, correct * 2, "practice_completion");
+      }
+    } catch (e) {
+      console.error("XP Service Error:", e);
+    }
+
+    try {
+      if (attempt.user_id) {
+        const [practiceStats, completedLessons] = await Promise.all([
+          prisma.testAttempt.aggregate({
+            where: {
+              user_id: attempt.user_id,
+              is_completed: true,
+              is_practice: true
+            },
+            _avg: {
+              total_score: true
+            }
+          }),
+          prisma.userLessonMastery.count({
+            where: {
+              user_id: attempt.user_id,
+              completion_status: "completed"
+            }
+          })
+        ]);
+
+        await prisma.studentStats.upsert({
+          where: { user_id: attempt.user_id },
+          update: {
+            average_score: Number(practiceStats._avg.total_score ?? 0),
+            lessons_completed: completedLessons,
+            last_active: completedAt
+          },
+          create: {
+            user_id: attempt.user_id,
+            average_score: Number(practiceStats._avg.total_score ?? 0),
+            lessons_completed: completedLessons,
+            last_active: completedAt
+          }
+        });
+      }
+    } catch (e) {
+      console.error("Student Stats Service Error:", e);
+    }
+
+    // Achievements
+    let newlyEarned: any[] = [];
+    if (attempt.user_id) {
+      newlyEarned = await checkAndAwardAchievements(attempt.user_id);
+    }
+
+    res.json({
+      ...attempt,
+      newlyEarned
+    });
+
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Failed to finish attempt" });
   }
 });
@@ -105,10 +203,10 @@ router.post('/attempts/:id/finish', authenticate, async (req, res) => {
 // 4. Create Question Template (Admin)
 router.post('/templates', authenticate, async (req, res) => {
   try {
-    const { 
-      lesson_id, template_type, 
-      body_template_en, body_template_vi, 
-      explanation_template_en, explanation_template_vi, 
+    const {
+      lesson_id, template_type,
+      body_template_en, body_template_vi,
+      explanation_template_en, explanation_template_vi,
       logic_config, accepted_formulas
     } = req.body;
 
@@ -148,10 +246,10 @@ router.get('/templates', authenticate, async (req, res) => {
 router.put('/templates/:id', authenticate, async (req, res) => {
   try {
     const id = req.params.id as string;
-    const { 
-      lesson_id, template_type, 
-      body_template_en, body_template_vi, 
-      explanation_template_en, explanation_template_vi, 
+    const {
+      lesson_id, template_type,
+      body_template_en, body_template_vi,
+      explanation_template_en, explanation_template_vi,
       logic_config, accepted_formulas
     } = req.body;
 
@@ -180,7 +278,7 @@ router.delete('/templates/:id', authenticate, async (req, res) => {
   try {
     const id = req.params.id as string;
     await prisma.questionTemplate.delete({ where: { id } });
-  res.json({ success: true });
+    res.json({ success: true });
   } catch (error: any) {
     res.status(500).json({ error: "Failed to delete template" });
   }

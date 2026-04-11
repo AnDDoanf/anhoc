@@ -7,15 +7,19 @@ import {
   FlaskConical,
   GraduationCap,
   PencilLine,
-  Database
+  Database,
+  LayoutDashboard,
+  Trophy
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import Can from "@/components/auth/Can";
-
+import Image from 'next/image';
+import logo from '../../../public/anhoc.svg';
 import { lessonService } from "@/services/lessonService";
+import { authService } from "@/services/auth";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -26,9 +30,25 @@ export default function Sidebar() {
   const [isMobile, setIsMobile] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [lessonGroups, setLessonGroups] = useState<any[]>([]);
+  const [userLevel, setUserLevel] = useState<number | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
+
+    const fetchUserData = async () => {
+      try {
+        const profile = await authService.getProfile();
+        setUserLevel(profile.student_stats?.level || 1);
+      } catch (err) {
+        console.error("Failed to load profile:", err);
+      }
+    };
+    fetchUserData();
+
+    const handleStudentStatsUpdated = () => {
+      fetchUserData();
+    };
+
     const handleResize = () => {
       const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
@@ -43,6 +63,7 @@ export default function Sidebar() {
 
     handleResize();
     window.addEventListener("resize", handleResize);
+    window.addEventListener("student-stats-updated", handleStudentStatsUpdated);
     const fetchLessons = async () => {
       try {
         const lessons = await lessonService.list();
@@ -62,7 +83,10 @@ export default function Sidebar() {
     };
     fetchLessons();
 
-    return () => window.removeEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("student-stats-updated", handleStudentStatsUpdated);
+    };
   }, [locale]);
 
   const toggleSidebar = () => {
@@ -82,21 +106,28 @@ export default function Sidebar() {
       `}
     >
       {/* Sidebar Header */}
-      <div className={`flex items-center p-6 pb-2 transition-all duration-500 ${isCollapsed ? "justify-center px-0" : "justify-between"}`}>
-        {!isCollapsed && (
-          <Link href="/" className="group flex items-center gap-2"
-            prefetch={false}
-          >
-            <GraduationCap className="text-sol-accent" size={24} />
-            <span className="text-xl font-bold text-sol-text group-hover:text-sol-accent transition-colors">
-              Anhoc
-            </span>
-          </Link>
-        )}
-        {isCollapsed && (
-          <Link href="/" className="group" prefetch={false}>
-            <GraduationCap className="text-sol-accent" size={28} />
-          </Link>
+      <div className={`flex items-center p-6 pb-2 transition-all duration-500 overflow-hidden ${isCollapsed ? "justify-center px-0" : "justify-between"}`}>
+        <Link href="/" className="group flex items-center gap-2 whitespace-nowrap" prefetch={false}>
+          <div className="flex-shrink-0">
+            <Image src={logo} alt="Logo" className="w-16 h-8 object-contain" />
+          </div>
+          <span className={`text-xl font-bold text-sol-text group-hover:text-sol-accent transition-all duration-500 overflow-hidden
+            ${isCollapsed ? "w-0 opacity-0 pointer-events-none" : "w-auto opacity-100 ml-1"}
+          `}>
+            Anhoc
+          </span>
+        </Link>
+
+        {/* Level Badge */}
+        {userLevel !== null && (
+          <div className={`flex items-center transition-all duration-500
+            ${isCollapsed ? "absolute top-[70px] opacity-100 scale-75" : "opacity-100 scale-100"}
+          `}>
+            <div className="flex items-center gap-1 bg-sol-bg/50 border border-sol-accent/30 px-2 py-0.5 rounded-full shadow-sm">
+              <span className="text-[10px] font-black text-sol-muted uppercase tracking-tighter">LV</span>
+              <span className="text-xs font-black text-sol-accent leading-none">{userLevel}</span>
+            </div>
+          </div>
         )}
       </div>
 
@@ -118,6 +149,15 @@ export default function Sidebar() {
 
         {/* Main Navigation */}
         <div className="space-y-1">
+          <Can I="manage" a="lesson">
+            <NavItem
+              href="/admin/dashboard"
+              label={t("dashboard")}
+              icon={<LayoutDashboard size={18} />}
+              pathname={pathname}
+              isCollapsed={isCollapsed}
+            />
+          </Can>
           <NavItem
             href="/student/learning"
             label={t("learning")}
@@ -129,6 +169,13 @@ export default function Sidebar() {
             href="/student/practice"
             label={t("practice")}
             icon={<PencilLine size={18} />}
+            pathname={pathname}
+            isCollapsed={isCollapsed}
+          />
+          <NavItem
+            href="/student/achievements"
+            label={t("achievements")}
+            icon={<Trophy size={18} />}
             pathname={pathname}
             isCollapsed={isCollapsed}
           />
@@ -150,50 +197,48 @@ export default function Sidebar() {
           </Can>
         </div>
 
-        {/* Lesson Groups (Hidden when collapsed) */}
-        {!isCollapsed && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-left-2 duration-500">
-            {lessonGroups.map((group) => (
-              <div key={group.grade}>
-                <Link
-                  prefetch={false}
-                  href={`/student/learning/${group.grade}`}
-                  className="text-[10px] font-bold text-sol-muted mb-2 px-3 uppercase tracking-[0.15em] hover:text-sol-accent transition-colors block"
-                >
-                  {group.label}
-                </Link>
+        {/* Lesson Groups (Animate visibility instead of conditional rendering) */}
+        <div className={`space-y-6 transition-all duration-500 overflow-hidden ${isCollapsed ? "opacity-0 pointer-events-none w-0" : "opacity-100 w-auto"}`}>
+          {lessonGroups.map((group) => (
+            <div key={group.grade}>
+              <Link
+                prefetch={false}
+                href={`/student/learning/${group.grade}`}
+                className="text-[10px] font-bold text-sol-muted mb-2 px-3 uppercase tracking-[0.15em] hover:text-sol-accent transition-colors block whitespace-nowrap"
+              >
+                {group.label}
+              </Link>
 
-                <div className="space-y-1">
-                  {group.lessons.map((lesson: any) => {
-                    const href = `/student/learning/${group.grade}/${lesson.id}`;
-                    const isActive = pathname === href;
-                    const displayTitle = locale === "vi" ? lesson.title_vi : lesson.title_en;
+              <div className="space-y-1">
+                {group.lessons.map((lesson: any) => {
+                  const href = `/student/learning/${group.grade}/${lesson.id}`;
+                  const isActive = pathname === href;
+                  const displayTitle = locale === "vi" ? lesson.title_vi : lesson.title_en;
 
-                    return (
-                      <Link
-                        prefetch={false}
-                        key={`${group.grade}-${lesson.id}`}
-                        href={href}
-                        className={`group flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all
-                          ${isActive
-                            ? "bg-sol-accent text-sol-bg font-bold shadow-sm"
-                            : "text-sol-text hover:bg-sol-bg hover:text-sol-accent"
-                          }
-                        `}
-                      >
-                        <span className="truncate">{displayTitle}</span>
-                        <ChevronRight
-                          size={14}
-                          className={`transition-transform ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-50 group-hover:translate-x-1"}`}
-                        />
-                      </Link>
-                    );
-                  })}
-                </div>
+                  return (
+                    <Link
+                      prefetch={false}
+                      key={`${group.grade}-${lesson.id}`}
+                      href={href}
+                      className={`group flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all whitespace-nowrap
+                        ${isActive
+                          ? "bg-sol-accent text-sol-bg font-bold shadow-sm"
+                          : "text-sol-text hover:bg-sol-bg hover:text-sol-accent"
+                        }
+                      `}
+                    >
+                      <span className="truncate">{displayTitle}</span>
+                      <ChevronRight
+                        size={14}
+                        className={`transition-transform flex-shrink-0 ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-50 group-hover:translate-x-1"}`}
+                      />
+                    </Link>
+                  );
+                })}
               </div>
-            ))}
-          </div>
-        )}
+            </div>
+          ))}
+        </div>
       </div>
     </aside>
   );

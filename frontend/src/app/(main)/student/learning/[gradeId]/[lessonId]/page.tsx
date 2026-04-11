@@ -3,6 +3,8 @@ import TableOfContents from "@/components/feature/TableOfContents";
 import LearningRightSidebar from "@/components/feature/LearningRightSidebar";
 import TikZRenderer from "@/components/feature/TikZRenderer";
 import LessonPracticeButton from "@/components/feature/LessonPracticeButton";
+import StudyTimer from "@/components/feature/StudyTimer";
+import { getLocale, getTranslations } from "next-intl/server";
 
 type Props = {
   params: Promise<{
@@ -13,7 +15,8 @@ type Props = {
 
 export default async function LessonPage({ params }: Props) {
   const { lessonId } = await params;
-  const locale = "vi"; 
+  const locale = await getLocale(); 
+  const t = await getTranslations("Learning");
   const lesson = await getLesson(lessonId, locale);
 
   // Split content by thematic breaks (---) which become <hr> in HTML
@@ -22,12 +25,13 @@ export default async function LessonPage({ params }: Props) {
 
   return (
     <div className="flex flex-col lg:flex-row gap-12 max-w-7xl mx-auto mb-20 px-4">
+      <StudyTimer lessonId={lessonId} />
       <div className="flex-1 min-w-0 space-y-8">
         {/* Main Header Block */}
         <header className="bg-sol-surface/40 p-8 md:p-12 rounded-[2.5rem] border border-sol-border/10 shadow-sm">
           <div className="flex items-center gap-2 text-sol-accent text-sm font-bold uppercase tracking-widest mb-6">
             <span className="w-8 h-px bg-sol-accent/30"></span>
-            <span>Lesson Overview</span>
+            <span>{t("lessonOverview")}</span>
           </div>
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-sol-text tracking-tight mb-6 leading-[1.1]">
             {lesson.meta.title}

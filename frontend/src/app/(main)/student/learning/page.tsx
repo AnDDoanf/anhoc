@@ -17,10 +17,22 @@ export default function LearningDashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editLessonId, setEditLessonId] = useState<string | null>(null);
   const [lessonGroups, setLessonGroups] = useState<any[]>([]);
+  const [masteryData, setMasteryData] = useState<Record<string, any>>({});
 
   const fetchDisplayData = async () => {
     try {
-      const lessons = await lessonService.list();
+      const [lessons, mastery] = await Promise.all([
+        lessonService.list(),
+        lessonService.getMasteryAll()
+      ]);
+
+      // Map mastery by lesson_id for easy lookup
+      const masteryMap = mastery.reduce((acc: any, m: any) => {
+        acc[m.lesson_id] = m;
+        return acc;
+      }, {});
+      setMasteryData(masteryMap);
+
       const groups = lessons.reduce((acc: any, lesson: any) => {
         const gradeSlug = lesson.grade?.slug || "other";
         const gradeLabel = locale === "vi" ? lesson.grade?.title_vi : lesson.grade?.title_en;
@@ -138,7 +150,7 @@ export default function LearningDashboard() {
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
               {group.lessons.map((lesson: any, idx: number) => {
                 const title = locale === "vi" ? lesson.title_vi : lesson.title_en;
                 return (
@@ -148,6 +160,7 @@ export default function LearningDashboard() {
                     gradeId={group.grade}
                     title={title}
                     index={idx + 1}
+                    mastery={masteryData[lesson.id]}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                   />
@@ -160,9 +173,9 @@ export default function LearningDashboard() {
 
       {/* Progress Footer */}
       <section className="bg-sol-surface/30 p-12 rounded-[3rem] border border-sol-border/5 text-center space-y-4">
-        <h3 className="text-2xl font-bold text-sol-text">Ready for the next challenge?</h3>
+        <h3 className="text-2xl font-bold text-sol-text">{t("readyChallengeTitle")}</h3>
         <p className="text-sol-muted max-w-lg mx-auto">
-          Every lesson you complete brings you closer to mastering the curriculum. Your progress is synced across all devices.
+          {t("readyChallengeSubtitle")}
         </p>
       </section>
 

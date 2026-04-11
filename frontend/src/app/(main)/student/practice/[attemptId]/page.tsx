@@ -11,6 +11,8 @@ import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { formatTemplate } from "@/utils/mathService";
 import ConfirmModal from "@/components/ui/ConfirmModal";
+import * as LucideIcons from "lucide-react";
+
 
 export default function PracticeRunnerPage() {
   const params = useParams();
@@ -28,6 +30,7 @@ export default function PracticeRunnerPage() {
   const [status, setStatus] = useState<"idle" | "correct" | "incorrect">("idle");
   const [submitting, setSubmitting] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
+  const [newlyEarned, setNewlyEarned] = useState<any[]>([]);
   const [finishModalType, setFinishModalType] = useState<"complete" | "abandon" | null>(null);
 
   useEffect(() => {
@@ -41,12 +44,12 @@ export default function PracticeRunnerPage() {
       if (data.is_completed) {
         setIsFinished(true);
       } else {
-        // Find the first unanswered snapshot
+
         const firstUnansweredIndex = data.snapshots.findIndex((s: any) => s.student_answer === null);
         if (firstUnansweredIndex !== -1) {
           setCurrentIndex(firstUnansweredIndex);
         } else {
-          setCurrentIndex(data.snapshots.length - 1); // all answered
+          setCurrentIndex(data.snapshots.length - 1);
         }
       }
     } catch (error) {
@@ -58,7 +61,7 @@ export default function PracticeRunnerPage() {
 
   const currentSnapshot = attempt?.snapshots[currentIndex];
 
-  // Format text based on variables
+
   const currentTextEn = currentSnapshot?.template?.body_template_en
     ? formatTemplate(currentSnapshot.template.body_template_en, currentSnapshot.generated_variables) : "";
   const currentTextVi = currentSnapshot?.template?.body_template_vi
@@ -67,7 +70,7 @@ export default function PracticeRunnerPage() {
   const primaryText = locale === "vi" ? currentTextVi : currentTextEn;
   const secondaryText = locale === "vi" ? currentTextEn : currentTextVi;
 
-  // Has this question already been answered previously?
+
   const isAlreadyAnswered = currentSnapshot?.student_answer !== null;
 
   const handleSubmit = async (e?: React.FormEvent | React.KeyboardEvent | KeyboardEvent) => {
@@ -78,7 +81,7 @@ export default function PracticeRunnerPage() {
     try {
       const res = await testService.submitAnswer(currentSnapshot.id, answerInput);
       setStatus(res.isCorrect ? "correct" : "incorrect");
-      // Update local state to lock input
+
       setAttempt((prev: any) => {
         const newSnapshots = [...prev.snapshots];
         newSnapshots[currentIndex] = {
@@ -100,7 +103,7 @@ export default function PracticeRunnerPage() {
 
     setSubmitting(true);
     try {
-      // Submitting an empty string effectively skips and marks it as incorrect
+
       const res = await testService.submitAnswer(currentSnapshot.id, "");
       setStatus("incorrect");
       setAttempt((prev: any) => {
@@ -125,7 +128,7 @@ export default function PracticeRunnerPage() {
       setAnswerInput("");
       setStatus("idle");
     } else {
-      setFinishModalType("complete"); // If it's the last question
+      setFinishModalType("complete");
     }
   };
 
@@ -133,14 +136,53 @@ export default function PracticeRunnerPage() {
     setFinishModalType("abandon");
   };
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const confirmFinish = async () => {
-    setFinishModalType(null);
+    if (isSubmitting) return;
+
+    const actionType = finishModalType;
+    setIsSubmitting(true);
     try {
-      await testService.finishAttempt(attemptId);
+      const data = await testService.finishAttempt(attemptId);
+
+
+      setFinishModalType(null);
+
+
+      if (data.newlyEarned) {
+        setNewlyEarned(data.newlyEarned);
+      }
+
+
       setIsFinished(true);
-      fetchAttempt(); // reload to get final score
-    } catch (error) {
-      console.error("Failed to finish attempt:", error);
+
+
+      setAttempt((prev: any) => ({
+        ...prev,
+        is_completed: true,
+        total_score: data.total_score
+      }));
+
+      window.dispatchEvent(new Event("student-stats-updated"));
+
+      if (actionType === "abandon") {
+        handleReturnToLesson();
+      }
+
+    } catch (error: any) {
+
+      if (error.response?.status === 400) {
+        setIsFinished(true);
+        setFinishModalType(null);
+        if (actionType === "abandon") {
+          handleReturnToLesson();
+        }
+      } else {
+        console.error("Failed to finish:", error);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -156,16 +198,20 @@ export default function PracticeRunnerPage() {
     }
   };
 
-  // Keyboard Navigation Support
+  const onModalConfirm = () => {
+    confirmFinish();
+  };
+
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // If we are currently submitting, ignore
+
       if (submitting) return;
 
       const target = e.target as HTMLElement;
       const isInput = target.tagName === "INPUT" || target.tagName === "TEXTAREA";
 
-      // If already answered, allow Space or Enter to proceed
+
       if (isAlreadyAnswered) {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
@@ -174,7 +220,7 @@ export default function PracticeRunnerPage() {
         return;
       }
 
-      // If NOT answered, and they press Enter outside an input, try to submit
+
       if (!isAlreadyAnswered && !isInput && e.key === "Enter") {
         if (answerInput) {
           e.preventDefault();
@@ -208,7 +254,7 @@ export default function PracticeRunnerPage() {
 
   if (isFinished) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-20 space-y-12 animate-in fade-in zoom-in duration-700">
+      <div className="max-w-3xl mx-auto px-4 py-12 space-y-12 animate-in fade-in zoom-in duration-700">
         <div className="flex flex-col items-center text-center space-y-6 bg-sol-surface/30 p-12 rounded-[3rem] border border-sol-border/10">
           <div className="w-24 h-24 rounded-full bg-sol-accent text-sol-bg flex items-center justify-center shadow-[0_0_50px_rgba(var(--sol-accent-rgb),0.5)]">
             <Award size={48} />
@@ -217,9 +263,39 @@ export default function PracticeRunnerPage() {
           <p className="text-sol-muted text-lg max-w-md">
             {t("scoreMessage", { score: attempt.total_score })}
           </p>
+
+          {/* Newly Earned Achievements */}
+          {newlyEarned.length > 0 && (
+            <div className="w-full mt-12 space-y-6">
+              <div className="flex items-center gap-4 justify-center">
+                <div className="h-px w-12 bg-sol-accent/20" />
+                <span className="text-xs font-black text-sol-accent uppercase tracking-widest">Achievements Earned</span>
+                <div className="h-px w-12 bg-sol-accent/20" />
+              </div>
+              <div className="flex flex-wrap justify-center gap-4">
+                {newlyEarned.map((ach: any) => {
+                  const Icon = (LucideIcons as any)[ach.icon || "Trophy"] || LucideIcons.Trophy;
+                  return (
+                    <div key={ach.slug} className="flex flex-col items-center gap-3 p-6 bg-sol-surface rounded-[2rem] border border-sol-accent/20 shadow-xl animate-in slide-in-from-bottom-4 duration-500 hover:scale-105 transition-transform">
+                      <div className="p-3 bg-sol-accent/10 text-sol-accent rounded-2xl">
+                        <Icon size={24} />
+                      </div>
+                      <div className="text-center">
+                        <div className="text-sm font-bold text-sol-text">
+                          {locale === "vi" ? ach.title_vi : ach.title_en}
+                        </div>
+                        <div className="text-[10px] font-black text-sol-accent mt-0.5">+{ach.xp_reward} XP</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <button
             onClick={handleReturnToLesson}
-            className="mt-8 px-8 py-4 bg-sol-accent text-sol-bg rounded-2xl font-bold hover:bg-sol-accent/90 transition-all shadow-md hover:shadow-sol-accent/20"
+            className="mt-8 px-12 py-4 bg-sol-accent text-sol-bg rounded-2xl font-bold hover:bg-sol-accent/90 transition-all shadow-lg hover:shadow-sol-accent/20 active:scale-95"
           >
             {t("returnToLesson")}
           </button>
@@ -357,6 +433,7 @@ export default function PracticeRunnerPage() {
 
       {/* Confirmation Modal */}
       <ConfirmModal
+        onConfirm={onModalConfirm}
         isOpen={finishModalType !== null}
         title={finishModalType === "complete" ? t("modals.completeTitle") : t("modals.abandonTitle")}
         message={
@@ -366,7 +443,6 @@ export default function PracticeRunnerPage() {
         }
         confirmText={finishModalType === "complete" ? t("modals.submitBtn") : t("modals.abandonBtn")}
         cancelText={finishModalType === "complete" ? t("modals.cancel") : t("modals.keepGoing")}
-        onConfirm={confirmFinish}
         onCancel={() => setFinishModalType(null)}
         isDestructive={finishModalType === "abandon"}
       />

@@ -43,15 +43,19 @@
   "Sidebar": {
     "learning": "Học tập",
     "practice": "Luyện tập",
+    "achievements": "Thành tích",
     "test": "Kiểm tra",
     "grade1": "Lớp 1",
     "grade6": "Lớp 6",
-    "questions": "Câu hỏi"
+    "questions": "Câu hỏi",
+    "dashboard": "Tổng quan"
   },
   "Practice": {
     "title": "Rèn luyện Kỹ năng",
     "subtitle": "Chọn một bài học để bắt đầu luyện tập và nâng cao kiến thức của bạn.",
     "startBtn": "Bắt đầu Luyện tập",
+    "startPractice": "Bắt đầu Phiên Luyện tập",
+    "starting": "Đang bắt đầu...",
     "stats": "{count} bài tập",
     "difficulty": "Độ khó",
     "allGrades": "Tất cả các lớp",
@@ -76,6 +80,12 @@
     "explanation": "Giải thích",
     "closeReview": "Đóng Xem lại",
     "returnToLesson": "Quay lại Bài học",
+    "hubBadge": "Trung tâm Luyện tập",
+    "recentActivity": "Hoạt động Gần đây",
+    "noHistory": "Chưa có phiên luyện tập nào. Hãy bắt đầu ngay hôm nay!",
+    "tipTitle": "Mẹo Luyện tập",
+    "tipContent": "Xem lại lỗi sai là cách nhanh nhất để tiến bộ. Nhấn vào bất kỳ phiên nào để xem bạn đã bỏ lỡ điều gì!",
+    "footerQuote": "\"Có công mài sắt, có ngày nên kim. Hãy tiếp tục cố gắng!\"",
     "modals": {
       "finishTitle": "Hoàn thành Luyện tập",
       "completeTitle": "Hoàn tất Luyện tập",
@@ -99,7 +109,10 @@
     "recent": "Bài học gần đây",
     "proTip": "Mẹo",
     "proTipDescription1": "- Sử dụng Mục lục để nhanh chóng chuyển đổi giữa các bài.",
-    "proTipDescription2": "- Reload trang nếu không thấy hình học."
+    "proTipDescription2": "- Reload trang nếu không thấy hình học.",
+    "lessonOverview": "Tổng quan Bài học",
+    "readyChallengeTitle": "Bạn đã sẵn sàng cho thử thách tiếp theo?",
+    "readyChallengeSubtitle": "Mỗi bài học bạn hoàn thành sẽ đưa bạn đến gần hơn với việc làm chủ chương trình học. Tiến trình của bạn được đồng bộ hóa trên tất cả các thiết bị."
   },
   "Path": {
     "title": "Lộ trình Học tập",
@@ -116,7 +129,8 @@
     "title": "Trung tâm Kiểm tra",
     "subtitle": "Thử thách bản thân với các bài kiểm tra định kỳ để đánh giá năng lực.",
     "startBtn": "Làm Bài thi",
-    "stats": "{count} câu hỏi"
+    "stats": "{count} câu hỏi",
+    "examinationHub": "Lò luyện thi"
   },
   "NotFound": {
     "title": "Trang không tồn tại",
@@ -176,6 +190,48 @@
       "acceptedFormulas": "Công thức đáp án chấp nhận",
       "addFormula": "Thêm công thức khác",
       "altFormulaPlaceholder": "Công thức thay thế (vd. y + x)"
+    }
+  },
+  "Admin": {
+    "title": "Tổng quan hệ thống",
+    "gatheringIntelligence": "Đang thu thập dữ liệu...",
+    "subtitle": "Tổng quan về hiệu suất ứng dụng và hoạt động của người dùng.",
+    "summary": {
+      "users": "Tổng người dùng",
+      "lessons": "Bài học hiện có",
+      "attempts": "Phiên luyện tập",
+      "avgScore": "Hiệu suất TB"
+    },
+    "topUsers": {
+      "title": "Học sinh Tích cực nhất",
+      "username": "Học sinh",
+      "attempts": "Số lần thử",
+      "xp": "Tổng XP"
+    },
+    "recentActivity": {
+      "title": "Hoạt động Trực tiếp",
+      "student": "Học sinh",
+      "lesson": "Bài học",
+      "score": "Điểm",
+      "time": "Thời gian"
+    }
+  },
+  "Achievements": {
+    "title": "Bộ sưu tập Thành tích",
+    "subtitle": "Theo dõi tiến trình và thu thập huy chương cho sự chăm chỉ của bạn.",
+    "locked": "Chưa mở khóa",
+    "earned": "Đạt được vào {date}",
+    "newAchievement": "Đã mở khóa Thành tích mới!",
+    "viewAll": "Xem tất cả Thành tích",
+    "categories": {
+      "all": "Tất cả",
+      "progress": "Tiến trình",
+      "performance": "Hiệu suất",
+      "streak": "Chuỗi ngày",
+      "time": "Thời gian",
+      "speed": "Tốc độ",
+      "social": "Khám phá",
+      "recovery": "Bền bỉ"
     }
   }
 }

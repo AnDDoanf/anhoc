@@ -102,7 +102,7 @@ export default function PracticePage() {
         <div className="relative z-10 max-w-2xl">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-sol-accent/10 border border-sol-accent/20 text-sol-accent text-xs font-bold uppercase tracking-widest mb-6">
             <Sparkles size={14} />
-            <span>Practice Hub</span>
+            <span>{t("hubBadge")}</span>
           </div>
           <h1 className="text-4xl md:text-6xl font-black text-sol-text tracking-tight mb-6 leading-tight">
             {t("title")}
@@ -146,13 +146,13 @@ export default function PracticePage() {
           <div className="sticky top-24 p-6 rounded-[2rem] border border-sol-border/20 bg-sol-surface/50 backdrop-blur-md shadow-sm space-y-8 overflow-hidden flex flex-col max-h-[calc(100vh-10rem)]">
             <div className="flex items-center gap-3">
               <HistoryIcon size={20} className="text-sol-accent" />
-              <h3 className="text-lg font-bold text-sol-text uppercase tracking-tight">Recent Activity</h3>
+              <h3 className="text-lg font-bold text-sol-text uppercase tracking-tight">{t("recentActivity")}</h3>
             </div>
 
             <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar flex-grow">
               {history.length === 0 ? (
                 <div className="p-6 rounded-2xl bg-sol-bg/20 border border-sol-border/5 text-center">
-                  <p className="text-xs text-sol-muted italic">No practice sessions found yet. Start one today!</p>
+                  <p className="text-xs text-sol-muted italic">{t("noHistory")}</p>
                 </div>
               ) : (
                 history.map((attempt) => (
@@ -189,10 +189,10 @@ export default function PracticePage() {
               <div className="p-4 rounded-xl flex flex-col gap-2 bg-sol-accent/5 border border-sol-accent/10">
                 <div className="flex items-center gap-2 mb-1">
                   <Brain size={14} className="text-sol-accent" />
-                  <h4 className="text-[10px] font-bold text-sol-accent uppercase tracking-wider">Practice Tip</h4>
+                  <h4 className="text-[10px] font-bold text-sol-accent uppercase tracking-wider">{t("tipTitle")}</h4>
                 </div>
                 <p className="text-[11px] text-sol-muted leading-relaxed">
-                  Reviewing your mistakes is the fastest way to improve. Tap any previous session to see what you missed!
+                  {t("tipContent")}
                 </p>
               </div>
             </div>
@@ -203,7 +203,7 @@ export default function PracticePage() {
       {/* Footer Info */}
       <footer className="p-12 rounded-[2.5rem] bg-sol-accent/5 border border-sol-accent/10 text-center">
          <p className="text-sol-muted italic">
-           &quot;Practice makes perfect. Keep pushing forward!&quot;
+           {t("footerQuote")}
          </p>
       </footer>
     </div>

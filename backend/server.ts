@@ -6,6 +6,9 @@ import prisma from './lib/db';
 import authRoutes from './routes/auth';
 import lessonRoutes from './routes/lessons';
 import testRoutes from './routes/tests';
+import adminRoutes from './routes/admin';
+import achievementRoutes from './routes/achievements';
+import { seedAchievements } from './services/achievementService';
 
 const app: Application = express();
 
@@ -20,6 +23,8 @@ app.use(express.json());
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/lessons', lessonRoutes);
 app.use('/api/v1/tests', testRoutes);
+app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/achievements', achievementRoutes);
 
 app.get('/api/v1/health', (req: Request, res: Response) => {
   res.json({ status: 'OK', message: 'Math App Backend is running' });
@@ -38,6 +43,10 @@ async function main() {
     
     await prisma.$connect();
     console.log('✅ Connected to PostgreSQL via Prisma');
+
+    // Auto-seed achievements on startup (idempotent)
+    await seedAchievements();
+    console.log('🏆 Achievements seeded');
 
     app.listen(PORT, () => {
       console.log(`🚀 Server is flying at http://localhost:${PORT}`);

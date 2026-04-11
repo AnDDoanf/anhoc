@@ -2,6 +2,7 @@ import { Router } from 'express';
 import prisma from '../lib/db';
 import { authenticate, authorize } from '../middleware/auth';
 import * as MathService from '../services/mathService';
+import { masteryService } from '../services/masteryService';
 
 const router = Router();
 
@@ -189,6 +190,33 @@ router.put('/:id', authenticate, authorize('manage', 'lesson'), async (req, res)
     res.json(lesson);
   } catch (error) {
     res.status(500).json({ error: "Failed to update lesson" });
+  }
+});
+
+// Get all mastery records for current user
+router.get('/mastery/all', authenticate, async (req, res) => {
+  const userId = (req as any).user.id;
+  try {
+    const records = await prisma.userLessonMastery.findMany({
+      where: { user_id: userId }
+    });
+    res.json(records);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch mastery records" });
+  }
+});
+
+// Update study time
+router.post('/:id/study-time', authenticate, async (req, res) => {
+  const lessonId = req.params.id as string;
+  const { seconds } = req.body;
+  const userId = (req as any).user.id;
+
+  try {
+    await masteryService.trackStudyTime(userId, lessonId, seconds);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to track study time" });
   }
 });
 
