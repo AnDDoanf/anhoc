@@ -43,7 +43,8 @@
     "practice": "Luyện tập",
     "test": "Kiểm tra",
     "grade1": "Lớp 1",
-    "grade6": "Lớp 6"
+    "grade6": "Lớp 6",
+    "questions": "Câu hỏi"
   },
   "Practice": {
     "title": "Rèn luyện Kỹ năng",
@@ -63,7 +64,7 @@
     "section": "Phần {n}",
     "recent": "Bài học gần đây",
     "proTip": "Mẹo",
-    "proTipDescription1": "- Sử dụng Mục lục để nhanh chóng chuyển đổi giữa các khái niệm.",
+    "proTipDescription1": "- Sử dụng Mục lục để nhanh chóng chuyển đổi giữa các bài.",
     "proTipDescription2": "- Reload trang nếu không thấy hình học."
   },
   "Path": {
@@ -82,5 +83,65 @@
     "subtitle": "Thử thách bản thân với các bài kiểm tra định kỳ để đánh giá năng lực.",
     "startBtn": "Làm Bài thi",
     "stats": "{count} câu hỏi"
+  },
+  "NotFound": {
+    "title": "Trang không tồn tại",
+    "description": "Có vẻ như bạn đã đi lạc vào một không gian không lối thoát. Đừng lo, hãy sử dụng la bàn để quay lại trang chủ nhé.",
+    "goHome": "Trang chủ",
+    "errorCode": "Mã lỗi: 404"
+  },
+  "Questions": {
+    "title": "Mẫu câu hỏi",
+    "subtitle": "Tạo và quản lý các lược đồ tạo toán có thể mở rộng.",
+    "newTemplate": "Mẫu mới",
+    "adminToolbox": "Công cụ Admin",
+    "type": "Loại",
+    "formula": "Công thức",
+    "ref": "Tham chiếu",
+    "global": "Toàn cầu",
+    "deleteConfirm": "Bạn có chắc chắn muốn xóa mẫu này không?",
+    "deleteError": "Xóa thất bại. Đảm bảo nó không bị khóa bởi một bài kiểm tra.",
+    "player": {
+      "liveSnapshot": "Xem trực tiếp",
+      "reroll": "Tạo lại biến số",
+      "placeholder": "Nhập đáp án của bạn...",
+      "correct": "Đúng! Công thức đã tính ra đáp án của bạn.",
+      "incorrect": "Đáp án sai. Hãy thử lại hoặc kiểm tra logic công thức.",
+      "varTree": "Cây biến số hiện tại",
+      "expected": "Đáp án đúng",
+      "multipleChoice": "Trắc nghiệm",
+      "acceptedBadge": "công thức khả dụng"
+    },
+    "modal": {
+      "createTitle": "Tạo mẫu câu hỏi",
+      "editTitle": "Chỉnh sửa mẫu câu hỏi",
+      "adminTool": "Công cụ Quản trị",
+      "associateLesson": "Liên kết với bài học",
+      "noLesson": "-- Không có bài học cụ thể (Chung) --",
+      "unassignedGrade": "Lớp chưa xác định",
+      "templateType": "Loại mẫu",
+      "bodyEn": "Nội dung (EN)",
+      "bodyVi": "Nội dung (VI)",
+      "logicConfig": "Cấu hình logic (JSON)",
+      "answerFormula": "Công thức đáp án",
+      "formulaPlaceholder": "vd. x + y",
+      "footerNote": "Mẫu này sẽ có sẵn để tạo đề thi ngay lập tức.",
+      "cancel": "Hủy",
+      "saving": "Đang lưu...",
+      "saveChanges": "Lưu thay đổi",
+      "createTemplate": "Tạo mẫu",
+      "numberOfChoices": "Số lượng đáp án",
+      "numberOfChoicesHint": "Để trống nếu nhập tay",
+      "multipleChoiceEnabled": "Sẽ tạo {count} lựa chọn đáp án",
+      "variables": "Biến số",
+      "addVariable": "Thêm biến",
+      "varName": "Tên",
+      "varMin": "Min",
+      "varMax": "Max",
+      "generatedJson": "JSON logic_config được tạo",
+      "acceptedFormulas": "Công thức đáp án chấp nhận",
+      "addFormula": "Thêm công thức khác",
+      "altFormulaPlaceholder": "Công thức thay thế (vd. y + x)"
+    }
   }
 }

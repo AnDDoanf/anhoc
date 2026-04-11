@@ -59,6 +59,7 @@ export default function Milestone({
           </div>
 
           <Link
+            prefetch={false}
             href={`/student/learning/${gradeId}/${lessonId}`}
             className={`inline-flex items-center gap-3 px-8 py-4 bg-sol-surface border border-sol-border/10 rounded-2xl font-bold text-sol-text hover:bg-sol-accent hover:text-sol-bg hover:border-sol-accent transition-all duration-500 shadow-sm hover:shadow-xl hover:-translate-y-1 group`}
           >

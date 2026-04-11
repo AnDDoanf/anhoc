@@ -14,7 +14,7 @@ export default function LearningRightSidebar({ children }: LearningRightSidebarP
 
         {/* Decorative elements for premium feel */}
         <div className="mt-8 pt-6 border-t border-sol-border/10">
-          <div className="p-4 rounded-xl bg-sol-accent/5 border border-sol-accent/10">
+          <div className="p-4 rounded-xl flex flex-col gap-2 bg-sol-accent/5 border border-sol-accent/10">
             <h4 className="text-xs font-bold text-sol-accent mb-1 uppercase tracking-wider">{t("proTip")}</h4>
             <p className="text-[11px] text-sol-muted leading-relaxed">
               {t("proTipDescription1")}

@@ -72,6 +72,7 @@ export default function TestCard({ test }: TestCardProps) {
         </div>
 
         <Link
+          prefetch={false}
           href={`/student/test/${test.gradeId}/${test.id}`}
           className="flex items-center justify-between w-full mt-4 px-6 py-3 bg-sol-text text-sol-bg rounded-2xl font-bold text-sm hover:bg-sol-accent hover:text-sol-bg transition-all group/btn shadow-md hover:shadow-sol-accent/20"
         >

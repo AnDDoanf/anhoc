@@ -6,16 +6,25 @@ export interface LogicConfig {
 
 export const generateVars = (config: any): Record<string, number> => {
   const vars: Record<string, number> = {};
-  const logic = config as LogicConfig;
 
-  for (const [key, range] of Object.entries(logic)) {
-    const step = range.step || 1;
-    const choices = [];
-    for (let i = range.min; i <= range.max; i += step) {
-      choices.push(i);
+  try {
+    const configObj = typeof config === 'string' ? JSON.parse(config) : config;
+    const logic = (configObj.variables || configObj) as LogicConfig;
+
+    for (const [key, range] of Object.entries(logic)) {
+      if (typeof range === 'object' && range !== null && 'min' in range && 'max' in range) {
+        const step = range.step || 1;
+        const choices = [];
+        for (let i = range.min; i <= Math.max(range.min, range.max); i += step) {
+          choices.push(i);
+        }
+        vars[key] = choices[Math.floor(Math.random() * choices.length)];
+      }
     }
-    vars[key] = choices[Math.floor(Math.random() * choices.length)];
+  } catch (e) {
+    console.error("Failed to parse logic_config", e);
   }
+
   return vars;
 };
 
@@ -40,10 +49,12 @@ export const checkAnswer = (
   studentAns: string,
   acceptedFormulas?: string[]
 ): boolean => {
+  if (!studentAns || studentAns.trim() === '') return false;
   const cleanVars = normalizeVars(vars);
   const normalizedAns = parseFloat(studentAns.replace(',', '.'));
   if (isNaN(normalizedAns)) return false;
 
+  // Check all formulas (primary + any extra accepted ones)
   const allFormulas = [formula, ...(acceptedFormulas || [])];
   return allFormulas.some(f => {
     try {
@@ -53,6 +64,45 @@ export const checkAnswer = (
       return false;
     }
   });
+};
+
+export const evaluateFormula = (formula: string, vars: any): number | null => {
+  try {
+    return math.evaluate(normalizeFormula(formula), normalizeVars(vars));
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Generates shuffled multiple-choice answer options.
+ * Includes the correct answer + (count-1) plausible distractors.
+ * Distractors are offset by small random integers/fractions around the correct answer.
+ */
+export const generateChoices = (
+  formula: string,
+  vars: any,
+  count: number = 4
+): number[] => {
+  const correct = evaluateFormula(formula, vars);
+  if (correct === null) return [];
+
+  const choicesSet = new Set<number>([
+    parseFloat(correct.toFixed(2))
+  ]);
+
+  // Generate distractors
+  const offsets = [-3, -2, -1, 1, 2, 3, 5, 10, -5, -10];
+  let attempts = 0;
+  while (choicesSet.size < count && attempts < 50) {
+    attempts++;
+    const offset = offsets[Math.floor(Math.random() * offsets.length)];
+    const distractor = parseFloat((correct + offset).toFixed(2));
+    if (distractor > 0) choicesSet.add(distractor);
+  }
+
+  // Shuffle
+  return Array.from(choicesSet).sort(() => Math.random() - 0.5);
 };
 
 export const formatTemplate = (template: string, vars: any): string => {
@@ -74,7 +124,7 @@ export const formatTemplate = (template: string, vars: any): string => {
   // Step 2: Replace simple $varname$ placeholders
   for (const [k, v] of Object.entries(vars)) {
     formatted = formatted.replace(new RegExp(`\\$${k}\\$`, 'g'), `$${v}$`);
-    formatted = formatted.replace(new RegExp(`{{${k}}}`, 'g'), v?.toString() || `{{${k}}}`);
+    formatted = formatted.replace(new RegExp(`{{${k}}}`, 'g'), v as string);
   }
 
   return formatted;

@@ -43,7 +43,8 @@
     "practice": "Practice",
     "test": "Test",
     "grade1": "Grade 1",
-    "grade6": "Grade 6"
+    "grade6": "Grade 6",
+    "questions": "Questions"
   },
   "Practice": {
     "title": "Master Your Skills",
@@ -63,7 +64,7 @@
     "section": "Section {n}",
     "recent": "Recent Lessons",
     "proTip": "Pro Tip",
-    "proTipDescription1": "- Use the Table of Contents to quickly jump between concepts.",
+    "proTipDescription1": "- Use the Table of Contents to quickly jump between chapters.",
     "proTipDescription2": "- Reload page if you don't see the math geometry."
   },
   "Path": {
@@ -82,5 +83,65 @@
     "subtitle": "Challenge yourself with formal tests to validate your progress.",
     "startBtn": "Take Test",
     "stats": "{count} questions"
+  },
+  "NotFound": {
+    "title": "Page Not Found",
+    "description": "It seems you've wandered into a dead end. Don't worry, use your compass to return to the homepage.",
+    "goHome": "Go Home",
+    "errorCode": "Error: 404"
+  },
+  "Questions": {
+    "title": "Question Templates",
+    "subtitle": "Create and manage scalable math generation schemas.",
+    "newTemplate": "New Template",
+    "adminToolbox": "Admin Toolbox",
+    "type": "Type",
+    "formula": "Formula",
+    "ref": "Ref",
+    "global": "Global",
+    "deleteConfirm": "Are you sure you want to delete this specific template?",
+    "deleteError": "Failed to delete. Ensure it is not locked by a test map.",
+    "player": {
+      "liveSnapshot": "Live Snapshot Viewer",
+      "reroll": "Re-roll Variables",
+      "placeholder": "Type your mathematical answer...",
+      "correct": "Correct! The formula successfully evaluated to your answer.",
+      "incorrect": "Incorrect answer. Try again or check the formula logic.",
+      "varTree": "Current Variable Tree",
+      "expected": "Expected Answer",
+      "multipleChoice": "Multiple Choice",
+      "acceptedBadge": "accepted formulas"
+    },
+    "modal": {
+      "createTitle": "Create Question Template",
+      "editTitle": "Edit Question Template",
+      "adminTool": "Administrator Tool",
+      "associateLesson": "Associate with Lesson",
+      "noLesson": "-- No specific lesson (General) --",
+      "unassignedGrade": "Unassigned Grade",
+      "templateType": "Template Type",
+      "bodyEn": "Body Text (EN)",
+      "bodyVi": "Body Text (VI)",
+      "logicConfig": "Logic Config (JSON)",
+      "answerFormula": "Answer Formula",
+      "formulaPlaceholder": "e.g. x + y",
+      "footerNote": "This template will be available for test generation immediately.",
+      "cancel": "Cancel",
+      "saving": "Saving...",
+      "saveChanges": "Save Changes",
+      "createTemplate": "Create Template",
+      "numberOfChoices": "Number of Choices",
+      "numberOfChoicesHint": "Leave blank for text input",
+      "multipleChoiceEnabled": "{count} answer choices will be generated",
+      "variables": "Variables",
+      "addVariable": "Add Variable",
+      "varName": "Name",
+      "varMin": "Min",
+      "varMax": "Max",
+      "generatedJson": "Generated logic_config JSON",
+      "acceptedFormulas": "Accepted Answer Formulas",
+      "addFormula": "Add Alternative Formula",
+      "altFormulaPlaceholder": "Alternative formula (e.g. y + x)"
+    }
   }
 }

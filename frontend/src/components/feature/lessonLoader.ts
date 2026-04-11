@@ -1,22 +1,26 @@
-// src/components/feature/lessonLoader.ts
-
-import fs from "fs";
-import path from "path";
-import matter from "gray-matter";
-
 import { remark } from "remark";
 import remarkMath from "remark-math";
 import remarkRehype from "remark-rehype";
 import rehypeKatex from "rehype-katex";
 import rehypeStringify from "rehype-stringify";
+import prisma from "@/lib/db";
 
-const basePath = path.join(process.cwd(), "src/content/lessons");
+export async function getLesson(lessonId: string, locale: string = "vi") {
+  const lesson = await prisma.lesson.findUnique({
+    where: { id: lessonId },
+    include: {
+      grade: true,
+      subject: true
+    }
+  });
 
-export async function getLesson(gradeId: string, lessonId: string) {
-  const filePath = path.join(basePath, gradeId, `${lessonId}.md`);
-  const file = fs.readFileSync(filePath, "utf-8");
+  if (!lesson) {
+    throw new Error("Lesson not found");
+  }
 
-  const { content, data } = matter(file);
+  const content = locale === "vi" ? lesson.content_markdown_vi : lesson.content_markdown_en;
+  const title = locale === "vi" ? lesson.title_vi : lesson.title_en;
+  const description = lesson.grade ? `${lesson.grade.title_vi} - ${lesson.subject?.title_vi}` : "";
 
   const processed = await remark()
     .use(remarkMath)
@@ -31,11 +35,19 @@ export async function getLesson(gradeId: string, lessonId: string) {
   const processedHtml = contentHtml.replace(
     /<h([2-3])>(.*?)<\/h\1>/g,
     (match, level, text) => {
-      const cleanText = text.replace(/<[^>]*>?/gm, "");
+      const cleanText = text.replace(/<[^>]*>?/gm, "").trim();
+      // Simpler slugify that is more deterministic across environments
       const id = cleanText
         .toLowerCase()
-        .replace(/\s+/g, "-")
-        .replace(/[^\w-]/g, "");
+        .replace(/[àáạảãâầấậẩẫăằắặẳẵ]/g, "a")
+        .replace(/[èéẹẻẽêềếệểễ]/g, "e")
+        .replace(/[ìíịỉĩ]/g, "i")
+        .replace(/[òóọỏõôồốộổỗơờớợởỡ]/g, "o")
+        .replace(/[ùúụủũưừứựửữ]/g, "u")
+        .replace(/[ỳýỵỷỹ]/g, "y")
+        .replace(/đ/g, "d")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
 
       toc.push({ id, text: cleanText, level: parseInt(level) });
       return `<h${level} id="${id}">${text}</h${level}>`;
@@ -59,7 +71,7 @@ export async function getLesson(gradeId: string, lessonId: string) {
 
   return {
     contentHtml: finalHtml,
-    meta: data,
+    meta: { title, description },
     toc,
   };
 }

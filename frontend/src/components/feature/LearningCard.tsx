@@ -6,25 +6,31 @@ import {
   Bookmark,
   ChevronRight,
   Clock,
-  Layers
+  Layers,
+  Pencil,
+  Trash2
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
+import Can from "@/components/auth/Can";
 
 interface LearningCardProps {
   lessonId: string;
   gradeId: string;
   title: string;
   index: number;
+  onEdit?: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
-export default function LearningCard({ lessonId, gradeId, title, index }: LearningCardProps) {
+export default function LearningCard({ lessonId, gradeId, title, index, onEdit, onDelete }: LearningCardProps) {
   const t = useTranslations("Learning");
   const commonT = useTranslations("Common");
   const pathT = useTranslations("Path");
 
   return (
     <Link
+      prefetch={false}
       href={`/student/learning/${gradeId}/${lessonId}`}
       className="group relative block bg-sol-surface/30 rounded-[2rem] p-8 border border-sol-border/5 hover:border-sol-accent/30 shadow-sm hover:shadow-2xl hover:bg-sol-surface/50 transition-all duration-500 overflow-hidden"
     >
@@ -44,7 +50,31 @@ export default function LearningCard({ lessonId, gradeId, title, index }: Learni
               {t("section", { n: index })}
             </span>
           </div>
-          <Bookmark size={18} className="text-sol-muted group-hover:text-sol-accent transition-colors" />
+          <div className="flex items-center gap-2">
+            <Can I="manage" a="lesson">
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (onEdit) onEdit(lessonId);
+                }}
+                className="p-2 text-sol-muted hover:text-sol-accent hover:bg-sol-accent/10 rounded-xl transition-colors cursor-pointer"
+                title="Edit Lesson"
+              >
+                <Pencil size={18} />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (onDelete) onDelete(lessonId);
+                }}
+                className="p-2 text-sol-muted hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-colors cursor-pointer"
+                title="Delete Lesson"
+              >
+                <Trash2 size={18} />
+              </button>
+            </Can>
+            <Bookmark size={18} className="text-sol-muted group-hover:text-sol-accent transition-colors ml-2" />
+          </div>
         </div>
 
         {/* Title */}

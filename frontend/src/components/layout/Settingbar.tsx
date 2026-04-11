@@ -17,38 +17,34 @@ export default function SettingBar() {
     <div className="fixed top-4 right-6 z-50">
       <div className="relative flex flex-col items-end">
         <button
-        
+
           onClick={() => setIsOpen(!isOpen)}
           className={`flex items-center gap-3 p-1.5 pr-3 hover:cursor-pointer rounded-full border transition-all duration-300 shadow-sm z-30 relative
-            ${
-              isOpen
-                ? "bg-sol-surface border-sol-accent shadow-lg ring-4 ring-sol-accent/5"
-                : "bg-sol-surface border-sol-border/30 hover:border-sol-accent"
+            ${isOpen
+              ? "bg-sol-surface border-sol-accent shadow-lg ring-4 ring-sol-accent/5"
+              : "bg-sol-surface border-sol-border/30 hover:border-sol-accent"
             }`}
         >
           <div
             className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-300
-            ${
-              isOpen
+            ${isOpen
                 ? "bg-sol-accent text-sol-bg"
                 : "bg-sol-accent/10 text-sol-accent"
-            }`}
+              }`}
           >
             <UserCog size={18} />
           </div>
 
           <span
-            className={`text-sm font-medium transition-colors ${
-              isOpen ? "text-sol-text" : "text-sol-muted"
-            }`}
+            className={`text-sm font-medium transition-colors ${isOpen ? "text-sol-text" : "text-sol-muted"
+              }`}
           >
             {user?.email?.split("@")[0]}
           </span>
           <ChevronDown
             size={16}
-            className={`transition-transform duration-300 ${
-              isOpen ? "rotate-180 text-sol-accent" : "text-sol-muted"
-            }`}
+            className={`transition-transform duration-300 ${isOpen ? "rotate-180 text-sol-accent" : "text-sol-muted"
+              }`}
           />
         </button>
 
@@ -79,6 +75,7 @@ export default function SettingBar() {
 
                 <div className="space-y-1">
                   <Link
+                    prefetch={false}
                     href="/student/settings"
                     className="flex items-center gap-3 px-3 py-3 text-sm text-sol-text hover:bg-sol-bg rounded-xl transition-all group/item"
                     onClick={() => setIsOpen(false)}

@@ -74,6 +74,7 @@ export default function PracticeCard({ practice }: PracticeCardProps) {
         </div>
 
         <Link
+          prefetch={false}
           href={`/student/practice/${practice.gradeId}/${practice.id}`}
           className="flex items-center justify-between w-full mt-4 px-6 py-3 bg-sol-accent text-sol-bg rounded-2xl font-bold text-sm hover:bg-sol-accent/90 transition-all group/btn shadow-md hover:shadow-sol-accent/20"
         >

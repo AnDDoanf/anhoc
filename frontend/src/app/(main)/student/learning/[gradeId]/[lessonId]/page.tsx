@@ -1,5 +1,3 @@
-// app/student/learning/[gradeId]/[lessonId]/page.tsx
-
 import { getLesson } from "@/components/feature/lessonLoader";
 import TableOfContents from "@/components/feature/TableOfContents";
 import LearningRightSidebar from "@/components/feature/LearningRightSidebar";
@@ -13,8 +11,9 @@ type Props = {
 };
 
 export default async function LessonPage({ params }: Props) {
-  const { gradeId, lessonId } = await params;
-  const lesson = await getLesson(gradeId, lessonId);
+  const { lessonId } = await params;
+  const locale = "vi"; 
+  const lesson = await getLesson(lessonId, locale);
 
   // Split content by thematic breaks (---) which become <hr> in HTML
   // Using regex to catch various formats of <hr>

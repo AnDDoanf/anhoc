@@ -1,21 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
-import Link from "next/link";
-import { useTranslations, useLocale } from "next-intl";
 import {
   BookOpen,
-  PencilLine,
+  ChevronLeft,
+  ChevronRight,
   FlaskConical,
   GraduationCap,
-  ChevronRight,
-  ChevronLeft,
-  PanelLeftClose,
-  PanelLeftOpen,
+  PencilLine,
+  Database
 } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import Can from "@/components/auth/Can";
 
-import lessonStructure from "@/content/lessonStruture";
+import { lessonService } from "@/services/lessonService";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -25,6 +25,7 @@ export default function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [lessonGroups, setLessonGroups] = useState<any[]>([]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -32,11 +33,9 @@ export default function Sidebar() {
       const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
 
-      // Default to collapsed on mobile
       if (mobile) {
         setIsCollapsed(true);
       } else {
-        // Load preference on desktop
         const saved = localStorage.getItem("sidebar-collapsed");
         setIsCollapsed(saved === "true");
       }
@@ -44,8 +43,27 @@ export default function Sidebar() {
 
     handleResize();
     window.addEventListener("resize", handleResize);
+    const fetchLessons = async () => {
+      try {
+        const lessons = await lessonService.list();
+        const groups = lessons.reduce((acc: any, lesson: any) => {
+          const gradeSlug = lesson.grade?.slug || "other";
+          const gradeLabel = locale === "vi" ? lesson.grade?.title_vi : lesson.grade?.title_en;
+          if (!acc[gradeSlug]) {
+            acc[gradeSlug] = { grade: gradeSlug, label: gradeLabel || gradeSlug, lessons: [] };
+          }
+          acc[gradeSlug].lessons.push(lesson);
+          return acc;
+        }, {});
+        setLessonGroups(Object.values(groups));
+      } catch (err) {
+        console.error("Failed to load sidebar lessons:", err);
+      }
+    };
+    fetchLessons();
+
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  }, [locale]);
 
   const toggleSidebar = () => {
     const newState = !isCollapsed;
@@ -55,7 +73,6 @@ export default function Sidebar() {
     }
   };
 
-  // Prevent hydration mismatch by showing a skeleton or nothing until mounted
   if (!isMounted) return <aside className="w-64 h-screen border-r border-sol-border/30 bg-sol-surface" />;
 
   return (
@@ -67,7 +84,9 @@ export default function Sidebar() {
       {/* Sidebar Header */}
       <div className={`flex items-center p-6 pb-2 transition-all duration-500 ${isCollapsed ? "justify-center px-0" : "justify-between"}`}>
         {!isCollapsed && (
-          <Link href="/" className="group flex items-center gap-2">
+          <Link href="/" className="group flex items-center gap-2"
+            prefetch={false}
+          >
             <GraduationCap className="text-sol-accent" size={24} />
             <span className="text-xl font-bold text-sol-text group-hover:text-sol-accent transition-colors">
               Anhoc
@@ -75,7 +94,7 @@ export default function Sidebar() {
           </Link>
         )}
         {isCollapsed && (
-          <Link href="/" className="group">
+          <Link href="/" className="group" prefetch={false}>
             <GraduationCap className="text-sol-accent" size={28} />
           </Link>
         )}
@@ -120,25 +139,39 @@ export default function Sidebar() {
             pathname={pathname}
             isCollapsed={isCollapsed}
           />
+          <Can I="manage" a="lesson">
+            <NavItem
+              href="/student/questions"
+              label={t("questions")}
+              icon={<Database size={18} />}
+              pathname={pathname}
+              isCollapsed={isCollapsed}
+            />
+          </Can>
         </div>
 
         {/* Lesson Groups (Hidden when collapsed) */}
         {!isCollapsed && (
           <div className="space-y-6 animate-in fade-in slide-in-from-left-2 duration-500">
-            {lessonStructure.map((group) => (
+            {lessonGroups.map((group) => (
               <div key={group.grade}>
-                <div className="text-[10px] font-bold text-sol-muted mb-2 px-3 uppercase tracking-[0.15em]">
-                  {t(group.labelKey)}
-                </div>
+                <Link
+                  prefetch={false}
+                  href={`/student/learning/${group.grade}`}
+                  className="text-[10px] font-bold text-sol-muted mb-2 px-3 uppercase tracking-[0.15em] hover:text-sol-accent transition-colors block"
+                >
+                  {group.label}
+                </Link>
 
                 <div className="space-y-1">
-                  {group.lessons.map((lesson) => {
+                  {group.lessons.map((lesson: any) => {
                     const href = `/student/learning/${group.grade}/${lesson.id}`;
                     const isActive = pathname === href;
                     const displayTitle = locale === "vi" ? lesson.title_vi : lesson.title_en;
 
                     return (
                       <Link
+                        prefetch={false}
                         key={`${group.grade}-${lesson.id}`}
                         href={href}
                         className={`group flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all
@@ -183,6 +216,7 @@ function NavItem({
 
   return (
     <Link
+      prefetch={false}
       href={href}
       title={isCollapsed ? label : ""}
       className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all relative group

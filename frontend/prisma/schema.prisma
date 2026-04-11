@@ -135,7 +135,7 @@ model QuestionTemplate {
   explanation_template_vi String?
   
   logic_config            Json               @default("{}")
-  accepted_formulas       String[]           @default([])
+  answer_formula          String?
   created_at              DateTime           @default(now()) @db.Timestamptz
   
   lesson                  Lesson?            @relation(fields: [lesson_id], references: [id], onDelete: Cascade)

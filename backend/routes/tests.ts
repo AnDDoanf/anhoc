@@ -35,14 +35,14 @@ router.post('/:test_id/start', authenticate, async (req, res) => {
   // Batch save snapshots
   await prisma.questionSnapshot.createMany({
     data: questions.map((q: typeof questions[number]) => ({
-        // Change attemptId to attempt_id
-        attempt_id: q.attemptId, 
-        
-        // Change templateId to template_id
-        template_id: q.templateId, 
-        
-        // Change generatedVariables to generated_variables
-        generated_variables: q.generatedVariables as any 
+      // Change attemptId to attempt_id
+      attempt_id: q.attemptId,
+
+      // Change templateId to template_id
+      template_id: q.templateId,
+
+      // Change generatedVariables to generated_variables
+      generated_variables: q.generatedVariables as any
     }))
   });
 
@@ -60,10 +60,12 @@ router.post('/submit-answer', async (req, res) => {
 
   if (!snapshot || !snapshot.template) return res.status(404).send("Question not found");
 
+  const primaryFormula = (snapshot.template.accepted_formulas?.[0]) || "0";
   const isCorrect = MathService.checkAnswer(
-    snapshot.template.answer_formula || "0",
+    primaryFormula,
     snapshot.generated_variables,
-    studentAnswer
+    studentAnswer,
+    snapshot.template.accepted_formulas?.slice(1)
   );
 
   const updated = await prisma.questionSnapshot.update({
@@ -77,6 +79,90 @@ router.post('/submit-answer', async (req, res) => {
   });
 
   res.json({ isCorrect, explanation: snapshot.template.explanation_template_vi });
+});
+
+// 3. Create Question Template (Admin)
+router.post('/templates', authenticate, async (req, res) => {
+  try {
+    const { 
+      lesson_id, template_type, 
+      body_template_en, body_template_vi, 
+      explanation_template_en, explanation_template_vi, 
+      logic_config, accepted_formulas
+    } = req.body;
+
+    const template = await prisma.questionTemplate.create({
+      data: {
+        lesson_id: lesson_id || null,
+        template_type,
+        body_template_en,
+        body_template_vi,
+        explanation_template_en,
+        explanation_template_vi,
+        logic_config: logic_config || {},
+        accepted_formulas: Array.isArray(accepted_formulas) ? accepted_formulas : []
+      }
+    });
+
+    res.json(template);
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to create template", details: error.message });
+  }
+});
+
+// Get all Question Templates (Admin)
+router.get('/templates', authenticate, async (req, res) => {
+  try {
+    const templates = await prisma.questionTemplate.findMany({
+      include: { lesson: true },
+      orderBy: { created_at: 'desc' }
+    });
+    res.json(templates);
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to fetch templates" });
+  }
+});
+
+// Update a Question Template
+router.put('/templates/:id', authenticate, async (req, res) => {
+  try {
+    const id = req.params.id as string;
+    const { 
+      lesson_id, template_type, 
+      body_template_en, body_template_vi, 
+      explanation_template_en, explanation_template_vi, 
+      logic_config, accepted_formulas
+    } = req.body;
+
+    const template = await prisma.questionTemplate.update({
+      where: { id },
+      data: {
+        lesson_id: lesson_id || null,
+        template_type,
+        body_template_en,
+        body_template_vi,
+        explanation_template_en,
+        explanation_template_vi,
+        logic_config: logic_config || {},
+        accepted_formulas: Array.isArray(accepted_formulas) ? accepted_formulas : []
+      }
+    });
+
+    res.json(template);
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to update template" });
+  }
+});
+
+// Delete a Question Template
+router.delete('/templates/:id', authenticate, async (req, res) => {
+  try {
+    const id = req.params.id as string;
+    await prisma.questionTemplate.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to delete template" });
+  }
 });
 
 export default router;
