@@ -1,4 +1,22 @@
 {
+  "Common": {
+    "back": "Back",
+    "backToHub": "Back to Hub",
+    "adventure": "Adventure Awaits",
+    "curriculumYear": "Curriculum 2024",
+    "tracks": "{count} Subject Tracks",
+    "comprehensive": "Comprehensive",
+    "format": "Markdown",
+    "error": {
+      "gradeNotFound": "Grade Not Found",
+      "pageNotFound": "Page Not Found"
+    }
+  },
+  "Difficulty": {
+    "Beginner": "Beginner",
+    "Intermediate": "Intermediate",
+    "Advanced": "Advanced"
+  },
   "Login": {
     "title": "Welcome back",
     "email_placeholder": "Email address",
@@ -25,5 +43,40 @@
     "test": "Test",
     "grade1": "Grade 1",
     "grade6": "Grade 6"
+  },
+  "Practice": {
+    "title": "Master Your Skills",
+    "subtitle": "Select a lesson to start practicing and boost your knowledge.",
+    "startBtn": "Start Practice",
+    "stats": "{count} exercises",
+    "difficulty": "Difficulty",
+    "allGrades": "All Grades"
+  },
+  "Learning": {
+    "title": "Learning Hub",
+    "subtitle": "Dive into your lessons and master new concepts today.",
+    "viewLesson": "Start Learning",
+    "viewPath": "View Full Path",
+    "curriculum": "Curriculum",
+    "lessonCount": "{count} sections",
+    "section": "Section {n}",
+    "recent": "Recent Lessons"
+  },
+  "Path": {
+    "title": "Learning Path",
+    "subtitle": "Your personal curriculum roadmap to success.",
+    "step": "Step {n}",
+    "estimatedTime": "{min} min read",
+    "startLesson": "Start Lesson",
+    "milestones": "Milestones",
+    "modules": "{count} Modules",
+    "completionTitle": "Course Completion",
+    "completionSub": "Finish all modules to master this curriculum."
+  },
+  "Test": {
+    "title": "Examination Hub",
+    "subtitle": "Challenge yourself with formal tests to validate your progress.",
+    "startBtn": "Take Test",
+    "stats": "{count} questions"
   }
 }

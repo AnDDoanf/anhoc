@@ -1,4 +1,22 @@
 {
+  "Common": {
+    "back": "Quay lại",
+    "backToHub": "Quay lại Trung tâm",
+    "adventure": "Cuộc phiêu lưu đang chờ",
+    "curriculumYear": "Chương trình 2024",
+    "tracks": "{count} Chủ đề",
+    "comprehensive": "Toàn diện",
+    "format": "Markdown",
+    "error": {
+      "gradeNotFound": "Không tìm thấy Lớp",
+      "pageNotFound": "Không tìm thấy Trang"
+    }
+  },
+  "Difficulty": {
+    "Beginner": "Cơ bản",
+    "Intermediate": "Trung bình",
+    "Advanced": "Nâng cao"
+  },
   "Login": {
     "title": "Chào mừng trở lại",
     "email_placeholder": "Địa chỉ Email",
@@ -25,5 +43,40 @@
     "test": "Kiểm tra",
     "grade1": "Lớp 1",
     "grade6": "Lớp 6"
+  },
+  "Practice": {
+    "title": "Rèn luyện Kỹ năng",
+    "subtitle": "Chọn một bài học để bắt đầu luyện tập và nâng cao kiến thức của bạn.",
+    "startBtn": "Bắt đầu Luyện tập",
+    "stats": "{count} bài tập",
+    "difficulty": "Độ khó",
+    "allGrades": "Tất cả các lớp"
+  },
+  "Learning": {
+    "title": "Trung tâm Học tập",
+    "subtitle": "Khám phá các bài học và làm chủ những kiến thức mới ngay hôm nay.",
+    "viewLesson": "Bắt đầu Học",
+    "viewPath": "Xem Lộ trình",
+    "curriculum": "Chương trình học",
+    "lessonCount": "{count} phần",
+    "section": "Phần {n}",
+    "recent": "Bài học gần đây"
+  },
+  "Path": {
+    "title": "Lộ trình Học tập",
+    "subtitle": "Lộ trình học tập cá nhân giúp bạn thành công.",
+    "step": "Bước {n}",
+    "estimatedTime": "{min} phút đọc",
+    "startLesson": "Bắt đầu Bài học",
+    "milestones": "Cột mốc",
+    "modules": "{count} Học phần",
+    "completionTitle": "Hoàn thành Khóa học",
+    "completionSub": "Hoàn thành tất cả các bài học để làm chủ chương trình này."
+  },
+  "Test": {
+    "title": "Trung tâm Kiểm tra",
+    "subtitle": "Thử thách bản thân với các bài kiểm tra định kỳ để đánh giá năng lực.",
+    "startBtn": "Làm Bài thi",
+    "stats": "{count} câu hỏi"
   }
 }

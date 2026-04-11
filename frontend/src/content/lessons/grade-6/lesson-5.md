@@ -1,4 +1,8 @@
-## **Chương 5. PHÂN SỐ**
+---
+title: Chương 5. PHÂN SỐ
+description:
+---
+
 ### **Bài 1. Phân số với tử số và mẫu số là số nguyên**
  
 1. Ta gọi $\frac{a}{b}$, trong đó $a, b, \in \mathbb{Z}, b \ne 0$ là *phân số*, $a$ là *tử số* (tử) và $b$ là *mẫu số* (mẫu) của phân số. Phân số $\frac{a}{b}$ đọc là *a phần b*.
@@ -97,7 +101,9 @@
 
 - Khi bỏ dấu ngoặc có dấu cộng (+) đằng trước, ta giữ nguyên dấu các số hạng trong ngoặc.
 - Khi bỏ dấu ngoặc có dấu trừ (-) đằng trước, ta phải đổi dấu tất cả các số hạng trong ngoặc.
+
 ---
+
 ### **Bài 5. Phép nhân và phép chia phân số**
 1. **Quy tắc nhân phân số**
 
@@ -131,10 +137,14 @@
 
     Vậy, muốn chia một phân số cho một phân số khác 0, ta nhân phân số thứ nhất cho nghịch đảo của phân số thứ hai.
 
+---
+
 ### **Bài 6. Giá trị phân số của một số**
 1. **Quy tắc 1**: Muốn tính giá trị phân số $\frac{m}{n}$ của số a, ta tính $a \cdot \frac{m}{n}$
 
 2. **Quy tắc 2**: Muốn *tìm một số khi biết giá trị phân số* $\frac{m}{n}$ của nó là $b$, ta tính $b : \frac{m}{n}$
+
+---
 
 ### **Bài 7. Hỗn số**
 1. Cho a và b là hai số nguyên dương, $a > b$, a không chia hết cho b. Nếu a chia cho b được thương là q và số dư r, thì ta viết $\frac{a}{b} = q \frac{r}{b}$ và gọi $q\frac{r}{b}$ là *hỗn số*. Đọc là "q, r phần b".

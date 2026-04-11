@@ -6,16 +6,20 @@ export default function ThemeToggle() {
   const [dark, setDark] = useState<boolean | null>(null);
 
   useEffect(() => {
-    // Check if the dark class is already on the document on mount
+    // The head script in layout.tsx already applied the class 'dark' if needed.
+    // We just need to sync our component state with the actual DOM state.
     const isDark = document.documentElement.classList.contains("dark");
     setDark(isDark);
+    
+    // Ensure localStorage is populated if it was empty (e.g., first visit using system pref)
+    if (!localStorage.getItem("theme")) {
+      localStorage.setItem("theme", isDark ? "dark" : "light");
+    }
   }, []);
 
   useEffect(() => {
-    // Only apply changes if dark is not null (prevents the initial "flash")
     if (dark !== null) {
       document.documentElement.classList.toggle("dark", dark);
-      // Optional: Save preference to localStorage
       localStorage.setItem("theme", dark ? "dark" : "light");
     }
   }, [dark]);

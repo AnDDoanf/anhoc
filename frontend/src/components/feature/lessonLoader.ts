@@ -28,8 +28,28 @@ export async function getLesson(gradeId: string, lessonId: string) {
     .use(rehypeStringify)
     .process(content);
 
+  const contentHtml = processed.toString();
+
+  // 🔥 Extract TOC manually (H2, H3)
+  const toc: { id: string; text: string; level: number }[] = [];
+  const processedHtml = contentHtml.replace(
+    /<h([2-3])>(.*?)<\/h\1>/g,
+    (match, level, text) => {
+      // Create a clean ID from the text (strip HTML tags first)
+      const cleanText = text.replace(/<[^>]*>?/gm, "");
+      const id = cleanText
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+        .replace(/[^\w-]/g, "");
+      
+      toc.push({ id, text: cleanText, level: parseInt(level) });
+      return `<h${level} id="${id}">${text}</h${level}>`;
+    }
+  );
+
   return {
-    contentHtml: processed.toString(),
+    contentHtml: processedHtml,
     meta: data,
+    toc,
   };
 }
