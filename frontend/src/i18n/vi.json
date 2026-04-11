@@ -11,7 +11,9 @@
       "gradeNotFound": "Không tìm thấy Lớp",
       "pageNotFound": "Không tìm thấy Trang"
     },
-    "tableOfContents": "Mục lục"
+    "tableOfContents": "Mục lục",
+    "confirm": "Xác nhận",
+    "cancel": "Hủy"
   },
   "Difficulty": {
     "Beginner": "Cơ bản",
@@ -52,7 +54,39 @@
     "startBtn": "Bắt đầu Luyện tập",
     "stats": "{count} bài tập",
     "difficulty": "Độ khó",
-    "allGrades": "Tất cả các lớp"
+    "allGrades": "Tất cả các lớp",
+    "finishAbandon": "Hoàn thành / Thoát",
+    "questionInfo": "Câu hỏi {current} trên {total}",
+    "yourAnswer": "Đáp án của bạn: {answer}",
+    "correct": "Chính xác! Làm tốt lắm.",
+    "incorrect": "Chưa chính xác.",
+    "notQuiteRight": "Chưa đúng lắm.",
+    "nextQuestion": "Câu tiếp sau",
+    "finishBtn": "Hoàn thành Luyện tập",
+    "enterAnswer": "Nhập đáp án của bạn...",
+    "skipQuestion": "Bỏ qua câu hỏi",
+    "completeTitle": "Luyện tập Hoàn tất!",
+    "scoreMessage": "Bạn đạt {score}% trong phiên luyện tập này.",
+    "scoreLabel": "Điểm: {score}%",
+    "practiceResult": "Kết quả Luyện tập",
+    "analyzingResults": "Đang phân tích kết quả...",
+    "skipped": "Đã bỏ qua",
+    "yourAnswerLabel": "Đáp án của bạn",
+    "correctAnswers": "Đáp án đúng",
+    "explanation": "Giải thích",
+    "closeReview": "Đóng Xem lại",
+    "returnToLesson": "Quay lại Bài học",
+    "modals": {
+      "finishTitle": "Hoàn thành Luyện tập",
+      "completeTitle": "Hoàn tất Luyện tập",
+      "abandonTitle": "Thoát Luyện tập",
+      "completeMessage": "Bạn đã trả lời tất cả các câu hỏi! Bạn đã sẵn sàng nộp bài và xem điểm số cuối cùng chưa?",
+      "abandonMessage": "Bạn có chắc chắn muốn thoát sớm không? Mọi câu hỏi chưa trả lời sẽ bị tính là sai.",
+      "submitBtn": "Nộp bài Luyện tập",
+      "abandonBtn": "Thoát & Chấm điểm",
+      "cancel": "Hủy",
+      "keepGoing": "Tiếp tục"
+    }
   },
   "Learning": {
     "title": "Trung tâm Học tập",

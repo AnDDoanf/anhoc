@@ -5,51 +5,31 @@ import { authenticate } from '../middleware/auth';
 
 const router = Router();
 
-// 1. Start a Test Attempt (Generate specific numbers for the kid)
-router.post('/:test_id/start', authenticate, async (req, res) => {
-  const test_id = Array.isArray(req.params.test_id) ? req.params.test_id[0] : req.params.test_id;
-  const userId = (req as any).user.id; // From Auth Middleware
-
-  // Fetch templates associated with this test
-  const testMap = await prisma.testTemplateMap.findMany({
-    where: { test_id },
-    include: { template: true }
+// 2. Get a Test Attempt
+router.get('/attempts/:id', authenticate, async (req, res) => {
+  const attemptId = req.params.id as string;
+  const attempt = await prisma.testAttempt.findUnique({
+    where: { id: attemptId },
+    include: {
+      snapshots: {
+        include: { 
+          template: {
+            include: {
+              lesson: {
+                include: { grade: true }
+              }
+            }
+          } 
+        },
+        orderBy: { id: 'asc' }
+      }
+    }
   });
-
-  // Create the Attempt record
-  const attempt = await prisma.testAttempt.create({
-    data: { user_id: userId, test_id }
-  });
-
-  // Generate snapshots for each question in the test
-  const questions = testMap.map((m: typeof testMap[number]) => {
-    const vars = MathService.generateVars(m.template.logic_config);
-    return {
-      attemptId: attempt.id,
-      templateId: m.template.id,
-      generatedVariables: vars,
-      bodyText: MathService.formatTemplate(m.template.body_template_vi, vars)
-    };
-  });
-
-  // Batch save snapshots
-  await prisma.questionSnapshot.createMany({
-    data: questions.map((q: typeof questions[number]) => ({
-      // Change attemptId to attempt_id
-      attempt_id: q.attemptId,
-
-      // Change templateId to template_id
-      template_id: q.templateId,
-
-      // Change generatedVariables to generated_variables
-      generated_variables: q.generatedVariables as any
-    }))
-  });
-
-  res.json({ attemptId: attempt.id, questions });
+  if (!attempt) return res.status(404).json({ error: "Attempt not found" });
+  res.json(attempt);
 });
 
-// 2. Submit Answer for a Snapshot
+// 3. Submit Answer for a Snapshot
 router.post('/submit-answer', async (req, res) => {
   const { snapshotId, studentAnswer } = req.body;
 
@@ -71,8 +51,8 @@ router.post('/submit-answer', async (req, res) => {
   const updated = await prisma.questionSnapshot.update({
     where: { id: snapshotId },
     data: {
-      studentAnswer,
-      isCorrect,
+      student_answer: studentAnswer,
+      is_correct: isCorrect,
       points_earned: isCorrect ? 10 : 0, // Logic for weighting
       responded_at: new Date()
     }
@@ -81,7 +61,48 @@ router.post('/submit-answer', async (req, res) => {
   res.json({ isCorrect, explanation: snapshot.template.explanation_template_vi });
 });
 
-// 3. Create Question Template (Admin)
+// 3. Finish or Abandon a Test Attempt
+router.post('/attempts/:id/finish', authenticate, async (req, res) => {
+  const attemptId = req.params.id as string;
+
+  try {
+    // Mark all unanswered snapshots as incorrect
+    await prisma.questionSnapshot.updateMany({
+      where: { 
+        attempt_id: attemptId,
+        student_answer: null 
+      },
+      data: {
+        is_correct: false,
+        points_earned: 0,
+        responded_at: new Date()
+      }
+    });
+
+    // Calculate total score
+    const snapshots = await prisma.questionSnapshot.findMany({
+      where: { attempt_id: attemptId }
+    });
+    
+    const correctAnswers = snapshots.filter(s => s.is_correct).length;
+    const totalScore = snapshots.length > 0 ? (correctAnswers / snapshots.length) * 100 : 0;
+
+    const attempt = await prisma.testAttempt.update({
+      where: { id: attemptId },
+      data: {
+        is_completed: true,
+        completed_at: new Date(),
+        total_score: totalScore
+      }
+    });
+
+    res.json(attempt);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to finish attempt" });
+  }
+});
+
+// 4. Create Question Template (Admin)
 router.post('/templates', authenticate, async (req, res) => {
   try {
     const { 
@@ -159,9 +180,33 @@ router.delete('/templates/:id', authenticate, async (req, res) => {
   try {
     const id = req.params.id as string;
     await prisma.questionTemplate.delete({ where: { id } });
-    res.json({ success: true });
+  res.json({ success: true });
   } catch (error: any) {
     res.status(500).json({ error: "Failed to delete template" });
+  }
+});
+
+// GET My Practice History
+router.get('/my-practice-history', authenticate, async (req, res) => {
+  const userId = (req as any).user.id;
+  try {
+    const history = await prisma.testAttempt.findMany({
+      where: {
+        user_id: userId,
+        is_practice: true,
+        is_completed: true
+      },
+      include: {
+        lesson: {
+          include: { grade: true }
+        }
+      },
+      orderBy: { completed_at: 'desc' },
+      take: 20
+    });
+    res.json(history);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch practice history" });
   }
 });
 

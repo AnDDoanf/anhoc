@@ -25,7 +25,7 @@ export default function GradePathPage() {
       try {
         const lessons = await lessonService.list();
         const currentGradeLessons = lessons.filter((l: any) => l.grade?.slug === gradeId);
-        
+
         if (currentGradeLessons.length > 0) {
           const firstLesson = currentGradeLessons[0];
           const gradeLabel = locale === "vi" ? firstLesson.grade?.title_vi : firstLesson.grade?.title_en;

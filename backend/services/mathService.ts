@@ -6,16 +6,27 @@ export interface LogicConfig {
 
 export const generateVars = (config: any): Record<string, number> => {
   const vars: Record<string, number> = {};
-  const logic = config as LogicConfig;
 
-  for (const [key, range] of Object.entries(logic)) {
-    const step = range.step || 1;
-    const choices = [];
-    for (let i = range.min; i <= range.max; i += step) {
-      choices.push(i);
+  try {
+    const configObj = typeof config === 'string' ? JSON.parse(config) : config;
+    const logic = (configObj?.variables || configObj) as LogicConfig;
+
+    if (!logic || typeof logic !== 'object') return vars;
+
+    for (const [key, range] of Object.entries(logic)) {
+      if (typeof range === 'object' && range !== null && 'min' in range && 'max' in range) {
+        const step = range.step || 1;
+        const choices = [];
+        for (let i = range.min; i <= Math.max(range.min, range.max); i += step) {
+          choices.push(i);
+        }
+        vars[key] = choices[Math.floor(Math.random() * choices.length)];
+      }
     }
-    vars[key] = choices[Math.floor(Math.random() * choices.length)];
+  } catch (e) {
+    console.error("Failed to parse logic_config", e);
   }
+
   return vars;
 };
 
@@ -37,9 +48,11 @@ const normalizeVars = (vars: any): Record<string, number> => {
 export const checkAnswer = (
   formula: string,
   vars: any,
-  studentAns: string,
+  studentAns: string | null | undefined,
   acceptedFormulas?: string[]
 ): boolean => {
+  if (!studentAns || studentAns.trim() === '') return false;
+
   const cleanVars = normalizeVars(vars);
   const normalizedAns = parseFloat(studentAns.replace(',', '.'));
   if (isNaN(normalizedAns)) return false;
@@ -78,4 +91,13 @@ export const formatTemplate = (template: string, vars: any): string => {
   }
 
   return formatted;
+};
+
+export const evaluateFormula = (formula: string, vars: any): string | null => {
+  try {
+    const result = math.evaluate(normalizeFormula(formula), normalizeVars(vars));
+    return result.toString();
+  } catch {
+    return null;
+  }
 };

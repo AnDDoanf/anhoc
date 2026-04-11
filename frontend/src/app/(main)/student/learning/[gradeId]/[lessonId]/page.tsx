@@ -2,6 +2,7 @@ import { getLesson } from "@/components/feature/lessonLoader";
 import TableOfContents from "@/components/feature/TableOfContents";
 import LearningRightSidebar from "@/components/feature/LearningRightSidebar";
 import TikZRenderer from "@/components/feature/TikZRenderer";
+import LessonPracticeButton from "@/components/feature/LessonPracticeButton";
 
 type Props = {
   params: Promise<{
@@ -68,6 +69,7 @@ export default async function LessonPage({ params }: Props) {
 
       <LearningRightSidebar>
         <TableOfContents toc={lesson.toc} />
+        <LessonPracticeButton lessonId={lessonId} />
       </LearningRightSidebar>
     </div>
   );

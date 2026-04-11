@@ -11,7 +11,9 @@
       "gradeNotFound": "Grade Not Found",
       "pageNotFound": "Page Not Found"
     },
-    "tableOfContents": "Table of Contents"
+    "tableOfContents": "Table of Contents",
+    "confirm": "Confirm",
+    "cancel": "Cancel"
   },
   "Difficulty": {
     "Beginner": "Beginner",
@@ -52,7 +54,39 @@
     "startBtn": "Start Practice",
     "stats": "{count} exercises",
     "difficulty": "Difficulty",
-    "allGrades": "All Grades"
+    "allGrades": "All Grades",
+    "finishAbandon": "Finish / Abandon",
+    "questionInfo": "Question {current} of {total}",
+    "yourAnswer": "Your Answer: {answer}",
+    "correct": "Correct! Excellent job.",
+    "incorrect": "Incorrect.",
+    "notQuiteRight": "Not quite right.",
+    "nextQuestion": "Next Question",
+    "finishBtn": "Finish Practice",
+    "enterAnswer": "Enter your answer...",
+    "skipQuestion": "Skip Question",
+    "completeTitle": "Practice Complete!",
+    "scoreMessage": "You scored {score}% on this practice session.",
+    "scoreLabel": "Score: {score}%",
+    "practiceResult": "Practice Result",
+    "analyzingResults": "Analyzing results...",
+    "skipped": "Skipped",
+    "yourAnswerLabel": "Your Answer",
+    "correctAnswers": "Correct Answer(s)",
+    "explanation": "Explanation",
+    "closeReview": "Close Review",
+    "returnToLesson": "Return to Lesson",
+    "modals": {
+      "finishTitle": "Finish Practice",
+      "completeTitle": "Complete Practice",
+      "abandonTitle": "Abandon Practice",
+      "completeMessage": "You've answered all the questions! Are you ready to submit and see your final score?",
+      "abandonMessage": "Are you sure you want to exit early? Any remaining unanswered questions will be permanently marked as incorrect.",
+      "submitBtn": "Submit Practice",
+      "abandonBtn": "Abandon & Grade",
+      "cancel": "Cancel",
+      "keepGoing": "Keep Going"
+    }
   },
   "Learning": {
     "title": "Learning Hub",

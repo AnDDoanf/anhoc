@@ -40,5 +40,23 @@ export const testService = {
   removeTemplate: async (id: string) => {
     const response = await api.delete(`/tests/templates/${id}`);
     return response.data;
+  },
+
+  getAttempt: async (attemptId: string) => {
+    const response = await api.get(`/tests/attempts/${attemptId}`);
+    return response.data;
+  },
+  submitAnswer: async (snapshotId: string, studentAnswer: string) => {
+    const response = await api.post('/tests/submit-answer', { snapshotId, studentAnswer });
+    return response.data;
+  },
+  finishAttempt: async (attemptId: string) => {
+    const response = await api.post(`/tests/attempts/${attemptId}/finish`);
+    return response.data;
+  },
+
+  getPracticeHistory: async () => {
+    const response = await api.get('/tests/my-practice-history');
+    return response.data;
   }
 };

@@ -57,5 +57,15 @@ export const lessonService = {
   getSubjects: async () => {
     const response = await api.get('/lessons/subjects');
     return response.data;
+  },
+
+  startPractice: async (id: string) => {
+    const response = await api.post(`/lessons/${id}/practice`);
+    return response.data;
+  },
+
+  getAvailablePractices: async () => {
+    const response = await api.get('/lessons/practice-available');
+    return response.data;
   }
 };

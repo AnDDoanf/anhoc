@@ -12,7 +12,7 @@ import { lessonService } from "@/services/lessonService";
 export default function LearningDashboard() {
   const t = useTranslations("Learning");
   const commonT = useTranslations("Common");
-  const sidebarT = useTranslations("Sidebar");
+  const sidebar = useTranslations("Sidebar");
   const locale = useLocale();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editLessonId, setEditLessonId] = useState<string | null>(null);
@@ -89,7 +89,7 @@ export default function LearningDashboard() {
             </div>
 
             <Can I="manage" a="lesson">
-              <button 
+              <button
                 onClick={() => setIsModalOpen(true)}
                 className="flex items-center gap-2 px-6 py-3 bg-sol-accent text-sol-bg rounded-2xl font-bold hover:scale-105 transition-transform shadow-lg shadow-sol-accent/20 cursor-pointer"
               >
@@ -166,10 +166,10 @@ export default function LearningDashboard() {
         </p>
       </section>
 
-      <CreateLessonModal 
-        isOpen={isModalOpen} 
-        onClose={handleModalClose} 
-        onSuccess={handleCreateSuccess} 
+      <CreateLessonModal
+        isOpen={isModalOpen}
+        onClose={handleModalClose}
+        onSuccess={handleCreateSuccess}
         editLessonId={editLessonId}
       />
     </div>

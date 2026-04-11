@@ -117,6 +117,7 @@ model Lesson {
   templates          QuestionTemplate[]
   sessions           LearningSession[]
   mastery_records    UserLessonMastery[]
+  practice_attempts  TestAttempt[]
 
   @@map("lessons")
 }
@@ -139,48 +140,25 @@ model QuestionTemplate {
   created_at              DateTime           @default(now()) @db.Timestamptz
   
   lesson                  Lesson?            @relation(fields: [lesson_id], references: [id], onDelete: Cascade)
-  test_maps               TestTemplateMap[]
   snapshots               QuestionSnapshot[]
 
   @@map("question_templates")
 }
 
-model Test {
-  id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  title_vi           String            @db.VarChar(255)
-  title_en           String            @db.VarChar(255)
-  time_limit_seconds Int?
-  passing_score      Decimal?          @default(50.0) @db.Decimal(5, 2)
-  is_active          Boolean?          @default(true)
-  test_maps          TestTemplateMap[]
-  attempts           TestAttempt[]
 
-  @@map("tests")
-}
-
-model TestTemplateMap {
-  test_id     String           @db.Uuid
-  template_id String           @db.Uuid
-  weight      Int?             @default(1)
-  position    Int?
-  test        Test             @relation(fields: [test_id], references: [id], onDelete: Cascade)
-  template    QuestionTemplate @relation(fields: [template_id], references: [id], onDelete: Cascade)
-
-  @@id([test_id, template_id])
-  @@map("test_template_map")
-}
 
 model TestAttempt {
   id           String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   user_id      String?            @db.Uuid
-  test_id      String?            @db.Uuid
+  lesson_id    String?            @db.Uuid
   total_score  Decimal?           @db.Decimal(5, 2)
   is_completed Boolean?           @default(false)
+  is_practice  Boolean            @default(false)
   started_at   DateTime           @default(now()) @db.Timestamptz
   completed_at DateTime?          @db.Timestamptz // Required to calculate Speed
   
   user         User?              @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  test         Test?              @relation(fields: [test_id], references: [id])
+  lesson       Lesson?            @relation(fields: [lesson_id], references: [id])
   snapshots    QuestionSnapshot[]
   evidence     ActivityEvidence[]
 
@@ -193,11 +171,13 @@ model QuestionSnapshot {
   template_id         String?           @db.Uuid
   generated_variables Json
   student_answer      String?
+  right_answers       String[]          @default([])
   is_correct          Boolean?          @default(false)
   points_earned       Int?              @default(0)
   responded_at        DateTime?         @db.Timestamptz
   attempt             TestAttempt?      @relation(fields: [attempt_id], references: [id], onDelete: Cascade)
   template            QuestionTemplate? @relation(fields: [template_id], references: [id])
+  evidence            ActivityEvidence[]
 
   @@map("question_snapshots")
 }
@@ -214,7 +194,6 @@ model LearningSession {
 
   user   User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
   lesson Lesson @relation(fields: [lesson_id], references: [id], onDelete: Cascade)
-  evidence ActivityEvidence[]
 
   @@map("learning_sessions")
 }
@@ -290,14 +269,14 @@ model ActivityEvidence {
   id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   user_id     String   @db.Uuid
   attempt_id  String?  @db.Uuid
-  session_id  String?  @db.Uuid
+  snapshot_id String?  @db.Uuid
   image_url   String
   caption     String?  @db.VarChar(255)
   uploaded_at DateTime @default(now()) @db.Timestamptz
 
-  user    User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  attempt TestAttempt?     @relation(fields: [attempt_id], references: [id], onDelete: SetNull)
-  session LearningSession? @relation(fields: [session_id], references: [id], onDelete: SetNull)
+  user     User              @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  attempt  TestAttempt?      @relation(fields: [attempt_id], references: [id], onDelete: SetNull)
+  snapshot QuestionSnapshot? @relation(fields: [snapshot_id], references: [id], onDelete: SetNull)
 
   @@map("activity_evidence")
 }
