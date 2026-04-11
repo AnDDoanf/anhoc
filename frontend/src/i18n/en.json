@@ -10,7 +10,8 @@
     "error": {
       "gradeNotFound": "Grade Not Found",
       "pageNotFound": "Page Not Found"
-    }
+    },
+    "tableOfContents": "Table of Contents"
   },
   "Difficulty": {
     "Beginner": "Beginner",
@@ -60,7 +61,9 @@
     "curriculum": "Curriculum",
     "lessonCount": "{count} sections",
     "section": "Section {n}",
-    "recent": "Recent Lessons"
+    "recent": "Recent Lessons",
+    "proTip": "Pro Tip",
+    "proTipDescription": "Use the Table of Contents to quickly jump between concepts. Your progress is saved automatically."
   },
   "Path": {
     "title": "Learning Path",

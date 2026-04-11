@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { List } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 type TOCItem = {
   id: string;
@@ -57,21 +58,23 @@ export default function TableOfContents({ toc }: TableOfContentsProps) {
 
   if (toc.length === 0) return null;
 
+  const t = useTranslations("Common");
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 text-sol-muted mb-6">
         <List size={18} className="text-sol-accent" />
-        <span className="text-xs font-bold uppercase tracking-widest">Table of Contents</span>
+        <span className="text-xs font-bold uppercase tracking-widest">{t("tableOfContents")}</span>
       </div>
-      
+
       <nav className="relative">
         {/* Vertical line indicator */}
         <div className="absolute left-[3px] top-2 bottom-2 w-[1px] bg-sol-border/20" />
-        
+
         <ul className="space-y-1">
           {toc.map((item) => (
-            <li 
-              key={item.id} 
+            <li
+              key={item.id}
               style={{ paddingLeft: `${(item.level - 2) * 16}px` }}
               className="relative"
             >
@@ -79,8 +82,8 @@ export default function TableOfContents({ toc }: TableOfContentsProps) {
                 href={`#${item.id}`}
                 onClick={(e) => handleClick(e, item.id)}
                 className={`group flex items-center py-1.5 text-sm transition-all duration-300 pl-4
-                  ${activeId === item.id 
-                    ? "text-sol-accent font-medium translate-x-1" 
+                  ${activeId === item.id
+                    ? "text-sol-accent font-medium translate-x-1"
                     : "text-sol-muted hover:text-sol-text hover:translate-x-1"}
                 `}
               >
@@ -88,7 +91,7 @@ export default function TableOfContents({ toc }: TableOfContentsProps) {
                 {activeId === item.id && (
                   <div className="absolute left-[1px] w-1 h-4 bg-sol-accent rounded-full animate-in fade-in slide-in-from-left-1 duration-300" />
                 )}
-                
+
                 <span className="truncate">{item.text}</span>
               </a>
             </li>

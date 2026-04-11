@@ -38,7 +38,7 @@ export default async function LessonPage({ params }: Props) {
 
         {/* Content Blocks */}
         {sections.map((sectionHtml, idx) => (
-          <article 
+          <article
             key={idx}
             className="bg-sol-surface/30 p-8 md:p-12 rounded-[2.5rem] border border-sol-border/10 shadow-sm hover:shadow-xl hover:bg-sol-surface/40 transition-all duration-500 relative group overflow-hidden"
           >
@@ -47,18 +47,18 @@ export default async function LessonPage({ params }: Props) {
               <span className="text-3xl font-black text-sol-accent/10">{idx + 1}</span>
             </div>
 
-            <div 
+            <div
               className="lesson-content max-w-none 
                 [&>h2]:text-3xl [&>h2:first-child]:mt-0 [&>h2]:font-bold [&>h2]:mt-16 [&>h2]:mb-8 [&>h2]:text-sol-text [&>h2]:flex [&>h2]:items-center [&>h2]:gap-4
                 [&>h3]:text-2xl [&>h3:first-child]:mt-0 [&>h3]:font-bold [&>h3]:mt-10 [&>h3]:mb-6 [&>h3]:text-sol-text
                 [&>p]:text-lg [&>p]:mb-8 [&>p]:leading-[1.9] [&>p]:text-sol-text/90
-                [&>ul]:list-disc [&>ul]:pl-6 [&>ul]:mb-10 [&>ul]:space-y-6 [&>ul]:text-sol-text/80
-                [&>ol]:list-decimal [&>ol]:pl-6 [&>ol]:mb-10 [&>ol]:space-y-6 [&>ol]:text-sol-text/80
-                [&>li]:text-lg [&>li]:pl-2 [&>li]:leading-[1.9]
+                [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-10 [&_ul]:space-y-4 [&_ul]:text-sol-text/80
+                [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-10 [&_ol]:space-y-4 [&_ol]:text-sol-text/80
+                [&_li]:text-lg [&_li]:pl-2 [&_li]:leading-[1.9]
                 [&_.katex-display]:text-center [&_.katex-display]:my-12 [&_.katex-display]:w-full [&_.katex-display]:overflow-x-auto [&_.katex-display]:overflow-y-hidden
                 [&>pre]:bg-sol-bg/50 [&>pre]:p-8 [&>pre]:rounded-2xl [&>pre]:border [&>pre]:border-sol-border/20 [&>pre]:my-10 [&>pre]:shadow-inner
                 [&>blockquote]:border-l-4 [&>blockquote]:border-sol-accent [&>blockquote]:pl-8 [&>blockquote]:italic [&>blockquote]:my-10 [&>blockquote]:text-sol-muted [&>blockquote]:bg-sol-accent/5 [&>blockquote]:py-6 [&>blockquote]:pr-6 [&>blockquote]:rounded-r-2xl"
-              dangerouslySetInnerHTML={{ __html: sectionHtml }} 
+              dangerouslySetInnerHTML={{ __html: sectionHtml }}
             />
           </article>
         ))}
@@ -69,4 +69,4 @@ export default async function LessonPage({ params }: Props) {
       </LearningRightSidebar>
     </div>
   );
-}
+}

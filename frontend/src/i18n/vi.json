@@ -10,7 +10,8 @@
     "error": {
       "gradeNotFound": "Không tìm thấy Lớp",
       "pageNotFound": "Không tìm thấy Trang"
-    }
+    },
+    "tableOfContents": "Mục lục"
   },
   "Difficulty": {
     "Beginner": "Cơ bản",
@@ -60,7 +61,9 @@
     "curriculum": "Chương trình học",
     "lessonCount": "{count} phần",
     "section": "Phần {n}",
-    "recent": "Bài học gần đây"
+    "recent": "Bài học gần đây",
+    "proTip": "Mẹo",
+    "proTipDescription": "Sử dụng Mục lục để nhanh chóng chuyển đổi giữa các khái niệm. Tiến độ của bạn được lưu tự động."
   },
   "Path": {
     "title": "Lộ trình Học tập",
