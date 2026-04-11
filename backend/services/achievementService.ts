@@ -18,6 +18,261 @@ interface AchievementDef {
   check: (userId: string, db: any, context?: any) => Promise<boolean>;
 }
 
+const countCompletedPractices = async (uid: string, db: any) =>
+  await db.testAttempt.count({ where: { user_id: uid, is_completed: true, is_practice: true } });
+
+const countUniqueLessonsPracticed = async (uid: string, db: any, context?: any) => {
+  const attempts = context?.attempts || await db.testAttempt.findMany({
+    where: { user_id: uid, is_completed: true },
+    select: { lesson_id: true }
+  });
+  return new Set(attempts.map((a: any) => a.lesson_id).filter(Boolean)).size;
+};
+
+const countDistinctGradesPracticed = async (uid: string, db: any, context?: any) => {
+  const attempts = context?.attempts || await db.testAttempt.findMany({
+    where: { user_id: uid, is_completed: true },
+    include: { lesson: true }
+  });
+  return new Set(attempts.map((a: any) => a.lesson?.grade_id).filter(Boolean)).size;
+};
+
+const countPracticeDays = async (uid: string, db: any) => {
+  const attempts: any[] = await db.testAttempt.findMany({
+    where: { user_id: uid, is_completed: true, is_practice: true },
+    select: { completed_at: true }
+  });
+  return new Set(
+    attempts
+      .filter((a: any) => a.completed_at)
+      .map((a: any) => a.completed_at.toISOString().split('T')[0])
+  ).size;
+};
+
+const countScoreThresholdAttempts = async (uid: string, db: any, threshold: number) =>
+  await db.testAttempt.count({
+    where: { user_id: uid, is_completed: true, is_practice: true, total_score: { gte: threshold } }
+  });
+
+const countEvidenceUploads = async (uid: string, db: any) =>
+  await db.activityEvidence.count({ where: { user_id: uid } });
+
+const practiceMilestoneDefs: AchievementDef[] = [
+  { slug: 'practice-15', count: 15, xp: 180, icon: 'NotebookPen', titleEn: 'Practice Apprentice', titleVi: 'Học Việc Luyện Tập' },
+  { slug: 'practice-20', count: 20, xp: 220, icon: 'NotebookPen', titleEn: 'Practice Builder', titleVi: 'Người Xây Nền' },
+  { slug: 'practice-25', count: 25, xp: 260, icon: 'Flame', titleEn: 'Practice Charger', titleVi: 'Đà Tăng Tốc' },
+  { slug: 'practice-30', count: 30, xp: 320, icon: 'Flame', titleEn: 'Practice Sprinter', titleVi: 'Nước Rút Luyện Tập' },
+  { slug: 'practice-40', count: 40, xp: 420, icon: 'Zap', titleEn: 'Practice Engine', titleVi: 'Cỗ Máy Luyện Tập' },
+  { slug: 'practice-50', count: 50, xp: 550, icon: 'Zap', titleEn: 'Practice Veteran', titleVi: 'Cựu Binh Luyện Tập' },
+  { slug: 'practice-60', count: 60, xp: 650, icon: 'Rocket', titleEn: 'Practice Rocket', titleVi: 'Tên Lửa Luyện Tập' },
+  { slug: 'practice-75', count: 75, xp: 800, icon: 'Rocket', titleEn: 'Practice Commander', titleVi: 'Chỉ Huy Luyện Tập' },
+  { slug: 'practice-100', count: 100, xp: 1100, icon: 'Trophy', titleEn: 'Century Session', titleVi: 'Trăm Phiên Luyện Tập' },
+  { slug: 'practice-150', count: 150, xp: 1500, icon: 'Trophy', titleEn: 'Practice Legend', titleVi: 'Huyền Thoại Luyện Tập' },
+  { slug: 'practice-200', count: 200, xp: 2200, icon: 'Crown', titleEn: 'Practice Titan', titleVi: 'Titan Luyện Tập' },
+  { slug: 'practice-300', count: 300, xp: 3200, icon: 'Crown', titleEn: 'Endless Practice', titleVi: 'Luyện Tập Bất Tận' },
+  { slug: 'practice-400', count: 400, xp: 4500, icon: 'Sparkles', titleEn: 'Practice Mythic', titleVi: 'Thần Thoại Luyện Tập' },
+  { slug: 'practice-500', count: 500, xp: 6000, icon: 'Sparkles', titleEn: 'Practice Immortal', titleVi: 'Bất Tử Luyện Tập' },
+].map((milestone) => ({
+  slug: milestone.slug,
+  title_en: milestone.titleEn,
+  title_vi: milestone.titleVi,
+  description_en: `Complete ${milestone.count} practice sessions.`,
+  description_vi: `Hoàn thành ${milestone.count} phiên luyện tập.`,
+  category: 'progress',
+  xp_reward: milestone.xp,
+  icon: milestone.icon,
+  check: async (uid: string, db: any) => (await countCompletedPractices(uid, db)) >= milestone.count,
+}));
+
+const uniqueLessonMilestoneDefs: AchievementDef[] = [
+  { slug: 'lessons-8', count: 8, xp: 160, icon: 'Target', titleEn: 'Lesson Explorer I', titleVi: 'Nhà Khám Phá Bài Học I' },
+  { slug: 'lessons-10', count: 10, xp: 220, icon: 'Target', titleEn: 'Lesson Explorer II', titleVi: 'Nhà Khám Phá Bài Học II' },
+  { slug: 'lessons-15', count: 15, xp: 320, icon: 'Compass', titleEn: 'Lesson Explorer III', titleVi: 'Nhà Khám Phá Bài Học III' },
+  { slug: 'lessons-20', count: 20, xp: 430, icon: 'Compass', titleEn: 'Lesson Pathfinder', titleVi: 'Người Mở Đường Bài Học' },
+  { slug: 'lessons-30', count: 30, xp: 620, icon: 'Map', titleEn: 'Lesson Voyager', titleVi: 'Lữ Hành Bài Học' },
+  { slug: 'lessons-40', count: 40, xp: 850, icon: 'Map', titleEn: 'Lesson Trailblazer', titleVi: 'Người Khai Lối Bài Học' },
+  { slug: 'lessons-50', count: 50, xp: 1150, icon: 'BookOpenCheck', titleEn: 'Lesson Scholar', titleVi: 'Học Giả Bài Học' },
+  { slug: 'lessons-75', count: 75, xp: 1600, icon: 'BookOpenCheck', titleEn: 'Curriculum Conqueror', titleVi: 'Người Chinh Phục Chương Trình' },
+  { slug: 'lessons-100', count: 100, xp: 2400, icon: 'LibraryBig', titleEn: 'Archive of Lessons', titleVi: 'Kho Tàng Bài Học' },
+].map((milestone) => ({
+  slug: milestone.slug,
+  title_en: milestone.titleEn,
+  title_vi: milestone.titleVi,
+  description_en: `Practice at least ${milestone.count} different lessons.`,
+  description_vi: `Luyện tập ít nhất ${milestone.count} bài học khác nhau.`,
+  category: 'progress',
+  xp_reward: milestone.xp,
+  icon: milestone.icon,
+  check: async (uid: string, db: any, context?: any) => (await countUniqueLessonsPracticed(uid, db, context)) >= milestone.count,
+}));
+
+const gradeMilestoneDefs: AchievementDef[] = [
+  { slug: 'grades-4', count: 4, xp: 180, icon: 'School', titleEn: 'Grade Hopper I', titleVi: 'Bước Qua Các Khối I' },
+  { slug: 'grades-5', count: 5, xp: 240, icon: 'School', titleEn: 'Grade Hopper II', titleVi: 'Bước Qua Các Khối II' },
+  { slug: 'grades-6', count: 6, xp: 320, icon: 'GraduationCap', titleEn: 'Grade Hopper III', titleVi: 'Bước Qua Các Khối III' },
+  { slug: 'grades-7', count: 7, xp: 420, icon: 'GraduationCap', titleEn: 'Across the Grades', titleVi: 'Xuyên Suốt Các Khối' },
+  { slug: 'grades-8', count: 8, xp: 560, icon: 'Landmark', titleEn: 'Schoolwide Explorer', titleVi: 'Nhà Khám Phá Toàn Trường' },
+].map((milestone) => ({
+  slug: milestone.slug,
+  title_en: milestone.titleEn,
+  title_vi: milestone.titleVi,
+  description_en: `Practice lessons from at least ${milestone.count} different grades.`,
+  description_vi: `Luyện tập bài học từ ít nhất ${milestone.count} khối lớp khác nhau.`,
+  category: 'social',
+  xp_reward: milestone.xp,
+  icon: milestone.icon,
+  check: async (uid: string, db: any, context?: any) => (await countDistinctGradesPracticed(uid, db, context)) >= milestone.count,
+}));
+
+const practiceDayMilestoneDefs: AchievementDef[] = [
+  { slug: 'days-10', count: 10, xp: 180, icon: 'CalendarRange', titleEn: 'Ten-Day Learner', titleVi: 'Người Học Mười Ngày' },
+  { slug: 'days-14', count: 14, xp: 260, icon: 'CalendarRange', titleEn: 'Two-Week Rhythm', titleVi: 'Nhịp Học Hai Tuần' },
+  { slug: 'days-21', count: 21, xp: 360, icon: 'CalendarCheck2', titleEn: 'Habit Builder', titleVi: 'Người Xây Thói Quen' },
+  { slug: 'days-30', count: 30, xp: 500, icon: 'CalendarCheck2', titleEn: 'Thirty-Day Focus', titleVi: 'Tập Trung Ba Mươi Ngày' },
+  { slug: 'days-45', count: 45, xp: 700, icon: 'CalendarHeart', titleEn: 'Steady Learner', titleVi: 'Người Học Bền Bỉ' },
+  { slug: 'days-60', count: 60, xp: 950, icon: 'CalendarHeart', titleEn: 'Two-Month Momentum', titleVi: 'Đà Học Hai Tháng' },
+  { slug: 'days-90', count: 90, xp: 1400, icon: 'CalendarDays', titleEn: 'Ninety-Day Discipline', titleVi: 'Kỷ Luật Chín Mươi Ngày' },
+  { slug: 'days-120', count: 120, xp: 2000, icon: 'CalendarDays', titleEn: 'Seasoned Streaker', titleVi: 'Chuỗi Dài Dạn Dày' },
+  { slug: 'days-180', count: 180, xp: 3200, icon: 'CalendarSync', titleEn: 'Half-Year Habit', titleVi: 'Thói Quen Nửa Năm' },
+].map((milestone) => ({
+  slug: milestone.slug,
+  title_en: milestone.titleEn,
+  title_vi: milestone.titleVi,
+  description_en: `Practice on ${milestone.count} different days.`,
+  description_vi: `Luyện tập trong ${milestone.count} ngày khác nhau.`,
+  category: 'streak',
+  xp_reward: milestone.xp,
+  icon: milestone.icon,
+  check: async (uid: string, db: any) => (await countPracticeDays(uid, db)) >= milestone.count,
+}));
+
+const scoreMilestoneDefs: AchievementDef[] = [
+  { slug: 'score80-5', threshold: 80, count: 5, xp: 180, icon: 'Star', titleEn: 'High Scorer Streak I', titleVi: 'Chuỗi Điểm Cao I' },
+  { slug: 'score80-10', threshold: 80, count: 10, xp: 320, icon: 'Star', titleEn: 'High Scorer Streak II', titleVi: 'Chuỗi Điểm Cao II' },
+  { slug: 'score90-3', threshold: 90, count: 3, xp: 220, icon: 'Award', titleEn: 'Top Performer I', titleVi: 'Hiệu Suất Đỉnh Cao I' },
+  { slug: 'score90-5', threshold: 90, count: 5, xp: 380, icon: 'Award', titleEn: 'Top Performer II', titleVi: 'Hiệu Suất Đỉnh Cao II' },
+  { slug: 'score90-10', threshold: 90, count: 10, xp: 700, icon: 'Medal', titleEn: 'Top Performer III', titleVi: 'Hiệu Suất Đỉnh Cao III' },
+  { slug: 'perfect-3', threshold: 100, count: 3, xp: 420, icon: 'Crown', titleEn: 'Perfect Score I', titleVi: 'Điểm Tuyệt Đối I' },
+  { slug: 'perfect-10', threshold: 100, count: 10, xp: 950, icon: 'Crown', titleEn: 'Perfect Score II', titleVi: 'Điểm Tuyệt Đối II' },
+  { slug: 'perfect-20', threshold: 100, count: 20, xp: 1800, icon: 'Gem', titleEn: 'Perfect Score III', titleVi: 'Điểm Tuyệt Đối III' },
+  { slug: 'score80-25', threshold: 80, count: 25, xp: 1200, icon: 'BadgeCheck', titleEn: 'High Scorer Streak III', titleVi: 'Chuỗi Điểm Cao III' },
+].map((milestone) => ({
+  slug: milestone.slug,
+  title_en: milestone.titleEn,
+  title_vi: milestone.titleVi,
+  description_en: `Score at least ${milestone.threshold}% in ${milestone.count} practice sessions.`,
+  description_vi: `Đạt ít nhất ${milestone.threshold}% trong ${milestone.count} phiên luyện tập.`,
+  category: 'performance',
+  xp_reward: milestone.xp,
+  icon: milestone.icon,
+  check: async (uid: string, db: any) => (await countScoreThresholdAttempts(uid, db, milestone.threshold)) >= milestone.count,
+}));
+
+const aceMilestoneDefs: AchievementDef[] = [
+  { slug: 'ace-3', count: 3, xp: 260, icon: 'BadgeCheck', titleEn: 'Ace I', titleVi: 'Ace I' },
+  { slug: 'ace-5', count: 5, xp: 340, icon: 'BadgeCheck', titleEn: 'Ace II', titleVi: 'Ace II' },
+  { slug: 'ace-10', count: 10, xp: 520, icon: 'Medal', titleEn: 'Ace III', titleVi: 'Ace III' },
+  { slug: 'ace-15', count: 15, xp: 760, icon: 'Medal', titleEn: 'Ace IV', titleVi: 'Ace IV' },
+  { slug: 'ace-20', count: 20, xp: 980, icon: 'Award', titleEn: 'Ace V', titleVi: 'Ace V' },
+  { slug: 'ace-25', count: 25, xp: 1250, icon: 'Award', titleEn: 'Ace VI', titleVi: 'Ace VI' },
+  { slug: 'ace-30', count: 30, xp: 1550, icon: 'Trophy', titleEn: 'Ace VII', titleVi: 'Ace VII' },
+  { slug: 'ace-35', count: 35, xp: 1900, icon: 'Trophy', titleEn: 'Ace VIII', titleVi: 'Ace VIII' },
+  { slug: 'ace-40', count: 40, xp: 2300, icon: 'Crown', titleEn: 'Ace IX', titleVi: 'Ace IX' },
+  { slug: 'ace-50', count: 50, xp: 3000, icon: 'Crown', titleEn: 'Ace X', titleVi: 'Ace X' },
+].map((milestone) => ({
+  slug: milestone.slug,
+  title_en: milestone.titleEn,
+  title_vi: milestone.titleVi,
+  description_en: `Complete ${milestone.count} practice sessions with a score above 90%.`,
+  description_vi: `Hoàn thành ${milestone.count} phiên luyện tập với điểm số trên 90%.`,
+  category: 'performance',
+  xp_reward: milestone.xp,
+  icon: milestone.icon,
+  check: async (uid: string, db: any) =>
+    (await db.testAttempt.count({
+      where: {
+        user_id: uid,
+        is_completed: true,
+        is_practice: true,
+        total_score: { gt: 90 }
+      }
+    })) >= milestone.count,
+}));
+
+const evidenceMilestoneDefs: AchievementDef[] = [
+  { slug: 'evidence-3', count: 3, xp: 120, icon: 'Camera', titleEn: 'Evidence Collector I', titleVi: 'Nhà Sưu Tầm Minh Chứng I' },
+  { slug: 'evidence-5', count: 5, xp: 180, icon: 'Camera', titleEn: 'Evidence Collector II', titleVi: 'Nhà Sưu Tầm Minh Chứng II' },
+  { slug: 'evidence-10', count: 10, xp: 320, icon: 'Images', titleEn: 'Evidence Collector III', titleVi: 'Nhà Sưu Tầm Minh Chứng III' },
+  { slug: 'evidence-20', count: 20, xp: 620, icon: 'Images', titleEn: 'Evidence Archivist', titleVi: 'Người Lưu Trữ Minh Chứng' },
+  { slug: 'evidence-30', count: 30, xp: 900, icon: 'FolderOpen', titleEn: 'Evidence Curator', titleVi: 'Người Tuyển Chọn Minh Chứng' },
+  { slug: 'evidence-50', count: 50, xp: 1400, icon: 'FolderArchive', titleEn: 'Evidence Master', titleVi: 'Bậc Thầy Minh Chứng' },
+  { slug: 'evidence-75', count: 75, xp: 2200, icon: 'FolderGit2', titleEn: 'Evidence Historian', titleVi: 'Nhà Sử Học Minh Chứng' },
+].map((milestone) => ({
+  slug: milestone.slug,
+  title_en: milestone.titleEn,
+  title_vi: milestone.titleVi,
+  description_en: `Upload ${milestone.count} pieces of learning evidence.`,
+  description_vi: `Tải lên ${milestone.count} minh chứng học tập.`,
+  category: 'social',
+  xp_reward: milestone.xp,
+  icon: milestone.icon,
+  check: async (uid: string, db: any) => (await countEvidenceUploads(uid, db)) >= milestone.count,
+}));
+
+const fastCompletionDefs: AchievementDef[] = [
+  { slug: 'speed-3', count: 3, xp: 220, icon: 'Wind', titleEn: 'Speed Runner I', titleVi: 'Chạy Nhanh I' },
+  { slug: 'speed-5', count: 5, xp: 340, icon: 'Wind', titleEn: 'Speed Runner II', titleVi: 'Chạy Nhanh II' },
+  { slug: 'speed-10', count: 10, xp: 620, icon: 'Gauge', titleEn: 'Speed Runner III', titleVi: 'Chạy Nhanh III' },
+  { slug: 'speed-20', count: 20, xp: 1100, icon: 'Gauge', titleEn: 'Flash Finisher', titleVi: 'Về Đích Chớp Nhoáng' },
+].map((milestone) => ({
+  slug: milestone.slug,
+  title_en: milestone.titleEn,
+  title_vi: milestone.titleVi,
+  description_en: `Complete ${milestone.count} practice sessions in under 3 minutes.`,
+  description_vi: `Hoàn thành ${milestone.count} phiên luyện tập trong dưới 3 phút.`,
+  category: 'speed',
+  xp_reward: milestone.xp,
+  icon: milestone.icon,
+  check: async (uid: string, db: any) => {
+    const attempts: any[] = await db.testAttempt.findMany({
+      where: { user_id: uid, is_completed: true, is_practice: true },
+      select: { started_at: true, completed_at: true }
+    });
+    return attempts.filter((a: any) => a.completed_at && (a.completed_at.getTime() - a.started_at.getTime()) < 3 * 60 * 1000).length >= milestone.count;
+  },
+}));
+
+const comebackMilestoneDefs: AchievementDef[] = [
+  { slug: 'comeback-2', count: 2, xp: 160, icon: 'RefreshCw', titleEn: 'Back Again I', titleVi: 'Trở Lại I' },
+  { slug: 'comeback-3', count: 3, xp: 260, icon: 'RefreshCw', titleEn: 'Back Again II', titleVi: 'Trở Lại II' },
+  { slug: 'comeback-5', count: 5, xp: 450, icon: 'RotateCcw', titleEn: 'Resilient Learner', titleVi: 'Người Học Kiên Cường' },
+].map((milestone) => ({
+  slug: milestone.slug,
+  title_en: milestone.titleEn,
+  title_vi: milestone.titleVi,
+  description_en: `Return to practice after a 7+ day break ${milestone.count} times.`,
+  description_vi: `Quay lại luyện tập sau quãng nghỉ hơn 7 ngày ${milestone.count} lần.`,
+  category: 'recovery',
+  xp_reward: milestone.xp,
+  icon: milestone.icon,
+  check: async (uid: string, db: any) => {
+    const attempts: any[] = await db.testAttempt.findMany({
+      where: { user_id: uid, is_completed: true, is_practice: true },
+      orderBy: { completed_at: 'asc' },
+      select: { completed_at: true }
+    });
+    let comebacks = 0;
+    for (let i = 1; i < attempts.length; i++) {
+      const prev = attempts[i - 1].completed_at as Date | null;
+      const curr = attempts[i].completed_at as Date | null;
+      if (prev && curr && (curr.getTime() - prev.getTime()) > 7 * 24 * 60 * 60 * 1000) {
+        comebacks++;
+      }
+    }
+    return comebacks >= milestone.count;
+  },
+}));
+
 export const ACHIEVEMENT_DEFS: AchievementDef[] = [
   // ── PROGRESS ──────────────────────────────────────────────────────────────
   {
@@ -363,6 +618,15 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     category: 'recovery', xp_reward: 500, icon: 'Diamond',
     check: async (uid, db) => (await db.testAttempt.count({ where: { user_id: uid, is_completed: true, is_practice: true, total_score: { gte: 100 } } })) >= 5,
   },
+  ...practiceMilestoneDefs,
+  ...uniqueLessonMilestoneDefs,
+  ...gradeMilestoneDefs,
+  ...practiceDayMilestoneDefs,
+  ...scoreMilestoneDefs,
+  ...aceMilestoneDefs,
+  ...evidenceMilestoneDefs,
+  ...fastCompletionDefs,
+  ...comebackMilestoneDefs,
 ];
 
 // ─── Seed achievements into DB ────────────────────────────────────────────────

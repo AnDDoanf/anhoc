@@ -40,12 +40,9 @@ export const levelService = {
         data: { user_id: userId, total_xp: 0, level: 1 }
       });
     }
-    console.log(`Current stats for user ${userId}: Total XP ${stats.total_xp}`);
     // 3. Recompute level from cumulative XP total
     const nextTotalXp = (stats.total_xp || 0) + amount;
-    console.log(`User ${userId} gains ${amount} XP (Total: ${nextTotalXp}) for reason: ${reason}`);
     const nextLevel = levelService.getLevelFromTotalXp(nextTotalXp);
-    console.log(`User ${userId} is now level ${nextLevel}`);
     // 4. Update stats
     return await prisma.studentStats.update({
       where: { user_id: userId },

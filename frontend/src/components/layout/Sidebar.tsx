@@ -76,7 +76,16 @@ export default function Sidebar() {
           acc[gradeSlug].lessons.push(lesson);
           return acc;
         }, {});
-        setLessonGroups(Object.values(groups));
+        const sortedGroups = Object.values(groups).sort((a: any, b: any) => {
+          const getGradeNumber = (grade: string) => {
+            const match = grade.match(/\d+/);
+            return match ? parseInt(match[0], 10) : 999;
+          };
+
+          return getGradeNumber(a.grade) - getGradeNumber(b.grade);
+        });
+
+        setLessonGroups(sortedGroups);
       } catch (err) {
         console.error("Failed to load sidebar lessons:", err);
       }
