@@ -63,7 +63,8 @@
     "section": "Section {n}",
     "recent": "Recent Lessons",
     "proTip": "Pro Tip",
-    "proTipDescription": "Use the Table of Contents to quickly jump between concepts. Your progress is saved automatically."
+    "proTipDescription1": "- Use the Table of Contents to quickly jump between concepts.",
+    "proTipDescription2": "- Reload page if you don't see the math geometry."
   },
   "Path": {
     "title": "Learning Path",

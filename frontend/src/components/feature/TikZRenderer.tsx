@@ -1,3 +1,4 @@
+// src/components/feature/TikZRenderer.tsx
 "use client";
 
 import { useEffect, useRef } from "react";
@@ -20,20 +21,15 @@ export default function TikZRenderer({ children }: TikZRendererProps) {
   const pathname = usePathname();
 
   useEffect(() => {
-    // We target only the container for this specific lesson
     const triggerTikZ = () => {
       if (window.tikzjax && containerRef.current) {
         console.log("Targeted TikZJax processing for:", pathname);
-        // Calling process with an element is much more reliable for SPAs
         window.tikzjax.process(containerRef.current);
       }
     };
 
-    // Immediate attempt
     triggerTikZ();
 
-    // Polling strategy: Catch the engine if it takes time to load or 
-    // if React updates significantly after the first mount.
     const pollInterval = setInterval(() => {
       const scripts = containerRef.current?.querySelectorAll('script[type="text/tikz"]');
       const processed = containerRef.current?.querySelectorAll('svg');

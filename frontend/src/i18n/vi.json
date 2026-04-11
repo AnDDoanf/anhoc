@@ -63,7 +63,8 @@
     "section": "Phần {n}",
     "recent": "Bài học gần đây",
     "proTip": "Mẹo",
-    "proTipDescription": "Sử dụng Mục lục để nhanh chóng chuyển đổi giữa các khái niệm. Tiến độ của bạn được lưu tự động."
+    "proTipDescription1": "- Sử dụng Mục lục để nhanh chóng chuyển đổi giữa các khái niệm.",
+    "proTipDescription2": "- Reload trang nếu không thấy hình học."
   },
   "Path": {
     "title": "Lộ trình Học tập",

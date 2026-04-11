@@ -1,14 +1,14 @@
+// src/components/feature/LearningCard.tsx
 "use client";
 
-import { useTranslations, useLocale } from "next-intl";
 import {
   Book,
+  Bookmark,
   ChevronRight,
   Clock,
-  MapPin,
-  Bookmark,
   Layers
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 
 interface LearningCardProps {

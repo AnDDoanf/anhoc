@@ -1,14 +1,15 @@
+// src/components/feature/PracticeCard.tsx
 "use client";
 
 import { useTranslations, useLocale } from "next-intl";
-import { 
-  ArrowRight, 
-  BarChart2, 
-  Target, 
-  Calculator, 
-  Brain, 
-  Shapes, 
-  Hash 
+import {
+  ArrowRight,
+  BarChart2,
+  Target,
+  Calculator,
+  Brain,
+  Shapes,
+  Hash
 } from "lucide-react";
 import Link from "next/link";
 import { LessonPractice } from "@/mockData/practiceData";
@@ -45,7 +46,7 @@ export default function PracticeCard({ practice }: PracticeCardProps) {
     <div className="group relative bg-sol-surface/30 rounded-3xl p-6 border border-sol-border/10 shadow-sm hover:shadow-2xl hover:bg-sol-surface/50 transition-all duration-500 hover:-translate-y-1 overflow-hidden">
       {/* Decorative Gradient Glow */}
       <div className="absolute -top-24 -right-24 w-48 h-48 bg-sol-accent/5 rounded-full blur-3xl group-hover:bg-sol-accent/10 transition-colors" />
-      
+
       <div className="relative z-10 space-y-4">
         <div className="flex justify-between items-start">
           <div className={`p-3 rounded-2xl bg-sol-surface border border-sol-border/10 text-sol-accent shadow-sm group-hover:scale-110 transition-transform duration-500`}>
@@ -72,7 +73,7 @@ export default function PracticeCard({ practice }: PracticeCardProps) {
           </div>
         </div>
 
-        <Link 
+        <Link
           href={`/student/practice/${practice.gradeId}/${practice.id}`}
           className="flex items-center justify-between w-full mt-4 px-6 py-3 bg-sol-accent text-sol-bg rounded-2xl font-bold text-sm hover:bg-sol-accent/90 transition-all group/btn shadow-md hover:shadow-sol-accent/20"
         >

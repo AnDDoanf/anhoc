@@ -1,3 +1,4 @@
+// src/components/feature/LearningRightSidebar.tsx
 import React from "react";
 import { useTranslations } from "next-intl";
 interface LearningRightSidebarProps {
@@ -16,7 +17,10 @@ export default function LearningRightSidebar({ children }: LearningRightSidebarP
           <div className="p-4 rounded-xl bg-sol-accent/5 border border-sol-accent/10">
             <h4 className="text-xs font-bold text-sol-accent mb-1 uppercase tracking-wider">{t("proTip")}</h4>
             <p className="text-[11px] text-sol-muted leading-relaxed">
-              {t("proTipDescription")}
+              {t("proTipDescription1")}
+            </p>
+            <p className="text-[11px] text-sol-muted leading-relaxed">
+              {t("proTipDescription2")}
             </p>
           </div>
         </div>

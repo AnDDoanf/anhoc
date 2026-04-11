@@ -1,3 +1,4 @@
+// src/components/feature/TableOfContents.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -51,7 +52,6 @@ export default function TableOfContents({ toc }: TableOfContentsProps) {
         top: offsetPosition,
         behavior: "smooth",
       });
-      // Update hash without scrolling
       history.pushState(null, "", `#${id}`);
     }
   };
@@ -68,7 +68,6 @@ export default function TableOfContents({ toc }: TableOfContentsProps) {
       </div>
 
       <nav className="relative">
-        {/* Vertical line indicator */}
         <div className="absolute left-[3px] top-2 bottom-2 w-[1px] bg-sol-border/20" />
 
         <ul className="space-y-1">
@@ -87,7 +86,6 @@ export default function TableOfContents({ toc }: TableOfContentsProps) {
                     : "text-sol-muted hover:text-sol-text hover:translate-x-1"}
                 `}
               >
-                {/* Active dot indicator */}
                 {activeId === item.id && (
                   <div className="absolute left-[1px] w-1 h-4 bg-sol-accent rounded-full animate-in fade-in slide-in-from-left-1 duration-300" />
                 )}
