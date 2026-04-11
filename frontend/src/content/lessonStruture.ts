@@ -24,6 +24,16 @@ const lessonStructure = [
         title_vi: "Số thập phân",
         title_en: "Decimal numbers"
       },
+      {
+        id: "lesson-7",
+        title_vi: "Tính đối xứng",
+        title_en: "Symmetry"
+      },
+      {
+        id: "lesson-8",
+        title_vi: "Điểm và Đường thẳng",
+        title_en: "Point and Line"
+      },
     ],
   },
 ];

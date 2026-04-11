@@ -14,8 +14,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const messages = await getMessages();
 
   return (
-    <html lang="en" className="h-full" suppressHydrationWarning>
+        <html lang="en" className="h-full" suppressHydrationWarning>
       <head>
+        <link rel="stylesheet" href="https://tikzjax.com/v1/fonts.css" />
+        <script src="https://tikzjax.com/v1/tikzjax.js" async></script>
         <script
           dangerouslySetInnerHTML={{
             __html: `
