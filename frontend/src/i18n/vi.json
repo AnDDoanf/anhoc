@@ -147,6 +147,12 @@
     "formula": "Công thức",
     "ref": "Tham chiếu",
     "global": "Toàn cầu",
+    "filters": {
+      "templateType": "Loại mẫu",
+      "lesson": "Bài học",
+      "allTemplateTypes": "Tất cả loại mẫu",
+      "allLessons": "Tất cả bài học"
+    },
     "deleteConfirm": "Bạn có chắc chắn muốn xóa mẫu này không?",
     "deleteError": "Xóa thất bại. Đảm bảo nó không bị khóa bởi một bài kiểm tra.",
     "player": {

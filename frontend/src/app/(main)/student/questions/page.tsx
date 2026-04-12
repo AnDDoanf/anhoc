@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { Database, PlusCircle, Loader2, Code2 } from "lucide-react";
 import CreateTemplateModal from "@/components/feature/CreateTemplateModal";
 import PreviewTemplateModal from "@/components/feature/PreviewTemplateModal";
@@ -11,11 +11,14 @@ import Can from "@/components/auth/Can";
 
 export default function QuestionsAdminPage() {
   const t = useTranslations("Questions");
+  const locale = useLocale();
   const [templates, setTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editTemplateId, setEditTemplateId] = useState<string | null>(null);
   const [previewTemplate, setPreviewTemplate] = useState<any | null>(null);
+  const [templateTypeFilter, setTemplateTypeFilter] = useState("all");
+  const [lessonIdFilter, setLessonIdFilter] = useState("all");
 
   const fetchTemplates = async () => {
     try {
@@ -53,6 +56,64 @@ export default function QuestionsAdminPage() {
     setIsModalOpen(false);
     setTimeout(() => setEditTemplateId(null), 300);
   };
+
+  const templateTypeOptions = Array.from(
+    new Set(
+      templates
+        .map((template) => template.template_type)
+        .filter((value): value is string => Boolean(value))
+    )
+  ).sort((a, b) => a.localeCompare(b));
+
+  const lessonOptions = Array.from(
+    new Map(
+      templates
+        .filter((template) => template.lesson_id || template.lesson?.id)
+        .map((template) => {
+          const lessonId = template.lesson_id || template.lesson?.id;
+          const lessonTitle = template.lesson
+            ? (locale === "vi" ? template.lesson.title_vi : template.lesson.title_en)
+            : lessonId;
+
+          return [
+            lessonId,
+            {
+              id: lessonId,
+              title: lessonTitle || lessonId,
+            },
+          ];
+        })
+    ).values()
+  ).sort((a, b) => a.title.localeCompare(b.title));
+
+  const visibleTemplates = [...templates]
+    .filter((template) => {
+      if (templateTypeFilter !== "all" && template.template_type !== templateTypeFilter) {
+        return false;
+      }
+
+      const currentLessonId = template.lesson_id || template.lesson?.id || "";
+      if (lessonIdFilter !== "all" && currentLessonId !== lessonIdFilter) {
+        return false;
+      }
+
+      return true;
+    })
+    .sort((a, b) => {
+      const templateTypeCompare = (a.template_type || "").localeCompare(b.template_type || "");
+      if (templateTypeCompare !== 0) {
+        return templateTypeCompare;
+      }
+
+      const lessonA = a.lesson_id || a.lesson?.id || "";
+      const lessonB = b.lesson_id || b.lesson?.id || "";
+      const lessonCompare = lessonA.localeCompare(lessonB);
+      if (lessonCompare !== 0) {
+        return lessonCompare;
+      }
+
+      return (a.id || "").localeCompare(b.id || "");
+    });
 
   if (loading) {
     return (
@@ -96,9 +157,49 @@ export default function QuestionsAdminPage() {
         </div>
       </header>
 
+      <section className="rounded-[2rem] border border-sol-border/10 bg-sol-surface/20 p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="text-xs font-black uppercase tracking-widest text-sol-muted">
+              {t("filters.templateType")}
+            </label>
+            <select
+              value={templateTypeFilter}
+              onChange={(e) => setTemplateTypeFilter(e.target.value)}
+              className="w-full bg-sol-bg border border-sol-border/20 rounded-2xl px-6 py-4 text-sol-text focus:ring-2 focus:ring-sol-accent/30 transition-all font-medium"
+            >
+              <option value="all">{t("filters.allTemplateTypes")}</option>
+              {templateTypeOptions.map((templateType) => (
+                <option key={templateType} value={templateType}>
+                  {templateType}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-black uppercase tracking-widest text-sol-muted">
+              {t("filters.lesson")}
+            </label>
+            <select
+              value={lessonIdFilter}
+              onChange={(e) => setLessonIdFilter(e.target.value)}
+              className="w-full bg-sol-bg border border-sol-border/20 rounded-2xl px-6 py-4 text-sol-text focus:ring-2 focus:ring-sol-accent/30 transition-all font-medium"
+            >
+              <option value="all">{t("filters.allLessons")}</option>
+              {lessonOptions.map((lesson) => (
+                <option key={lesson.id} value={lesson.id}>
+                  {lesson.title}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </section>
+
       {/* Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {templates.map(tmpl => (
+        {visibleTemplates.map(tmpl => (
           <TemplateCard
             key={tmpl.id}
             tmpl={tmpl}

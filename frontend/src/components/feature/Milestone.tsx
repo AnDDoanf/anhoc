@@ -30,7 +30,7 @@ export default function Milestone({
   const commonT = useTranslations("Common");
 
   return (
-    <div className={`relative flex items-center justify-center w-full min-h-[300px] py-10 md:py-20 lg:py-24`}>
+    <div className={`relative flex items-center justify-center w-full min-h-[300px]`}>
       {!isLast && (
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 w-1.5 h-full bg-gradient-to-b from-sol-accent/60 to-sol-accent/20 z-0" />
       )}

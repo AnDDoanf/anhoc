@@ -130,7 +130,7 @@ export default function Sidebar() {
         {/* Level Badge */}
         {userLevel !== null && (
           <div className={`flex items-center transition-all duration-500
-            ${isCollapsed ? "absolute top-[70px] opacity-100 scale-75" : "opacity-100 scale-100"}
+            ${isCollapsed ? "absolute top-[50px] mr-1 opacity-100 scale-75" : "opacity-100 scale-100"}
           `}>
             <div className="flex items-center gap-1 bg-sol-bg/50 border border-sol-accent/30 px-2 py-0.5 rounded-full shadow-sm">
               <span className="text-[10px] font-black text-sol-muted uppercase tracking-tighter">LV</span>
