@@ -151,12 +151,12 @@ export default function QuestionsAdminPage() {
     <div className="max-w-7xl mx-auto px-4 py-12 space-y-16">
 
       {/* Header */}
-      <header className="relative p-10 md:p-16 rounded-[3rem] bg-sol-surface/30 border border-sol-border/10 overflow-hidden group">
+      <header className="relative p-6 md:p-16 rounded-[3rem] bg-sol-surface/30 border border-sol-border/10 overflow-hidden group">
         <div className="absolute top-0 right-0 p-10 opacity-10 group-hover:scale-110 transition-transform duration-1000">
           <Database size={160} className="text-sol-accent" />
         </div>
 
-        <div className="relative z-10 max-w-4xl flex justify-between items-start">
+        <div className="relative z-10 w-full lg:max-w-4xl flex-col gap-1 lg:flex-row flex justify-between items-start">
           <div>
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-sol-accent/10 border border-sol-accent/20 text-sol-accent text-xs font-bold uppercase tracking-widest mb-6">
               <Code2 size={14} />

@@ -1,16 +1,18 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useTranslations, useLocale } from "next-intl";
 import {
-  generateVars, formatTemplate, checkAnswer,
-  evaluateFormula, generateChoices
+  checkAnswer,
+  evaluateFormula,
+  formatTemplate,
+  generateVars
 } from "@/utils/mathService";
-import { RefreshCw, CheckCircle2, XCircle, Send } from "lucide-react";
-import ReactMarkdown from "react-markdown";
-import remarkMath from "remark-math";
-import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
+import { CheckCircle2, RefreshCw, Send, XCircle } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import React, { useEffect, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import rehypeKatex from "rehype-katex";
+import remarkMath from "remark-math";
 
 interface QuestionPlayerProps {
   template: any;
@@ -29,7 +31,6 @@ export default function QuestionPlayer({ template }: QuestionPlayerProps) {
   const [allExpectedAnswers, setAllExpectedAnswers] = useState<{ formula: string; value: number | null }[]>([]);
 
   const getAcceptedFormulas = (): string[] => {
-    // Returns the extras (index 1+); index 0 is the primary formula
     return (template.accepted_formulas || []).slice(1);
   };
 
@@ -39,12 +40,10 @@ export default function QuestionPlayer({ template }: QuestionPlayerProps) {
     setCurrentTextEn(formatTemplate(template.body_template_en, generated));
     setCurrentTextVi(formatTemplate(template.body_template_vi, generated));
 
-    // Evaluate primary formula (index 0)
     const primaryFormula = template.accepted_formulas?.[0] || "";
     const correct = evaluateFormula(primaryFormula, generated);
     setRevealAnswer(correct);
 
-    // Evaluate ALL accepted formulas for the debug panel
     const allFormulas = (template.accepted_formulas || []).filter((f: string) => f.trim());
 
     setAllExpectedAnswers(

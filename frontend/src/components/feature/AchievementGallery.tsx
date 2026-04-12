@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Achievement, achievementService } from "@/services/achievementService";
+import { Loader2, Trophy } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { achievementService, Achievement } from "@/services/achievementService";
+import { useEffect, useState } from "react";
 import AchievementCard from "./AchievementCard";
-import { Trophy, Filter, Loader2 } from "lucide-react";
 
 export default function AchievementGallery() {
   const t = useTranslations("Achievements");
@@ -27,14 +27,8 @@ export default function AchievementGallery() {
     }
   };
 
-  const categories = [
-    "all", "progress", "performance", "streak", "time", "speed", "social", "recovery"
-  ];
-
-  const filtered = filter === "all" 
-    ? achievements 
-    : achievements.filter(a => a.category === filter);
-
+  const categories = ["all", "progress", "performance", "streak", "time", "speed", "social", "recovery"];
+  const filtered = filter === "all" ? achievements : achievements.filter(a => a.category === filter);
   const earnedCount = achievements.filter(a => a.earned).length;
 
   if (loading) {
@@ -47,45 +41,46 @@ export default function AchievementGallery() {
   }
 
   return (
-    <div className="space-y-12">
-      {/* Header & Stats */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
-        <div className="space-y-4">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-sol-accent/10 border border-sol-accent/20 text-sol-accent text-xs font-bold uppercase tracking-widest">
-            <Trophy size={14} />
+    <div className="max-w-full space-y-6 overflow-x-hidden md:space-y-12">
+      {/* Header & Stats - Stacked on Mobile, Row on Desktop */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="min-w-0 space-y-2 text-left">
+          <div className="inline-flex items-center gap-2 rounded-full border border-sol-accent/20 bg-sol-accent/10 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-sol-accent sm:px-3 sm:py-1.5 md:text-xs">
+            <Trophy size={11} />
             <span>{t("title")}</span>
           </div>
-          <h2 className="text-4xl md:text-5xl font-black text-sol-text tracking-tight">
+          <h2 className="max-w-[11ch] text-[1.7rem] font-black leading-[1.05] tracking-tight text-sol-text sm:text-3xl md:max-w-none md:text-5xl">
             Hall of Achievements
           </h2>
-          <p className="text-xl text-sol-muted max-w-xl">
+          <p className="max-w-xl text-[13px] leading-relaxed text-sol-muted sm:text-sm md:max-w-2xl md:text-xl">
             {t("subtitle")}
           </p>
         </div>
 
-        <div className="bg-sol-surface p-6 rounded-[2rem] border border-sol-border/10 shadow-sm flex items-center gap-6">
-           <div className="text-center">
-             <div className="text-3xl font-black text-sol-accent">{earnedCount}</div>
-             <div className="text-[10px] font-bold text-sol-muted uppercase tracking-wider">Collected</div>
+        {/* Stats Card - Optimized for narrow screens */}
+        <div className="grid w-full grid-cols-2 gap-2 rounded-2xl border border-sol-border/10 bg-sol-surface p-3 shadow-sm sm:flex sm:flex-wrap sm:items-center sm:justify-around sm:gap-4 sm:p-4 md:rounded-[2rem] md:p-6 lg:w-auto lg:min-w-[220px] lg:justify-start lg:gap-6">
+           <div className="text-center sm:min-w-[70px]">
+             <div className="text-xl font-black text-sol-accent sm:text-2xl md:text-3xl">{earnedCount}</div>
+             <div className="text-[9px] font-bold text-sol-muted uppercase tracking-wider">Collected</div>
            </div>
-           <div className="w-px h-10 bg-sol-border/20" />
-           <div className="text-center">
-             <div className="text-3xl font-black text-sol-text">{achievements.length}</div>
-             <div className="text-[10px] font-bold text-sol-muted uppercase tracking-wider">Total</div>
+           <div className="hidden h-8 w-px bg-sol-border/20 sm:block" />
+           <div className="text-center sm:min-w-[70px]">
+             <div className="text-xl font-black text-sol-text sm:text-2xl md:text-3xl">{achievements.length}</div>
+             <div className="text-[9px] font-bold text-sol-muted uppercase tracking-wider">Total</div>
            </div>
         </div>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="flex items-center gap-2 p-1.5 bg-sol-surface/50 rounded-2xl border border-sol-border/5 overflow-x-auto scrollbar-hide">
+      {/* Filter Tabs - Forced Scroll with No-Scrollbar */}
+      <div className="flex items-center gap-2 overflow-x-auto rounded-xl border border-sol-border/5 bg-sol-surface/50 p-1 no-scrollbar sm:flex-wrap">
         {categories.map(cat => (
           <button
             key={cat}
             onClick={() => setFilter(cat)}
-            className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap
+            className={`shrink-0 rounded-lg px-2.5 py-1.5 text-[11px] font-bold whitespace-nowrap transition-all sm:px-3 sm:py-2 sm:text-xs md:px-4 md:text-sm
               ${filter === cat 
-                ? "bg-sol-accent text-sol-bg shadow-lg shadow-sol-accent/20" 
-                : "text-sol-muted hover:text-sol-text hover:bg-sol-surface"
+                ? "bg-sol-accent text-sol-bg shadow-md" 
+                : "text-sol-muted hover:text-sol-text"
               }
             `}
           >
@@ -94,8 +89,8 @@ export default function AchievementGallery() {
         ))}
       </div>
 
-      {/* Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {/* Grid - 1 col on mobile, 2 on tablet, 3+ on desktop */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:gap-6 lg:grid-cols-3 xl:grid-cols-4">
         {filtered.map(a => (
           <AchievementCard key={a.id} achievement={a} />
         ))}

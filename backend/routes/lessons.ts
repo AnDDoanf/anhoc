@@ -96,24 +96,35 @@ router.post('/:id/practice', authenticate, async (req, res) => {
       }
     });
 
-    // 3. Generate 20 snapshots randomly chosen from the templates
+    // Generate question snapshots
     const questionsToCreate = [];
-    const count = Math.min(20, templates.length * 5); // Allow some repetition if few templates
-    for (let i = 0; i < count; i++) {
-      // Pick a random template
-      const template = templates[Math.floor(Math.random() * templates.length)];
-      // Generate random variables based on the template's logic config
+    const targetCount = Math.min(20, templates.length * 5);
+
+    let templatePool = [];
+    const repeatsPerTemplate = Math.ceil(targetCount / templates.length);
+
+    for (let i = 0; i < repeatsPerTemplate; i++) {
+      templatePool = templatePool.concat(templates);
+    }
+
+    for (let i = templatePool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [templatePool[i], templatePool[j]] = [templatePool[j], templatePool[i]];
+    }
+
+    const selection = templatePool.slice(0, targetCount);
+
+    for (const template of selection) {
       const vars = MathService.generateVars(template.logic_config);
       
-      // Pre-calculate all valid answers
       const right_answers = template.accepted_formulas
         .map(f => MathService.evaluateFormula(f, vars))
-        .filter(ans => ans !== null) as string[];
+        .filter(ans => ans !== null);
 
       questionsToCreate.push({
         attempt_id: attempt.id,
         template_id: template.id,
-        generated_variables: vars as any,
+        generated_variables: vars,
         right_answers: right_answers
       });
     }

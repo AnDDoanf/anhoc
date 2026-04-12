@@ -8,11 +8,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       {/* Sidebar is only visible here */}
       <Sidebar />
       
-      <div className="flex flex-col flex-1 relative">
+      <div className="relative flex min-w-0 flex-1 flex-col">
         {/* Settingbar stays on top of the main content area */}
         <Settingbar />
         
-        <main className="flex-grow p-4 md:p-8">
+        <main className="min-w-0 flex-grow p-3 sm:p-4 md:p-8">
           {children}
         </main>
         

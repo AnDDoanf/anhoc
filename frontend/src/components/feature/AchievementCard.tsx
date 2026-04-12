@@ -60,7 +60,7 @@ export default function AchievementCard({ achievement }: AchievementCardProps) {
   const description = locale === "vi" ? achievement.description_vi : achievement.description_en;
 
   return (
-    <div className={`group relative p-6 rounded-[2rem] border transition-all duration-500 overflow-hidden
+    <div className={`group relative overflow-hidden rounded-[1.5rem] border p-4 transition-all duration-500 sm:rounded-[2rem] sm:p-6
       ${achievement.earned 
         ? "bg-sol-surface border-sol-accent/20 shadow-lg hover:shadow-sol-accent/10 hover:-translate-y-1" 
         : "bg-sol-surface/30 border-sol-border/5 grayscale opacity-70"
@@ -73,10 +73,10 @@ export default function AchievementCard({ achievement }: AchievementCardProps) {
 
       <div className="relative z-10 space-y-4">
         <div className="flex justify-between items-start">
-          <div className={`p-4 rounded-2xl shadow-sm transition-transform duration-500 group-hover:scale-110
+          <div className={`rounded-xl p-3 shadow-sm transition-transform duration-500 group-hover:scale-110 sm:rounded-2xl sm:p-4
             ${achievement.earned ? "bg-sol-accent/10 text-sol-accent" : "bg-sol-bg text-sol-muted"}
           `}>
-            {achievement.earned ? <IconComponent size={28} /> : <Lock size={28} />}
+            {achievement.earned ? <IconComponent size={24} /> : <Lock size={24} />}
           </div>
           {achievement.earned && (
             <div className="bg-sol-accent text-sol-bg p-1.5 rounded-full shadow-lg">
@@ -86,26 +86,26 @@ export default function AchievementCard({ achievement }: AchievementCardProps) {
         </div>
 
         <div>
-           <h3 className={`text-lg font-bold transition-colors
+           <h3 className={`text-base font-bold transition-colors sm:text-lg
              ${achievement.earned ? "text-sol-text group-hover:text-sol-accent" : "text-sol-muted"}
            `}>
              {title}
            </h3>
-           <p className="text-sm text-sol-muted mt-1 leading-relaxed">
+           <p className="mt-1 text-[13px] leading-relaxed text-sol-muted sm:text-sm">
              {description}
            </p>
         </div>
 
-        <div className="flex items-center justify-between pt-2">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-sol-accent/60 bg-sol-accent/5 px-3 py-1 rounded-full">
+        <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:items-center sm:justify-between">
+          <span className="w-fit rounded-full bg-sol-accent/5 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-sol-accent/60">
             {achievement.category}
           </span>
           {achievement.earned && achievement.earned_at ? (
-            <span className="text-[10px] text-sol-muted">
+            <span className="text-[10px] text-sol-muted sm:text-right">
                {t("earned", { date: format(new Date(achievement.earned_at), "MMM d, yyyy") })}
             </span>
           ) : (
-            <span className="text-[10px] text-sol-muted italic">
+            <span className="text-[10px] italic text-sol-muted sm:text-right">
               {t("locked")}
             </span>
           )}
