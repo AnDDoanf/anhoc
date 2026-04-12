@@ -148,6 +148,8 @@
     "ref": "Ref",
     "global": "Global",
     "filters": {
+      "search": "Search",
+      "searchPlaceholder": "Search by template, lesson, or content",
       "templateType": "Template Type",
       "lesson": "Lesson",
       "allTemplateTypes": "All template types",

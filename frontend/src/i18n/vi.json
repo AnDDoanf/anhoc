@@ -148,6 +148,8 @@
     "ref": "Tham chiếu",
     "global": "Toàn cầu",
     "filters": {
+      "search": "Tìm kiếm",
+      "searchPlaceholder": "Tìm theo mẫu, bài học hoặc nội dung",
       "templateType": "Loại mẫu",
       "lesson": "Bài học",
       "allTemplateTypes": "Tất cả loại mẫu",

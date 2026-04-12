@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useTranslations, useLocale } from "next-intl";
-import { Database, PlusCircle, Loader2, Code2 } from "lucide-react";
+import { Database, PlusCircle, Loader2, Code2, Search } from "lucide-react";
 import CreateTemplateModal from "@/components/feature/CreateTemplateModal";
 import PreviewTemplateModal from "@/components/feature/PreviewTemplateModal";
 import TemplateCard from "@/components/feature/TemplateCard";
@@ -19,6 +19,7 @@ export default function QuestionsAdminPage() {
   const [previewTemplate, setPreviewTemplate] = useState<any | null>(null);
   const [templateTypeFilter, setTemplateTypeFilter] = useState("all");
   const [lessonIdFilter, setLessonIdFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const fetchTemplates = async () => {
     try {
@@ -97,6 +98,29 @@ export default function QuestionsAdminPage() {
         return false;
       }
 
+      const normalizedQuery = searchQuery.trim().toLowerCase();
+      if (!normalizedQuery) {
+        return true;
+      }
+
+      const lessonTitle = template.lesson
+        ? (locale === "vi" ? template.lesson.title_vi : template.lesson.title_en)
+        : "";
+      const searchHaystack = [
+        template.template_type,
+        template.lesson_id,
+        template.body_template_en,
+        template.body_template_vi,
+        lessonTitle,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      if (!searchHaystack.includes(normalizedQuery)) {
+        return false;
+      }
+
       return true;
     })
     .sort((a, b) => {
@@ -158,7 +182,26 @@ export default function QuestionsAdminPage() {
       </header>
 
       <section className="rounded-[2rem] border border-sol-border/10 bg-sol-surface/20 p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2 md:col-span-3">
+            <label className="text-xs font-black uppercase tracking-widest text-sol-muted">
+              {t("filters.search")}
+            </label>
+            <div className="relative">
+              <Search
+                size={18}
+                className="absolute left-5 top-1/2 -translate-y-1/2 text-sol-muted"
+              />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t("filters.searchPlaceholder")}
+                className="w-full bg-sol-bg border border-sol-border/20 rounded-2xl pl-14 pr-6 py-4 text-sol-text focus:ring-2 focus:ring-sol-accent/30 transition-all font-medium"
+              />
+            </div>
+          </div>
+
           <div className="space-y-2">
             <label className="text-xs font-black uppercase tracking-widest text-sol-muted">
               {t("filters.templateType")}
@@ -198,7 +241,7 @@ export default function QuestionsAdminPage() {
       </section>
 
       {/* Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {visibleTemplates.map(tmpl => (
           <TemplateCard
             key={tmpl.id}
