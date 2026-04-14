@@ -35,7 +35,7 @@ export default function AchievementGallery() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
         <Loader2 size={40} className="text-sol-accent animate-spin" />
-        <p className="text-sol-muted animate-pulse font-medium">Polishing trophies...</p>
+        <p className="text-sol-muted animate-pulse font-medium">{t("polishing")}</p>
       </div>
     );
   }
@@ -50,7 +50,7 @@ export default function AchievementGallery() {
             <span>{t("title")}</span>
           </div>
           <h2 className="max-w-[11ch] text-[1.7rem] font-black leading-[1.05] tracking-tight text-sol-text sm:text-3xl md:max-w-none md:text-5xl">
-            Hall of Achievements
+            {t("hallTitle")}
           </h2>
           <p className="max-w-xl text-[13px] leading-relaxed text-sol-muted sm:text-sm md:max-w-2xl md:text-xl">
             {t("subtitle")}
@@ -61,12 +61,12 @@ export default function AchievementGallery() {
         <div className="grid w-full grid-cols-2 gap-2 rounded-2xl border border-sol-border/10 bg-sol-surface p-3 shadow-sm sm:flex sm:flex-wrap sm:items-center sm:justify-around sm:gap-4 sm:p-4 md:rounded-[2rem] md:p-6 lg:w-auto lg:min-w-[220px] lg:justify-start lg:gap-6">
            <div className="text-center sm:min-w-[70px]">
              <div className="text-xl font-black text-sol-accent sm:text-2xl md:text-3xl">{earnedCount}</div>
-             <div className="text-[9px] font-bold text-sol-muted uppercase tracking-wider">Collected</div>
+             <div className="text-[9px] font-bold text-sol-muted uppercase tracking-wider">{t("collected")}</div>
            </div>
            <div className="hidden h-8 w-px bg-sol-border/20 sm:block" />
            <div className="text-center sm:min-w-[70px]">
              <div className="text-xl font-black text-sol-text sm:text-2xl md:text-3xl">{achievements.length}</div>
-             <div className="text-[9px] font-bold text-sol-muted uppercase tracking-wider">Total</div>
+             <div className="text-[9px] font-bold text-sol-muted uppercase tracking-wider">{t("total")}</div>
            </div>
         </div>
       </div>

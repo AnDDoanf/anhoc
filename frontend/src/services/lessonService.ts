@@ -59,8 +59,10 @@ export const lessonService = {
     return response.data;
   },
 
-  startPractice: async (id: string) => {
-    const response = await api.post(`/lessons/${id}/practice`);
+  startPractice: async (id: string, difficulty?: string) => {
+    const response = await api.post(`/lessons/${id}/practice`, {
+      difficulty: difficulty && difficulty !== "all" ? difficulty : undefined,
+    });
     return response.data;
   },
 

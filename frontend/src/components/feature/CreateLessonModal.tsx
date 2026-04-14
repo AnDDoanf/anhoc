@@ -7,6 +7,7 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { lessonService, CreateLessonDTO } from "@/services/lessonService";
+import { useTranslations } from "next-intl";
 
 interface Props {
   isOpen: boolean;
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export default function CreateLessonModal({ isOpen, onClose, onSuccess, editLessonId }: Props) {
+  const t = useTranslations("Learning.modal");
   const [tab, setTab] = useState<"en" | "vi">("vi");
   const [preview, setPreview] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -88,7 +90,7 @@ export default function CreateLessonModal({ isOpen, onClose, onSuccess, editLess
       onClose();
     } catch (err) {
       console.error("Failed to save lesson:", err);
-      alert("Error saving lesson. Check console.");
+      alert(t("saveError"));
     } finally {
       setLoading(false);
     }
@@ -112,8 +114,8 @@ export default function CreateLessonModal({ isOpen, onClose, onSuccess, editLess
               <Code2 size={24} />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-sol-text">{editLessonId ? "Edit Lesson" : "Create New Lesson"}</h2>
-              <p className="text-xs text-sol-muted font-medium uppercase tracking-widest">Administrator Tool</p>
+              <h2 className="text-xl font-bold text-sol-text">{editLessonId ? t("editTitle") : t("createTitle")}</h2>
+              <p className="text-xs text-sol-muted font-medium uppercase tracking-widest">{t("adminTool")}</p>
             </div>
           </div>
           
@@ -123,7 +125,7 @@ export default function CreateLessonModal({ isOpen, onClose, onSuccess, editLess
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${preview ? 'bg-sol-accent text-sol-bg' : 'bg-sol-surface border border-sol-border/10 text-sol-text hover:bg-sol-accent/10'}`}
             >
               {preview ? <Code2 size={16} /> : <Eye size={16} />}
-              {preview ? "Edit Mode" : "Preview Mode"}
+              {preview ? t("editMode") : t("previewMode")}
             </button>
             <button onClick={onClose} className="p-2 hover:bg-sol-accent/10 text-sol-muted hover:text-sol-accent rounded-full transition-colors">
               <X size={24} />
@@ -158,13 +160,13 @@ export default function CreateLessonModal({ isOpen, onClose, onSuccess, editLess
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-black uppercase tracking-widest text-sol-muted pl-1">Lesson Title ({tab.toUpperCase()})</label>
+                  <label className="text-xs font-black uppercase tracking-widest text-sol-muted pl-1">{t("lessonTitle", { lang: tab.toUpperCase() })}</label>
                   <input 
                     type="text"
                     required
                     value={tab === "vi" ? formData.title_vi : formData.title_en}
                     onChange={(e) => setFormData({ ...formData, [tab === "vi" ? "title_vi" : "title_en"]: e.target.value })}
-                    placeholder="e.g. Points, Lines, and Planes..."
+                    placeholder={t("lessonTitlePlaceholder")}
                     className="w-full bg-sol-bg border border-sol-border/20 rounded-2xl px-6 py-4 text-sol-text placeholder-sol-muted/40 focus:outline-none focus:ring-2 focus:ring-sol-accent/30 transition-all font-medium"
                   />
                 </div>
@@ -174,7 +176,7 @@ export default function CreateLessonModal({ isOpen, onClose, onSuccess, editLess
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">
                   <label className="text-xs font-black uppercase tracking-widest text-sol-muted pl-1 flex items-center gap-2">
-                    <Layers size={14} /> Grade
+                    <Layers size={14} /> {t("grade")}
                   </label>
                   <select 
                     value={formData.grade_id}
@@ -187,7 +189,7 @@ export default function CreateLessonModal({ isOpen, onClose, onSuccess, editLess
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-black uppercase tracking-widest text-sol-muted pl-1">Subject</label>
+                  <label className="text-xs font-black uppercase tracking-widest text-sol-muted pl-1">{t("subject")}</label>
                   <select 
                     value={formData.subject_id}
                     onChange={(e) => setFormData({ ...formData, subject_id: parseInt(e.target.value) })}
@@ -200,7 +202,7 @@ export default function CreateLessonModal({ isOpen, onClose, onSuccess, editLess
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-black uppercase tracking-widest text-sol-muted pl-1 flex items-center gap-2">
-                    <Hash size={14} /> Order Index
+                    <Hash size={14} /> {t("orderIndex")}
                   </label>
                   <input 
                     type="number"
@@ -213,11 +215,11 @@ export default function CreateLessonModal({ isOpen, onClose, onSuccess, editLess
 
               {/* Markdown Editor */}
               <div className="space-y-2 flex-1 min-h-[400px] flex flex-col">
-                <label className="text-xs font-black uppercase tracking-widest text-sol-muted pl-1">Lesson Content (Markdown)</label>
+                <label className="text-xs font-black uppercase tracking-widest text-sol-muted pl-1">{t("lessonContent")}</label>
                 <textarea 
                   value={tab === "vi" ? formData.content_markdown_vi : formData.content_markdown_en}
                   onChange={(e) => setFormData({ ...formData, [tab === "vi" ? "content_markdown_vi" : "content_markdown_en"]: e.target.value })}
-                  placeholder="## Start writing with Markdown... Support LaTeX using $...$ and TikZ code blocks."
+                  placeholder={t("lessonContentPlaceholder")}
                   className="flex-1 w-full bg-sol-bg border border-sol-border/20 rounded-[2rem] p-8 text-sol-text font-mono text-sm leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-sol-accent/30 transition-all"
                 />
               </div>
@@ -227,7 +229,7 @@ export default function CreateLessonModal({ isOpen, onClose, onSuccess, editLess
           {/* Live Preview */}
           <div className={`flex-1 flex flex-col border-l border-sol-border/5 bg-sol-bg/30 overflow-y-auto p-12 ${preview ? 'flex' : 'hidden lg:flex'}`}>
             <div className="prose prose-invert max-w-none prose-headings:text-sol-text prose-p:text-sol-text/80 prose-strong:text-sol-accent">
-              <h1 className="text-4xl font-black mb-8">{currentTitle || "Untitled Lesson"}</h1>
+              <h1 className="text-4xl font-black mb-8">{currentTitle || t("untitledLesson")}</h1>
               <ReactMarkdown
                 remarkPlugins={[remarkMath]}
                 rehypePlugins={[rehypeKatex]}
@@ -238,7 +240,7 @@ export default function CreateLessonModal({ isOpen, onClose, onSuccess, editLess
                       return (
                         <div className="my-8 bg-sol-accent/5 p-8 rounded-3xl border border-sol-accent/20 flex flex-col items-center gap-4 group">
                           <Code2 className="text-sol-accent/30" />
-                          <span className="text-[10px] font-bold text-sol-accent uppercase tracking-[0.2em]">TikZ Geometry Script Detected</span>
+                          <span className="text-[10px] font-bold text-sol-accent uppercase tracking-[0.2em]">{t("tikzDetected")}</span>
                           <pre className="text-xs text-sol-muted opacity-50 overflow-x-auto w-full">{String(children).replace(/\n$/, "")}</pre>
                         </div>
                       );
@@ -247,7 +249,7 @@ export default function CreateLessonModal({ isOpen, onClose, onSuccess, editLess
                   }
                 }}
               >
-                {currentContent || "_No content written yet. Use the editor on the left to start drafting._"}
+                {currentContent || t("emptyContent")}
               </ReactMarkdown>
             </div>
           </div>
@@ -255,13 +257,13 @@ export default function CreateLessonModal({ isOpen, onClose, onSuccess, editLess
 
         {/* Footer */}
         <footer className="p-6 border-t border-sol-border/5 bg-sol-surface/50 backdrop-blur-md flex items-center justify-between">
-          <p className="text-sm text-sol-muted italic">Drafts are not saved automatically. Ensure you submit to save to database.</p>
+          <p className="text-sm text-sol-muted italic">{t("footerNote")}</p>
           <div className="flex items-center gap-4">
             <button 
               onClick={onClose}
               className="px-8 py-3 rounded-2xl font-bold text-sol-muted hover:text-sol-accent transition-colors"
             >
-              Cancel
+              {t("cancel")}
             </button>
             <button 
               form="lesson-form"
@@ -270,7 +272,7 @@ export default function CreateLessonModal({ isOpen, onClose, onSuccess, editLess
               className="flex items-center gap-3 px-10 py-3 bg-sol-accent text-sol-bg rounded-2xl font-black hover:scale-105 active:scale-95 transition-all shadow-xl shadow-sol-accent/30 disabled:opacity-50"
             >
               <Save size={20} />
-              {loading ? "Saving..." : (editLessonId ? "Save Changes" : "Create Lesson")}
+              {loading ? t("saving") : (editLessonId ? t("saveChanges") : t("createLesson"))}
             </button>
           </div>
         </footer>

@@ -8,6 +8,11 @@ import { levelService } from '../services/levelService';
 
 const router = Router();
 
+const normalizeDifficulty = (difficulty: unknown): string => {
+  const value = String(difficulty || "medium").toLowerCase();
+  return ["easy", "medium", "hard"].includes(value) ? value : "medium";
+};
+
 // 2. Get a Test Attempt
 router.get('/attempts/:id', authenticate, async (req, res) => {
   const attemptId = req.params.id as string;
@@ -61,7 +66,11 @@ router.post('/submit-answer', async (req, res) => {
     }
   });
 
-  res.json({ isCorrect, explanation: snapshot.template.explanation_template_vi });
+  res.json({
+    isCorrect,
+    rightAnswers: snapshot.right_answers,
+    explanation: snapshot.template.explanation_template_vi
+  });
 });
 
 // 3. Finish or Abandon a Test Attempt
@@ -204,7 +213,7 @@ router.post('/attempts/:id/finish', authenticate, async (req, res) => {
 router.post('/templates', authenticate, async (req, res) => {
   try {
     const {
-      lesson_id, template_type,
+      lesson_id, template_type, difficulty,
       body_template_en, body_template_vi,
       explanation_template_en, explanation_template_vi,
       logic_config, accepted_formulas
@@ -214,6 +223,7 @@ router.post('/templates', authenticate, async (req, res) => {
       data: {
         lesson_id: lesson_id || null,
         template_type,
+        difficulty: normalizeDifficulty(difficulty),
         body_template_en,
         body_template_vi,
         explanation_template_en,
@@ -247,7 +257,7 @@ router.put('/templates/:id', authenticate, async (req, res) => {
   try {
     const id = req.params.id as string;
     const {
-      lesson_id, template_type,
+      lesson_id, template_type, difficulty,
       body_template_en, body_template_vi,
       explanation_template_en, explanation_template_vi,
       logic_config, accepted_formulas
@@ -258,6 +268,7 @@ router.put('/templates/:id', authenticate, async (req, res) => {
       data: {
         lesson_id: lesson_id || null,
         template_type,
+        difficulty: normalizeDifficulty(difficulty),
         body_template_en,
         body_template_vi,
         explanation_template_en,
@@ -269,7 +280,8 @@ router.put('/templates/:id', authenticate, async (req, res) => {
 
     res.json(template);
   } catch (error: any) {
-    res.status(500).json({ error: "Failed to update template" });
+    console.error("Failed to update template:", error);
+    res.status(500).json({ error: "Failed to update template", details: error.message });
   }
 });
 

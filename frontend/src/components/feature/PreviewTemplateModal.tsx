@@ -3,6 +3,7 @@
 import React from "react";
 import { X, PlayCircle } from "lucide-react";
 import QuestionPlayer from "@/components/feature/QuestionPlayer";
+import { useTranslations } from "next-intl";
 
 interface PreviewTemplateModalProps {
   isOpen: boolean;
@@ -11,6 +12,8 @@ interface PreviewTemplateModalProps {
 }
 
 export default function PreviewTemplateModal({ isOpen, onClose, template }: PreviewTemplateModalProps) {
+  const t = useTranslations("Questions.preview");
+
   if (!isOpen || !template) return null;
 
   return (
@@ -24,8 +27,8 @@ export default function PreviewTemplateModal({ isOpen, onClose, template }: Prev
               <PlayCircle size={24} />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-sol-text">Template Live Preview</h2>
-              <p className="text-xs text-sol-muted font-medium uppercase tracking-widest">Interactive Simulator</p>
+              <h2 className="text-xl font-bold text-sol-text">{t("title")}</h2>
+              <p className="text-xs text-sol-muted font-medium uppercase tracking-widest">{t("subtitle")}</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-sol-accent/10 text-sol-muted hover:text-sol-accent rounded-full transition-colors">

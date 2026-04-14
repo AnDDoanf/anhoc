@@ -55,6 +55,10 @@ export default function TemplateCard({ tmpl, onEdit, onDelete, onPreview }: Temp
           <span className="text-sol-accent">{tmpl.template_type}</span>
         </div>
         <div className="flex justify-between items-center text-xs font-black tracking-widest text-sol-muted uppercase">
+          <span>{t("difficulty")}:</span>
+          <span className="text-sol-accent">{t(`modal.difficultyOptions.${tmpl.difficulty || "medium"}`)}</span>
+        </div>
+        <div className="flex justify-between items-center text-xs font-black tracking-widest text-sol-muted uppercase">
           <span>{t("ref")}:</span>
           <span className="text-sol-accent">{lessonTitle || t("global")}</span>
         </div>

@@ -13,7 +13,14 @@
     },
     "tableOfContents": "Mục lục",
     "confirm": "Xác nhận",
-    "cancel": "Hủy"
+    "cancel": "Hủy",
+    "syncingProfile": "Đang đồng bộ hồ sơ...",
+    "accessDenied": "Không có quyền truy cập",
+    "requiredFound": "Yêu cầu: {required} | Hiện tại: {found}",
+    "backToHome": "Quay về trang chủ",
+    "footerCopyright": "© 2026 Your App"
+    ,"welcomeBack": "Chào mừng trở lại, {email}!",
+    "dashboardPlaceholder": "Nội dung tổng quan của bạn sẽ hiển thị ở đây."
   },
   "Difficulty": {
     "Beginner": "Cơ bản",
@@ -58,6 +65,18 @@
     "starting": "Đang bắt đầu...",
     "stats": "{count} bài tập",
     "difficulty": "Độ khó",
+    "allDifficulties": "Tất cả độ khó",
+    "correctAnswer": "Đáp án đúng",
+    "submitting": "Đang nộp...",
+    "submitOrder": "Nộp thứ tự",
+    "chooseItemsInOrder": "Chọn các mục theo thứ tự",
+    "true": "Đúng",
+    "false": "Sai",
+    "difficultyOptions": {
+      "easy": "Dễ",
+      "medium": "Trung bình",
+      "hard": "Khó"
+    },
     "allGrades": "Tất cả các lớp",
     "finishAbandon": "Hoàn thành / Thoát",
     "questionInfo": "Câu hỏi {current} trên {total}",
@@ -86,6 +105,7 @@
     "tipTitle": "Mẹo Luyện tập",
     "tipContent": "Xem lại lỗi sai là cách nhanh nhất để tiến bộ. Nhấn vào bất kỳ phiên nào để xem bạn đã bỏ lỡ điều gì!",
     "footerQuote": "\"Có công mài sắt, có ngày nên kim. Hãy tiếp tục cố gắng!\"",
+    "achievementsEarned": "Thành tích đạt được",
     "modals": {
       "finishTitle": "Hoàn thành Luyện tập",
       "completeTitle": "Hoàn tất Luyện tập",
@@ -113,6 +133,30 @@
     "lessonOverview": "Tổng quan Bài học",
     "readyChallengeTitle": "Bạn đã sẵn sàng cho thử thách tiếp theo?",
     "readyChallengeSubtitle": "Mỗi bài học bạn hoàn thành sẽ đưa bạn đến gần hơn với việc làm chủ chương trình học. Tiến trình của bạn được đồng bộ hóa trên tất cả các thiết bị."
+    ,"newLesson": "Bài học mới",
+    "modal": {
+      "createTitle": "Tạo bài học mới",
+      "editTitle": "Chỉnh sửa bài học",
+      "adminTool": "Công cụ Quản trị",
+      "editMode": "Chế độ chỉnh sửa",
+      "previewMode": "Chế độ xem trước",
+      "lessonTitle": "Tiêu đề bài học ({lang})",
+      "lessonTitlePlaceholder": "vd. Điểm, đường thẳng và mặt phẳng...",
+      "grade": "Lớp",
+      "subject": "Môn học",
+      "orderIndex": "Thứ tự",
+      "lessonContent": "Nội dung bài học (Markdown)",
+      "lessonContentPlaceholder": "## Bắt đầu viết bằng Markdown... Hỗ trợ LaTeX bằng $...$ và khối mã TikZ.",
+      "tikzDetected": "Đã phát hiện mã TikZ Geometry",
+      "untitledLesson": "Bài học chưa có tiêu đề",
+      "emptyContent": "_Chưa có nội dung. Dùng trình soạn thảo bên trái để bắt đầu viết._",
+      "footerNote": "Bản nháp không được lưu tự động. Hãy gửi biểu mẫu để lưu vào cơ sở dữ liệu.",
+      "cancel": "Hủy",
+      "saving": "Đang lưu...",
+      "saveChanges": "Lưu thay đổi",
+      "createLesson": "Tạo bài học",
+      "saveError": "Lưu bài học thất bại. Hãy kiểm tra console."
+    }
   },
   "Path": {
     "title": "Lộ trình Học tập",
@@ -144,6 +188,7 @@
     "newTemplate": "Mẫu mới",
     "adminToolbox": "Công cụ Admin",
     "type": "Loại",
+    "difficulty": "Độ khó",
     "formula": "Công thức",
     "ref": "Tham chiếu",
     "global": "Toàn cầu",
@@ -151,12 +196,18 @@
       "search": "Tìm kiếm",
       "searchPlaceholder": "Tìm theo mẫu, bài học hoặc nội dung",
       "templateType": "Loại mẫu",
+      "difficulty": "Độ khó",
       "lesson": "Bài học",
       "allTemplateTypes": "Tất cả loại mẫu",
+      "allDifficulties": "Tất cả độ khó",
       "allLessons": "Tất cả bài học"
     },
     "deleteConfirm": "Bạn có chắc chắn muốn xóa mẫu này không?",
     "deleteError": "Xóa thất bại. Đảm bảo nó không bị khóa bởi một bài kiểm tra.",
+    "preview": {
+      "title": "Xem thử mẫu trực tiếp",
+      "subtitle": "Mô phỏng tương tác"
+    },
     "player": {
       "liveSnapshot": "Xem trực tiếp",
       "reroll": "Tạo lại biến số",
@@ -166,7 +217,11 @@
       "varTree": "Cây biến số hiện tại",
       "expected": "Đáp án đúng",
       "multipleChoice": "Trắc nghiệm",
-      "acceptedBadge": "công thức khả dụng"
+      "acceptedBadge": "công thức khả dụng",
+      "chooseItemsInOrder": "Chọn các mục theo thứ tự",
+      "checkOrder": "Kiểm tra thứ tự",
+      "true": "Đúng",
+      "false": "Sai"
     },
     "modal": {
       "createTitle": "Tạo mẫu câu hỏi",
@@ -176,6 +231,18 @@
       "noLesson": "-- Không có bài học cụ thể (Chung) --",
       "unassignedGrade": "Lớp chưa xác định",
       "templateType": "Loại mẫu",
+      "difficulty": "Độ khó",
+      "questionTypes": {
+        "numeric_input": "Nhập số",
+        "true_false": "Đúng / sai",
+        "multiple_choices": "Trắc nghiệm",
+        "ordering": "Sắp xếp"
+      },
+      "difficultyOptions": {
+        "easy": "Dễ",
+        "medium": "Trung bình",
+        "hard": "Khó"
+      },
       "bodyEn": "Nội dung (EN)",
       "bodyVi": "Nội dung (VI)",
       "logicConfig": "Cấu hình logic (JSON)",
@@ -195,9 +262,12 @@
       "varMin": "Min",
       "varMax": "Max",
       "generatedJson": "JSON logic_config được tạo",
+      "logicJsonHint": "Hỗ trợ biến, lựa chọn, giá trị suy ra và ràng buộc. Ví dụ: {example}",
       "acceptedFormulas": "Công thức đáp án chấp nhận",
       "addFormula": "Thêm công thức khác",
-      "altFormulaPlaceholder": "Công thức thay thế (vd. y + x)"
+      "altFormulaPlaceholder": "Công thức thay thế (vd. y + x)",
+      "invalidLogicJson": "logic_config phải là JSON hợp lệ.",
+      "saveError": "Lưu mẫu thất bại."
     }
   },
   "Admin": {
@@ -227,6 +297,10 @@
   "Achievements": {
     "title": "Bộ sưu tập Thành tích",
     "subtitle": "Theo dõi tiến trình và thu thập huy chương cho sự chăm chỉ của bạn.",
+    "hallTitle": "Sảnh thành tích",
+    "polishing": "Đang chuẩn bị huy hiệu...",
+    "collected": "Đã thu thập",
+    "total": "Tổng cộng",
     "locked": "Chưa mở khóa",
     "earned": "Đạt được vào {date}",
     "newAchievement": "Đã mở khóa Thành tích mới!",

@@ -8,8 +8,8 @@ import { lessonService } from "@/services/lessonService";
 
 interface VariableDef {
   name: string;
-  min: number;
-  max: number;
+  min: number | string;
+  max: number | string;
 }
 
 interface Props {
@@ -24,6 +24,89 @@ const DEFAULT_VARS: VariableDef[] = [
   { name: "y", min: 1, max: 10 },
 ];
 
+const QUESTION_TYPES = ["numeric_input", "true_false", "multiple_choices", "ordering"];
+
+const DIFFICULTIES = ["easy", "medium", "hard"];
+
+const toFiniteNumber = (value: number | string | undefined, fallback = 0) => {
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const TYPE_PRESETS: Record<string, {
+  bodyEn: string;
+  bodyVi: string;
+  formulas: string[];
+  logic: Record<string, unknown>;
+  vars: VariableDef[];
+}> = {
+  numeric_input: {
+    bodyEn: "Calculate {{x}} + {{y}}",
+    bodyVi: "Tính {{x}} + {{y}}",
+    formulas: ["x + y"],
+    vars: DEFAULT_VARS,
+    logic: {
+      variables: {
+        x: { min: 1, max: 10 },
+        y: { min: 1, max: 10 },
+      },
+    },
+  },
+  true_false: {
+    bodyEn: "True or false: {{x}} is greater than {{y}}.",
+    bodyVi: "Đúng hay sai: {{x}} lớn hơn {{y}}.",
+    formulas: ["x > y"],
+    vars: DEFAULT_VARS,
+    logic: {
+      variables: {
+        x: { min: 1, max: 20 },
+        y: { min: 1, max: 20 },
+      },
+      constraints: ["x != y"],
+    },
+  },
+  multiple_choices: {
+    bodyEn: "Choose the value of {{x}} + {{y}}.",
+    bodyVi: "Chọn giá trị của {{x}} + {{y}}.",
+    formulas: ["x + y"],
+    vars: DEFAULT_VARS,
+    logic: {
+      variables: {
+        x: { min: 1, max: 10 },
+        y: { min: 1, max: 10 },
+      },
+      choices: [
+        { formula: "x + y" },
+        { formula: "x + y - 1" },
+        { formula: "x + y + 1" },
+        { formula: "x" },
+      ],
+    },
+  },
+  ordering: {
+    bodyEn: "Order these numbers from smallest to largest.",
+    bodyVi: "Sắp xếp các số sau từ bé đến lớn.",
+    formulas: ["[a,b,c]"],
+    vars: [
+      { name: "a", min: 1, max: 10 },
+      { name: "b", min: 11, max: 20 },
+      { name: "c", min: 21, max: 30 },
+    ],
+    logic: {
+      variables: {
+        a: { min: 1, max: 10 },
+        b: { min: 11, max: 20 },
+        c: { min: 21, max: 30 },
+      },
+      items: [
+        { label_en: "{{a}}", label_vi: "{{a}}", value: "{{a}}" },
+        { label_en: "{{b}}", label_vi: "{{b}}", value: "{{b}}" },
+        { label_en: "{{c}}", label_vi: "{{c}}", value: "{{c}}" },
+      ],
+    },
+  },
+};
+
 export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTemplateId }: Props) {
   const t = useTranslations("Questions.modal");
   const locale = useLocale();
@@ -33,7 +116,8 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
 
   // Simple fields
   const [lessonId, setLessonId] = useState("");
-  const [templateType, setTemplateType] = useState("math_algebra");
+  const [templateType, setTemplateType] = useState("numeric_input");
+  const [difficulty, setDifficulty] = useState("medium");
   const [bodyEn, setBodyEn] = useState("Calculate $x$ + $y$");
   const [bodyVi, setBodyVi] = useState("Tính $x$ + $y$");
 
@@ -42,14 +126,28 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
 
   // Logic builder state
   const [variableDefs, setVariableDefs] = useState<VariableDef[]>(DEFAULT_VARS);
+  const [logicJson, setLogicJson] = useState("");
+  const [logicJsonDirty, setLogicJsonDirty] = useState(false);
 
-  const buildLogicConfig = () => {
+  const buildLogicFromDefs = () => {
     const variables: Record<string, { min: number; max: number }> = {};
     for (const v of variableDefs) {
       const key = v.name.trim();
-      if (key) variables[key] = { min: v.min, max: v.max };
+      if (key) variables[key] = {
+        min: toFiniteNumber(v.min),
+        max: toFiniteNumber(v.max),
+      };
     }
     return { variables };
+  };
+
+  const buildLogicConfig = () => {
+    try {
+      const parsed = JSON.parse(logicJson);
+      return parsed && typeof parsed === "object" ? parsed : buildLogicFromDefs();
+    } catch {
+      return buildLogicFromDefs();
+    }
   };
 
   const parseLogicConfig = (raw: any, primaryFormula: string, extraAccepted: string[]) => {
@@ -61,6 +159,8 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
     );
     try {
       const cfg = typeof raw === "string" ? JSON.parse(raw) : raw;
+      setLogicJson(JSON.stringify(cfg || buildLogicFromDefs(), null, 2));
+      setLogicJsonDirty(true);
       if (cfg?.variables) {
         const defs = Object.entries(cfg.variables).map(([name, range]: [string, any]) => ({
           name,
@@ -71,7 +171,61 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
       }
     } catch {
       setVariableDefs(DEFAULT_VARS);
+      setLogicJson(JSON.stringify({ variables: { x: { min: 1, max: 10 }, y: { min: 1, max: 10 } } }, null, 2));
+      setLogicJsonDirty(false);
     }
+  };
+
+  useEffect(() => {
+    if (!logicJsonDirty) {
+      setLogicJson(JSON.stringify(buildLogicFromDefs(), null, 2));
+    }
+  }, [variableDefs, logicJsonDirty]);
+
+  const syncVariablesToLogicJson = (defs: VariableDef[]) => {
+    const variableNames = defs
+      .map((v) => String(v.name || "").trim())
+      .filter(Boolean);
+
+    if (templateType === "ordering") {
+      setAcceptedFormulas([`[${variableNames.join(",")}]`]);
+    }
+
+    setLogicJson(prev => {
+      let parsed: Record<string, any> = {};
+      try {
+        parsed = prev ? JSON.parse(prev) : {};
+      } catch {
+        parsed = {};
+      }
+
+      const variables: Record<string, { min: number; max: number }> = {};
+      for (const v of defs) {
+        const key = String(v.name || "").trim();
+        const currentRange = parsed.variables?.[key];
+        if (key) variables[key] = {
+          min: toFiniteNumber(v.min, toFiniteNumber(currentRange?.min)),
+          max: toFiniteNumber(v.max, toFiniteNumber(currentRange?.max)),
+        };
+      }
+
+      const nextConfig = { ...parsed, variables };
+
+      if (templateType === "ordering") {
+        nextConfig.items = variableNames
+          .map((name) => ({
+            label_en: `{{${name}}}`,
+            label_vi: `{{${name}}}`,
+            value: `{{${name}}}`,
+          }));
+
+        nextConfig.derived = undefined;
+        nextConfig.choices = undefined;
+      }
+
+      return JSON.stringify(nextConfig, null, 2);
+    });
+    setLogicJsonDirty(true);
   };
 
   // ---- Data fetching ----
@@ -88,18 +242,23 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
           if (curr) {
             setLessonId(curr.lesson_id || "");
             setTemplateType(curr.template_type);
+            setDifficulty(curr.difficulty || "medium");
             setBodyEn(curr.body_template_en);
             setBodyVi(curr.body_template_vi);
             parseLogicConfig(curr.logic_config, curr.accepted_formulas?.[0] || "", curr.accepted_formulas?.slice(1) || []);
           }
         } else {
           // Reset to defaults
+          const preset = TYPE_PRESETS.numeric_input;
           setLessonId("");
-          setTemplateType("math_algebra");
-          setBodyEn("Calculate $x$ + $y$");
-          setBodyVi("Tính $x$ + $y$");
-          setAcceptedFormulas(["x + y"]);
-          setVariableDefs(DEFAULT_VARS);
+          setTemplateType("numeric_input");
+          setDifficulty("medium");
+          setBodyEn(preset.bodyEn);
+          setBodyVi(preset.bodyVi);
+          setAcceptedFormulas(preset.formulas);
+          setVariableDefs(preset.vars);
+          setLogicJson(JSON.stringify(preset.logic, null, 2));
+          setLogicJsonDirty(false);
         }
       } catch (err) {
         console.error("Failed to load data:", err);
@@ -115,6 +274,7 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
     setVariableDefs(prev => {
       const next = [...prev];
       next[idx] = { ...next[idx], [field]: value };
+      syncVariablesToLogicJson(next);
       return next;
     });
   };
@@ -122,12 +282,33 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
   const addVariable = () => {
     const letters = "xyzabcdefghijklmnopqrstuvw";
     const nextName = letters[variableDefs.length] || `v${variableDefs.length}`;
-    setVariableDefs(prev => [...prev, { name: nextName, min: 1, max: 10 }]);
+    setVariableDefs(prev => {
+      const next = [...prev, { name: nextName, min: 1, max: 10 }];
+      syncVariablesToLogicJson(next);
+      return next;
+    });
   };
 
   const removeVariable = (idx: number) => {
     if (variableDefs.length <= 1) return;
-    setVariableDefs(prev => prev.filter((_, i) => i !== idx));
+    setVariableDefs(prev => {
+      const next = prev.filter((_, i) => i !== idx);
+      syncVariablesToLogicJson(next);
+      return next;
+    });
+  };
+
+  const handleTypeChange = (nextType: string) => {
+    setTemplateType(nextType);
+    const preset = TYPE_PRESETS[nextType];
+    if (!preset || editTemplateId) return;
+
+    setBodyEn(preset.bodyEn);
+    setBodyVi(preset.bodyVi);
+    setAcceptedFormulas(preset.formulas);
+    setVariableDefs(preset.vars);
+    setLogicJson(JSON.stringify(preset.logic, null, 2));
+    setLogicJsonDirty(true);
   };
 
   // ---- Submit ----
@@ -135,9 +316,18 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
     e.preventDefault();
     setLoading(true);
     try {
+      try {
+        JSON.parse(logicJson);
+      } catch {
+        alert(t("invalidLogicJson"));
+        setLoading(false);
+        return;
+      }
+
       const payload: CreateTemplateDTO = {
         lesson_id: lessonId === "" ? undefined : lessonId,
         template_type: templateType,
+        difficulty,
         body_template_en: bodyEn,
         body_template_vi: bodyVi,
         // accepted_formulas[0] is the primary formula; the rest are alternatives
@@ -154,7 +344,10 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
       onClose();
     } catch (err) {
       console.error("Failed to save template:", err);
-      alert("Error saving template.");
+      const message = (err as any)?.response?.data?.details
+        || (err as any)?.response?.data?.error
+        || t("saveError");
+      alert(message);
     } finally {
       setLoading(false);
     }
@@ -188,8 +381,8 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
         <div className="flex-1 overflow-y-auto p-6">
           <form id="template-form" onSubmit={handleSubmit} className="space-y-8">
 
-            {/* Row 1: Lesson + Type */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Row 1: Lesson + Type + Difficulty */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-2">
                 <label className="text-xs font-black uppercase text-sol-muted pl-1">{t("associateLesson")}</label>
                 <select
@@ -211,12 +404,29 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
               </div>
               <div className="space-y-2">
                 <label className="text-xs font-black uppercase text-sol-muted pl-1">{t("templateType")}</label>
-                <input
-                  type="text" required
+                <select
+                  required
                   value={templateType}
-                  onChange={(e) => setTemplateType(e.target.value)}
+                  onChange={(e) => handleTypeChange(e.target.value)}
                   className="w-full bg-sol-bg border border-sol-border/20 rounded-2xl px-6 py-4 text-sol-text focus:ring-2 focus:ring-sol-accent/30 transition-all font-medium"
-                />
+                >
+                  {QUESTION_TYPES.map((type) => (
+                    <option key={type} value={type}>{t(`questionTypes.${type}`)}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-black uppercase text-sol-muted pl-1">{t("difficulty")}</label>
+                <select
+                  required
+                  value={difficulty}
+                  onChange={(e) => setDifficulty(e.target.value)}
+                  className="w-full bg-sol-bg border border-sol-border/20 rounded-2xl px-6 py-4 text-sol-text focus:ring-2 focus:ring-sol-accent/30 transition-all font-medium"
+                >
+                  {DIFFICULTIES.map((item) => (
+                    <option key={item} value={item}>{t(`difficultyOptions.${item}`)}</option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -323,15 +533,17 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
                     <input
                       type="number"
                       required
+                      step="any"
                       value={v.min}
-                      onChange={(e) => handleVarChange(idx, "min", Number(e.target.value))}
+                      onChange={(e) => handleVarChange(idx, "min", e.target.value)}
                       className="bg-transparent border border-sol-border/20 rounded-xl px-4 py-2 text-sm text-sol-text focus:ring-2 focus:ring-sol-accent/30 outline-none"
                     />
                     <input
                       type="number"
                       required
+                      step="any"
                       value={v.max}
-                      onChange={(e) => handleVarChange(idx, "max", Number(e.target.value))}
+                      onChange={(e) => handleVarChange(idx, "max", e.target.value)}
                       className="bg-transparent border border-sol-border/20 rounded-xl px-4 py-2 text-sm text-sol-text focus:ring-2 focus:ring-sol-accent/30 outline-none"
                     />
                     <button
@@ -349,9 +561,18 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
               {/* Live JSON preview */}
               <div className="rounded-2xl bg-sol-bg border border-sol-border/10 p-4">
                 <span className="text-[10px] font-black uppercase text-sol-muted tracking-widest block mb-2">{t("generatedJson")}</span>
-                <pre className="text-xs font-mono text-sol-accent/80 overflow-x-auto whitespace-pre-wrap">
-                  {JSON.stringify(buildLogicConfig(), null, 2)}
-                </pre>
+                <textarea
+                  value={logicJson}
+                  onChange={(e) => {
+                    setLogicJson(e.target.value);
+                    setLogicJsonDirty(true);
+                  }}
+                  rows={12}
+                  className="scrollbar-hidden w-full bg-transparent text-xs font-mono text-sol-accent/80 overflow-auto whitespace-pre-wrap outline-none resize-none"
+                />
+                <p className="mt-3 text-xs text-sol-muted leading-relaxed">
+                  {t("logicJsonHint", { example: "" })}<code>{`{"variables":{"total":{"min":10,"max":50},"known":{"min":1,"max":49}},"derived":{"missing":"total - known"},"constraints":["missing > 0"]}`}</code>
+                </p>
               </div>
             </div>
 

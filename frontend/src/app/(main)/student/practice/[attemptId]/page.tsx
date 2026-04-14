@@ -2,7 +2,7 @@
 
 import { useTranslations, useLocale } from "next-intl";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { testService } from "@/services/testService";
 import { Loader2, ArrowRight, ArrowLeft, Send, CheckCircle2, XCircle, Award } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -10,6 +10,13 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { formatTemplate } from "@/utils/mathService";
+import {
+  ChoiceOption,
+  getChoiceOptions,
+  getOrderingItems,
+  makeOrderingAnswer,
+  normalizeQuestionType,
+} from "@/utils/questionType";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import * as LucideIcons from "lucide-react";
 
@@ -32,6 +39,7 @@ export default function PracticeRunnerPage() {
   const [isFinished, setIsFinished] = useState(false);
   const [newlyEarned, setNewlyEarned] = useState<any[]>([]);
   const [finishModalType, setFinishModalType] = useState<"complete" | "abandon" | null>(null);
+  const [orderedItems, setOrderedItems] = useState<ChoiceOption[]>([]);
 
   useEffect(() => {
     fetchAttempt();
@@ -60,6 +68,24 @@ export default function PracticeRunnerPage() {
   };
 
   const currentSnapshot = attempt?.snapshots[currentIndex];
+  const questionType = normalizeQuestionType(currentSnapshot?.template?.template_type);
+  const choiceOptions = useMemo(() => {
+    if (!currentSnapshot?.template) return [];
+    return getChoiceOptions(currentSnapshot.template, currentSnapshot.generated_variables, locale);
+  }, [currentSnapshot?.id, locale]);
+  const orderingItems = useMemo(() => {
+    if (!currentSnapshot?.template) return [];
+    return getOrderingItems(currentSnapshot.template, currentSnapshot.generated_variables, locale);
+  }, [currentSnapshot?.id, locale]);
+  const availableOrderingItems = orderingItems.filter(
+    (item) => !orderedItems.some((ordered) => ordered.value === item.value)
+  );
+
+  useEffect(() => {
+    setAnswerInput("");
+    setOrderedItems([]);
+    setStatus("idle");
+  }, [currentSnapshot?.id]);
 
 
   const currentTextEn = currentSnapshot?.template?.body_template_en
@@ -69,25 +95,34 @@ export default function PracticeRunnerPage() {
 
   const primaryText = locale === "vi" ? currentTextVi : currentTextEn;
   const secondaryText = locale === "vi" ? currentTextEn : currentTextVi;
+  const rightAnswerText = currentSnapshot?.right_answers?.length
+    ? currentSnapshot.right_answers.join(", ")
+    : "";
+  const trueFalseOptions = [
+    { label: t("true"), value: "true" },
+    { label: t("false"), value: "false" },
+  ];
 
 
   const isAlreadyAnswered = currentSnapshot?.student_answer !== null;
 
-  const handleSubmit = async (e?: React.FormEvent | React.KeyboardEvent | KeyboardEvent) => {
+  const handleSubmit = async (e?: React.FormEvent | React.KeyboardEvent | KeyboardEvent, answerOverride?: string) => {
     if (e) e.preventDefault();
-    if (!answerInput || isAlreadyAnswered || submitting) return;
+    const answer = answerOverride ?? answerInput;
+    if (!answer || isAlreadyAnswered || submitting) return;
 
     setSubmitting(true);
     try {
-      const res = await testService.submitAnswer(currentSnapshot.id, answerInput);
+      const res = await testService.submitAnswer(currentSnapshot.id, answer);
       setStatus(res.isCorrect ? "correct" : "incorrect");
 
       setAttempt((prev: any) => {
         const newSnapshots = [...prev.snapshots];
         newSnapshots[currentIndex] = {
           ...newSnapshots[currentIndex],
-          student_answer: answerInput,
-          is_correct: res.isCorrect
+          student_answer: answer,
+          is_correct: res.isCorrect,
+          right_answers: res.rightAnswers || newSnapshots[currentIndex].right_answers
         };
         return { ...prev, snapshots: newSnapshots };
       });
@@ -111,7 +146,8 @@ export default function PracticeRunnerPage() {
         newSnapshots[currentIndex] = {
           ...newSnapshots[currentIndex],
           student_answer: t("skipQuestion"),
-          is_correct: false
+          is_correct: false,
+          right_answers: res.rightAnswers || newSnapshots[currentIndex].right_answers
         };
         return { ...prev, snapshots: newSnapshots };
       });
@@ -126,6 +162,7 @@ export default function PracticeRunnerPage() {
     if (currentIndex < attempt.snapshots.length - 1) {
       setCurrentIndex(currentIndex + 1);
       setAnswerInput("");
+      setOrderedItems([]);
       setStatus("idle");
     } else {
       setFinishModalType("complete");
@@ -134,6 +171,14 @@ export default function PracticeRunnerPage() {
 
   const handleFinish = () => {
     setFinishModalType("abandon");
+  };
+
+  const selectOrderingItem = (item: ChoiceOption) => {
+    setOrderedItems(prev => [...prev, item]);
+  };
+
+  const removeOrderingItem = (item: ChoiceOption) => {
+    setOrderedItems(prev => prev.filter((ordered) => ordered.value !== item.value));
   };
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -269,7 +314,7 @@ export default function PracticeRunnerPage() {
             <div className="w-full mt-12 space-y-6">
               <div className="flex items-center gap-4 justify-center">
                 <div className="h-px w-12 bg-sol-accent/20" />
-                <span className="text-xs font-black text-sol-accent uppercase tracking-widest">Achievements Earned</span>
+                <span className="text-xs font-black text-sol-accent uppercase tracking-widest">{t("achievementsEarned")}</span>
                 <div className="h-px w-12 bg-sol-accent/20" />
               </div>
               <div className="flex flex-wrap justify-center gap-4">
@@ -362,8 +407,15 @@ export default function PracticeRunnerPage() {
                   <CheckCircle2 size={24} /> {t("correct")}
                 </div>
               ) : (
-                <div className="flex items-center gap-2 text-red-500/90 font-bold bg-red-500/10 p-5 rounded-xl">
-                  <XCircle size={24} /> {t("incorrect")}
+                <div className="space-y-3 text-red-500/90 font-bold bg-red-500/10 p-5 rounded-xl">
+                  <div className="flex items-center gap-2">
+                    <XCircle size={24} /> {t("incorrect")}
+                  </div>
+                  {rightAnswerText && (
+                    <div className="text-sm text-sol-text font-mono bg-sol-bg/60 border border-sol-border/10 rounded-xl px-4 py-3">
+                      {t("correctAnswer")}: <span className="text-sol-accent">{rightAnswerText}</span>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -377,33 +429,107 @@ export default function PracticeRunnerPage() {
               </button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-              <div className="relative flex items-center">
-                <input
-                  type="number"
-                  step="any"
-                  value={answerInput}
-                  onChange={(e) => {
-                    setAnswerInput(e.target.value);
-                    setStatus("idle");
-                  }}
-                  placeholder={t("enterAnswer")}
-                  disabled={submitting}
-                  className={`w-full bg-sol-bg border-2 rounded-2xl px-6 py-4 text-sol-text placeholder-sol-muted/40 outline-none transition-all font-mono font-bold text-lg disabled:opacity-50
-                    ${status === 'correct' ? 'border-green-500/50 focus:border-green-500' : ''}
-                    ${status === 'incorrect' ? 'border-red-500/50 focus:border-red-500' : ''}
-                    ${status === 'idle' ? 'border-sol-border/20 focus:border-sol-accent/50' : ''}
-                  `}
-                  autoFocus
-                />
-                <button
-                  type="submit"
-                  disabled={submitting || !answerInput}
-                  className="absolute right-2 p-3 bg-sol-surface rounded-xl text-sol-accent hover:bg-sol-accent hover:text-sol-bg transition-colors disabled:opacity-50"
-                >
-                  {submitting ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
-                </button>
-              </div>
+            <div className="flex flex-col gap-6">
+              {questionType === "true_false" && (
+                <div className="grid grid-cols-2 gap-3">
+                  {trueFalseOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => handleSubmit(undefined, option.value)}
+                      disabled={submitting}
+                      className="px-6 py-4 bg-sol-bg border border-sol-border/20 rounded-2xl text-sol-text font-black hover:border-sol-accent hover:text-sol-accent transition-all disabled:opacity-50"
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {questionType === "multiple_choices" && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {choiceOptions.map((option, index) => (
+                    <button
+                      key={`${option.label}-${option.value}-${index}`}
+                      type="button"
+                      onClick={() => handleSubmit(undefined, option.value)}
+                      disabled={submitting}
+                      className="px-6 py-4 bg-sol-bg border border-sol-border/20 rounded-2xl text-left text-sol-text font-bold hover:border-sol-accent hover:text-sol-accent transition-all disabled:opacity-50"
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {questionType === "ordering" && (
+                <div className="space-y-4">
+                  <div className="min-h-16 p-4 bg-sol-bg border border-sol-border/20 rounded-2xl flex flex-wrap gap-2">
+                    {orderedItems.length === 0 ? (
+                      <span className="text-sol-muted text-sm">{t("chooseItemsInOrder")}</span>
+                    ) : orderedItems.map((item) => (
+                      <button
+                        key={`ordered-${item.value}`}
+                        type="button"
+                        onClick={() => removeOrderingItem(item)}
+                        className="px-3 py-2 rounded-xl bg-sol-surface border border-sol-border/20 text-sol-text font-bold"
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {availableOrderingItems.map((item) => (
+                      <button
+                        key={`available-${item.value}`}
+                        type="button"
+                        onClick={() => selectOrderingItem(item)}
+                        disabled={submitting}
+                        className="px-4 py-2 bg-sol-bg border border-sol-border/20 rounded-xl text-sol-text font-bold hover:border-sol-accent hover:text-sol-accent transition-all disabled:opacity-50"
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    disabled={submitting || orderedItems.length === 0 || availableOrderingItems.length > 0}
+                    onClick={() => handleSubmit(undefined, makeOrderingAnswer(orderedItems))}
+                    className="w-full px-6 py-4 bg-sol-accent text-sol-bg rounded-2xl font-black disabled:opacity-50"
+                  >
+                    {submitting ? t("submitting") : t("submitOrder")}
+                  </button>
+                </div>
+              )}
+
+              {questionType === "numeric_input" && (
+                <form onSubmit={handleSubmit} className="relative flex items-center">
+                  <input
+                    type="number"
+                    step="any"
+                    value={answerInput}
+                    onChange={(e) => {
+                      setAnswerInput(e.target.value);
+                      setStatus("idle");
+                    }}
+                    placeholder={t("enterAnswer")}
+                    disabled={submitting}
+                    className={`w-full bg-sol-bg border-2 rounded-2xl px-6 py-4 text-sol-text placeholder-sol-muted/40 outline-none transition-all font-mono font-bold text-lg disabled:opacity-50
+                      ${status === 'correct' ? 'border-green-500/50 focus:border-green-500' : ''}
+                      ${status === 'incorrect' ? 'border-red-500/50 focus:border-red-500' : ''}
+                      ${status === 'idle' ? 'border-sol-border/20 focus:border-sol-accent/50' : ''}
+                    `}
+                    autoFocus
+                  />
+                  <button
+                    type="submit"
+                    disabled={submitting || !answerInput}
+                    className="absolute right-2 p-3 bg-sol-surface rounded-xl text-sol-accent hover:bg-sol-accent hover:text-sol-bg transition-colors disabled:opacity-50"
+                  >
+                    {submitting ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
+                  </button>
+                </form>
+              )}
 
               <div className="flex items-center justify-between">
                 <button
@@ -422,11 +548,18 @@ export default function PracticeRunnerPage() {
                 </div>
               )}
               {status === "incorrect" && (
-                <div className="flex items-center gap-2 text-red-500/90 font-bold bg-red-500/10 p-5 rounded-xl animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  <XCircle size={24} /> {t("notQuiteRight")}
+                <div className="space-y-3 text-red-500/90 font-bold bg-red-500/10 p-5 rounded-xl animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <div className="flex items-center gap-2">
+                    <XCircle size={24} /> {t("notQuiteRight")}
+                  </div>
+                  {rightAnswerText && (
+                    <div className="text-sm text-sol-text font-mono bg-sol-bg/60 border border-sol-border/10 rounded-xl px-4 py-3">
+                      {t("correctAnswer")}: <span className="text-sol-accent">{rightAnswerText}</span>
+                    </div>
+                  )}
                 </div>
               )}
-            </form>
+            </div>
           )}
         </div>
       </div>

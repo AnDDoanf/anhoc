@@ -13,7 +13,14 @@
     },
     "tableOfContents": "Table of Contents",
     "confirm": "Confirm",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "syncingProfile": "Syncing your profile...",
+    "accessDenied": "Access Denied",
+    "requiredFound": "Required: {required} | Found: {found}",
+    "backToHome": "Back to Home",
+    "footerCopyright": "© 2026 Your App"
+    ,"welcomeBack": "Welcome back, {email}!",
+    "dashboardPlaceholder": "Your dashboard content goes here."
   },
   "Difficulty": {
     "Beginner": "Beginner",
@@ -58,6 +65,18 @@
     "starting": "Starting...",
     "stats": "{count} exercises",
     "difficulty": "Difficulty",
+    "allDifficulties": "All difficulties",
+    "correctAnswer": "Correct answer",
+    "submitting": "Submitting...",
+    "submitOrder": "Submit order",
+    "chooseItemsInOrder": "Choose items in order",
+    "true": "True",
+    "false": "False",
+    "difficultyOptions": {
+      "easy": "Easy",
+      "medium": "Medium",
+      "hard": "Hard"
+    },
     "allGrades": "All Grades",
     "finishAbandon": "Finish / Abandon",
     "questionInfo": "Question {current} of {total}",
@@ -86,6 +105,7 @@
     "tipTitle": "Practice Tip",
     "tipContent": "Reviewing your mistakes is the fastest way to improve. Tap any previous session to see what you missed!",
     "footerQuote": "\"Practice makes perfect. Keep pushing forward!\"",
+    "achievementsEarned": "Achievements Earned",
     "modals": {
       "finishTitle": "Finish Practice",
       "completeTitle": "Complete Practice",
@@ -113,6 +133,30 @@
     "lessonOverview": "Lesson Overview",
     "readyChallengeTitle": "Ready for the next challenge?",
     "readyChallengeSubtitle": "Every lesson you complete brings you closer to mastering the curriculum. Your progress is synced across all devices."
+    ,"newLesson": "New Lesson",
+    "modal": {
+      "createTitle": "Create New Lesson",
+      "editTitle": "Edit Lesson",
+      "adminTool": "Administrator Tool",
+      "editMode": "Edit Mode",
+      "previewMode": "Preview Mode",
+      "lessonTitle": "Lesson Title ({lang})",
+      "lessonTitlePlaceholder": "e.g. Points, Lines, and Planes...",
+      "grade": "Grade",
+      "subject": "Subject",
+      "orderIndex": "Order Index",
+      "lessonContent": "Lesson Content (Markdown)",
+      "lessonContentPlaceholder": "## Start writing with Markdown... Support LaTeX using $...$ and TikZ code blocks.",
+      "tikzDetected": "TikZ Geometry Script Detected",
+      "untitledLesson": "Untitled Lesson",
+      "emptyContent": "_No content written yet. Use the editor on the left to start drafting._",
+      "footerNote": "Drafts are not saved automatically. Ensure you submit to save to database.",
+      "cancel": "Cancel",
+      "saving": "Saving...",
+      "saveChanges": "Save Changes",
+      "createLesson": "Create Lesson",
+      "saveError": "Error saving lesson. Check console."
+    }
   },
   "Path": {
     "title": "Learning Path",
@@ -144,6 +188,7 @@
     "newTemplate": "New Template",
     "adminToolbox": "Admin Toolbox",
     "type": "Type",
+    "difficulty": "Difficulty",
     "formula": "Formula",
     "ref": "Ref",
     "global": "Global",
@@ -151,12 +196,18 @@
       "search": "Search",
       "searchPlaceholder": "Search by template, lesson, or content",
       "templateType": "Template Type",
+      "difficulty": "Difficulty",
       "lesson": "Lesson",
       "allTemplateTypes": "All template types",
+      "allDifficulties": "All difficulties",
       "allLessons": "All lessons"
     },
     "deleteConfirm": "Are you sure you want to delete this specific template?",
     "deleteError": "Failed to delete. Ensure it is not locked by a test map.",
+    "preview": {
+      "title": "Template Live Preview",
+      "subtitle": "Interactive Simulator"
+    },
     "player": {
       "liveSnapshot": "Live Snapshot Viewer",
       "reroll": "Re-roll Variables",
@@ -166,7 +217,11 @@
       "varTree": "Current Variable Tree",
       "expected": "Expected Answer",
       "multipleChoice": "Multiple Choice",
-      "acceptedBadge": "accepted formulas"
+      "acceptedBadge": "accepted formulas",
+      "chooseItemsInOrder": "Choose items in order",
+      "checkOrder": "Check order",
+      "true": "True",
+      "false": "False"
     },
     "modal": {
       "createTitle": "Create Question Template",
@@ -176,6 +231,18 @@
       "noLesson": "-- No specific lesson (General) --",
       "unassignedGrade": "Unassigned Grade",
       "templateType": "Template Type",
+      "difficulty": "Difficulty",
+      "questionTypes": {
+        "numeric_input": "Numeric input",
+        "true_false": "True / false",
+        "multiple_choices": "Multiple choices",
+        "ordering": "Ordering"
+      },
+      "difficultyOptions": {
+        "easy": "Easy",
+        "medium": "Medium",
+        "hard": "Hard"
+      },
       "bodyEn": "Body Text (EN)",
       "bodyVi": "Body Text (VI)",
       "logicConfig": "Logic Config (JSON)",
@@ -195,9 +262,12 @@
       "varMin": "Min",
       "varMax": "Max",
       "generatedJson": "Generated logic_config JSON",
+      "logicJsonHint": "Supports variables, choices, derived values, and constraints. Example: {example}",
       "acceptedFormulas": "Accepted Answer Formulas",
       "addFormula": "Add Alternative Formula",
-      "altFormulaPlaceholder": "Alternative formula (e.g. y + x)"
+      "altFormulaPlaceholder": "Alternative formula (e.g. y + x)",
+      "invalidLogicJson": "logic_config must be valid JSON.",
+      "saveError": "Error saving template."
     }
   },
   "Admin": {
@@ -227,6 +297,10 @@
   "Achievements": {
     "title": "Achievement Gallery",
     "subtitle": "Track your progress and collect badges for your hard work.",
+    "hallTitle": "Hall of Achievements",
+    "polishing": "Polishing trophies...",
+    "collected": "Collected",
+    "total": "Total",
     "locked": "Locked",
     "earned": "Earned on {date}",
     "newAchievement": "New Achievement Unlocked!",

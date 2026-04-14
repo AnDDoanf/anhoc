@@ -154,7 +154,7 @@ export default function Sidebar() {
         </button>
       )}
 
-      <div className={`flex-1 overflow-y-auto p-4 space-y-8 scrollbar-hide`}>
+      <div className={`flex-1 overflow-y-auto p-2 md:p-4 space-y-8 scrollbar-hide`}>
 
         {/* Main Navigation */}
         <div className="space-y-1">

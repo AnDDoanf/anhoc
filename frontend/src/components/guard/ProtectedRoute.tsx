@@ -4,6 +4,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -16,6 +17,7 @@ export default function ProtectedRoute({
 }: ProtectedRouteProps) {
   const { user, token } = useSelector((state: RootState) => state.auth);
   const router = useRouter();
+  const t = useTranslations("Common");
 
   // 1. Standard hydration fix
   const [mounted, setMounted] = useState(false);
@@ -68,13 +70,13 @@ export default function ProtectedRoute({
   if (targetRole && userRole !== targetRole) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen text-gray-900">
-        <h1 className="text-2xl font-bold text-red-600">Access Denied</h1>
-        <p className="mt-2 text-gray-600">Required: {requiredRole} | Found: {user.role}</p>
+        <h1 className="text-2xl font-bold text-red-600">{t("accessDenied")}</h1>
+        <p className="mt-2 text-gray-600">{t("requiredFound", { required: requiredRole, found: user.role })}</p>
         <button 
           onClick={() => router.push("/")}
           className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
         >
-          Back to Home
+          {t("backToHome")}
         </button>
       </div>
     );

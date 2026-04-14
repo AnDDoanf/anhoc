@@ -169,18 +169,168 @@ async function main() {
 
   // 8. ❓ Question Templates (Refactored)
   console.log('  - Seeding Questions...');
-  const template1 = await prisma.questionTemplate.create({
-    data: {
+  const ensureTemplate = async (data: any) => {
+    const existing = await prisma.questionTemplate.findFirst({
+      where: {
+        lesson_id: data.lesson_id,
+        template_type: data.template_type,
+        body_template_en: data.body_template_en,
+      },
+    });
+
+    if (existing) {
+      return prisma.questionTemplate.update({
+        where: { id: existing.id },
+        data,
+      });
+    }
+
+    return prisma.questionTemplate.create({ data });
+  };
+
+  const questionTemplates = await Promise.all([
+    ensureTemplate({
       lesson_id: lesson.id,
       template_type: 'math_addition',
+      difficulty: 'easy',
       body_template_en: 'Calculate {{a}} + {{b}}',
       body_template_vi: 'Tính {{a}} + {{b}}',
-      logic_config: { min: 1, max: 10 },
-      answer_formula: 'a + b',
-      explanation_template_en: 'Add {{a}} and {{b}}',
-      explanation_template_vi: 'Cộng {{a}} và {{b}}',
-    },
-  });
+      logic_config: {
+        variables: {
+          a: { min: 1, max: 10 },
+          b: { min: 1, max: 10 },
+        },
+      },
+      accepted_formulas: ['a + b'],
+      explanation_template_en: 'Add {{a}} and {{b}}.',
+      explanation_template_vi: 'Cộng {{a}} và {{b}}.',
+    }),
+    ensureTemplate({
+      lesson_id: lesson.id,
+      template_type: 'math_subtraction',
+      difficulty: 'easy',
+      body_template_en: 'Calculate {{a}} - {{b}}',
+      body_template_vi: 'Tính {{a}} - {{b}}',
+      logic_config: {
+        variables: {
+          a: { min: 5, max: 30 },
+          b: { min: 1, max: 20 },
+        },
+        constraints: ['a >= b'],
+      },
+      accepted_formulas: ['a - b'],
+      explanation_template_en: 'Subtract {{b}} from {{a}}.',
+      explanation_template_vi: 'Lấy {{a}} trừ {{b}}.',
+    }),
+    ensureTemplate({
+      lesson_id: lesson.id,
+      template_type: 'math_multiplication',
+      difficulty: 'medium',
+      body_template_en: 'Calculate {{a}} * {{b}}',
+      body_template_vi: 'Tính {{a}} * {{b}}',
+      logic_config: {
+        variables: {
+          a: { min: 2, max: 12 },
+          b: { min: 2, max: 12 },
+        },
+      },
+      accepted_formulas: ['a * b'],
+      explanation_template_en: 'Multiply {{a}} by {{b}}.',
+      explanation_template_vi: 'Nhân {{a}} với {{b}}.',
+    }),
+    ensureTemplate({
+      lesson_id: lesson.id,
+      template_type: 'math_exact_division',
+      difficulty: 'medium',
+      body_template_en: 'Calculate {{product}} / {{divisor}}',
+      body_template_vi: 'Tính {{product}} / {{divisor}}',
+      logic_config: {
+        variables: {
+          divisor: { min: 2, max: 12 },
+          quotient: { min: 2, max: 12 },
+        },
+        derived: {
+          product: 'divisor * quotient',
+        },
+      },
+      accepted_formulas: ['quotient', 'product / divisor'],
+      explanation_template_en: '{{product}} divided by {{divisor}} equals {{quotient}}.',
+      explanation_template_vi: '{{product}} chia cho {{divisor}} bằng {{quotient}}.',
+    }),
+    ensureTemplate({
+      lesson_id: lesson.id,
+      template_type: 'math_missing_addend',
+      difficulty: 'medium',
+      body_template_en: '{{known}} + ___ = {{total}}',
+      body_template_vi: '{{known}} + ___ = {{total}}',
+      logic_config: {
+        variables: {
+          total: { min: 10, max: 50 },
+          known: { min: 1, max: 49 },
+        },
+        derived: {
+          missing: 'total - known',
+        },
+        constraints: ['missing > 0'],
+      },
+      accepted_formulas: ['missing', 'total - known'],
+      explanation_template_en: 'Find the number that completes the sum.',
+      explanation_template_vi: 'Tìm số còn thiếu để hoàn thành phép cộng.',
+    }),
+    ensureTemplate({
+      lesson_id: lesson.id,
+      template_type: 'math_difference_compare',
+      difficulty: 'medium',
+      body_template_en: 'How much greater is {{larger}} than {{smaller}}?',
+      body_template_vi: '{{larger}} lớn hơn {{smaller}} bao nhiêu?',
+      logic_config: {
+        variables: {
+          larger: { min: 10, max: 60 },
+          smaller: { min: 1, max: 59 },
+        },
+        constraints: ['larger > smaller'],
+      },
+      accepted_formulas: ['larger - smaller'],
+      explanation_template_en: 'Find the difference between the two numbers.',
+      explanation_template_vi: 'Tìm hiệu của hai số.',
+    }),
+    ensureTemplate({
+      lesson_id: lesson.id,
+      template_type: 'true_false',
+      difficulty: 'easy',
+      body_template_en: 'True or false: {{a}} is greater than {{b}}.',
+      body_template_vi: 'Đúng hay sai: {{a}} lớn hơn {{b}}.',
+      logic_config: {
+        variables: {
+          a: { min: 1, max: 50 },
+          b: { min: 1, max: 50 },
+        },
+        constraints: ['a != b'],
+      },
+      accepted_formulas: ['a > b'],
+      explanation_template_en: 'Compare the two numbers. The answer is true when {{a}} is greater than {{b}}.',
+      explanation_template_vi: 'So sánh hai số. Câu trả lời là đúng khi {{a}} lớn hơn {{b}}.',
+    }),
+    ensureTemplate({
+      lesson_id: lesson.id,
+      template_type: 'geometry_rectangle_perimeter',
+      difficulty: 'hard',
+      body_template_en: 'A rectangle has length {{length}} cm and width {{width}} cm. What is its perimeter?',
+      body_template_vi: 'Một hình chữ nhật có chiều dài {{length}} cm và chiều rộng {{width}} cm. Chu vi là bao nhiêu?',
+      logic_config: {
+        variables: {
+          length: { min: 3, max: 20 },
+          width: { min: 2, max: 12 },
+        },
+        constraints: ['length >= width'],
+      },
+      accepted_formulas: ['2 * (length + width)', 'length + width + length + width'],
+      explanation_template_en: 'Perimeter is 2 * (length + width).',
+      explanation_template_vi: 'Chu vi bằng 2 * (chiều dài + chiều rộng).',
+    }),
+  ]);
+
+  const template1 = questionTemplates[0];
 
   // 9. 📝 Test (Refactored)
   console.log('  - Seeding Tests...');

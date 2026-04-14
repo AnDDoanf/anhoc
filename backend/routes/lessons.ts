@@ -6,6 +6,12 @@ import { masteryService } from '../services/masteryService';
 
 const router = Router();
 
+const normalizeDifficulty = (difficulty: unknown): string | null => {
+  const value = String(difficulty || "all").toLowerCase();
+  if (["easy", "medium", "hard"].includes(value)) return value;
+  return null;
+};
+
 // Create a new lesson (Admin or Teacher can have 'manage' permission)
 router.post('/', authenticate, authorize('manage', 'lesson'), async (req, res) => {
   const { title_en, title_vi, content_markdown_en, content_markdown_vi, grade_id, subject_id, order_index } = req.body;
@@ -76,15 +82,23 @@ router.get('/practice-available', authenticate, async (req, res) => {
 router.post('/:id/practice', authenticate, async (req, res) => {
   const lesson_id = req.params.id as string;
   const userId = (req as any).user.id;
+  const difficulty = normalizeDifficulty(req.body?.difficulty);
 
   try {
     // 1. Fetch templates associated with this lesson
     const templates = await prisma.questionTemplate.findMany({
-      where: { lesson_id }
+      where: {
+        lesson_id,
+        ...(difficulty ? { difficulty } : {})
+      }
     });
 
     if (templates.length === 0) {
-      return res.status(404).json({ error: "No templates found for this lesson to practice." });
+      return res.status(404).json({
+        error: difficulty
+          ? `No ${difficulty} templates found for this lesson to practice.`
+          : "No templates found for this lesson to practice."
+      });
     }
 
     // 2. Create a practice TestAttempt

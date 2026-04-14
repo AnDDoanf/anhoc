@@ -127,6 +127,7 @@ model QuestionTemplate {
   id                      String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   lesson_id               String?            @db.Uuid
   template_type           String             @db.VarChar(50)
+  difficulty              String             @default("medium") @db.VarChar(20)
   
   // Multilingual Templates
   body_template_en        String

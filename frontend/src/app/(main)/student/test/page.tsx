@@ -26,45 +26,45 @@ export default function TestPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-12 space-y-16">
+    <div className="mx-auto max-w-7xl space-y-8 py-4 md:space-y-16 md:py-10">
       
       {/* Hero Header */}
-      <header className="relative p-10 md:p-16 rounded-[3rem] bg-sol-surface/30 border border-sol-border/10 overflow-hidden group">
-        <div className="absolute top-0 right-0 p-10 opacity-10 group-hover:scale-110 transition-transform duration-1000">
-          <Medal size={160} className="text-sol-accent" />
+      <header className="group relative overflow-hidden rounded-[2rem] border border-sol-border/10 bg-sol-surface/30 p-5 sm:p-6 md:rounded-[3rem] md:p-16">
+        <div className="absolute right-0 top-0 p-4 opacity-10 transition-transform duration-1000 group-hover:scale-110 sm:p-6 md:p-10">
+          <Medal size={112} className="text-sol-accent md:h-40 md:w-40" />
         </div>
         
-        <div className="relative z-10 max-w-2xl">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-sol-accent/10 border border-sol-accent/20 text-sol-accent text-xs font-bold uppercase tracking-widest mb-6">
-            <Sparkles size={14} />
+        <div className="relative z-10 max-w-2xl space-y-3 md:space-y-6">
+          <div className="inline-flex items-center gap-2 rounded-full border border-sol-accent/20 bg-sol-accent/10 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-sol-accent sm:px-3 sm:py-1.5 md:text-xs">
+            <Sparkles size={11} className="md:h-3.5 md:w-3.5" />
             <span>{t("examinationHub")}</span>
           </div>
-          <h1 className="text-4xl md:text-6xl font-black text-sol-text tracking-tight mb-6 leading-tight">
+          <h1 className="max-w-[11ch] text-[1.75rem] font-black leading-[1.05] tracking-tight text-sol-text sm:text-4xl md:max-w-none md:text-6xl">
             {t("title")}
           </h1>
-          <p className="text-lg md:text-xl text-sol-muted leading-relaxed">
+          <p className="max-w-xl text-[13px] leading-relaxed text-sol-muted sm:text-sm md:text-xl">
             {t("subtitle")}
           </p>
         </div>
       </header>
 
       {/* Grade Sections */}
-      <div className="space-y-20">
+      <div className="space-y-10 md:space-y-20">
         {Object.entries(groupedData).map(([gradeId, tests]) => (
-          <section key={gradeId} className="space-y-8">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-sol-surface/50 border border-sol-border/10 flex items-center justify-center text-sol-accent shadow-sm">
-                <BookOpen size={24} />
+          <section key={gradeId} className="space-y-5 md:space-y-8">
+            <div className="flex items-center gap-3 md:gap-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-sol-border/10 bg-sol-surface/50 text-sol-accent shadow-sm md:h-12 md:w-12 md:rounded-2xl">
+                <BookOpen size={20} className="md:h-6 md:w-6" />
               </div>
               <div>
-                <h2 className="text-2xl font-black text-sol-text tracking-tight uppercase">
+                <h2 className="text-xl font-black uppercase tracking-tight text-sol-text md:text-2xl">
                   {getGradeTitle(gradeId)}
                 </h2>
                 <div className="h-1 w-12 bg-sol-accent rounded-full mt-1" />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-6 lg:grid-cols-3 lg:gap-8">
               {tests.map((test) => (
                 <TestCard key={test.id} test={test} />
               ))}
@@ -74,7 +74,7 @@ export default function TestPage() {
       </div>
 
       {/* Footer Info */}
-      <footer className="footer-gradient p-12 rounded-[2.5rem] bg-sol-accent/5 border border-sol-border/10 text-center">
+      <footer className="footer-gradient rounded-[2rem] border border-sol-border/10 bg-sol-accent/5 p-6 text-center md:rounded-[2.5rem] md:p-12">
          <p className="text-sol-muted italic">
            "Knowledge is power. Test your limits!"
          </p>
