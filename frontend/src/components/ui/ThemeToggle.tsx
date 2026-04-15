@@ -6,8 +6,6 @@ export default function ThemeToggle() {
   const [dark, setDark] = useState<boolean | null>(null);
 
   useEffect(() => {
-    // The head script in layout.tsx already applied the class 'dark' if needed.
-    // We just need to sync our component state with the actual DOM state.
     const isDark = document.documentElement.classList.contains("dark");
     setDark(isDark);
     
