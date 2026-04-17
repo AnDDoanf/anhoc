@@ -42,7 +42,7 @@ export default function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [lessonGroups, setLessonGroups] = useState<SidebarSubjectGroup[]>([]);
-  const [collapsedSubjects, setCollapsedSubjects] = useState<Record<string, boolean>>({});
+  const [expandedGrades, setExpandedGrades] = useState<Record<string, boolean>>({});
   const [userLevel, setUserLevel] = useState<number | null>(null);
 
   useEffect(() => {
@@ -125,8 +125,11 @@ export default function Sidebar() {
     };
   }, [locale]);
 
-  const toggleSubject = (subject: string) => {
-    setCollapsedSubjects((current) => ({ ...current, [subject]: !current[subject] }));
+  const getGradeKey = (subject: string, grade: string) => `${subject}:${grade}`;
+
+  const toggleGrade = (subject: string, grade: string) => {
+    const gradeKey = getGradeKey(subject, grade);
+    setExpandedGrades((current) => ({ ...current, [gradeKey]: !current[gradeKey] }));
   };
 
   const toggleSidebar = () => {
@@ -257,59 +260,66 @@ export default function Sidebar() {
         <div className={`space-y-6 transition-all duration-500 overflow-hidden ${isCollapsed ? "opacity-0 pointer-events-none w-0" : "opacity-100 w-auto"}`}>
           {lessonGroups.map((subject) => (
             <div key={subject.subject} className="space-y-2">
-              <button
-                type="button"
-                onClick={() => toggleSubject(subject.subject)}
-                className="flex w-full items-center justify-between px-3 text-left text-[10px] font-bold text-sol-muted uppercase tracking-[0.15em] hover:text-sol-accent transition-colors whitespace-nowrap"
-              >
+              <div className="px-3 text-[10px] font-bold text-sol-muted uppercase tracking-[0.15em] whitespace-nowrap">
                 <span className="truncate">{subject.label}</span>
-                <ChevronRight
-                  size={13}
-                  className={`shrink-0 transition-transform ${collapsedSubjects[subject.subject] ? "" : "rotate-90"}`}
-                />
-              </button>
+              </div>
 
-              {!collapsedSubjects[subject.subject] && (
-                <div className="space-y-4">
-                  {subject.grades.map((group) => (
-                    <div key={`${subject.subject}-${group.grade}`} className="space-y-1">
-                      <Link
-                        prefetch={false}
-                        href={`/student/learning/${group.grade}`}
-                        className="block truncate px-3 text-xs font-black text-sol-text hover:text-sol-accent"
-                      >
-                        {group.label}
-                      </Link>
+              <div className="space-y-4">
+                {subject.grades.map((group) => (
+                  <div key={`${subject.subject}-${group.grade}`} className="space-y-1">
+                    <button
+                      type="button"
+                      onClick={() => toggleGrade(subject.subject, group.grade)}
+                      aria-expanded={Boolean(expandedGrades[getGradeKey(subject.subject, group.grade)])}
+                      className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-1.5 text-left text-xs font-black text-sol-text hover:bg-sol-bg hover:text-sol-accent transition-colors"
+                    >
+                      <span className="truncate">{group.label}</span>
+                      <ChevronRight
+                        size={13}
+                        className={`shrink-0 transition-transform ${expandedGrades[getGradeKey(subject.subject, group.grade)] ? "rotate-90" : ""}`}
+                      />
+                    </button>
 
-                      {group.lessons.map((lesson) => {
-                        const href = `/student/learning/${group.grade}/${lesson.id}`;
-                        const isActive = pathname === href;
-                        const displayTitle = locale === "vi" ? lesson.title_vi : lesson.title_en;
+                    {expandedGrades[getGradeKey(subject.subject, group.grade)] && (
+                      <div className="space-y-1 pl-2">
+                        <Link
+                          prefetch={false}
+                          href={`/student/learning/${group.grade}`}
+                          className="block truncate px-3 py-1 text-[11px] font-bold text-sol-muted hover:text-sol-accent"
+                        >
+                          {t("learning")}
+                        </Link>
 
-                        return (
-                          <Link
-                            prefetch={false}
-                            key={`${group.grade}-${lesson.id}`}
-                            href={href}
-                            className={`group flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all whitespace-nowrap
-                              ${isActive
-                                ? "bg-sol-accent text-sol-bg font-bold shadow-sm"
-                                : "text-sol-text hover:bg-sol-bg hover:text-sol-accent"
-                              }
-                            `}
-                          >
-                            <span className="truncate">{displayTitle}</span>
-                            <ChevronRight
-                              size={14}
-                              className={`transition-transform flex-shrink-0 ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-50 group-hover:translate-x-1"}`}
-                            />
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  ))}
-                </div>
-              )}
+                        {group.lessons.map((lesson) => {
+                          const href = `/student/learning/${group.grade}/${lesson.id}`;
+                          const isActive = pathname === href;
+                          const displayTitle = locale === "vi" ? lesson.title_vi : lesson.title_en;
+
+                          return (
+                            <Link
+                              prefetch={false}
+                              key={`${group.grade}-${lesson.id}`}
+                              href={href}
+                              className={`group flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all whitespace-nowrap
+                                ${isActive
+                                  ? "bg-sol-accent text-sol-bg font-bold shadow-sm"
+                                  : "text-sol-text hover:bg-sol-bg hover:text-sol-accent"
+                                }
+                              `}
+                            >
+                              <span className="truncate">{displayTitle}</span>
+                              <ChevronRight
+                                size={14}
+                                className={`transition-transform flex-shrink-0 ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-50 group-hover:translate-x-1"}`}
+                              />
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           ))}
         </div>

@@ -4,7 +4,7 @@ import { useTranslations, useLocale } from "next-intl";
 import Link from "next/link";
 import LearningCard from "@/components/feature/LearningCard";
 import Can from "@/components/auth/Can";
-import { GraduationCap, Library, Globe, ArrowUpRight, PlusCircle, Layers, BookMarked } from "lucide-react";
+import { GraduationCap, Library, Globe, ArrowUpRight, PlusCircle, Layers, BookMarked, ChevronRight } from "lucide-react";
 import CreateLessonModal from "@/components/feature/CreateLessonModal";
 import { useState, useEffect, useCallback } from "react";
 import { Lesson, LessonMastery, Subject, lessonService } from "@/services/lessonService";
@@ -39,6 +39,7 @@ export default function LearningDashboard() {
   const [editLessonId, setEditLessonId] = useState<string | null>(null);
   const [lessonGroups, setLessonGroups] = useState<LessonSubjectGroup[]>([]);
   const [masteryData, setMasteryData] = useState<Record<string, LessonMastery>>({});
+  const [expandedGrades, setExpandedGrades] = useState<Record<string, boolean>>({});
 
   const fetchDisplayData = useCallback(async () => {
     try {
@@ -114,6 +115,13 @@ export default function LearningDashboard() {
   const handleModalClose = () => {
     setIsModalOpen(false);
     setTimeout(() => setEditLessonId(null), 300); // clear after animation
+  };
+
+  const getGradeKey = (subject: string, grade: string) => `${subject}:${grade}`;
+
+  const toggleGrade = (subject: string, grade: string) => {
+    const gradeKey = getGradeKey(subject, grade);
+    setExpandedGrades((current) => ({ ...current, [gradeKey]: !current[gradeKey] }));
   };
 
   return (
@@ -200,39 +208,55 @@ export default function LearningDashboard() {
 
             {subject.grades.map((group) => (
               <div key={`${subject.subject}-${group.grade}`} className="space-y-5">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <button
+                  type="button"
+                  onClick={() => toggleGrade(subject.subject, group.grade)}
+                  aria-expanded={Boolean(expandedGrades[getGradeKey(subject.subject, group.grade)])}
+                  className="flex w-full flex-col gap-3 rounded-3xl border border-sol-border/10 bg-sol-surface/30 p-5 text-left transition-all hover:border-sol-accent/30 hover:bg-sol-surface sm:flex-row sm:items-center sm:justify-between md:p-6"
+                >
                   <div>
                     <h3 className="text-xl font-black uppercase tracking-tight text-sol-text">{group.label}</h3>
                     <p className="text-sol-muted text-sm font-medium">
                       {t("lessonCount", { count: group.lessons.length })}
                     </p>
                   </div>
-                  <Link
-                    href={`/student/learning/${group.grade}`}
-                    prefetch={false}
-                    className="flex items-center gap-2 text-sol-accent font-bold text-sm hover:underline hover:opacity-80 transition-all group/link"
-                  >
-                    {t("viewPath")} <ArrowUpRight size={16} className="group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />
-                  </Link>
-                </div>
+                  <ChevronRight
+                    size={22}
+                    className={`text-sol-accent transition-transform ${expandedGrades[getGradeKey(subject.subject, group.grade)] ? "rotate-90" : ""}`}
+                  />
+                </button>
 
-                <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-10">
-                  {group.lessons.map((lesson, idx) => {
-                    const title = locale === "vi" ? lesson.title_vi : lesson.title_en;
-                    return (
-                      <LearningCard
-                        key={lesson.id}
-                        lessonId={lesson.id}
-                        gradeId={group.grade}
-                        title={title}
-                        index={idx + 1}
-                        mastery={masteryData[lesson.id]}
-                        onEdit={handleEdit}
-                        onDelete={handleDelete}
-                      />
-                    );
-                  })}
-                </div>
+                {expandedGrades[getGradeKey(subject.subject, group.grade)] && (
+                  <div className="">
+                    <div className="flex justify-end">
+                      <Link
+                        href={`/student/learning/${group.grade}`}
+                        prefetch={false}
+                        className="flex items-center gap-2 text-sol-accent font-bold text-sm hover:underline hover:opacity-80 transition-all group/link"
+                      >
+                        {t("viewPath")} <ArrowUpRight size={16} className="group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />
+                      </Link>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-10">
+                      {group.lessons.map((lesson, idx) => {
+                        const title = locale === "vi" ? lesson.title_vi : lesson.title_en;
+                        return (
+                          <LearningCard
+                            key={lesson.id}
+                            lessonId={lesson.id}
+                            gradeId={group.grade}
+                            title={title}
+                            index={idx + 1}
+                            mastery={masteryData[lesson.id]}
+                            onEdit={handleEdit}
+                            onDelete={handleDelete}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </section>
