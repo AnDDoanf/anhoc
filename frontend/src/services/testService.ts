@@ -14,14 +14,14 @@ api.interceptors.request.use((config) => {
 });
 
 export interface CreateTemplateDTO {
-  lesson_id?: string;
+  lesson_id?: string | null;
   template_type: string;
   difficulty?: string;
   body_template_en: string;
   body_template_vi: string;
   explanation_template_en?: string;
   explanation_template_vi?: string;
-  logic_config?: any;
+  logic_config?: unknown;
   accepted_formulas?: string[];
 }
 

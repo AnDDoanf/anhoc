@@ -1,16 +1,34 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { X, Save, Database, Code2, Plus, Trash2 } from "lucide-react";
 import { testService, CreateTemplateDTO } from "@/services/testService";
-import { lessonService } from "@/services/lessonService";
+import { lessonService, type Lesson } from "@/services/lessonService";
+import { isAxiosError } from "axios";
 
 interface VariableDef {
   name: string;
   min: number | string;
   max: number | string;
 }
+
+type LogicVariableRange = {
+  min?: number | string;
+  max?: number | string;
+};
+
+type LogicConfigDraft = Record<string, unknown> & {
+  variables?: Record<string, LogicVariableRange>;
+  false_answers?: unknown[];
+  items?: unknown;
+  derived?: unknown;
+  choices?: unknown;
+};
+
+type QuestionTemplate = CreateTemplateDTO & {
+  id: string;
+};
 
 interface Props {
   isOpen: boolean;
@@ -32,6 +50,22 @@ const toFiniteNumber = (value: number | string | undefined, fallback = 0) => {
   const parsed = typeof value === "number" ? value : Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 };
+
+const buildLogicFromVariableDefs = (defs: VariableDef[]) => {
+  const variables: Record<string, { min: number; max: number }> = {};
+  for (const v of defs) {
+    const key = v.name.trim();
+    if (key) variables[key] = {
+      min: toFiniteNumber(v.min),
+      max: toFiniteNumber(v.max),
+    };
+  }
+  return { variables };
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> => (
+  !!value && typeof value === "object" && !Array.isArray(value)
+);
 
 const TYPE_PRESETS: Record<string, {
   bodyEn: string;
@@ -125,7 +159,7 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
   const locale = useLocale();
 
   const [loading, setLoading] = useState(false);
-  const [lessons, setLessons] = useState<any[]>([]);
+  const [lessons, setLessons] = useState<Lesson[]>([]);
 
   // Simple fields
   const [lessonId, setLessonId] = useState("");
@@ -142,29 +176,113 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
   const [variableDefs, setVariableDefs] = useState<VariableDef[]>(DEFAULT_VARS);
   const [logicJson, setLogicJson] = useState("");
   const [logicJsonDirty, setLogicJsonDirty] = useState(false);
+  const [devMode, setDevMode] = useState(false);
+  const [apiBodyJson, setApiBodyJson] = useState("");
+  const [apiBodyJsonError, setApiBodyJsonError] = useState("");
+  const syncingFromApiBodyRef = useRef(false);
 
-  const buildLogicFromDefs = () => {
-    const variables: Record<string, { min: number; max: number }> = {};
-    for (const v of variableDefs) {
-      const key = v.name.trim();
-      if (key) variables[key] = {
-        min: toFiniteNumber(v.min),
-        max: toFiniteNumber(v.max),
-      };
-    }
-    return { variables };
-  };
+  const buildLogicFromDefs = useCallback(() => buildLogicFromVariableDefs(variableDefs), [variableDefs]);
 
-  const buildLogicConfig = () => {
+  const buildLogicConfig = useCallback(() => {
     try {
       const parsed = JSON.parse(logicJson);
       return parsed && typeof parsed === "object" ? parsed : buildLogicFromDefs();
     } catch {
       return buildLogicFromDefs();
     }
+  }, [buildLogicFromDefs, logicJson]);
+
+  const buildPayloadFromForm = useCallback((): CreateTemplateDTO => {
+    const theoreticalFalseAnswers = falseAnswers.map((answer) => answer.trim()).filter(Boolean);
+
+    return {
+      lesson_id: lessonId === "" ? null : lessonId,
+      template_type: templateType,
+      difficulty,
+      body_template_en: bodyEn,
+      body_template_vi: bodyVi,
+      accepted_formulas: templateType === "theoretical_question"
+        ? [acceptedFormulas[0]?.trim() || ""].filter(Boolean)
+        : acceptedFormulas.filter(f => f.trim()),
+      logic_config: templateType === "theoretical_question"
+        ? { false_answers: theoreticalFalseAnswers }
+        : buildLogicConfig(),
+    };
+  }, [
+    acceptedFormulas,
+    bodyEn,
+    bodyVi,
+    buildLogicConfig,
+    difficulty,
+    falseAnswers,
+    lessonId,
+    templateType,
+  ]);
+
+  const applyPayloadToForm = (payload: Partial<CreateTemplateDTO>) => {
+    syncingFromApiBodyRef.current = true;
+
+    if ("lesson_id" in payload) {
+      setLessonId(payload.lesson_id || "");
+    }
+    if (payload.template_type) {
+      setTemplateType(payload.template_type);
+    }
+    if (payload.difficulty) {
+      setDifficulty(payload.difficulty);
+    }
+    if (typeof payload.body_template_en === "string") {
+      setBodyEn(payload.body_template_en);
+    }
+    if (typeof payload.body_template_vi === "string") {
+      setBodyVi(payload.body_template_vi);
+    }
+
+    const nextAcceptedFormulas = Array.isArray(payload.accepted_formulas)
+      ? payload.accepted_formulas.map((formula) => String(formula || ""))
+      : [];
+    if (Array.isArray(payload.accepted_formulas)) {
+      setAcceptedFormulas(nextAcceptedFormulas.length > 0 ? nextAcceptedFormulas : [""]);
+    }
+
+    if ("logic_config" in payload) {
+      const nextTemplateType = payload.template_type || templateType;
+      const nextLogicConfig = payload.logic_config || {};
+      setLogicJson(JSON.stringify(nextLogicConfig, null, 2));
+      setLogicJsonDirty(true);
+
+      if (nextTemplateType === "theoretical_question") {
+        const falseAnswersFromConfig = Array.isArray((nextLogicConfig as { false_answers?: unknown[] })?.false_answers)
+          ? (nextLogicConfig as { false_answers?: unknown[] }).false_answers?.map((answer) => String(answer || "")).slice(0, 3) || []
+          : [];
+        setFalseAnswers([
+          falseAnswersFromConfig[0] || "",
+          falseAnswersFromConfig[1] || "",
+          falseAnswersFromConfig[2] || "",
+        ]);
+      } else if ((nextLogicConfig as { variables?: unknown })?.variables) {
+        const variables = (nextLogicConfig as { variables: Record<string, { min?: number | string; max?: number | string }> }).variables;
+        const defs = Object.entries(variables).map(([name, range]) => ({
+          name,
+          min: range?.min ?? 1,
+          max: range?.max ?? 10,
+        }));
+        setVariableDefs(defs.length > 0 ? defs : DEFAULT_VARS);
+      }
+    }
+
+    window.setTimeout(() => {
+      syncingFromApiBodyRef.current = false;
+    }, 0);
   };
 
-  const parseLogicConfig = (raw: any, primaryFormula: string, extraAccepted: string[]) => {
+  useEffect(() => {
+    if (!isOpen || syncingFromApiBodyRef.current) return;
+    setApiBodyJson(JSON.stringify(buildPayloadFromForm(), null, 2));
+    setApiBodyJsonError("");
+  }, [buildPayloadFromForm, isOpen]);
+
+  const parseLogicConfig = useCallback((raw: unknown, primaryFormula: string, extraAccepted: string[]) => {
     setAcceptedFormulas(
       [primaryFormula, ...extraAccepted].filter(f => f.trim())
         .length > 0
@@ -172,8 +290,10 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
         : [primaryFormula]
     );
     try {
-      const cfg = typeof raw === "string" ? JSON.parse(raw) : raw;
-      setLogicJson(JSON.stringify(cfg || buildLogicFromDefs(), null, 2));
+      const cfg = typeof raw === "string"
+        ? JSON.parse(raw) as LogicConfigDraft
+        : isRecord(raw) ? raw as LogicConfigDraft : {};
+      setLogicJson(JSON.stringify(cfg || buildLogicFromVariableDefs(DEFAULT_VARS), null, 2));
       setLogicJsonDirty(true);
       const falseAnswersFromConfig = Array.isArray(cfg?.false_answers)
         ? cfg.false_answers.map((answer: unknown) => String(answer || "")).slice(0, 3)
@@ -184,7 +304,7 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
         falseAnswersFromConfig[2] || "",
       ]);
       if (cfg?.variables) {
-        const defs = Object.entries(cfg.variables).map(([name, range]: [string, any]) => ({
+        const defs = Object.entries(cfg.variables).map(([name, range]) => ({
           name,
           min: range.min ?? 1,
           max: range.max ?? 10,
@@ -196,13 +316,13 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
       setLogicJson(JSON.stringify({ variables: { x: { min: 1, max: 10 }, y: { min: 1, max: 10 } } }, null, 2));
       setLogicJsonDirty(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (!logicJsonDirty) {
       setLogicJson(JSON.stringify(buildLogicFromDefs(), null, 2));
     }
-  }, [variableDefs, logicJsonDirty]);
+  }, [buildLogicFromDefs, variableDefs, logicJsonDirty]);
 
   const syncVariablesToLogicJson = (defs: VariableDef[]) => {
     const variableNames = defs
@@ -214,9 +334,10 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
     }
 
     setLogicJson(prev => {
-      let parsed: Record<string, any> = {};
+      let parsed: LogicConfigDraft = {};
       try {
-        parsed = prev ? JSON.parse(prev) : {};
+        const parsedJson = prev ? JSON.parse(prev) : {};
+        parsed = isRecord(parsedJson) ? parsedJson as LogicConfigDraft : {};
       } catch {
         parsed = {};
       }
@@ -231,7 +352,7 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
         };
       }
 
-      const nextConfig = { ...parsed, variables };
+      const nextConfig: LogicConfigDraft = { ...parsed, variables };
 
       if (templateType === "ordering") {
         nextConfig.items = variableNames
@@ -259,8 +380,8 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
         setLessons(lList);
 
         if (editTemplateId) {
-          const allTpl = await testService.listTemplates();
-          const curr = allTpl.find((t: any) => t.id === editTemplateId);
+          const allTpl = await testService.listTemplates() as QuestionTemplate[];
+          const curr = allTpl.find((template) => template.id === editTemplateId);
           if (curr) {
             setLessonId(curr.lesson_id || "");
             setTemplateType(curr.template_type);
@@ -288,7 +409,7 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
       }
     };
     fetchData();
-  }, [isOpen, editTemplateId]);
+  }, [isOpen, editTemplateId, parseLogicConfig]);
 
   if (!isOpen) return null;
 
@@ -343,6 +464,23 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
     setLogicJsonDirty(true);
   };
 
+  const handleApiBodyJsonChange = (value: string) => {
+    setApiBodyJson(value);
+
+    try {
+      const parsed = JSON.parse(value);
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        setApiBodyJsonError(t("invalidApiBodyJson"));
+        return;
+      }
+
+      setApiBodyJsonError("");
+      applyPayloadToForm(parsed);
+    } catch {
+      setApiBodyJsonError(t("invalidApiBodyJson"));
+    }
+  };
+
   // ---- Submit ----
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -358,29 +496,36 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
         return;
       }
 
-      const theoreticalFalseAnswers = falseAnswers.map((answer) => answer.trim()).filter(Boolean);
-      if (templateType === "theoretical_question") {
-        if (!acceptedFormulas[0]?.trim() || theoreticalFalseAnswers.length !== 3) {
+      let payload: CreateTemplateDTO;
+      if (devMode) {
+        try {
+          const parsed = JSON.parse(apiBodyJson);
+          if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+            alert(t("invalidApiBodyJson"));
+            setLoading(false);
+            return;
+          }
+          payload = parsed as CreateTemplateDTO;
+        } catch {
+          alert(t("invalidApiBodyJson"));
+          setLoading(false);
+          return;
+        }
+      } else {
+        payload = buildPayloadFromForm();
+      }
+
+      const payloadTemplateType = payload.template_type;
+      const theoreticalFalseAnswers = Array.isArray((payload.logic_config as { false_answers?: unknown[] })?.false_answers)
+        ? (payload.logic_config as { false_answers?: unknown[] }).false_answers?.map((answer) => String(answer || "").trim()).filter(Boolean) || []
+        : [];
+      if (payloadTemplateType === "theoretical_question") {
+        if (!payload.accepted_formulas?.[0]?.trim() || theoreticalFalseAnswers.length !== 3) {
           alert(t("theoreticalAnswerError"));
           setLoading(false);
           return;
         }
       }
-
-      const payload: CreateTemplateDTO = {
-        lesson_id: lessonId === "" ? undefined : lessonId,
-        template_type: templateType,
-        difficulty,
-        body_template_en: bodyEn,
-        body_template_vi: bodyVi,
-        // accepted_formulas[0] is the primary formula; the rest are alternatives
-        accepted_formulas: templateType === "theoretical_question"
-          ? [acceptedFormulas[0].trim()]
-          : acceptedFormulas.filter(f => f.trim()),
-        logic_config: templateType === "theoretical_question"
-          ? { false_answers: theoreticalFalseAnswers }
-          : buildLogicConfig(),
-      };
 
       if (editTemplateId) {
         await testService.updateTemplate(editTemplateId, payload);
@@ -391,9 +536,14 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
       onClose();
     } catch (err) {
       console.error("Failed to save template:", err);
-      const message = (err as any)?.response?.data?.details
-        || (err as any)?.response?.data?.error
-        || t("saveError");
+      const responseData = isAxiosError(err) && isRecord(err.response?.data)
+        ? err.response.data
+        : {};
+      const message = typeof responseData.details === "string"
+        ? responseData.details
+        : typeof responseData.error === "string"
+          ? responseData.error
+          : t("saveError");
       alert(message);
     } finally {
       setLoading(false);
@@ -427,6 +577,55 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-6">
           <form id="template-form" onSubmit={handleSubmit} className="space-y-8">
+            <div className="flex flex-col gap-3 rounded-2xl border border-sol-border/10 bg-sol-bg/50 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-widest text-sol-muted">{t("creationMode")}</p>
+                <p className="text-sm font-medium text-sol-text">
+                  {devMode ? t("devModeHint") : t("normalModeHint")}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!devMode) {
+                    setApiBodyJson(JSON.stringify(buildPayloadFromForm(), null, 2));
+                    setApiBodyJsonError("");
+                  }
+                  setDevMode((current) => !current);
+                }}
+                className={`rounded-2xl px-5 py-2.5 text-sm font-black transition-all ${
+                  devMode
+                    ? "bg-sol-accent text-sol-bg shadow-lg shadow-sol-accent/20"
+                    : "border border-sol-accent/20 text-sol-accent hover:bg-sol-accent/10"
+                }`}
+              >
+                {devMode ? t("normalMode") : t("devMode")}
+              </button>
+            </div>
+
+            {devMode ? (
+              <div className="space-y-3 rounded-2xl border border-sol-border/10 bg-sol-bg p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <label className="text-xs font-black uppercase tracking-widest text-sol-muted">{t("apiBody")}</label>
+                  <span className={`text-xs font-bold ${apiBodyJsonError ? "text-red-500" : "text-sol-accent"}`}>
+                    {apiBodyJsonError || t("apiBodySynced")}
+                  </span>
+                </div>
+                <textarea
+                  value={apiBodyJson}
+                  onChange={(e) => handleApiBodyJsonChange(e.target.value)}
+                  rows={24}
+                  spellCheck={false}
+                  className={`scrollbar-hidden w-full resize-none rounded-2xl border bg-transparent p-4 font-mono text-xs outline-none transition-colors ${
+                    apiBodyJsonError
+                      ? "border-red-500/40 text-red-400 focus:ring-2 focus:ring-red-500/20"
+                      : "border-sol-border/20 text-sol-accent/90 focus:ring-2 focus:ring-sol-accent/30"
+                  }`}
+                />
+                <p className="text-xs leading-relaxed text-sol-muted">{t("apiBodyHint")}</p>
+              </div>
+            ) : (
+              <>
 
             {/* Row 1: Lesson + Type + Difficulty */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -653,6 +852,8 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
                 </p>
               </div>
             </div>
+            )}
+              </>
             )}
 
           </form>
