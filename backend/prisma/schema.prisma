@@ -40,6 +40,7 @@ model Role {
   id          Int              @id @default(autoincrement())
   name        String           @unique @db.VarChar(50) // e.g., "admin", "student"
   permissions RolePermission[]
+  subject_permissions RoleSubjectPermission[]
   users       User[]
 
   @@map("roles")
@@ -82,6 +83,8 @@ model Grade {
   slug      String   @unique @db.VarChar(50) // e.g., "grade-6"
   title_en  String   @db.VarChar(100)
   title_vi  String   @db.VarChar(100)
+  subject_id Int?
+  subject   Subject? @relation(fields: [subject_id], references: [id], onDelete: SetNull)
   lessons   Lesson[]
 
   @@map("grades")
@@ -93,9 +96,23 @@ model Subject {
   title_en  String   @db.VarChar(100)
   title_vi  String   @db.VarChar(100)
   color     String?  @db.VarChar(20)
+  grades    Grade[]
   lessons   Lesson[]
+  role_permissions RoleSubjectPermission[]
 
   @@map("subjects")
+}
+
+model RoleSubjectPermission {
+  id         Int @id @default(autoincrement())
+  role_id    Int
+  subject_id Int
+
+  role    Role    @relation(fields: [role_id], references: [id], onDelete: Cascade)
+  subject Subject @relation(fields: [subject_id], references: [id], onDelete: Cascade)
+
+  @@unique([role_id, subject_id])
+  @@map("role_subject_permissions")
 }
 
 model Lesson {

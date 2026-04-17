@@ -8,20 +8,22 @@ interface LearningRightSidebarProps {
 export default function LearningRightSidebar({ children }: LearningRightSidebarProps) {
   const t = useTranslations("Learning");
   return (
-    <aside className="hidden xl:block w-72 flex-shrink-0">
-      <div className="sticky top-24 p-6 rounded-2xl border border-sol-border/20 bg-sol-surface/50 backdrop-blur-md shadow-sm">
-        {children}
+    <aside className="hidden w-72 flex-shrink-0 xl:block">
+      <div className="sticky top-24 flex max-h-[calc(100vh-7rem)] flex-col overflow-hidden rounded-2xl border border-sol-border/20 bg-sol-surface/50 p-6 shadow-sm backdrop-blur-md">
+        <div className="scrollbar-hide flex-1 overflow-y-auto pr-1">
+          {children}
 
-        {/* Decorative elements for premium feel */}
-        <div className="mt-8 pt-6 border-t border-sol-border/10">
-          <div className="p-4 rounded-xl flex flex-col gap-2 bg-sol-accent/5 border border-sol-accent/10">
-            <h4 className="text-xs font-bold text-sol-accent mb-1 uppercase tracking-wider">{t("proTip")}</h4>
-            <p className="text-[11px] text-sol-muted leading-relaxed">
-              {t("proTipDescription1")}
-            </p>
-            <p className="text-[11px] text-sol-muted leading-relaxed">
-              {t("proTipDescription2")}
-            </p>
+          {/* Decorative elements for premium feel */}
+          <div className="mt-8 border-t border-sol-border/10 pt-6">
+            <div className="flex flex-col gap-2 rounded-xl border border-sol-accent/10 bg-sol-accent/5 p-4">
+              <h4 className="mb-1 text-xs font-bold uppercase tracking-wider text-sol-accent">{t("proTip")}</h4>
+              <p className="text-[11px] leading-relaxed text-sol-muted">
+                {t("proTipDescription1")}
+              </p>
+              <p className="text-[11px] leading-relaxed text-sol-muted">
+                {t("proTipDescription2")}
+              </p>
+            </div>
           </div>
         </div>
       </div>

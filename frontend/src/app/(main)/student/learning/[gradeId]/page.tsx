@@ -91,7 +91,7 @@ export default function GradePathPage() {
                 <Target size={20} />
               </div>
               <h1 className="text-3xl md:text-5xl font-black text-sol-text tracking-tight">
-                {sidebarT(gradeGroup.label)} {t("title")}
+                {gradeGroup.label} : {t("title")}
               </h1>
             </div>
             <p className="text-lg text-sol-muted max-w-xl">

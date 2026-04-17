@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { X, Eye, Code2, Save, Languages, Hash, Layers } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import { X, Eye, Code2, Save, Hash, Layers } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
-import { lessonService, CreateLessonDTO } from "@/services/lessonService";
+import { lessonService, CreateLessonDTO, Grade, Subject } from "@/services/lessonService";
 import { useTranslations } from "next-intl";
 
 interface Props {
@@ -21,9 +21,6 @@ export default function CreateLessonModal({ isOpen, onClose, onSuccess, editLess
   const [tab, setTab] = useState<"en" | "vi">("vi");
   const [preview, setPreview] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [grades, setGrades] = useState<any[]>([]);
-  const [subjects, setSubjects] = useState<any[]>([]);
-  
   const [formData, setFormData] = useState<CreateLessonDTO>({
     title_en: "",
     title_vi: "",
@@ -33,6 +30,12 @@ export default function CreateLessonModal({ isOpen, onClose, onSuccess, editLess
     subject_id: 1,
     order_index: 10,
   });
+  const [grades, setGrades] = useState<Grade[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const filteredGrades = useMemo(() => {
+    const bySubject = grades.filter((grade) => !grade.subject_id || grade.subject_id === formData.subject_id);
+    return bySubject.length > 0 ? bySubject : grades;
+  }, [grades, formData.subject_id]);
 
   useEffect(() => {
     if (isOpen) {
@@ -62,8 +65,8 @@ export default function CreateLessonModal({ isOpen, onClose, onSuccess, editLess
               title_vi: "",
               content_markdown_en: "",
               content_markdown_vi: "",
-              grade_id: gList.length > 0 ? gList[0].id : 1,
               subject_id: sList.length > 0 ? sList[0].id : 1,
+              grade_id: gList.find((grade) => !grade.subject_id || grade.subject_id === (sList[0]?.id || 1))?.id || gList[0]?.id || 1,
               order_index: 10,
             });
           }
@@ -183,7 +186,7 @@ export default function CreateLessonModal({ isOpen, onClose, onSuccess, editLess
                     onChange={(e) => setFormData({ ...formData, grade_id: parseInt(e.target.value) })}
                     className="w-full bg-sol-bg border border-sol-border/20 rounded-2xl px-6 py-4 text-sol-text appearance-none focus:ring-2 focus:ring-sol-accent/30 transition-all font-medium"
                   >
-                    {grades.map(g => (
+                    {filteredGrades.map(g => (
                       <option key={g.id} value={g.id}>{g.title_en || g.slug}</option>
                     ))}
                   </select>
@@ -192,7 +195,15 @@ export default function CreateLessonModal({ isOpen, onClose, onSuccess, editLess
                   <label className="text-xs font-black uppercase tracking-widest text-sol-muted pl-1">{t("subject")}</label>
                   <select 
                     value={formData.subject_id}
-                    onChange={(e) => setFormData({ ...formData, subject_id: parseInt(e.target.value) })}
+                    onChange={(e) => {
+                      const nextSubjectId = parseInt(e.target.value);
+                      const nextGrade = grades.find((grade) => !grade.subject_id || grade.subject_id === nextSubjectId);
+                      setFormData({
+                        ...formData,
+                        subject_id: nextSubjectId,
+                        grade_id: nextGrade?.id || formData.grade_id,
+                      });
+                    }}
                     className="w-full bg-sol-bg border border-sol-border/20 rounded-2xl px-6 py-4 text-sol-text appearance-none focus:ring-2 focus:ring-sol-accent/30 transition-all font-medium"
                   >
                     {subjects.map(s => (
@@ -234,7 +245,7 @@ export default function CreateLessonModal({ isOpen, onClose, onSuccess, editLess
                 remarkPlugins={[remarkMath]}
                 rehypePlugins={[rehypeKatex]}
                 components={{
-                  code({ node, className, children, ...props }) {
+                  code({ className, children, ...props }) {
                     const match = /language-(\w+)/.exec(className || "");
                     if (match && match[1] === "tikz") {
                       return (

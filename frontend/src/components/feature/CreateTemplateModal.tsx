@@ -24,7 +24,7 @@ const DEFAULT_VARS: VariableDef[] = [
   { name: "y", min: 1, max: 10 },
 ];
 
-const QUESTION_TYPES = ["numeric_input", "true_false", "multiple_choices", "ordering"];
+const QUESTION_TYPES = ["numeric_input", "true_false", "multiple_choices", "ordering", "theoretical_question"];
 
 const DIFFICULTIES = ["easy", "medium", "hard"];
 
@@ -105,6 +105,19 @@ const TYPE_PRESETS: Record<string, {
       ],
     },
   },
+  theoretical_question: {
+    bodyEn: "Which statement is true about parallel lines?",
+    bodyVi: "Mệnh đề nào đúng về hai đường thẳng song song?",
+    formulas: ["They never intersect."],
+    vars: [],
+    logic: {
+      false_answers: [
+        "They always intersect at one point.",
+        "They are always perpendicular.",
+        "They must have different slopes.",
+      ],
+    },
+  },
 };
 
 export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTemplateId }: Props) {
@@ -123,6 +136,7 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
 
   // Multiple accepted answer formulas (first = primary)
   const [acceptedFormulas, setAcceptedFormulas] = useState<string[]>(["x + y"]);
+  const [falseAnswers, setFalseAnswers] = useState<string[]>(["", "", ""]);
 
   // Logic builder state
   const [variableDefs, setVariableDefs] = useState<VariableDef[]>(DEFAULT_VARS);
@@ -161,6 +175,14 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
       const cfg = typeof raw === "string" ? JSON.parse(raw) : raw;
       setLogicJson(JSON.stringify(cfg || buildLogicFromDefs(), null, 2));
       setLogicJsonDirty(true);
+      const falseAnswersFromConfig = Array.isArray(cfg?.false_answers)
+        ? cfg.false_answers.map((answer: unknown) => String(answer || "")).slice(0, 3)
+        : [];
+      setFalseAnswers([
+        falseAnswersFromConfig[0] || "",
+        falseAnswersFromConfig[1] || "",
+        falseAnswersFromConfig[2] || "",
+      ]);
       if (cfg?.variables) {
         const defs = Object.entries(cfg.variables).map(([name, range]: [string, any]) => ({
           name,
@@ -256,6 +278,7 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
           setBodyEn(preset.bodyEn);
           setBodyVi(preset.bodyVi);
           setAcceptedFormulas(preset.formulas);
+          setFalseAnswers(["", "", ""]);
           setVariableDefs(preset.vars);
           setLogicJson(JSON.stringify(preset.logic, null, 2));
           setLogicJsonDirty(false);
@@ -306,6 +329,15 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
     setBodyEn(preset.bodyEn);
     setBodyVi(preset.bodyVi);
     setAcceptedFormulas(preset.formulas);
+    const presetFalseAnswers = (preset.logic as { false_answers?: unknown[] }).false_answers;
+    const nextFalseAnswers = Array.isArray(presetFalseAnswers)
+      ? presetFalseAnswers.map((answer) => String(answer)).slice(0, 3)
+      : [];
+    setFalseAnswers([
+      nextFalseAnswers[0] || "",
+      nextFalseAnswers[1] || "",
+      nextFalseAnswers[2] || "",
+    ]);
     setVariableDefs(preset.vars);
     setLogicJson(JSON.stringify(preset.logic, null, 2));
     setLogicJsonDirty(true);
@@ -317,11 +349,22 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
     setLoading(true);
     try {
       try {
-        JSON.parse(logicJson);
+        if (templateType !== "theoretical_question") {
+          JSON.parse(logicJson);
+        }
       } catch {
         alert(t("invalidLogicJson"));
         setLoading(false);
         return;
+      }
+
+      const theoreticalFalseAnswers = falseAnswers.map((answer) => answer.trim()).filter(Boolean);
+      if (templateType === "theoretical_question") {
+        if (!acceptedFormulas[0]?.trim() || theoreticalFalseAnswers.length !== 3) {
+          alert(t("theoreticalAnswerError"));
+          setLoading(false);
+          return;
+        }
       }
 
       const payload: CreateTemplateDTO = {
@@ -331,8 +374,12 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
         body_template_en: bodyEn,
         body_template_vi: bodyVi,
         // accepted_formulas[0] is the primary formula; the rest are alternatives
-        accepted_formulas: acceptedFormulas.filter(f => f.trim()),
-        logic_config: buildLogicConfig(),
+        accepted_formulas: templateType === "theoretical_question"
+          ? [acceptedFormulas[0].trim()]
+          : acceptedFormulas.filter(f => f.trim()),
+        logic_config: templateType === "theoretical_question"
+          ? { false_answers: theoreticalFalseAnswers }
+          : buildLogicConfig(),
       };
 
       if (editTemplateId) {
@@ -456,10 +503,10 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-xs font-black uppercase text-sol-muted pl-1 flex items-center gap-2">
-                  <Code2 size={14} /> {t("acceptedFormulas")}
+                  <Code2 size={14} /> {templateType === "theoretical_question" ? t("correctAnswer") : t("acceptedFormulas")}
                 </label>
                 <div className="space-y-2">
-                  {acceptedFormulas.map((f, idx) => (
+                  {(templateType === "theoretical_question" ? acceptedFormulas.slice(0, 1) : acceptedFormulas).map((f, idx) => (
                     <div key={idx} className="flex items-center gap-2">
                       <span className="text-[10px] font-bold text-sol-muted w-6 shrink-0">{idx === 0 ? "★" : `+${idx}`}</span>
                       <input
@@ -471,10 +518,10 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
                           next[idx] = e.target.value;
                           return next;
                         })}
-                        placeholder={idx === 0 ? t("formulaPlaceholder") : t("altFormulaPlaceholder")}
+                        placeholder={templateType === "theoretical_question" ? t("correctAnswerPlaceholder") : (idx === 0 ? t("formulaPlaceholder") : t("altFormulaPlaceholder"))}
                         className="flex-1 bg-sol-bg border border-sol-border/20 rounded-xl px-4 py-2.5 font-mono text-sm text-sol-text focus:ring-2 focus:ring-sol-accent/30 outline-none"
                       />
-                      {idx > 0 && (
+                      {templateType !== "theoretical_question" && idx > 0 && (
                         <button
                           type="button"
                           onClick={() => setAcceptedFormulas(prev => prev.filter((_, i) => i !== idx))}
@@ -485,18 +532,49 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
                       )}
                     </div>
                   ))}
-                  <button
-                    type="button"
-                    onClick={() => setAcceptedFormulas(prev => [...prev, ""])}
-                    className="flex items-center gap-1.5 text-xs font-bold text-sol-accent hover:bg-sol-accent/10 px-3 py-1.5 rounded-xl transition-all border border-sol-accent/20 mt-1"
-                  >
-                    <Plus size={13} /> {t("addFormula")}
-                  </button>
+                  {templateType !== "theoretical_question" && (
+                    <button
+                      type="button"
+                      onClick={() => setAcceptedFormulas(prev => [...prev, ""])}
+                      className="flex items-center gap-1.5 text-xs font-bold text-sol-accent hover:bg-sol-accent/10 px-3 py-1.5 rounded-xl transition-all border border-sol-accent/20 mt-1"
+                    >
+                      <Plus size={13} /> {t("addFormula")}
+                    </button>
+                  )}
                 </div>
               </div>
+
+              {templateType === "theoretical_question" && (
+                <div className="space-y-2">
+                  <label className="text-xs font-black uppercase text-sol-muted pl-1 flex items-center gap-2">
+                    <Code2 size={14} /> {t("falseAnswers")}
+                  </label>
+                  <div className="space-y-2">
+                    {falseAnswers.map((answer, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-sol-muted w-6 shrink-0">{idx + 1}</span>
+                        <input
+                          required
+                          type="text"
+                          value={answer}
+                          onChange={(e) => setFalseAnswers(prev => {
+                            const next = [...prev];
+                            next[idx] = e.target.value;
+                            return next;
+                          })}
+                          placeholder={t("falseAnswerPlaceholder", { index: idx + 1 })}
+                          className="flex-1 bg-sol-bg border border-sol-border/20 rounded-xl px-4 py-2.5 text-sm text-sol-text focus:ring-2 focus:ring-sol-accent/30 outline-none"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-sol-muted leading-relaxed">{t("theoreticalHint")}</p>
+                </div>
+              )}
             </div>
 
             {/* Row 4: Variable Builder */}
+            {templateType !== "theoretical_question" && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-black uppercase text-sol-muted flex items-center gap-2">
@@ -575,6 +653,7 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
                 </p>
               </div>
             </div>
+            )}
 
           </form>
         </div>

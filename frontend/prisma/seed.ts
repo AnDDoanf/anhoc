@@ -133,14 +133,14 @@ async function main() {
   console.log('  - Seeding Grades & Subjects...');
   const grade1 = await prisma.grade.upsert({
     where: { slug: 'grade-1' },
-    update: {},
-    create: { slug: 'grade-1', title_en: 'Grade 1', title_vi: 'Lớp 1' },
+    update: { subject_id: math.id },
+    create: { slug: 'grade-1', title_en: 'Grade 1', title_vi: 'Lớp 1', subject_id: math.id },
   });
 
   const grade6 = await prisma.grade.upsert({
     where: { slug: 'grade-6' },
-    update: {},
-    create: { slug: 'grade-6', title_en: 'Grade 6', title_vi: 'Lớp 6' },
+    update: { subject_id: math.id },
+    create: { slug: 'grade-6', title_en: 'Grade 6', title_vi: 'Lớp 6', subject_id: math.id },
   });
 
   const math = await prisma.subject.upsert({
@@ -148,6 +148,14 @@ async function main() {
     update: {},
     create: { slug: 'math', title_en: 'Mathematics', title_vi: 'Toán học', color: '#3b82f6' },
   });
+
+  for (const role of [adminRole, teacherRole, studentRole]) {
+    await prisma.roleSubjectPermission.upsert({
+      where: { role_id_subject_id: { role_id: role.id, subject_id: math.id } },
+      update: {},
+      create: { role_id: role.id, subject_id: math.id },
+    });
+  }
 
   // 7. 📚 Lesson (Refactored)
   console.log('  - Seeding Lessons...');

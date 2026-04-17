@@ -34,8 +34,8 @@ export default function QuestionPlayer({ template }: QuestionPlayerProps) {
   const [currentTextVi, setCurrentTextVi] = useState("");
   const [answerInput, setAnswerInput] = useState("");
   const [status, setStatus] = useState<"idle" | "correct" | "incorrect">("idle");
-  const [revealAnswer, setRevealAnswer] = useState<number | boolean | null>(null);
-  const [allExpectedAnswers, setAllExpectedAnswers] = useState<{ formula: string; value: number | boolean | null }[]>([]);
+  const [revealAnswer, setRevealAnswer] = useState<number | boolean | string | null>(null);
+  const [allExpectedAnswers, setAllExpectedAnswers] = useState<{ formula: string; value: number | boolean | string | null }[]>([]);
   const [choiceOptions, setChoiceOptions] = useState<ChoiceOption[]>([]);
   const [availableOrderingItems, setAvailableOrderingItems] = useState<ChoiceOption[]>([]);
   const [orderedItems, setOrderedItems] = useState<ChoiceOption[]>([]);
@@ -47,18 +47,23 @@ export default function QuestionPlayer({ template }: QuestionPlayerProps) {
   };
 
   const generateSnapshot = () => {
-    const generated = generateVars(template.logic_config);
+    const generated = questionType === "theoretical_question" ? {} : generateVars(template.logic_config);
     setVars(generated);
     setCurrentTextEn(formatTemplate(template.body_template_en, generated));
     setCurrentTextVi(formatTemplate(template.body_template_vi, generated));
 
     const primaryFormula = template.accepted_formulas?.[0] || "";
-    const correct = evaluateFormula(primaryFormula, generated);
+    const correct = questionType === "theoretical_question"
+      ? primaryFormula
+      : evaluateFormula(primaryFormula, generated);
     const allFormulas = (template.accepted_formulas || []).filter((f: string) => f.trim());
 
     setRevealAnswer(correct);
     setAllExpectedAnswers(
-      allFormulas.map((f: string) => ({ formula: f, value: evaluateFormula(f, generated) }))
+      allFormulas.map((f: string) => ({
+        formula: f,
+        value: questionType === "theoretical_question" ? f : evaluateFormula(f, generated),
+      }))
     );
     setChoiceOptions(getChoiceOptions(template, generated, locale));
     setAvailableOrderingItems(getOrderingItems(template, generated, locale));
@@ -74,7 +79,9 @@ export default function QuestionPlayer({ template }: QuestionPlayerProps) {
   const handleSubmitAnswer = (answer: string) => {
     if (!answer) return;
     const primaryFormula = template.accepted_formulas?.[0] || "";
-    const isCorrect = checkAnswer(primaryFormula, vars, answer, getAcceptedFormulas());
+    const isCorrect = questionType === "theoretical_question"
+      ? normalizeTextAnswer(answer) === normalizeTextAnswer(primaryFormula)
+      : checkAnswer(primaryFormula, vars, answer, getAcceptedFormulas());
     setAnswerInput(answer);
     setStatus(isCorrect ? "correct" : "incorrect");
   };
@@ -156,7 +163,7 @@ export default function QuestionPlayer({ template }: QuestionPlayerProps) {
         </div>
       )}
 
-      {questionType === "multiple_choices" && (
+      {(questionType === "multiple_choices" || questionType === "theoretical_question") && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {choiceOptions.map((option, index) => (
             <button
@@ -253,6 +260,11 @@ export default function QuestionPlayer({ template }: QuestionPlayerProps) {
         <span className="text-[10px] font-black uppercase text-sol-muted tracking-widest block mb-2">{t("varTree")}</span>
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap gap-2">
+            {Object.entries(vars).length === 0 && (
+              <div className="px-3 py-1 bg-sol-bg border border-sol-border/10 rounded-lg text-xs font-mono text-sol-muted">
+                {t("noVariables")}
+              </div>
+            )}
             {Object.entries(vars).map(([k, v]) => (
               <div key={k} className="px-3 py-1 bg-sol-bg border border-sol-border/10 rounded-lg text-xs font-mono">
                 <span className="text-sol-muted">{k}:</span> <span className="text-sol-text font-bold">{v}</span>
@@ -283,3 +295,7 @@ export default function QuestionPlayer({ template }: QuestionPlayerProps) {
     </div>
   );
 }
+
+const normalizeTextAnswer = (value: unknown): string => {
+  return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
+};

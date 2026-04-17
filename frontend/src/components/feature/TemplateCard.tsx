@@ -17,6 +17,7 @@ export default function TemplateCard({ tmpl, onEdit, onDelete, onPreview }: Temp
   const lessonTitle = tmpl.lesson
     ? (locale === "vi" ? tmpl.lesson.title_vi : tmpl.lesson.title_en)
     : "";
+  const typeLabel = t(`modal.questionTypes.${tmpl.template_type}`);
 
   return (
     <div className="bg-[#f5f2e6] dark:bg-sol-surface border border-[#e8e4d2] dark:border-sol-border/10 rounded-[2.5rem] p-8 md:p-10 relative group hover:border-sol-accent/40 transition-all flex flex-col justify-between hover:shadow-2xl hover:shadow-[#e8e4d2]/50 dark:hover:shadow-sol-accent/5 duration-500">
@@ -52,7 +53,7 @@ export default function TemplateCard({ tmpl, onEdit, onDelete, onPreview }: Temp
       <div className="mt-12 space-y-4">
         <div className="flex justify-between items-center text-xs font-black tracking-widest text-sol-muted uppercase">
           <span>{t("type")}:</span>
-          <span className="text-sol-accent">{tmpl.template_type}</span>
+          <span className="text-sol-accent">{typeLabel}</span>
         </div>
         <div className="flex justify-between items-center text-xs font-black tracking-widest text-sol-muted uppercase">
           <span>{t("difficulty")}:</span>

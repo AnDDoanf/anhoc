@@ -1,6 +1,6 @@
 import { evaluateFormula, formatTemplate } from "./mathService";
 
-export type QuestionType = "numeric_input" | "true_false" | "multiple_choices" | "ordering";
+export type QuestionType = "numeric_input" | "true_false" | "multiple_choices" | "ordering" | "theoretical_question";
 
 export interface ChoiceOption {
   label: string;
@@ -25,6 +25,7 @@ const toConfig = (logicConfig: unknown): Record<string, unknown> => {
 
 export const normalizeQuestionType = (templateType?: string): QuestionType => {
   const type = (templateType || "").toLowerCase();
+  if (type === "theoretical_question" || type === "theory" || type === "conceptual_question") return "theoretical_question";
   if (type === "true_fasle" || type === "true_false" || type.includes("yes_no")) return "true_false";
   if (type === "multiple_choices" || type === "multiple_choice") return "multiple_choices";
   if (type === "ordering" || type === "order") return "ordering";
@@ -45,11 +46,22 @@ export const getExpectedAnswer = (
 };
 
 export const getChoiceOptions = (
-  template: { logic_config?: unknown; accepted_formulas?: string[] },
+  template: { template_type?: string; logic_config?: unknown; accepted_formulas?: string[] },
   vars: Record<string, number>,
   locale: string
 ): ChoiceOption[] => {
   const config = toConfig(template.logic_config);
+  const questionType = normalizeQuestionType(template.template_type);
+
+  if (questionType === "theoretical_question") {
+    const correctAnswer = String(template.accepted_formulas?.[0] || "").trim();
+    const falseAnswers = Array.isArray(config.false_answers) ? config.false_answers : [];
+    return [correctAnswer, ...falseAnswers.map((answer) => String(answer || "").trim())]
+      .filter(Boolean)
+      .map((value) => ({ label: value, value }))
+      .sort(() => Math.random() - 0.5);
+  }
+
   const rawChoices = Array.isArray(config.choices) ? config.choices : [];
 
   if (rawChoices.length > 0) {

@@ -18,8 +18,8 @@
     "accessDenied": "Không có quyền truy cập",
     "requiredFound": "Yêu cầu: {required} | Hiện tại: {found}",
     "backToHome": "Quay về trang chủ",
-    "footerCopyright": "© 2026 Your App"
-    ,"welcomeBack": "Chào mừng trở lại, {email}!",
+    "footerCopyright": "© 2026 Your App",
+    "welcomeBack": "Chào mừng trở lại, {email}!",
     "dashboardPlaceholder": "Nội dung tổng quan của bạn sẽ hiển thị ở đây."
   },
   "Difficulty": {
@@ -55,7 +55,9 @@
     "grade1": "Lớp 1",
     "grade6": "Lớp 6",
     "questions": "Câu hỏi",
-    "dashboard": "Tổng quan"
+    "dashboard": "Tổng quan",
+    "users": "Người dùng",
+    "roles": "Vai trò"
   },
   "Practice": {
     "title": "Rèn luyện Kỹ năng",
@@ -132,8 +134,24 @@
     "proTipDescription2": "- Reload trang nếu không thấy hình học.",
     "lessonOverview": "Tổng quan Bài học",
     "readyChallengeTitle": "Bạn đã sẵn sàng cho thử thách tiếp theo?",
-    "readyChallengeSubtitle": "Mỗi bài học bạn hoàn thành sẽ đưa bạn đến gần hơn với việc làm chủ chương trình học. Tiến trình của bạn được đồng bộ hóa trên tất cả các thiết bị."
-    ,"newLesson": "Bài học mới",
+    "readyChallengeSubtitle": "Mỗi bài học bạn hoàn thành sẽ đưa bạn đến gần hơn với việc làm chủ chương trình học. Tiến trình của bạn được đồng bộ hóa trên tất cả các thiết bị.",
+    "newLesson": "Bài học mới",
+    "newSubject": "Môn học mới",
+    "newGrade": "Lớp mới",
+    "tracks": "{count} lớp",
+    "metaModal": {
+      "subjectTitle": "Tạo môn học",
+      "gradeTitle": "Tạo lớp",
+      "titleEn": "Tiêu đề (EN)",
+      "titleVi": "Tiêu đề (VI)",
+      "slug": "Slug",
+      "color": "Màu",
+      "subject": "Môn học",
+      "saving": "Đang lưu...",
+      "createSubject": "Tạo môn học",
+      "createGrade": "Tạo lớp",
+      "saveError": "Không thể lưu. Vui lòng kiểm tra thông tin và thử lại."
+    },
     "modal": {
       "createTitle": "Tạo bài học mới",
       "editTitle": "Chỉnh sửa bài học",
@@ -215,6 +233,7 @@
       "correct": "Đúng! Công thức đã tính ra đáp án của bạn.",
       "incorrect": "Đáp án sai. Hãy thử lại hoặc kiểm tra logic công thức.",
       "varTree": "Cây biến số hiện tại",
+      "noVariables": "Không tạo biến",
       "expected": "Đáp án đúng",
       "multipleChoice": "Trắc nghiệm",
       "acceptedBadge": "công thức khả dụng",
@@ -236,7 +255,8 @@
         "numeric_input": "Nhập số",
         "true_false": "Đúng / sai",
         "multiple_choices": "Trắc nghiệm",
-        "ordering": "Sắp xếp"
+        "ordering": "Sắp xếp",
+        "theoretical_question": "Câu hỏi lý thuyết"
       },
       "difficultyOptions": {
         "easy": "Dễ",
@@ -264,6 +284,12 @@
       "generatedJson": "JSON logic_config được tạo",
       "logicJsonHint": "Hỗ trợ biến, lựa chọn, giá trị suy ra và ràng buộc. Ví dụ: {example}",
       "acceptedFormulas": "Công thức đáp án chấp nhận",
+      "correctAnswer": "Đáp án đúng",
+      "correctAnswerPlaceholder": "Nhập đáp án đúng duy nhất",
+      "falseAnswers": "Đáp án sai",
+      "falseAnswerPlaceholder": "Đáp án sai {index}",
+      "theoreticalHint": "Lựa chọn được lưu thành một đáp án đúng và đúng ba đáp án sai. Loại câu hỏi này không tạo biến.",
+      "theoreticalAnswerError": "Câu hỏi lý thuyết cần một đáp án đúng và ba đáp án sai.",
       "addFormula": "Thêm công thức khác",
       "altFormulaPlaceholder": "Công thức thay thế (vd. y + x)",
       "invalidLogicJson": "logic_config phải là JSON hợp lệ.",
@@ -280,6 +306,12 @@
       "attempts": "Phiên luyện tập",
       "avgScore": "Hiệu suất TB"
     },
+    "summaryTrends": {
+      "growing": "Đang tăng",
+      "available": "Có sẵn",
+      "active": "Hoạt động",
+      "stable": "Ổn định"
+    },
     "topUsers": {
       "title": "Học sinh Tích cực nhất",
       "username": "Học sinh",
@@ -292,6 +324,177 @@
       "lesson": "Bài học",
       "score": "Điểm",
       "time": "Thời gian"
+    },
+    "userDetail": {
+      "eyebrow": "Bảng cá nhân",
+      "loading": "Đang tải bảng cá nhân...",
+      "error": "Không thể tải bảng cá nhân của người dùng này.",
+      "close": "Đóng bảng cá nhân",
+      "backToDashboard": "Quay lại tổng quan",
+      "unknownUser": "Người dùng không xác định",
+      "unassignedLesson": "Bài học chưa gán",
+      "joined": "Tham gia {date}",
+      "recentAttempts": "Lượt làm gần đây",
+      "viewAnswers": "Đáp án",
+      "lessonMastery": "Mức độ thành thạo",
+      "achievements": "Thành tích",
+      "xpHistory": "Lịch sử XP",
+      "questions": "câu hỏi",
+      "studyTime": "{minutes} phút học",
+      "emptyAttempts": "Chưa có lượt làm bài.",
+      "emptyMastery": "Chưa có dữ liệu thành thạo bài học.",
+      "emptyAchievements": "Chưa đạt thành tích nào.",
+      "emptyXp": "Chưa có sự kiện XP.",
+      "metrics": {
+        "level": "Cấp độ",
+        "xp": "XP",
+        "average": "Trung bình",
+        "best": "Cao nhất",
+        "attempts": "Lượt làm",
+        "completedLessons": "Hoàn thành"
+      },
+      "status": {
+        "notStarted": "Chưa bắt đầu",
+        "inProgress": "Đang học",
+        "completed": "Hoàn thành"
+      }
+    }
+  },
+  "AdminUsers": {
+    "eyebrow": "Quản trị",
+    "title": "Tạo tài khoản",
+    "subtitle": "Thêm người dùng, cập nhật quyền truy cập và xoá tài khoản ở cùng một nơi.",
+    "loading": "Đang tải tài khoản...",
+    "metrics": {
+      "accounts": "Tài khoản",
+      "admins": "Quản trị viên",
+      "students": "Học sinh"
+    },
+    "roles": {
+      "admin": "Quản trị viên",
+      "teacher": "Giáo viên",
+      "student": "Học sinh"
+    },
+    "actions": {
+      "refresh": "Làm mới",
+      "cancelEdit": "Huỷ chỉnh sửa",
+      "create": "Tạo tài khoản",
+      "saveChanges": "Lưu thay đổi",
+      "search": "Tìm kiếm",
+      "viewInsight": "Chi tiết",
+      "edit": "Sửa",
+      "delete": "Xoá"
+    },
+    "form": {
+      "createTitle": "Tài khoản mới",
+      "editTitle": "Chỉnh sửa tài khoản",
+      "createHint": "Mật khẩu bắt đầu từ 6 ký tự.",
+      "editHint": "Để trống mật khẩu nếu muốn giữ nguyên.",
+      "username": "Tên người dùng",
+      "usernamePlaceholder": "hocsinh2",
+      "email": "Email",
+      "emailPlaceholder": "hocsinh@example.com",
+      "password": "Mật khẩu",
+      "newPassword": "Mật khẩu mới",
+      "passwordPlaceholder": "Ít nhất 6 ký tự",
+      "optionalPassword": "Không bắt buộc",
+      "role": "Vai trò"
+    },
+    "filters": {
+      "searchPlaceholder": "Tìm theo tên người dùng hoặc email",
+      "allRoles": "Tất cả vai trò"
+    },
+    "table": {
+      "account": "Tài khoản",
+      "role": "Vai trò",
+      "level": "Cấp độ",
+      "attempts": "Lượt làm bài",
+      "created": "Ngày tạo",
+      "actions": "Thao tác"
+    },
+    "messages": {
+      "created": "Đã tạo tài khoản.",
+      "updated": "Đã cập nhật tài khoản.",
+      "deleted": "Đã xoá tài khoản.",
+      "cannotDeleteSelf": "Bạn không thể xoá tài khoản đang dùng"
+    },
+    "errors": {
+      "load": "Không thể tải tài khoản.",
+      "refresh": "Không thể làm mới tài khoản.",
+      "save": "Không thể lưu tài khoản này.",
+      "delete": "Không thể xoá tài khoản này."
+    },
+    "empty": {
+      "title": "Không tìm thấy tài khoản.",
+      "subtitle": "Thử tìm kiếm khác hoặc tạo tài khoản mới."
+    },
+    "deleteModal": {
+      "title": "Xoá tài khoản",
+      "message": "Xoá {username}? Hoạt động học tập của tài khoản này cũng sẽ bị xoá.",
+      "fallbackUser": "tài khoản này",
+      "deleting": "Đang xoá..."
+    }
+  },
+  "AdminRoles": {
+    "eyebrow": "Phân quyền",
+    "title": "Vai trò & môn học",
+    "subtitle": "Tạo vai trò, chọn quyền, giới hạn môn học hiển thị và gán vai trò cho người dùng.",
+    "form": {
+      "createTitle": "Tạo vai trò",
+      "editTitle": "Chỉnh sửa vai trò",
+      "hint": "Chọn vai trò này được làm gì và được xem môn học nào.",
+      "editing": "Đang sửa {role}",
+      "name": "Tên vai trò",
+      "namePlaceholder": "giaovien_toan",
+      "subjects": "Môn học được xem",
+      "permissions": "Quyền"
+    },
+    "actions": {
+      "create": "Tạo vai trò",
+      "save": "Lưu vai trò",
+      "newRole": "Vai trò mới"
+    },
+    "roles": {
+      "title": "Vai trò hiện có",
+      "meta": "{permissions} quyền · {subjects} môn học · {users} người dùng"
+    },
+    "assign": {
+      "title": "Gán vai trò cho người dùng",
+      "user": "Người dùng",
+      "currentRole": "Vai trò hiện tại",
+      "newRole": "Vai trò"
+    },
+    "messages": {
+      "created": "Đã tạo vai trò.",
+      "updated": "Đã cập nhật vai trò.",
+      "assigned": "Đã gán vai trò."
+    },
+    "errors": {
+      "load": "Không thể tải dữ liệu phân quyền.",
+      "save": "Không thể lưu vai trò này.",
+      "assign": "Không thể gán vai trò này."
+    }
+  },
+  "AdminAttemptReview": {
+    "eyebrow": "Xem đáp án",
+    "title": "Đáp án lượt làm",
+    "backToInsight": "Quay lại chi tiết người dùng",
+    "loadError": "Không thể tải lượt làm này.",
+    "questions": "{count} câu hỏi",
+    "questionNumber": "Câu {current} trên {total}",
+    "studentAnswer": "Đáp án học sinh",
+    "correctAnswer": "Đáp án đúng",
+    "correct": "Đúng",
+    "incorrect": "Sai",
+    "unanswered": "Chưa trả lời",
+    "noAnswerKey": "Chưa có đáp án",
+    "explanation": "Giải thích",
+    "types": {
+      "numeric_input": "Nhập số",
+      "true_false": "Đúng / sai",
+      "multiple_choices": "Trắc nghiệm",
+      "ordering": "Sắp xếp",
+      "theoretical_question": "Câu hỏi lý thuyết"
     }
   },
   "Achievements": {

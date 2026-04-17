@@ -23,6 +23,55 @@ export interface CreateLessonDTO {
   order_index: number;
 }
 
+export interface CreateSubjectDTO {
+  title_en: string;
+  title_vi: string;
+  slug?: string;
+  color?: string;
+}
+
+export interface CreateGradeDTO {
+  title_en: string;
+  title_vi: string;
+  slug?: string;
+  subject_id: number;
+}
+
+export interface Subject {
+  id: number;
+  slug: string;
+  title_en: string;
+  title_vi: string;
+  color?: string | null;
+}
+
+export interface Grade {
+  id: number;
+  slug: string;
+  title_en: string;
+  title_vi: string;
+  subject_id?: number | null;
+  subject?: Subject | null;
+}
+
+export interface Lesson {
+  id: string;
+  title_en: string;
+  title_vi: string;
+  content_markdown_en: string;
+  content_markdown_vi: string;
+  grade_id: number;
+  subject_id: number;
+  order_index: number;
+  grade?: Grade | null;
+  subject?: Subject | null;
+}
+
+export interface LessonMastery {
+  lesson_id: string;
+  [key: string]: unknown;
+}
+
 export const lessonService = {
   create: async (data: CreateLessonDTO) => {
     const response = await api.post('/lessons', data);
@@ -39,23 +88,33 @@ export const lessonService = {
     return response.data;
   },
   
-  list: async () => {
+  list: async (): Promise<Lesson[]> => {
     const response = await api.get('/lessons');
     return response.data;
   },
 
-  getById: async (id: string) => {
+  getById: async (id: string): Promise<Lesson> => {
     const res = await api.get(`/lessons/${id}`);
     return res.data;
   },
   
-  getGrades: async () => {
+  getGrades: async (): Promise<Grade[]> => {
     const response = await api.get('/lessons/grades');
     return response.data;
   },
 
-  getSubjects: async () => {
+  createGrade: async (data: CreateGradeDTO) => {
+    const response = await api.post('/lessons/grades', data);
+    return response.data;
+  },
+
+  getSubjects: async (): Promise<Subject[]> => {
     const response = await api.get('/lessons/subjects');
+    return response.data;
+  },
+
+  createSubject: async (data: CreateSubjectDTO) => {
+    const response = await api.post('/lessons/subjects', data);
     return response.data;
   },
 
@@ -71,7 +130,7 @@ export const lessonService = {
     return response.data;
   },
 
-  getMasteryAll: async () => {
+  getMasteryAll: async (): Promise<LessonMastery[]> => {
     const response = await api.get('/lessons/mastery/all');
     return response.data;
   },

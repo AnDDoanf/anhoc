@@ -55,7 +55,9 @@
     "grade1": "Grade 1",
     "grade6": "Grade 6",
     "questions": "Questions",
-    "dashboard": "Dashboard"
+    "dashboard": "Dashboard",
+    "users": "Users",
+    "roles": "Roles"
   },
   "Practice": {
     "title": "Master Your Skills",
@@ -134,6 +136,22 @@
     "readyChallengeTitle": "Ready for the next challenge?",
     "readyChallengeSubtitle": "Every lesson you complete brings you closer to mastering the curriculum. Your progress is synced across all devices."
     ,"newLesson": "New Lesson",
+    "newSubject": "New Subject",
+    "newGrade": "New Grade",
+    "tracks": "{count} grades",
+    "metaModal": {
+      "subjectTitle": "Create Subject",
+      "gradeTitle": "Create Grade",
+      "titleEn": "Title (EN)",
+      "titleVi": "Title (VI)",
+      "slug": "Slug",
+      "color": "Color",
+      "subject": "Subject",
+      "saving": "Saving...",
+      "createSubject": "Create Subject",
+      "createGrade": "Create Grade",
+      "saveError": "Could not save. Please check the details and try again."
+    },
     "modal": {
       "createTitle": "Create New Lesson",
       "editTitle": "Edit Lesson",
@@ -215,6 +233,7 @@
       "correct": "Correct! The formula successfully evaluated to your answer.",
       "incorrect": "Incorrect answer. Try again or check the formula logic.",
       "varTree": "Current Variable Tree",
+      "noVariables": "No generated variables",
       "expected": "Expected Answer",
       "multipleChoice": "Multiple Choice",
       "acceptedBadge": "accepted formulas",
@@ -236,7 +255,8 @@
         "numeric_input": "Numeric input",
         "true_false": "True / false",
         "multiple_choices": "Multiple choices",
-        "ordering": "Ordering"
+        "ordering": "Ordering",
+        "theoretical_question": "Theoretical question"
       },
       "difficultyOptions": {
         "easy": "Easy",
@@ -264,6 +284,12 @@
       "generatedJson": "Generated logic_config JSON",
       "logicJsonHint": "Supports variables, choices, derived values, and constraints. Example: {example}",
       "acceptedFormulas": "Accepted Answer Formulas",
+      "correctAnswer": "Correct Answer",
+      "correctAnswerPlaceholder": "Write the one correct answer",
+      "falseAnswers": "False Answers",
+      "falseAnswerPlaceholder": "False answer {index}",
+      "theoreticalHint": "The choices are saved as one correct answer and exactly three false answers. Variables are not generated for this question type.",
+      "theoreticalAnswerError": "Theoretical questions need one correct answer and three false answers.",
       "addFormula": "Add Alternative Formula",
       "altFormulaPlaceholder": "Alternative formula (e.g. y + x)",
       "invalidLogicJson": "logic_config must be valid JSON.",
@@ -280,6 +306,12 @@
       "attempts": "Practice Sessions",
       "avgScore": "Avg Performance"
     },
+    "summaryTrends": {
+      "growing": "Growing",
+      "available": "Available",
+      "active": "Active",
+      "stable": "Stable"
+    },
     "topUsers": {
       "title": "Most Active Students",
       "username": "Student",
@@ -292,6 +324,177 @@
       "lesson": "Lesson",
       "score": "Score",
       "time": "Time"
+    },
+    "userDetail": {
+      "eyebrow": "Individual Dashboard",
+      "loading": "Loading user dashboard...",
+      "error": "Could not load this user's dashboard.",
+      "close": "Close user dashboard",
+      "backToDashboard": "Back to dashboard",
+      "unknownUser": "Unknown user",
+      "unassignedLesson": "Unassigned lesson",
+      "joined": "Joined {date}",
+      "recentAttempts": "Recent Attempts",
+      "viewAnswers": "Answers",
+      "lessonMastery": "Lesson Mastery",
+      "achievements": "Achievements",
+      "xpHistory": "XP History",
+      "questions": "questions",
+      "studyTime": "{minutes} min study",
+      "emptyAttempts": "No attempts recorded yet.",
+      "emptyMastery": "No lesson mastery records yet.",
+      "emptyAchievements": "No achievements earned yet.",
+      "emptyXp": "No XP events recorded yet.",
+      "metrics": {
+        "level": "Level",
+        "xp": "XP",
+        "average": "Average",
+        "best": "Best",
+        "attempts": "Attempts",
+        "completedLessons": "Completed"
+      },
+      "status": {
+        "notStarted": "Not started",
+        "inProgress": "In progress",
+        "completed": "Completed"
+      }
+    }
+  },
+  "AdminUsers": {
+    "eyebrow": "Admin",
+    "title": "Create Accounts",
+    "subtitle": "Add people, update access, and remove accounts from one place.",
+    "loading": "Loading accounts...",
+    "metrics": {
+      "accounts": "Accounts",
+      "admins": "Admins",
+      "students": "Students"
+    },
+    "roles": {
+      "admin": "Admin",
+      "teacher": "Teacher",
+      "student": "Student"
+    },
+    "actions": {
+      "refresh": "Refresh",
+      "cancelEdit": "Cancel edit",
+      "create": "Create Account",
+      "saveChanges": "Save Changes",
+      "search": "Search",
+      "viewInsight": "Insight",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "form": {
+      "createTitle": "New Account",
+      "editTitle": "Edit Account",
+      "createHint": "Password starts at 6 characters.",
+      "editHint": "Leave password empty to keep it.",
+      "username": "Username",
+      "usernamePlaceholder": "student2",
+      "email": "Email",
+      "emailPlaceholder": "student@example.com",
+      "password": "Password",
+      "newPassword": "New Password",
+      "passwordPlaceholder": "At least 6 characters",
+      "optionalPassword": "Optional",
+      "role": "Role"
+    },
+    "filters": {
+      "searchPlaceholder": "Search username or email",
+      "allRoles": "All roles"
+    },
+    "table": {
+      "account": "Account",
+      "role": "Role",
+      "level": "Level",
+      "attempts": "Attempts",
+      "created": "Created",
+      "actions": "Actions"
+    },
+    "messages": {
+      "created": "Account created.",
+      "updated": "Account updated.",
+      "deleted": "Account deleted.",
+      "cannotDeleteSelf": "You cannot delete your own account"
+    },
+    "errors": {
+      "load": "Could not load user accounts.",
+      "refresh": "Could not refresh user accounts.",
+      "save": "Could not save this account.",
+      "delete": "Could not delete this account."
+    },
+    "empty": {
+      "title": "No accounts found.",
+      "subtitle": "Try a different search or create a new account."
+    },
+    "deleteModal": {
+      "title": "Delete Account",
+      "message": "Delete {username}? This removes their activity records too.",
+      "fallbackUser": "this account",
+      "deleting": "Deleting..."
+    }
+  },
+  "AdminRoles": {
+    "eyebrow": "Access Control",
+    "title": "Roles & Subjects",
+    "subtitle": "Create roles, choose permissions, limit subject visibility, and assign roles to users.",
+    "form": {
+      "createTitle": "Create Role",
+      "editTitle": "Edit Role",
+      "hint": "Choose what this role can do and which subjects it can see.",
+      "editing": "Editing {role}",
+      "name": "Role Name",
+      "namePlaceholder": "teacher_math",
+      "subjects": "Visible Subjects",
+      "permissions": "Permissions"
+    },
+    "actions": {
+      "create": "Create Role",
+      "save": "Save Role",
+      "newRole": "New Role"
+    },
+    "roles": {
+      "title": "Existing Roles",
+      "meta": "{permissions} permissions · {subjects} subjects · {users} users"
+    },
+    "assign": {
+      "title": "Assign Role to User",
+      "user": "User",
+      "currentRole": "Current Role",
+      "newRole": "Role"
+    },
+    "messages": {
+      "created": "Role created.",
+      "updated": "Role updated.",
+      "assigned": "Role assigned."
+    },
+    "errors": {
+      "load": "Could not load access control data.",
+      "save": "Could not save this role.",
+      "assign": "Could not assign this role."
+    }
+  },
+  "AdminAttemptReview": {
+    "eyebrow": "Answer Review",
+    "title": "Attempt Answers",
+    "backToInsight": "Back to user insight",
+    "loadError": "Could not load this attempt.",
+    "questions": "{count} questions",
+    "questionNumber": "Question {current} of {total}",
+    "studentAnswer": "Student Answer",
+    "correctAnswer": "Correct Answer",
+    "correct": "Correct",
+    "incorrect": "Incorrect",
+    "unanswered": "Unanswered",
+    "noAnswerKey": "No answer key",
+    "explanation": "Explanation",
+    "types": {
+      "numeric_input": "Numeric input",
+      "true_false": "True / false",
+      "multiple_choices": "Multiple choices",
+      "ordering": "Ordering",
+      "theoretical_question": "Theoretical question"
     }
   },
   "Achievements": {

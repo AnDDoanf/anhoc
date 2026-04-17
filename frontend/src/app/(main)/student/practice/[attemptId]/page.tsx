@@ -446,7 +446,7 @@ export default function PracticeRunnerPage() {
                 </div>
               )}
 
-              {questionType === "multiple_choices" && (
+              {(questionType === "multiple_choices" || questionType === "theoretical_question") && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {choiceOptions.map((option, index) => (
                     <button

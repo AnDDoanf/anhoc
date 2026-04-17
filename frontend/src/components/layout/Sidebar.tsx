@@ -5,11 +5,12 @@ import {
   ChevronLeft,
   ChevronRight,
   FlaskConical,
-  GraduationCap,
   PencilLine,
   Database,
   LayoutDashboard,
-  Trophy
+  Trophy,
+  Users,
+  ShieldCheck
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
@@ -18,8 +19,20 @@ import { useEffect, useState } from "react";
 import Can from "@/components/auth/Can";
 import Image from 'next/image';
 import logo from '../../../public/anhoc.svg';
-import { lessonService } from "@/services/lessonService";
+import { Lesson, lessonService } from "@/services/lessonService";
 import { authService } from "@/services/auth";
+
+type SidebarLessonGroup = {
+  grade: string;
+  label: string;
+  lessons: Lesson[];
+};
+
+type SidebarSubjectGroup = {
+  subject: string;
+  label: string;
+  grades: SidebarLessonGroup[];
+};
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -28,13 +41,11 @@ export default function Sidebar() {
 
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
-  const [lessonGroups, setLessonGroups] = useState<any[]>([]);
+  const [lessonGroups, setLessonGroups] = useState<SidebarSubjectGroup[]>([]);
+  const [collapsedSubjects, setCollapsedSubjects] = useState<Record<string, boolean>>({});
   const [userLevel, setUserLevel] = useState<number | null>(null);
 
   useEffect(() => {
-    setIsMounted(true);
-
     const fetchUserData = async () => {
       try {
         const profile = await authService.getProfile();
@@ -67,23 +78,34 @@ export default function Sidebar() {
     const fetchLessons = async () => {
       try {
         const lessons = await lessonService.list();
-        const groups = lessons.reduce((acc: any, lesson: any) => {
+        const groups = lessons.reduce<Record<string, Omit<SidebarSubjectGroup, "grades"> & { grades: Record<string, SidebarLessonGroup> }>>((acc, lesson) => {
+          const subjectKey = String(lesson.subject?.id || "other");
+          const subjectLabel = locale === "vi" ? lesson.subject?.title_vi : lesson.subject?.title_en;
           const gradeSlug = lesson.grade?.slug || "other";
           const gradeLabel = locale === "vi" ? lesson.grade?.title_vi : lesson.grade?.title_en;
-          if (!acc[gradeSlug]) {
-            acc[gradeSlug] = { grade: gradeSlug, label: gradeLabel || gradeSlug, lessons: [] };
+          if (!acc[subjectKey]) {
+            acc[subjectKey] = {
+              subject: subjectKey,
+              label: subjectLabel || lesson.subject?.slug || "Other",
+              grades: {},
+            };
           }
-          acc[gradeSlug].lessons.push(lesson);
+          if (!acc[subjectKey].grades[gradeSlug]) {
+            acc[subjectKey].grades[gradeSlug] = { grade: gradeSlug, label: gradeLabel || gradeSlug, lessons: [] };
+          }
+          acc[subjectKey].grades[gradeSlug].lessons.push(lesson);
           return acc;
         }, {});
-        const sortedGroups = Object.values(groups).sort((a: any, b: any) => {
-          const getGradeNumber = (grade: string) => {
-            const match = grade.match(/\d+/);
-            return match ? parseInt(match[0], 10) : 999;
+        const getGradeNumber = (grade: string) => {
+          const match = grade.match(/\d+/);
+          return match ? parseInt(match[0], 10) : 999;
+        };
+        const sortedGroups = Object.values(groups).map((subject) => {
+          return {
+            ...subject,
+            grades: Object.values(subject.grades).sort((a, b) => getGradeNumber(a.grade) - getGradeNumber(b.grade)),
           };
-
-          return getGradeNumber(a.grade) - getGradeNumber(b.grade);
-        });
+        }).sort((a, b) => a.label.localeCompare(b.label));
 
         setLessonGroups(sortedGroups);
       } catch (err) {
@@ -91,12 +113,21 @@ export default function Sidebar() {
       }
     };
     fetchLessons();
+    const handleLessonMetaUpdated = () => {
+      fetchLessons();
+    };
+    window.addEventListener("lesson-meta-updated", handleLessonMetaUpdated);
 
     return () => {
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("student-stats-updated", handleStudentStatsUpdated);
+      window.removeEventListener("lesson-meta-updated", handleLessonMetaUpdated);
     };
   }, [locale]);
+
+  const toggleSubject = (subject: string) => {
+    setCollapsedSubjects((current) => ({ ...current, [subject]: !current[subject] }));
+  };
 
   const toggleSidebar = () => {
     const newState = !isCollapsed;
@@ -105,8 +136,6 @@ export default function Sidebar() {
       localStorage.setItem("sidebar-collapsed", String(newState));
     }
   };
-
-  if (!isMounted) return <aside className="w-64 h-screen border-r border-sol-border/30 bg-sol-surface" />;
 
   return (
     <aside
@@ -167,6 +196,24 @@ export default function Sidebar() {
               isCollapsed={isCollapsed}
             />
           </Can>
+          <Can I="manage" a="user">
+            <NavItem
+              href="/admin/users"
+              label={t("users")}
+              icon={<Users size={18} />}
+              pathname={pathname}
+              isCollapsed={isCollapsed}
+            />
+          </Can>
+          <Can I="manage" a="user">
+            <NavItem
+              href="/admin/roles"
+              label={t("roles")}
+              icon={<ShieldCheck size={18} />}
+              pathname={pathname}
+              isCollapsed={isCollapsed}
+            />
+          </Can>
           <NavItem
             href="/student/learning"
             label={t("learning")}
@@ -208,43 +255,61 @@ export default function Sidebar() {
 
         {/* Lesson Groups (Animate visibility instead of conditional rendering) */}
         <div className={`space-y-6 transition-all duration-500 overflow-hidden ${isCollapsed ? "opacity-0 pointer-events-none w-0" : "opacity-100 w-auto"}`}>
-          {lessonGroups.map((group) => (
-            <div key={group.grade}>
-              <Link
-                prefetch={false}
-                href={`/student/learning/${group.grade}`}
-                className="text-[10px] font-bold text-sol-muted mb-2 px-3 uppercase tracking-[0.15em] hover:text-sol-accent transition-colors block whitespace-nowrap"
+          {lessonGroups.map((subject) => (
+            <div key={subject.subject} className="space-y-2">
+              <button
+                type="button"
+                onClick={() => toggleSubject(subject.subject)}
+                className="flex w-full items-center justify-between px-3 text-left text-[10px] font-bold text-sol-muted uppercase tracking-[0.15em] hover:text-sol-accent transition-colors whitespace-nowrap"
               >
-                {group.label}
-              </Link>
+                <span className="truncate">{subject.label}</span>
+                <ChevronRight
+                  size={13}
+                  className={`shrink-0 transition-transform ${collapsedSubjects[subject.subject] ? "" : "rotate-90"}`}
+                />
+              </button>
 
-              <div className="space-y-1">
-                {group.lessons.map((lesson: any) => {
-                  const href = `/student/learning/${group.grade}/${lesson.id}`;
-                  const isActive = pathname === href;
-                  const displayTitle = locale === "vi" ? lesson.title_vi : lesson.title_en;
+              {!collapsedSubjects[subject.subject] && (
+                <div className="space-y-4">
+                  {subject.grades.map((group) => (
+                    <div key={`${subject.subject}-${group.grade}`} className="space-y-1">
+                      <Link
+                        prefetch={false}
+                        href={`/student/learning/${group.grade}`}
+                        className="block truncate px-3 text-xs font-black text-sol-text hover:text-sol-accent"
+                      >
+                        {group.label}
+                      </Link>
 
-                  return (
-                    <Link
-                      prefetch={false}
-                      key={`${group.grade}-${lesson.id}`}
-                      href={href}
-                      className={`group flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all whitespace-nowrap
-                        ${isActive
-                          ? "bg-sol-accent text-sol-bg font-bold shadow-sm"
-                          : "text-sol-text hover:bg-sol-bg hover:text-sol-accent"
-                        }
-                      `}
-                    >
-                      <span className="truncate">{displayTitle}</span>
-                      <ChevronRight
-                        size={14}
-                        className={`transition-transform flex-shrink-0 ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-50 group-hover:translate-x-1"}`}
-                      />
-                    </Link>
-                  );
-                })}
-              </div>
+                      {group.lessons.map((lesson) => {
+                        const href = `/student/learning/${group.grade}/${lesson.id}`;
+                        const isActive = pathname === href;
+                        const displayTitle = locale === "vi" ? lesson.title_vi : lesson.title_en;
+
+                        return (
+                          <Link
+                            prefetch={false}
+                            key={`${group.grade}-${lesson.id}`}
+                            href={href}
+                            className={`group flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all whitespace-nowrap
+                              ${isActive
+                                ? "bg-sol-accent text-sol-bg font-bold shadow-sm"
+                                : "text-sol-text hover:bg-sol-bg hover:text-sol-accent"
+                              }
+                            `}
+                          >
+                            <span className="truncate">{displayTitle}</span>
+                            <ChevronRight
+                              size={14}
+                              className={`transition-transform flex-shrink-0 ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-50 group-hover:translate-x-1"}`}
+                            />
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>

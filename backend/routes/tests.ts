@@ -13,6 +13,69 @@ const normalizeDifficulty = (difficulty: unknown): string => {
   return ["easy", "medium", "hard"].includes(value) ? value : "medium";
 };
 
+const normalizeTextAnswer = (value: unknown): string => {
+  return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
+};
+
+const validateTheoreticalQuestion = (templateType: string, logicConfig: any, acceptedFormulas: unknown) => {
+  if (templateType !== "theoretical_question") return null;
+
+  const correctAnswers = Array.isArray(acceptedFormulas)
+    ? acceptedFormulas.map((answer) => String(answer || "").trim()).filter(Boolean)
+    : [];
+  const falseAnswers = Array.isArray(logicConfig?.false_answers)
+    ? logicConfig.false_answers.map((answer: unknown) => String(answer || "").trim()).filter(Boolean)
+    : [];
+
+  if (correctAnswers.length !== 1 || falseAnswers.length !== 3) {
+    return "Theoretical questions require exactly one correct answer and three false answers.";
+  }
+
+  return null;
+};
+
+const getAllowedSubjectIds = async (req: any): Promise<number[] | null> => {
+  if (req.user?.role === "admin") return null;
+
+  const user = await prisma.user.findUnique({
+    where: { id: req.user?.id },
+    select: {
+      role: {
+        select: {
+          subject_permissions: {
+            select: { subject_id: true }
+          }
+        }
+      }
+    }
+  });
+
+  return user?.role.subject_permissions.map((permission) => permission.subject_id) ?? [];
+};
+
+const canAccessLessonSubject = async (req: any, lessonId?: string | null) => {
+  if (!lessonId) return true;
+  const allowedSubjectIds = await getAllowedSubjectIds(req);
+  if (allowedSubjectIds === null) return true;
+
+  const lesson = await prisma.lesson.findUnique({
+    where: { id: lessonId },
+    select: { subject_id: true }
+  });
+
+  return !!lesson && allowedSubjectIds.includes(lesson.subject_id);
+};
+
+const templateSubjectWhere = (subjectIds: number[] | null) => {
+  if (subjectIds === null) return {};
+  return {
+    OR: [
+      { lesson_id: null },
+      { lesson: { subject_id: { in: subjectIds } } }
+    ]
+  };
+};
+
 // 2. Get a Test Attempt
 router.get('/attempts/:id', authenticate, async (req, res) => {
   const attemptId = req.params.id as string;
@@ -49,12 +112,14 @@ router.post('/submit-answer', async (req, res) => {
   if (!snapshot || !snapshot.template) return res.status(404).send("Question not found");
 
   const primaryFormula = (snapshot.template.accepted_formulas?.[0]) || "0";
-  const isCorrect = MathService.checkAnswer(
-    primaryFormula,
-    snapshot.generated_variables,
-    studentAnswer,
-    snapshot.template.accepted_formulas?.slice(1)
-  );
+  const isCorrect = snapshot.template.template_type === "theoretical_question"
+    ? normalizeTextAnswer(studentAnswer) === normalizeTextAnswer(primaryFormula)
+    : MathService.checkAnswer(
+        primaryFormula,
+        snapshot.generated_variables,
+        studentAnswer,
+        snapshot.template.accepted_formulas?.slice(1)
+      );
 
   const updated = await prisma.questionSnapshot.update({
     where: { id: snapshotId },
@@ -219,6 +284,12 @@ router.post('/templates', authenticate, async (req, res) => {
       logic_config, accepted_formulas
     } = req.body;
 
+    const theoreticalError = validateTheoreticalQuestion(template_type, logic_config, accepted_formulas);
+    if (theoreticalError) return res.status(400).json({ error: theoreticalError });
+    if (!(await canAccessLessonSubject(req, lesson_id))) {
+      return res.status(403).json({ error: "You do not have access to this subject" });
+    }
+
     const template = await prisma.questionTemplate.create({
       data: {
         lesson_id: lesson_id || null,
@@ -242,7 +313,9 @@ router.post('/templates', authenticate, async (req, res) => {
 // Get all Question Templates (Admin)
 router.get('/templates', authenticate, async (req, res) => {
   try {
+    const allowedSubjectIds = await getAllowedSubjectIds(req);
     const templates = await prisma.questionTemplate.findMany({
+      where: templateSubjectWhere(allowedSubjectIds),
       include: { lesson: true },
       orderBy: { created_at: 'desc' }
     });
@@ -262,6 +335,12 @@ router.put('/templates/:id', authenticate, async (req, res) => {
       explanation_template_en, explanation_template_vi,
       logic_config, accepted_formulas
     } = req.body;
+
+    const theoreticalError = validateTheoreticalQuestion(template_type, logic_config, accepted_formulas);
+    if (theoreticalError) return res.status(400).json({ error: theoreticalError });
+    if (!(await canAccessLessonSubject(req, lesson_id))) {
+      return res.status(403).json({ error: "You do not have access to this subject" });
+    }
 
     const template = await prisma.questionTemplate.update({
       where: { id },

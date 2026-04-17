@@ -39,6 +39,10 @@
     --text-secondary: var(--sol-base01);
     --accent: var(--sol-blue);
     --border: var(--sol-base2);
+    --pill-badge-bg: rgba(38, 139, 210, 0.1);
+    --pill-badge-border: rgba(38, 139, 210, 0.28);
+    --pill-badge-text: var(--sol-blue);
+    --pill-badge-highlight: rgba(255, 255, 255, 0.35);
   }
 
   /* Dark Theme Override */
@@ -49,6 +53,10 @@
     --text-secondary: var(--sol-base1);
     --accent: var(--sol-blue);
     --border: var(--sol-base02);
+    --pill-badge-bg: rgba(4, 54, 71, 0.8);
+    --pill-badge-border: #155f7a;
+    --pill-badge-text: #4fa7df;
+    --pill-badge-highlight: rgba(255, 255, 255, 0.08);
   }
 
   body {
@@ -85,5 +93,12 @@
 
   .scrollbar-hidden::-webkit-scrollbar {
     display: none;
+  }
+
+  .pill-badge {
+    background: var(--pill-badge-bg);
+    border-color: var(--pill-badge-border);
+    color: var(--pill-badge-text);
+    box-shadow: inset 0 1px 0 var(--pill-badge-highlight);
   }
 }
