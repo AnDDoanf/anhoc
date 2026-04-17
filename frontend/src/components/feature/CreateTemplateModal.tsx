@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useTranslations, useLocale } from "next-intl";
-import { X, Save, Database, Code2, Plus, Trash2 } from "lucide-react";
+import { X, Save, Database, Code2, Plus, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { testService, CreateTemplateDTO } from "@/services/testService";
 import { lessonService, type Lesson } from "@/services/lessonService";
 import { isAxiosError } from "axios";
@@ -160,9 +160,14 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
 
   const [loading, setLoading] = useState(false);
   const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [bulkTemplates, setBulkTemplates] = useState<CreateTemplateDTO[]>([]);
+  const [activeTemplateIndex, setActiveTemplateIndex] = useState(0);
+  const [currentDraftStarted, setCurrentDraftStarted] = useState(false);
 
   // Simple fields
   const [lessonId, setLessonId] = useState("");
+  const [lessonSearch, setLessonSearch] = useState("");
+  const [lessonDropdownOpen, setLessonDropdownOpen] = useState(false);
   const [templateType, setTemplateType] = useState("numeric_input");
   const [difficulty, setDifficulty] = useState("medium");
   const [bodyEn, setBodyEn] = useState("Calculate $x$ + $y$");
@@ -180,8 +185,72 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
   const [apiBodyJson, setApiBodyJson] = useState("");
   const [apiBodyJsonError, setApiBodyJsonError] = useState("");
   const syncingFromApiBodyRef = useRef(false);
+  const templatesInProcess = editTemplateId
+    ? 1
+    : activeTemplateIndex < bulkTemplates.length
+      ? bulkTemplates.length
+      : bulkTemplates.length + 1;
 
   const buildLogicFromDefs = useCallback(() => buildLogicFromVariableDefs(variableDefs), [variableDefs]);
+
+  const getLessonLabel = useCallback((lesson: Lesson) => {
+    const gradeLabel = lesson.grade
+      ? (locale === "vi" ? lesson.grade.title_vi : lesson.grade.title_en) || lesson.grade.slug
+      : t("unassignedGrade");
+    const lessonTitle = locale === "vi" ? lesson.title_vi : lesson.title_en;
+    return `[${gradeLabel}] ${lessonTitle}`;
+  }, [locale, t]);
+
+  const getLessonTitle = useCallback((lesson: Lesson) => (
+    (locale === "vi" ? lesson.title_vi : lesson.title_en) || ""
+  ), [locale]);
+
+  const getLessonGradeLabel = useCallback((lesson: Lesson) => (
+    lesson.grade
+      ? (locale === "vi" ? lesson.grade.title_vi : lesson.grade.title_en) || lesson.grade.slug
+      : t("unassignedGrade")
+  ), [locale, t]);
+
+  const compareLessons = useCallback((a: Lesson, b: Lesson) => {
+    const gradeCompare = getLessonGradeLabel(a).localeCompare(getLessonGradeLabel(b), locale);
+    if (gradeCompare !== 0) return gradeCompare;
+
+    const orderCompare = (a.order_index ?? 0) - (b.order_index ?? 0);
+    if (orderCompare !== 0) return orderCompare;
+
+    return getLessonTitle(a).localeCompare(getLessonTitle(b), locale);
+  }, [getLessonGradeLabel, getLessonTitle, locale]);
+
+  const getSearchRank = useCallback((lesson: Lesson, query: string) => {
+    const label = getLessonLabel(lesson).toLowerCase();
+    const title = getLessonTitle(lesson).toLowerCase();
+    const grade = getLessonGradeLabel(lesson).toLowerCase();
+
+    if (title === query || label === query) return 0;
+    if (title.startsWith(query)) return 1;
+    if (grade.startsWith(query)) return 2;
+    if (label.startsWith(query)) return 3;
+    return 4;
+  }, [getLessonGradeLabel, getLessonLabel, getLessonTitle]);
+
+  const selectedLesson = useMemo(
+    () => lessons.find((lesson) => lesson.id === lessonId) || null,
+    [lessonId, lessons]
+  );
+
+  const filteredLessons = useMemo(() => {
+    const query = lessonSearch.trim().toLowerCase();
+    if (!query || selectedLesson && lessonSearch === getLessonLabel(selectedLesson)) {
+      return [...lessons].sort(compareLessons);
+    }
+
+    return lessons
+      .filter((lesson) => getLessonLabel(lesson).toLowerCase().includes(query))
+      .sort((a, b) => {
+        const rankCompare = getSearchRank(a, query) - getSearchRank(b, query);
+        return rankCompare || compareLessons(a, b);
+      });
+  }, [compareLessons, getLessonLabel, getSearchRank, lessonSearch, lessons, selectedLesson]);
 
   const buildLogicConfig = useCallback(() => {
     try {
@@ -191,6 +260,24 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
       return buildLogicFromDefs();
     }
   }, [buildLogicFromDefs, logicJson]);
+
+  const resetFormToDefaults = useCallback(() => {
+    const preset = TYPE_PRESETS.numeric_input;
+    setLessonId("");
+    setLessonSearch("");
+    setLessonDropdownOpen(false);
+    setTemplateType("numeric_input");
+    setDifficulty("medium");
+    setBodyEn(preset.bodyEn);
+    setBodyVi(preset.bodyVi);
+    setAcceptedFormulas(preset.formulas);
+    setFalseAnswers(["", "", ""]);
+    setVariableDefs(preset.vars);
+    setLogicJson(JSON.stringify(preset.logic, null, 2));
+    setLogicJsonDirty(false);
+    setCurrentDraftStarted(false);
+    setLessonDropdownOpen(false);
+  }, []);
 
   const buildPayloadFromForm = useCallback((): CreateTemplateDTO => {
     const theoreticalFalseAnswers = falseAnswers.map((answer) => answer.trim()).filter(Boolean);
@@ -219,8 +306,38 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
     templateType,
   ]);
 
+  const buildTemplateDraftsInProcess = useCallback(() => {
+    if (editTemplateId) return [buildPayloadFromForm()];
+    const drafts = [...bulkTemplates];
+    if (activeTemplateIndex < drafts.length) {
+      drafts[activeTemplateIndex] = buildPayloadFromForm();
+    } else {
+      drafts.push(buildPayloadFromForm());
+    }
+    return drafts;
+  }, [activeTemplateIndex, buildPayloadFromForm, bulkTemplates, editTemplateId]);
+
+  const parseApiBodyJson = (value: string): unknown => {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return JSON.parse(`[${value}]`);
+    }
+  };
+
+  const formatApiBodyPayloads = (payloads: CreateTemplateDTO[]) => {
+    if (payloads.length <= 1) {
+      return JSON.stringify(payloads[0], null, 2);
+    }
+
+    return payloads
+      .map((payload) => JSON.stringify(payload, null, 2))
+      .join(",\n");
+  };
+
   const applyPayloadToForm = (payload: Partial<CreateTemplateDTO>) => {
     syncingFromApiBodyRef.current = true;
+    setCurrentDraftStarted(true);
 
     if ("lesson_id" in payload) {
       setLessonId(payload.lesson_id || "");
@@ -277,10 +394,41 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
   };
 
   useEffect(() => {
-    if (!isOpen || syncingFromApiBodyRef.current) return;
-    setApiBodyJson(JSON.stringify(buildPayloadFromForm(), null, 2));
+    if (!isOpen || devMode || syncingFromApiBodyRef.current) return;
+    const payloads = buildTemplateDraftsInProcess();
+    setApiBodyJson(formatApiBodyPayloads(payloads));
     setApiBodyJsonError("");
-  }, [buildPayloadFromForm, isOpen]);
+  }, [buildTemplateDraftsInProcess, devMode, isOpen]);
+
+  useEffect(() => {
+    if (!selectedLesson) {
+      if (!lessonId) setLessonSearch("");
+      return;
+    }
+
+    setLessonSearch(getLessonLabel(selectedLesson));
+  }, [getLessonLabel, lessonId, selectedLesson]);
+
+  const validateTemplatePayload = (payload: CreateTemplateDTO) => {
+    if (!payload.template_type || !payload.body_template_en?.trim() || !payload.body_template_vi?.trim()) {
+      return t("saveError");
+    }
+
+    const accepted = payload.accepted_formulas?.map((formula) => String(formula || "").trim()).filter(Boolean) || [];
+    const theoreticalFalseAnswers = Array.isArray((payload.logic_config as { false_answers?: unknown[] })?.false_answers)
+      ? (payload.logic_config as { false_answers?: unknown[] }).false_answers?.map((answer) => String(answer || "").trim()).filter(Boolean) || []
+      : [];
+
+    if (payload.template_type === "theoretical_question") {
+      if (!accepted[0] || theoreticalFalseAnswers.length !== 3) {
+        return t("theoreticalAnswerError");
+      }
+    } else if (accepted.length === 0) {
+      return t("formulaRequired");
+    }
+
+    return null;
+  };
 
   const parseLogicConfig = useCallback((raw: unknown, primaryFormula: string, extraAccepted: string[]) => {
     setAcceptedFormulas(
@@ -380,6 +528,9 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
         setLessons(lList);
 
         if (editTemplateId) {
+          setBulkTemplates([]);
+          setActiveTemplateIndex(0);
+          setCurrentDraftStarted(false);
           const allTpl = await testService.listTemplates() as QuestionTemplate[];
           const curr = allTpl.find((template) => template.id === editTemplateId);
           if (curr) {
@@ -391,30 +542,22 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
             parseLogicConfig(curr.logic_config, curr.accepted_formulas?.[0] || "", curr.accepted_formulas?.slice(1) || []);
           }
         } else {
-          // Reset to defaults
-          const preset = TYPE_PRESETS.numeric_input;
-          setLessonId("");
-          setTemplateType("numeric_input");
-          setDifficulty("medium");
-          setBodyEn(preset.bodyEn);
-          setBodyVi(preset.bodyVi);
-          setAcceptedFormulas(preset.formulas);
-          setFalseAnswers(["", "", ""]);
-          setVariableDefs(preset.vars);
-          setLogicJson(JSON.stringify(preset.logic, null, 2));
-          setLogicJsonDirty(false);
+          resetFormToDefaults();
+          setBulkTemplates([]);
+          setActiveTemplateIndex(0);
         }
       } catch (err) {
         console.error("Failed to load data:", err);
       }
     };
     fetchData();
-  }, [isOpen, editTemplateId, parseLogicConfig]);
+  }, [isOpen, editTemplateId, parseLogicConfig, resetFormToDefaults]);
 
   if (!isOpen) return null;
 
   // ---- Variable management ----
   const handleVarChange = (idx: number, field: keyof VariableDef, value: string | number) => {
+    setCurrentDraftStarted(true);
     setVariableDefs(prev => {
       const next = [...prev];
       next[idx] = { ...next[idx], [field]: value };
@@ -424,6 +567,7 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
   };
 
   const addVariable = () => {
+    setCurrentDraftStarted(true);
     const letters = "xyzabcdefghijklmnopqrstuvw";
     const nextName = letters[variableDefs.length] || `v${variableDefs.length}`;
     setVariableDefs(prev => {
@@ -435,6 +579,7 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
 
   const removeVariable = (idx: number) => {
     if (variableDefs.length <= 1) return;
+    setCurrentDraftStarted(true);
     setVariableDefs(prev => {
       const next = prev.filter((_, i) => i !== idx);
       syncVariablesToLogicJson(next);
@@ -443,6 +588,7 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
   };
 
   const handleTypeChange = (nextType: string) => {
+    setCurrentDraftStarted(true);
     setTemplateType(nextType);
     const preset = TYPE_PRESETS[nextType];
     if (!preset || editTemplateId) return;
@@ -465,20 +611,76 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
   };
 
   const handleApiBodyJsonChange = (value: string) => {
+    setCurrentDraftStarted(true);
     setApiBodyJson(value);
 
     try {
-      const parsed = JSON.parse(value);
-      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      const parsed = parseApiBodyJson(value);
+      if (!parsed || typeof parsed !== "object") {
         setApiBodyJsonError(t("invalidApiBodyJson"));
         return;
       }
 
       setApiBodyJsonError("");
-      applyPayloadToForm(parsed);
+      if (Array.isArray(parsed)) {
+        const [firstTemplate] = parsed as Partial<CreateTemplateDTO>[];
+        if (firstTemplate) {
+          applyPayloadToForm(firstTemplate);
+        }
+        setBulkTemplates(parsed as CreateTemplateDTO[]);
+        setActiveTemplateIndex(0);
+      } else {
+        applyPayloadToForm(parsed as Partial<CreateTemplateDTO>);
+        setBulkTemplates([parsed as CreateTemplateDTO]);
+        setActiveTemplateIndex(0);
+      }
     } catch {
       setApiBodyJsonError(t("invalidApiBodyJson"));
     }
+  };
+
+  const handleAddToBatch = () => {
+    try {
+      if (templateType !== "theoretical_question") {
+        JSON.parse(logicJson);
+      }
+    } catch {
+      alert(t("invalidLogicJson"));
+      return;
+    }
+
+    const payload = buildPayloadFromForm();
+    const validationError = validateTemplatePayload(payload);
+    if (validationError) {
+      alert(validationError);
+      return;
+    }
+
+    const drafts = buildTemplateDraftsInProcess();
+    setBulkTemplates(drafts);
+    setActiveTemplateIndex(drafts.length);
+    resetFormToDefaults();
+  };
+
+  const handleNavigateTemplate = (nextIndex: number) => {
+    if (editTemplateId || nextIndex < 0 || nextIndex >= templatesInProcess) return;
+
+    try {
+      if (templateType !== "theoretical_question") {
+        JSON.parse(logicJson);
+      }
+    } catch {
+      alert(t("invalidLogicJson"));
+      return;
+    }
+
+    const drafts = buildTemplateDraftsInProcess();
+    const nextPayload = drafts[nextIndex];
+    if (!nextPayload) return;
+
+    setBulkTemplates(drafts);
+    setActiveTemplateIndex(nextIndex);
+    applyPayloadToForm(nextPayload);
   };
 
   // ---- Submit ----
@@ -487,7 +689,7 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
     setLoading(true);
     try {
       try {
-        if (templateType !== "theoretical_question") {
+        if (!devMode && templateType !== "theoretical_question") {
           JSON.parse(logicJson);
         }
       } catch {
@@ -496,16 +698,22 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
         return;
       }
 
-      let payload: CreateTemplateDTO;
+      let payload: CreateTemplateDTO = buildPayloadFromForm();
+      let payloads: CreateTemplateDTO[] = [];
       if (devMode) {
         try {
-          const parsed = JSON.parse(apiBodyJson);
-          if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+          const parsed = parseApiBodyJson(apiBodyJson);
+          if (Array.isArray(parsed)) {
+            payloads = parsed as CreateTemplateDTO[];
+            payload = payloads[0] || payload;
+          } else if (parsed && typeof parsed === "object") {
+            payload = parsed as CreateTemplateDTO;
+            payloads = [payload];
+          } else {
             alert(t("invalidApiBodyJson"));
             setLoading(false);
             return;
           }
-          payload = parsed as CreateTemplateDTO;
         } catch {
           alert(t("invalidApiBodyJson"));
           setLoading(false);
@@ -513,15 +721,27 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
         }
       } else {
         payload = buildPayloadFromForm();
+        payloads = editTemplateId
+          ? [payload]
+          : buildTemplateDraftsInProcess();
       }
 
-      const payloadTemplateType = payload.template_type;
-      const theoreticalFalseAnswers = Array.isArray((payload.logic_config as { false_answers?: unknown[] })?.false_answers)
-        ? (payload.logic_config as { false_answers?: unknown[] }).false_answers?.map((answer) => String(answer || "").trim()).filter(Boolean) || []
-        : [];
-      if (payloadTemplateType === "theoretical_question") {
-        if (!payload.accepted_formulas?.[0]?.trim() || theoreticalFalseAnswers.length !== 3) {
-          alert(t("theoreticalAnswerError"));
+      if (payloads.length === 0) {
+        alert(t("emptyBatch"));
+        setLoading(false);
+        return;
+      }
+
+      if (editTemplateId && payloads.length !== 1) {
+        alert(t("editBulkError"));
+        setLoading(false);
+        return;
+      }
+
+      for (const item of payloads) {
+        const validationError = validateTemplatePayload(item);
+        if (validationError) {
+          alert(validationError);
           setLoading(false);
           return;
         }
@@ -529,8 +749,10 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
 
       if (editTemplateId) {
         await testService.updateTemplate(editTemplateId, payload);
+      } else if (payloads.length > 1) {
+        await testService.createTemplates(payloads);
       } else {
-        await testService.createTemplate(payload);
+        await testService.createTemplate(payloads[0] as CreateTemplateDTO);
       }
       onSuccess();
       onClose();
@@ -563,15 +785,49 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
               <Database size={24} />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-sol-text">
-                {editTemplateId ? t("editTitle") : t("createTitle")}
-              </h2>
+              <div className="flex flex-wrap items-center gap-3">
+                <h2 className="text-xl font-bold text-sol-text">
+                  {editTemplateId ? t("editTitle") : t("createTitle")}
+                </h2>
+                {!editTemplateId && (
+                  <span className="rounded-full border border-sol-accent/20 bg-sol-accent/10 px-3 py-1 text-xs font-black text-sol-accent">
+                    {templatesInProcess}
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-sol-muted font-medium uppercase tracking-widest">{t("adminTool")}</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-sol-accent/10 text-sol-muted hover:text-sol-accent rounded-full transition-colors">
-            <X size={24} />
-          </button>
+          <div className="flex items-center gap-2">
+            {!editTemplateId && !devMode && (
+              <div className="flex items-center gap-2 rounded-2xl border border-sol-border/10 bg-sol-bg/50 p-1">
+                <button
+                  type="button"
+                  onClick={() => handleNavigateTemplate(activeTemplateIndex - 1)}
+                  disabled={activeTemplateIndex <= 0}
+                  className="rounded-xl p-2 text-sol-muted transition-colors hover:bg-sol-accent/10 hover:text-sol-accent disabled:opacity-30"
+                  aria-label={t("previousTemplate")}
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                <span className="min-w-12 text-center text-xs font-black text-sol-muted">
+                  {activeTemplateIndex + 1}/{templatesInProcess}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleNavigateTemplate(activeTemplateIndex + 1)}
+                  disabled={activeTemplateIndex >= templatesInProcess - 1}
+                  className="rounded-xl p-2 text-sol-muted transition-colors hover:bg-sol-accent/10 hover:text-sol-accent disabled:opacity-30"
+                  aria-label={t("nextTemplate")}
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+            )}
+            <button onClick={onClose} className="p-2 hover:bg-sol-accent/10 text-sol-muted hover:text-sol-accent rounded-full transition-colors">
+              <X size={24} />
+            </button>
+          </div>
         </header>
 
         {/* Body */}
@@ -588,7 +844,8 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
                 type="button"
                 onClick={() => {
                   if (!devMode) {
-                    setApiBodyJson(JSON.stringify(buildPayloadFromForm(), null, 2));
+                    const payloads = buildTemplateDraftsInProcess();
+                    setApiBodyJson(formatApiBodyPayloads(payloads));
                     setApiBodyJsonError("");
                   }
                   setDevMode((current) => !current);
@@ -631,22 +888,80 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-2">
                 <label className="text-xs font-black uppercase text-sol-muted pl-1">{t("associateLesson")}</label>
-                <select
-                  value={lessonId}
-                  onChange={(e) => setLessonId(e.target.value)}
-                  className="w-full bg-sol-bg border border-sol-border/20 rounded-2xl px-6 py-4 text-sol-text focus:ring-2 focus:ring-sol-accent/30 transition-all font-medium"
-                >
-                  <option value="">{t("noLesson")}</option>
-                  {lessons.map(l => {
-                    const gradeLabel = l.grade
-                      ? (locale === "vi" ? l.grade.title_vi : l.grade.title_en) || l.grade.slug
-                      : t("unassignedGrade");
-                    const lessonTitle = locale === "vi" ? l.title_vi : l.title_en;
-                    return (
-                      <option key={l.id} value={l.id}>[{gradeLabel}] {lessonTitle}</option>
-                    );
-                  })}
-                </select>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={lessonSearch}
+                    onFocus={() => setLessonDropdownOpen(true)}
+                    onBlur={() => window.setTimeout(() => setLessonDropdownOpen(false), 120)}
+                    onChange={(e) => {
+                      setCurrentDraftStarted(true);
+                      setLessonSearch(e.target.value);
+                      setLessonId("");
+                      setLessonDropdownOpen(true);
+                    }}
+                    placeholder={t("noLesson")}
+                    className="w-full bg-sol-bg border border-sol-border/20 rounded-2xl px-6 py-4 pr-12 text-sol-text focus:ring-2 focus:ring-sol-accent/30 transition-all font-medium outline-none"
+                  />
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      setCurrentDraftStarted(true);
+                      setLessonId("");
+                      setLessonSearch("");
+                      setLessonDropdownOpen((current) => !current);
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-xl px-2 py-1 text-sol-muted hover:text-sol-accent"
+                    aria-label={t("clearLesson")}
+                  >
+                    {/* {lessonSearch ? "x" : "v"} */}
+                  </button>
+
+                  {lessonDropdownOpen && (
+                    <div className="absolute z-30 mt-2 max-h-64 w-full overflow-y-auto rounded-2xl border border-sol-border/20 bg-sol-surface shadow-2xl">
+                      <button
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setCurrentDraftStarted(true);
+                          setLessonId("");
+                          setLessonSearch("");
+                          setLessonDropdownOpen(false);
+                        }}
+                        className="block w-full px-4 py-3 text-left text-sm font-bold text-sol-muted hover:bg-sol-accent/10 hover:text-sol-accent"
+                      >
+                        {t("noLesson")}
+                      </button>
+
+                      {filteredLessons.length > 0 ? (
+                        filteredLessons.map((lesson) => {
+                          const label = getLessonLabel(lesson);
+                          return (
+                            <button
+                              type="button"
+                              key={lesson.id}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                setCurrentDraftStarted(true);
+                                setLessonId(lesson.id);
+                                setLessonSearch(label);
+                                setLessonDropdownOpen(false);
+                              }}
+                              className={`block w-full px-4 py-3 text-left text-sm font-bold transition-colors hover:bg-sol-accent/10 hover:text-sol-accent ${
+                                lesson.id === lessonId ? "bg-sol-accent/10 text-sol-accent" : "text-sol-text"
+                              }`}
+                            >
+                              {label}
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <div className="px-4 py-3 text-sm font-bold text-sol-muted">{t("noLessonMatches")}</div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="space-y-2">
                 <label className="text-xs font-black uppercase text-sol-muted pl-1">{t("templateType")}</label>
@@ -666,7 +981,10 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
                 <select
                   required
                   value={difficulty}
-                  onChange={(e) => setDifficulty(e.target.value)}
+                  onChange={(e) => {
+                    setCurrentDraftStarted(true);
+                    setDifficulty(e.target.value);
+                  }}
                   className="w-full bg-sol-bg border border-sol-border/20 rounded-2xl px-6 py-4 text-sol-text focus:ring-2 focus:ring-sol-accent/30 transition-all font-medium"
                 >
                   {DIFFICULTIES.map((item) => (
@@ -682,7 +1000,10 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
                 <label className="text-xs font-black uppercase text-sol-muted pl-1">{t("bodyEn")}</label>
                 <textarea required
                   value={bodyEn}
-                  onChange={(e) => setBodyEn(e.target.value)}
+                  onChange={(e) => {
+                    setCurrentDraftStarted(true);
+                    setBodyEn(e.target.value);
+                  }}
                   rows={3}
                   className="w-full bg-sol-bg border border-sol-border/20 rounded-2xl p-4 text-sol-text resize-none focus:ring-2 focus:ring-sol-accent/30"
                 />
@@ -691,7 +1012,10 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
                 <label className="text-xs font-black uppercase text-sol-muted pl-1">{t("bodyVi")}</label>
                 <textarea required
                   value={bodyVi}
-                  onChange={(e) => setBodyVi(e.target.value)}
+                  onChange={(e) => {
+                    setCurrentDraftStarted(true);
+                    setBodyVi(e.target.value);
+                  }}
                   rows={3}
                   className="w-full bg-sol-bg border border-sol-border/20 rounded-2xl p-4 text-sol-text resize-none focus:ring-2 focus:ring-sol-accent/30"
                 />
@@ -713,6 +1037,7 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
                         type="text"
                         value={f}
                         onChange={(e) => setAcceptedFormulas(prev => {
+                          setCurrentDraftStarted(true);
                           const next = [...prev];
                           next[idx] = e.target.value;
                           return next;
@@ -723,7 +1048,10 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
                       {templateType !== "theoretical_question" && idx > 0 && (
                         <button
                           type="button"
-                          onClick={() => setAcceptedFormulas(prev => prev.filter((_, i) => i !== idx))}
+                          onClick={() => {
+                            setCurrentDraftStarted(true);
+                            setAcceptedFormulas(prev => prev.filter((_, i) => i !== idx));
+                          }}
                           className="p-2 text-sol-muted hover:text-red-500 transition-colors"
                         >
                           <Trash2 size={15} />
@@ -734,7 +1062,10 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
                   {templateType !== "theoretical_question" && (
                     <button
                       type="button"
-                      onClick={() => setAcceptedFormulas(prev => [...prev, ""])}
+                      onClick={() => {
+                        setCurrentDraftStarted(true);
+                        setAcceptedFormulas(prev => [...prev, ""]);
+                      }}
                       className="flex items-center gap-1.5 text-xs font-bold text-sol-accent hover:bg-sol-accent/10 px-3 py-1.5 rounded-xl transition-all border border-sol-accent/20 mt-1"
                     >
                       <Plus size={13} /> {t("addFormula")}
@@ -757,6 +1088,7 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
                           type="text"
                           value={answer}
                           onChange={(e) => setFalseAnswers(prev => {
+                            setCurrentDraftStarted(true);
                             const next = [...prev];
                             next[idx] = e.target.value;
                             return next;
@@ -841,6 +1173,7 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
                 <textarea
                   value={logicJson}
                   onChange={(e) => {
+                    setCurrentDraftStarted(true);
                     setLogicJson(e.target.value);
                     setLogicJsonDirty(true);
                   }}
@@ -866,9 +1199,26 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
             <button onClick={onClose} className="px-8 py-3 rounded-2xl font-bold text-sol-muted hover:text-sol-accent transition-colors">
               {t("cancel")}
             </button>
+            {!editTemplateId && !devMode && (
+              <button
+                type="button"
+                onClick={handleAddToBatch}
+                disabled={loading}
+                className="flex items-center gap-2 rounded-2xl border border-sol-accent/20 px-6 py-3 font-black text-sol-accent transition-all hover:bg-sol-accent/10 disabled:opacity-50"
+              >
+                <Plus size={18} />
+                {t("createMore")}
+              </button>
+            )}
             <button form="template-form" type="submit" disabled={loading} className="flex items-center gap-3 px-10 py-3 bg-sol-accent text-sol-bg rounded-2xl font-black hover:scale-105 transition-all shadow-xl shadow-sol-accent/30 disabled:opacity-50">
               <Save size={20} />
-              {loading ? t("saving") : (editTemplateId ? t("saveChanges") : t("createTemplate"))}
+              {loading
+                ? t("saving")
+                : editTemplateId
+                  ? t("saveChanges")
+                  : templatesInProcess > 1
+                    ? t("createTemplates", { count: templatesInProcess })
+                    : t("createTemplate")}
             </button>
           </div>
         </footer>

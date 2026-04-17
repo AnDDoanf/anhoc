@@ -12,10 +12,10 @@ import { seedAchievements } from './services/achievementService';
 
 const app: Application = express();
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.SERVER_PORT || process.env.PORT || 5001;
 
 app.use(cors({
-  origin: 'http://localhost:3000', 
+  origin: 'http://localhost:5000', 
   credentials: true,               
 }));
 app.use(express.json()); 

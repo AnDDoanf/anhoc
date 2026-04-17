@@ -34,6 +34,27 @@ const validateTheoreticalQuestion = (templateType: string, logicConfig: any, acc
   return null;
 };
 
+const normalizeTemplatePayload = (payload: any) => {
+  const {
+    lesson_id, template_type, difficulty,
+    body_template_en, body_template_vi,
+    explanation_template_en, explanation_template_vi,
+    logic_config, accepted_formulas
+  } = payload || {};
+
+  return {
+    lesson_id: lesson_id || null,
+    template_type,
+    difficulty: normalizeDifficulty(difficulty),
+    body_template_en,
+    body_template_vi,
+    explanation_template_en,
+    explanation_template_vi,
+    logic_config: logic_config || {},
+    accepted_formulas: Array.isArray(accepted_formulas) ? accepted_formulas : []
+  };
+};
+
 const getAllowedSubjectIds = async (req: any): Promise<number[] | null> => {
   if (req.user?.role === "admin") return null;
 
@@ -277,34 +298,30 @@ router.post('/attempts/:id/finish', authenticate, async (req, res) => {
 // 4. Create Question Template (Admin)
 router.post('/templates', authenticate, async (req, res) => {
   try {
-    const {
-      lesson_id, template_type, difficulty,
-      body_template_en, body_template_vi,
-      explanation_template_en, explanation_template_vi,
-      logic_config, accepted_formulas
-    } = req.body;
+    const requestedTemplates = Array.isArray(req.body)
+      ? req.body
+      : Array.isArray(req.body?.templates)
+        ? req.body.templates
+        : [req.body];
 
-    const theoreticalError = validateTheoreticalQuestion(template_type, logic_config, accepted_formulas);
-    if (theoreticalError) return res.status(400).json({ error: theoreticalError });
-    if (!(await canAccessLessonSubject(req, lesson_id))) {
-      return res.status(403).json({ error: "You do not have access to this subject" });
+    if (requestedTemplates.length === 0) {
+      return res.status(400).json({ error: "At least one template is required" });
     }
 
-    const template = await prisma.questionTemplate.create({
-      data: {
-        lesson_id: lesson_id || null,
-        template_type,
-        difficulty: normalizeDifficulty(difficulty),
-        body_template_en,
-        body_template_vi,
-        explanation_template_en,
-        explanation_template_vi,
-        logic_config: logic_config || {},
-        accepted_formulas: Array.isArray(accepted_formulas) ? accepted_formulas : []
+    const templates = requestedTemplates.map(normalizeTemplatePayload);
+    for (const template of templates) {
+      const theoreticalError = validateTheoreticalQuestion(template.template_type, template.logic_config, template.accepted_formulas);
+      if (theoreticalError) return res.status(400).json({ error: theoreticalError });
+      if (!(await canAccessLessonSubject(req, template.lesson_id))) {
+        return res.status(403).json({ error: "You do not have access to this subject" });
       }
-    });
+    }
 
-    res.json(template);
+    const createdTemplates = await prisma.$transaction(
+      templates.map((template) => prisma.questionTemplate.create({ data: template }))
+    );
+
+    res.json(Array.isArray(req.body) || Array.isArray(req.body?.templates) ? createdTemplates : createdTemplates[0]);
   } catch (error: any) {
     res.status(500).json({ error: "Failed to create template", details: error.message });
   }

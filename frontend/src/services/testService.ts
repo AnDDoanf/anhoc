@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:3001/api/v1',
+  baseURL: 'http://localhost:5001/api/v1',
 });
 
 // Add interceptor to include token
@@ -28,6 +28,10 @@ export interface CreateTemplateDTO {
 export const testService = {
   createTemplate: async (data: CreateTemplateDTO) => {
     const response = await api.post('/tests/templates', data);
+    return response.data;
+  },
+  createTemplates: async (templates: CreateTemplateDTO[]) => {
+    const response = await api.post('/tests/templates', { templates });
     return response.data;
   },
   listTemplates: async () => {

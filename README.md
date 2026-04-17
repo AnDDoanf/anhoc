@@ -177,7 +177,7 @@ NEXT_PUBLIC_API_URL=https://your-backend.onrender.com
 ## Backend (.env)
 
 ```
-PORT=3000
+SERVER_PORT=5001
 DATABASE_URL=your_neon_connection_string
 JWT_SECRET=your_secret_key
 ```
