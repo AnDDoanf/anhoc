@@ -38,6 +38,10 @@ export const testService = {
     const response = await api.get('/tests/templates');
     return response.data;
   },
+  getTemplate: async (id: string) => {
+    const response = await api.get(`/tests/templates/${id}`);
+    return response.data;
+  },
   updateTemplate: async (id: string, data: CreateTemplateDTO) => {
     const response = await api.put(`/tests/templates/${id}`, data);
     return response.data;
@@ -53,6 +57,26 @@ export const testService = {
   },
   submitAnswer: async (snapshotId: string, studentAnswer: string) => {
     const response = await api.post('/tests/submit-answer', { snapshotId, studentAnswer });
+    return response.data;
+  },
+  reportQuestion: async (snapshotId: string, reason: string) => {
+    const response = await api.post('/tests/question-reports', { snapshotId, reason });
+    return response.data;
+  },
+  listQuestionReports: async (status = "all") => {
+    const response = await api.get('/tests/question-reports', { params: { status } });
+    return response.data;
+  },
+  updateQuestionReport: async (id: string, status: string) => {
+    const response = await api.patch(`/tests/question-reports/${id}`, { status });
+    return response.data;
+  },
+  listGradeTests: async () => {
+    const response = await api.get('/tests/grade-tests');
+    return response.data;
+  },
+  startGradeTest: async (gradeId: number) => {
+    const response = await api.post(`/tests/grade-tests/${gradeId}/start`);
     return response.data;
   },
   finishAttempt: async (attemptId: string) => {

@@ -4,7 +4,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { testService } from "@/services/testService";
-import { Loader2, ArrowRight, ArrowLeft, Send, CheckCircle2, XCircle, Award } from "lucide-react";
+import { Loader2, ArrowRight, ArrowLeft, Send, CheckCircle2, XCircle, Award, Flag } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
@@ -40,6 +40,10 @@ export default function PracticeRunnerPage() {
   const [newlyEarned, setNewlyEarned] = useState<any[]>([]);
   const [finishModalType, setFinishModalType] = useState<"complete" | "abandon" | null>(null);
   const [orderedItems, setOrderedItems] = useState<ChoiceOption[]>([]);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [reportedSnapshotIds, setReportedSnapshotIds] = useState<string[]>([]);
 
   useEffect(() => {
     fetchAttempt();
@@ -85,6 +89,8 @@ export default function PracticeRunnerPage() {
     setAnswerInput("");
     setOrderedItems([]);
     setStatus("idle");
+    setReportModalOpen(false);
+    setReportReason("");
   }, [currentSnapshot?.id]);
 
 
@@ -247,6 +253,29 @@ export default function PracticeRunnerPage() {
     confirmFinish();
   };
 
+  const handleReportQuestion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentSnapshot?.id || reportSubmitting) return;
+
+    const reason = reportReason.trim();
+    if (reason.length < 5) return;
+
+    setReportSubmitting(true);
+    try {
+      await testService.reportQuestion(currentSnapshot.id, reason);
+      setReportedSnapshotIds((current) => (
+        current.includes(currentSnapshot.id) ? current : [...current, currentSnapshot.id]
+      ));
+      setReportModalOpen(false);
+      setReportReason("");
+    } catch (error: any) {
+      const message = error.response?.data?.error || t("reportError");
+      alert(message);
+    } finally {
+      setReportSubmitting(false);
+    }
+  };
+
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -361,8 +390,19 @@ export default function PracticeRunnerPage() {
           <ArrowLeft size={16} /> {t("finishAbandon")}
         </button>
 
-        <div className="flex items-center gap-2 px-4 py-2 bg-sol-surface rounded-full border border-sol-border/10 text-sm font-bold text-sol-muted">
-          {t("questionInfo", { current: currentIndex + 1, total: attempt.snapshots.length })}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setReportModalOpen(true)}
+            disabled={!currentSnapshot?.template_id || reportedSnapshotIds.includes(currentSnapshot?.id)}
+            className="flex items-center gap-2 rounded-full border border-sol-orange/20 bg-sol-orange/10 px-4 py-2 text-sm font-bold text-sol-orange transition-colors hover:bg-sol-orange/15 disabled:opacity-50"
+          >
+            <Flag size={15} />
+            {reportedSnapshotIds.includes(currentSnapshot?.id) ? t("reportedQuestion") : t("reportQuestion")}
+          </button>
+          <div className="flex items-center gap-2 px-4 py-2 bg-sol-surface rounded-full border border-sol-border/10 text-sm font-bold text-sol-muted">
+            {t("questionInfo", { current: currentIndex + 1, total: attempt.snapshots.length })}
+          </div>
         </div>
       </div>
 
@@ -579,6 +619,57 @@ export default function PracticeRunnerPage() {
         onCancel={() => setFinishModalType(null)}
         isDestructive={finishModalType === "abandon"}
       />
+
+      {reportModalOpen && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-sol-bg/80 backdrop-blur-xl" onClick={() => setReportModalOpen(false)} />
+          <form
+            onSubmit={handleReportQuestion}
+            className="relative w-full max-w-lg rounded-[2rem] border border-sol-border/20 bg-sol-surface p-6 shadow-2xl"
+          >
+            <div className="mb-5 flex items-start gap-4">
+              <div className="rounded-2xl bg-sol-orange/10 p-3 text-sol-orange">
+                <Flag size={22} />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-sol-text">{t("reportTitle")}</h2>
+                <p className="mt-1 text-sm leading-relaxed text-sol-muted">{t("reportHint")}</p>
+              </div>
+            </div>
+
+            <textarea
+              value={reportReason}
+              onChange={(e) => setReportReason(e.target.value)}
+              rows={5}
+              maxLength={1000}
+              autoFocus
+              placeholder={t("reportPlaceholder")}
+              className="scrollbar-theme w-full resize-none rounded-2xl border border-sol-border/20 bg-sol-bg p-4 text-sol-text outline-none transition-all focus:ring-2 focus:ring-sol-accent/30"
+            />
+            <div className="mt-2 text-right text-xs font-bold text-sol-muted">
+              {reportReason.trim().length}/1000
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setReportModalOpen(false)}
+                className="rounded-xl px-5 py-2.5 font-bold text-sol-muted transition-colors hover:text-sol-accent"
+              >
+                {t("reportCancel")}
+              </button>
+              <button
+                type="submit"
+                disabled={reportSubmitting || reportReason.trim().length < 5}
+                className="flex items-center gap-2 rounded-xl bg-sol-accent px-5 py-2.5 font-black text-sol-bg transition-all hover:bg-sol-accent/90 disabled:opacity-50"
+              >
+                {reportSubmitting && <Loader2 size={16} className="animate-spin" />}
+                {t("reportSubmit")}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

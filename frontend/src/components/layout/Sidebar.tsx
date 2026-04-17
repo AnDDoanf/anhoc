@@ -5,6 +5,7 @@ import {
   ChevronLeft,
   ChevronRight,
   FlaskConical,
+  Flag,
   PencilLine,
   Database,
   LayoutDashboard,
@@ -250,6 +251,15 @@ export default function Sidebar() {
               href="/student/questions"
               label={t("questions")}
               icon={<Database size={18} />}
+              pathname={pathname}
+              isCollapsed={isCollapsed}
+            />
+          </Can>
+          <Can I="manage" a="lesson">
+            <NavItem
+              href="/admin/reports"
+              label={t("reports")}
+              icon={<Flag size={18} />}
               pathname={pathname}
               isCollapsed={isCollapsed}
             />

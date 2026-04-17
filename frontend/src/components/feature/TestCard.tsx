@@ -8,19 +8,46 @@ import {
   Medal,
   Timer,
   ClipboardCheck,
-  HelpCircle
+  HelpCircle,
+  History,
+  Loader2,
+  Trophy
 } from "lucide-react";
-import Link from "next/link";
-import { LessonTest } from "@/mockData/testData";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { testService } from "@/services/testService";
+import { format } from "date-fns";
 
 interface TestCardProps {
-  test: LessonTest;
+  test: {
+    grade_id: number;
+    grade_slug: string;
+    title_en: string;
+    title_vi: string;
+    description_en: string;
+    description_vi: string;
+    questionCount: number;
+    availableTemplateCount?: number;
+    lessonCount?: number;
+    difficulty: "Beginner" | "Intermediate" | "Advanced";
+    iconType: "timer" | "medal" | "target";
+    attempts?: {
+      id: string;
+      total_score: number | null;
+      is_completed: boolean | null;
+      started_at: string;
+      completed_at?: string | null;
+      questionCount: number;
+    }[];
+  };
 }
 
 export default function TestCard({ test }: TestCardProps) {
   const t = useTranslations("Test");
   const diffT = useTranslations("Difficulty");
   const locale = useLocale();
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -39,6 +66,20 @@ export default function TestCard({ test }: TestCardProps) {
 
   const title = locale === "vi" ? test.title_vi : test.title_en;
   const description = locale === "vi" ? test.description_vi : test.description_en;
+  const attempts = test.attempts || [];
+
+  const handleStart = async () => {
+    setLoading(true);
+    try {
+      const attempt = await testService.startGradeTest(test.grade_id);
+      router.push(`/student/practice/${attempt.id}`);
+    } catch (error: any) {
+      console.error("Failed to start test:", error);
+      alert(error.response?.data?.error || t("startError"));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="group relative bg-sol-surface/30 rounded-3xl p-6 border border-sol-border/10 shadow-sm hover:shadow-2xl hover:bg-sol-surface/50 transition-all duration-500 hover:-translate-y-1 overflow-hidden">
@@ -71,14 +112,58 @@ export default function TestCard({ test }: TestCardProps) {
           </div>
         </div>
 
-        <Link
-          prefetch={false}
-          href={`/student/test/${test.gradeId}/${test.id}`}
-          className="flex items-center justify-between w-full mt-4 px-6 py-3 bg-sol-text text-sol-bg rounded-2xl font-bold text-sm hover:bg-sol-accent hover:text-sol-bg transition-all group/btn shadow-md hover:shadow-sol-accent/20"
+        <button
+          type="button"
+          onClick={handleStart}
+          disabled={loading}
+          className="flex items-center justify-between w-full mt-4 px-6 py-3 bg-sol-text text-sol-bg rounded-2xl font-bold text-sm hover:bg-sol-accent hover:text-sol-bg transition-all group/btn shadow-md hover:shadow-sol-accent/20 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          <span>{t("startBtn")}</span>
-          <ArrowRight size={18} className="transition-transform group-hover/btn:translate-x-1" />
-        </Link>
+          <span>{loading ? t("starting") : t("startBtn")}</span>
+          {loading ? (
+            <Loader2 size={18} className="animate-spin" />
+          ) : (
+            <ArrowRight size={18} className="transition-transform group-hover/btn:translate-x-1" />
+          )}
+        </button>
+
+        <div className="border-t border-sol-border/10 pt-4">
+          <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-sol-muted">
+            <History size={13} className="text-sol-accent" />
+            {t("attemptLog")}
+          </div>
+
+          {attempts.length === 0 ? (
+            <p className="rounded-2xl border border-sol-border/10 bg-sol-bg/30 px-3 py-3 text-xs font-bold text-sol-muted">
+              {t("noAttempts")}
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {attempts.map((attempt) => (
+                <button
+                  key={attempt.id}
+                  type="button"
+                  onClick={() => router.push(`/student/practice/${attempt.id}`)}
+                  className="flex w-full items-center justify-between gap-3 rounded-2xl border border-sol-border/10 bg-sol-bg/30 px-3 py-3 text-left transition-colors hover:border-sol-accent/30 hover:bg-sol-surface"
+                >
+                  <div className="min-w-0">
+                    <div className="truncate text-xs font-black text-sol-text">
+                      {attempt.is_completed ? t("completedAttempt") : t("inProgressAttempt")}
+                    </div>
+                    <div className="text-[10px] font-bold text-sol-muted">
+                      {format(new Date(attempt.started_at), "MMM d, HH:mm")}
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1 rounded-xl bg-sol-surface px-2 py-1 text-xs font-black text-sol-accent">
+                    <Trophy size={12} />
+                    {attempt.is_completed && attempt.total_score !== null
+                      ? `${Math.round(attempt.total_score)}%`
+                      : t("resumeAttempt")}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

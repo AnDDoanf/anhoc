@@ -531,8 +531,7 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
           setBulkTemplates([]);
           setActiveTemplateIndex(0);
           setCurrentDraftStarted(false);
-          const allTpl = await testService.listTemplates() as QuestionTemplate[];
-          const curr = allTpl.find((template) => template.id === editTemplateId);
+          const curr = await testService.getTemplate(editTemplateId) as QuestionTemplate;
           if (curr) {
             setLessonId(curr.lesson_id || "");
             setTemplateType(curr.template_type);
@@ -919,7 +918,7 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
                   </button>
 
                   {lessonDropdownOpen && (
-                    <div className="absolute z-30 mt-2 max-h-64 w-full overflow-y-auto rounded-2xl border border-sol-border/20 bg-sol-surface shadow-2xl">
+                    <div className="scrollbar-theme absolute z-30 mt-2 max-h-64 w-full overflow-y-auto rounded-2xl border border-sol-border/20 bg-sol-surface shadow-2xl">
                       <button
                         type="button"
                         onMouseDown={(e) => {

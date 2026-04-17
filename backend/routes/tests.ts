@@ -97,6 +97,223 @@ const templateSubjectWhere = (subjectIds: number[] | null) => {
   };
 };
 
+const normalizeReportStatus = (value: unknown): string => {
+  const status = String(value || "open").toLowerCase();
+  return ["open", "reviewing", "resolved", "dismissed"].includes(status) ? status : "open";
+};
+
+const canAccessSubjectId = (subjectIds: number[] | null, subjectId?: number | null) => {
+  return subjectIds === null || (typeof subjectId === "number" && subjectIds.includes(subjectId));
+};
+
+const shuffle = <T>(items: T[]): T[] => {
+  const next = [...items];
+  for (let i = next.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [next[i], next[j]] = [next[j], next[i]];
+  }
+  return next;
+};
+
+const buildQuestionSnapshots = (attemptId: string, templates: any[], targetCount: number) => {
+  const repeatsPerTemplate = Math.ceil(targetCount / templates.length);
+  let templatePool: any[] = [];
+
+  for (let i = 0; i < repeatsPerTemplate; i++) {
+    templatePool = templatePool.concat(templates);
+  }
+
+  return shuffle(templatePool).slice(0, targetCount).map((template) => {
+    const isTheoretical = template.template_type === "theoretical_question";
+    const vars = isTheoretical ? {} : MathService.generateVars(template.logic_config);
+    const right_answers = isTheoretical
+      ? template.accepted_formulas.slice(0, 1).filter(Boolean)
+      : template.accepted_formulas
+        .map((formula: string) => MathService.evaluateFormula(formula, vars))
+        .filter((answer: unknown) => answer !== null);
+
+    return {
+      attempt_id: attemptId,
+      template_id: template.id,
+      generated_variables: vars,
+      right_answers
+    };
+  });
+};
+
+router.get('/grade-tests', authenticate, async (req, res) => {
+  try {
+    const allowedSubjectIds = await getAllowedSubjectIds(req);
+    const grades = await prisma.grade.findMany({
+      where: {
+        lessons: {
+          some: {
+            ...(allowedSubjectIds === null ? {} : { subject_id: { in: allowedSubjectIds } }),
+            templates: { some: {} }
+          }
+        }
+      },
+      include: {
+        subject: true,
+        lessons: {
+          where: {
+            ...(
+              allowedSubjectIds === null
+                ? {}
+                : { subject_id: { in: allowedSubjectIds } }
+            ),
+            templates: { some: {} }
+          },
+          include: {
+            _count: {
+              select: { templates: true }
+            }
+          },
+          orderBy: { order_index: "asc" }
+        }
+      },
+      orderBy: { id: "asc" }
+    });
+
+    const gradeTests = await Promise.all(grades.map(async (grade) => {
+        const questionCount = grade.lessons.reduce((total, lesson) => total + lesson._count.templates, 0);
+        const attempts = await prisma.testAttempt.findMany({
+          where: {
+            user_id: (req as any).user.id,
+            is_practice: false,
+            snapshots: {
+              some: {
+                template: {
+                  lesson: {
+                    grade_id: grade.id
+                  }
+                }
+              }
+            }
+          },
+          select: {
+            id: true,
+            total_score: true,
+            is_completed: true,
+            started_at: true,
+            completed_at: true,
+            _count: {
+              select: { snapshots: true }
+            }
+          },
+          orderBy: { started_at: "desc" },
+          take: 5
+        });
+
+        return {
+          id: `grade-${grade.id}-test`,
+          grade_id: grade.id,
+          grade_slug: grade.slug,
+          title_en: `${grade.title_en} Test`,
+          title_vi: `Bài kiểm tra ${grade.title_vi}`,
+          description_en: `A 50-question test from all available question templates in ${grade.title_en}.`,
+          description_vi: `Bài kiểm tra 50 câu từ tất cả mẫu câu hỏi hiện có trong ${grade.title_vi}.`,
+          questionCount: 50,
+          availableTemplateCount: questionCount,
+          lessonCount: grade.lessons.length,
+          attempts: attempts.map((attempt) => ({
+            id: attempt.id,
+            total_score: attempt.total_score === null ? null : Number(attempt.total_score),
+            is_completed: attempt.is_completed,
+            started_at: attempt.started_at,
+            completed_at: attempt.completed_at,
+            questionCount: attempt._count.snapshots
+          })),
+          difficulty: "Intermediate",
+          iconType: "medal",
+          grade,
+          subject: grade.subject
+        };
+      }));
+
+    res.json(gradeTests.filter((test) => test.availableTemplateCount > 0));
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to fetch grade tests", details: error.message });
+  }
+});
+
+router.post('/grade-tests/:gradeId/start', authenticate, async (req, res) => {
+  try {
+    const gradeId = Number(req.params.gradeId);
+    const userId = (req as any).user.id;
+
+    if (!Number.isInteger(gradeId)) {
+      return res.status(400).json({ error: "Invalid grade id" });
+    }
+
+    const allowedSubjectIds = await getAllowedSubjectIds(req);
+    const grade = await prisma.grade.findUnique({
+      where: { id: gradeId },
+      include: {
+        lessons: {
+          where: allowedSubjectIds === null ? {} : { subject_id: { in: allowedSubjectIds } },
+          select: { id: true, subject_id: true }
+        }
+      }
+    });
+
+    if (!grade) return res.status(404).json({ error: "Grade not found" });
+    if (grade.subject_id && !canAccessSubjectId(allowedSubjectIds, grade.subject_id)) {
+      return res.status(403).json({ error: "You do not have access to this subject" });
+    }
+
+    const lessonIds = grade.lessons.map((lesson) => lesson.id);
+    if (lessonIds.length === 0) {
+      return res.status(404).json({ error: "No lessons found for this grade." });
+    }
+
+    const templates = await prisma.questionTemplate.findMany({
+      where: {
+        lesson_id: { in: lessonIds }
+      }
+    });
+
+    if (templates.length === 0) {
+      return res.status(404).json({ error: "No question templates found for this grade test." });
+    }
+
+    const attempt = await prisma.testAttempt.create({
+      data: {
+        user_id: userId,
+        lesson_id: null,
+        is_practice: false
+      }
+    });
+
+    const questionsToCreate = buildQuestionSnapshots(attempt.id, templates, 50);
+    await prisma.questionSnapshot.createMany({
+      data: questionsToCreate
+    });
+
+    const attemptWithQuestions = await prisma.testAttempt.findUnique({
+      where: { id: attempt.id },
+      include: {
+        snapshots: {
+          include: {
+            template: {
+              include: {
+                lesson: {
+                  include: { grade: true }
+                }
+              }
+            }
+          },
+          orderBy: { id: "asc" }
+        }
+      }
+    });
+
+    res.json(attemptWithQuestions);
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to create test attempt.", details: error.message });
+  }
+});
+
 // 2. Get a Test Attempt
 router.get('/attempts/:id', authenticate, async (req, res) => {
   const attemptId = req.params.id as string;
@@ -327,18 +544,179 @@ router.post('/templates', authenticate, async (req, res) => {
   }
 });
 
+// Report a generated question/template from practice or test flow
+router.post('/question-reports', authenticate, async (req, res) => {
+  try {
+    const snapshotId = typeof req.body?.snapshotId === "string" ? req.body.snapshotId : "";
+    const reason = typeof req.body?.reason === "string" ? req.body.reason.trim() : "";
+
+    if (!snapshotId) {
+      return res.status(400).json({ error: "Question snapshot is required" });
+    }
+    if (reason.length < 5) {
+      return res.status(400).json({ error: "Report reason must be at least 5 characters" });
+    }
+    if (reason.length > 1000) {
+      return res.status(400).json({ error: "Report reason must be 1000 characters or fewer" });
+    }
+
+    const snapshot = await prisma.questionSnapshot.findUnique({
+      where: { id: snapshotId },
+      include: {
+        attempt: {
+          select: {
+            id: true,
+            user_id: true,
+            lesson_id: true
+          }
+        },
+        template: {
+          select: {
+            id: true,
+            lesson_id: true
+          }
+        }
+      }
+    });
+
+    if (!snapshot || !snapshot.template_id || !snapshot.template) {
+      return res.status(404).json({ error: "Question not found" });
+    }
+
+    const userId = (req as any).user?.id || null;
+    if (snapshot.attempt?.user_id && snapshot.attempt.user_id !== userId && (req as any).user?.role !== "admin") {
+      return res.status(403).json({ error: "You can only report your own questions" });
+    }
+
+    const existingOpenReport = userId
+      ? await (prisma as any).questionTemplateReport.findFirst({
+          where: {
+            reporter_id: userId,
+            snapshot_id: snapshot.id,
+            status: { in: ["open", "reviewing"] }
+          }
+        })
+      : null;
+
+    if (existingOpenReport) {
+      return res.status(409).json({ error: "You already reported this question", report: existingOpenReport });
+    }
+
+    const report = await (prisma as any).questionTemplateReport.create({
+      data: {
+        template_id: snapshot.template_id,
+        snapshot_id: snapshot.id,
+        attempt_id: snapshot.attempt_id || null,
+        lesson_id: snapshot.template.lesson_id || snapshot.attempt?.lesson_id || null,
+        reporter_id: userId,
+        reason
+      }
+    });
+
+    res.status(201).json(report);
+  } catch (error: any) {
+    console.error("Failed to report question:", error);
+    res.status(500).json({ error: "Failed to report question", details: error.message });
+  }
+});
+
+// List template reports for admins/content reviewers
+router.get('/question-reports', authenticate, async (req, res) => {
+  try {
+    if ((req as any).user?.role !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const status = typeof req.query.status === "string" ? req.query.status : "";
+    const where = status && status !== "all" ? { status: normalizeReportStatus(status) } : {};
+
+    const reports = await (prisma as any).questionTemplateReport.findMany({
+      where,
+      include: {
+        reporter: { select: { id: true, username: true, email: true } },
+        template: {
+          include: {
+            lesson: {
+              include: { grade: true, subject: true }
+            }
+          }
+        },
+        snapshot: true,
+        attempt: { select: { id: true, is_practice: true, started_at: true } }
+      },
+      orderBy: { created_at: "desc" },
+      take: 100
+    });
+
+    res.json(reports);
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to fetch question reports", details: error.message });
+  }
+});
+
+router.patch('/question-reports/:id', authenticate, async (req, res) => {
+  try {
+    if ((req as any).user?.role !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const id = req.params.id as string;
+    const status = normalizeReportStatus(req.body?.status);
+    const report = await (prisma as any).questionTemplateReport.update({
+      where: { id },
+      data: {
+        status,
+        updated_at: new Date()
+      }
+    });
+
+    res.json(report);
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to update question report", details: error.message });
+  }
+});
+
 // Get all Question Templates (Admin)
 router.get('/templates', authenticate, async (req, res) => {
   try {
     const allowedSubjectIds = await getAllowedSubjectIds(req);
     const templates = await prisma.questionTemplate.findMany({
       where: templateSubjectWhere(allowedSubjectIds),
-      include: { lesson: true },
+      include: {
+        lesson: {
+          include: {
+            grade: true
+          }
+        }
+      },
       orderBy: { created_at: 'desc' }
     });
     res.json(templates);
   } catch (error: any) {
     res.status(500).json({ error: "Failed to fetch templates" });
+  }
+});
+
+// Get one Question Template (Admin)
+router.get('/templates/:id', authenticate, async (req, res) => {
+  try {
+    const id = req.params.id as string;
+    const template = await prisma.questionTemplate.findUnique({
+      where: { id },
+      include: { lesson: true }
+    });
+
+    if (!template) {
+      return res.status(404).json({ error: "Template not found" });
+    }
+
+    if (!(await canAccessLessonSubject(req, template.lesson_id))) {
+      return res.status(403).json({ error: "You do not have access to this subject" });
+    }
+
+    res.json(template);
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to fetch template", details: error.message });
   }
 });
 

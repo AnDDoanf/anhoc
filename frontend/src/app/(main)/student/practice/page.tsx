@@ -142,8 +142,8 @@ export default function PracticePage() {
         </div>
 
         {/* Sidebar: Practice History */}
-        <aside className="xl:col-span-1">
-          <div className="flex max-h-[calc(100vh-10rem)] flex-col space-y-5 overflow-hidden rounded-[1.5rem] border border-sol-border/20 bg-sol-surface/50 p-4 shadow-sm backdrop-blur-md md:rounded-[2rem] md:p-6 md:space-y-8 xl:sticky xl:top-24">
+        <aside className="xl:sticky xl:top-24 xl:col-span-1 xl:self-start">
+          <div className="flex max-h-[calc(100vh-10rem)] flex-col space-y-5 overflow-hidden rounded-[1.5rem] border border-sol-border/20 bg-sol-surface/50 p-4 shadow-sm backdrop-blur-md md:rounded-[2rem] md:p-6 md:space-y-8">
             <div className="flex items-center gap-3">
               <HistoryIcon size={18} className="text-sol-accent md:h-5 md:w-5" />
               <h3 className="text-base font-bold uppercase tracking-tight text-sol-text md:text-lg">{t("recentActivity")}</h3>

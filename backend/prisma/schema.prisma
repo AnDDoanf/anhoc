@@ -30,6 +30,7 @@ model User {
   student_stats     StudentStats?
   evidence          ActivityEvidence[]
   audit_logs        AuditLog[]
+  question_reports  QuestionTemplateReport[]
 
   @@map("users")
 }
@@ -132,6 +133,7 @@ model Lesson {
   creator            User?              @relation(fields: [created_by], references: [id])
   
   templates          QuestionTemplate[]
+  template_reports   QuestionTemplateReport[]
   sessions           LearningSession[]
   mastery_records    UserLessonMastery[]
   practice_attempts  TestAttempt[]
@@ -159,6 +161,7 @@ model QuestionTemplate {
   
   lesson                  Lesson?            @relation(fields: [lesson_id], references: [id], onDelete: Cascade)
   snapshots               QuestionSnapshot[]
+  reports                 QuestionTemplateReport[]
 
   @@map("question_templates")
 }
@@ -179,6 +182,7 @@ model TestAttempt {
   lesson       Lesson?            @relation(fields: [lesson_id], references: [id])
   snapshots    QuestionSnapshot[]
   evidence     ActivityEvidence[]
+  reports      QuestionTemplateReport[]
 
   @@map("test_attempts")
 }
@@ -196,8 +200,34 @@ model QuestionSnapshot {
   attempt             TestAttempt?      @relation(fields: [attempt_id], references: [id], onDelete: Cascade)
   template            QuestionTemplate? @relation(fields: [template_id], references: [id])
   evidence            ActivityEvidence[]
+  reports             QuestionTemplateReport[]
 
   @@map("question_snapshots")
+}
+
+model QuestionTemplateReport {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  template_id String   @db.Uuid
+  snapshot_id String?  @db.Uuid
+  attempt_id  String?  @db.Uuid
+  lesson_id   String?  @db.Uuid
+  reporter_id String?  @db.Uuid
+  reason      String
+  status      String   @default("open") @db.VarChar(20)
+  created_at  DateTime @default(now()) @db.Timestamptz
+  updated_at  DateTime @default(now()) @db.Timestamptz
+
+  template QuestionTemplate  @relation(fields: [template_id], references: [id], onDelete: Cascade)
+  snapshot QuestionSnapshot? @relation(fields: [snapshot_id], references: [id], onDelete: SetNull)
+  attempt  TestAttempt?      @relation(fields: [attempt_id], references: [id], onDelete: SetNull)
+  lesson   Lesson?           @relation(fields: [lesson_id], references: [id], onDelete: SetNull)
+  reporter User?             @relation(fields: [reporter_id], references: [id], onDelete: SetNull)
+
+  @@index([template_id])
+  @@index([snapshot_id])
+  @@index([reporter_id])
+  @@index([status])
+  @@map("question_template_reports")
 }
 
 // --- TRACKING & PERFORMANCE ---

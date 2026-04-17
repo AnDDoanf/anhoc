@@ -57,7 +57,8 @@
     "questions": "Câu hỏi",
     "dashboard": "Tổng quan",
     "users": "Người dùng",
-    "roles": "Vai trò"
+    "roles": "Vai trò",
+    "reports": "Báo cáo"
   },
   "Practice": {
     "title": "Rèn luyện Kỹ năng",
@@ -90,6 +91,14 @@
     "finishBtn": "Hoàn thành Luyện tập",
     "enterAnswer": "Nhập đáp án của bạn...",
     "skipQuestion": "Bỏ qua câu hỏi",
+    "reportQuestion": "Báo cáo câu hỏi",
+    "reportedQuestion": "Đã báo cáo",
+    "reportTitle": "Báo cáo câu hỏi này",
+    "reportHint": "Hãy cho biết điều gì chưa đúng. Báo cáo của bạn sẽ giúp admin xem lại mẫu câu hỏi.",
+    "reportPlaceholder": "Ví dụ: đáp án đúng bị sai, đề bài khó hiểu, hoặc giá trị tạo ra không hợp lý.",
+    "reportCancel": "Hủy",
+    "reportSubmit": "Gửi báo cáo",
+    "reportError": "Không thể gửi báo cáo. Vui lòng thử lại.",
     "completeTitle": "Luyện tập Hoàn tất!",
     "scoreMessage": "Bạn đạt {score}% trong phiên luyện tập này.",
     "scoreLabel": "Điểm: {score}%",
@@ -191,8 +200,18 @@
     "title": "Trung tâm Kiểm tra",
     "subtitle": "Thử thách bản thân với các bài kiểm tra định kỳ để đánh giá năng lực.",
     "startBtn": "Làm Bài thi",
+    "starting": "Đang bắt đầu...",
+    "startError": "Không thể bắt đầu bài kiểm tra này.",
     "stats": "{count} câu hỏi",
-    "examinationHub": "Lò luyện thi"
+    "examinationHub": "Lò luyện thi",
+    "emptyTitle": "Chưa có bài kiểm tra.",
+    "emptySubtitle": "Thêm mẫu câu hỏi vào các bài học trong một lớp để mở bài kiểm tra theo lớp.",
+    "footerQuote": "\"Tri thức là sức mạnh. Hãy thử thách giới hạn của bạn!\"",
+    "attemptLog": "Lịch sử làm bài",
+    "noAttempts": "Chưa có lượt làm.",
+    "completedAttempt": "Đã hoàn thành",
+    "inProgressAttempt": "Đang làm",
+    "resumeAttempt": "Tiếp tục"
   },
   "NotFound": {
     "title": "Trang không tồn tại",
@@ -215,9 +234,11 @@
       "searchPlaceholder": "Tìm theo mẫu, bài học hoặc nội dung",
       "templateType": "Loại mẫu",
       "difficulty": "Độ khó",
+      "grade": "Lớp",
       "lesson": "Bài học",
       "allTemplateTypes": "Tất cả loại mẫu",
       "allDifficulties": "Tất cả độ khó",
+      "allGrades": "Tất cả lớp",
       "allLessons": "Tất cả bài học"
     },
     "deleteConfirm": "Bạn có chắc chắn muốn xóa mẫu này không?",
@@ -518,6 +539,49 @@
       "multiple_choices": "Trắc nghiệm",
       "ordering": "Sắp xếp",
       "theoretical_question": "Câu hỏi lý thuyết"
+    }
+  },
+  "AdminReports": {
+    "eyebrow": "Báo cáo mẫu",
+    "title": "Báo cáo câu hỏi",
+    "subtitle": "Xem lại báo cáo của học sinh trong luyện tập và kiểm tra.",
+    "refresh": "Làm mới",
+    "statusFilter": "Trạng thái",
+    "search": "Tìm kiếm",
+    "searchPlaceholder": "Tìm theo lý do, học sinh, bài học hoặc mẫu",
+    "reason": "Lý do",
+    "reportedBy": "Người báo cáo",
+    "reportedAt": "Thời điểm",
+    "studentAnswer": "Đáp án học sinh",
+    "templateId": "ID mẫu",
+    "setStatus": "Đổi trạng thái",
+    "updateTemplate": "Cập nhật mẫu",
+    "viewAttempt": "Xem lượt làm",
+    "unknownUser": "Người dùng không xác định",
+    "unknownQuestion": "Câu hỏi không xác định",
+    "unknownType": "Loại không xác định",
+    "unknownDifficulty": "Độ khó không xác định",
+    "unassignedLesson": "Bài học chưa gán",
+    "unanswered": "Chưa trả lời",
+    "metrics": {
+      "current": "Danh sách hiện tại",
+      "active": "Đang xử lý",
+      "resolved": "Đã xử lý"
+    },
+    "statuses": {
+      "all": "Tất cả",
+      "open": "Mở",
+      "reviewing": "Đang xem",
+      "resolved": "Đã xử lý",
+      "dismissed": "Bỏ qua"
+    },
+    "empty": {
+      "title": "Không có báo cáo.",
+      "subtitle": "Thử trạng thái hoặc từ khóa khác."
+    },
+    "errors": {
+      "load": "Không thể tải báo cáo câu hỏi.",
+      "update": "Không thể cập nhật trạng thái báo cáo."
     }
   },
   "Achievements": {

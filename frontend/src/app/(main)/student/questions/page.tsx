@@ -18,6 +18,7 @@ export default function QuestionsAdminPage() {
   const [editTemplateId, setEditTemplateId] = useState<string | null>(null);
   const [previewTemplate, setPreviewTemplate] = useState<any | null>(null);
   const [templateTypeFilter, setTemplateTypeFilter] = useState("all");
+  const [gradeIdFilter, setGradeIdFilter] = useState("all");
   const [lessonIdFilter, setLessonIdFilter] = useState("all");
   const [difficultyFilter, setDifficultyFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -76,17 +77,56 @@ export default function QuestionsAdminPage() {
           const lessonTitle = template.lesson
             ? (locale === "vi" ? template.lesson.title_vi : template.lesson.title_en)
             : lessonId;
+          const gradeId = template.lesson?.grade?.id ? String(template.lesson.grade.id) : "";
 
           return [
             lessonId,
             {
               id: lessonId,
               title: lessonTitle || lessonId,
+              gradeId,
             },
           ];
         })
     ).values()
   ).sort((a, b) => a.title.localeCompare(b.title));
+
+  const visibleLessonOptions = lessonOptions.filter((lesson) => (
+    gradeIdFilter === "all" || lesson.gradeId === gradeIdFilter
+  ));
+
+  useEffect(() => {
+    if (lessonIdFilter === "all") return;
+    const selectedLesson = lessonOptions.find((lesson) => lesson.id === lessonIdFilter);
+    if (gradeIdFilter !== "all" && selectedLesson?.gradeId !== gradeIdFilter) {
+      setLessonIdFilter("all");
+    }
+  }, [gradeIdFilter, lessonIdFilter, lessonOptions]);
+
+  const gradeOptions = Array.from(
+    new Map(
+      templates
+        .filter((template) => template.lesson?.grade?.id)
+        .map((template) => {
+          const grade = template.lesson.grade;
+          const gradeTitle = locale === "vi" ? grade.title_vi : grade.title_en;
+
+          return [
+            String(grade.id),
+            {
+              id: String(grade.id),
+              title: gradeTitle || grade.slug || String(grade.id),
+              slug: grade.slug || "",
+            },
+          ];
+        })
+    ).values()
+  ).sort((a, b) => {
+    const gradeNumberA = Number(a.slug.match(/\d+/)?.[0] || Number.MAX_SAFE_INTEGER);
+    const gradeNumberB = Number(b.slug.match(/\d+/)?.[0] || Number.MAX_SAFE_INTEGER);
+    if (gradeNumberA !== gradeNumberB) return gradeNumberA - gradeNumberB;
+    return a.title.localeCompare(b.title, locale);
+  });
 
   const difficultyOptions = ["easy", "medium", "hard"];
 
@@ -105,6 +145,11 @@ export default function QuestionsAdminPage() {
         return false;
       }
 
+      const currentGradeId = template.lesson?.grade?.id ? String(template.lesson.grade.id) : "";
+      if (gradeIdFilter !== "all" && currentGradeId !== gradeIdFilter) {
+        return false;
+      }
+
       const normalizedQuery = searchQuery.trim().toLowerCase();
       if (!normalizedQuery) {
         return true;
@@ -113,6 +158,9 @@ export default function QuestionsAdminPage() {
       const lessonTitle = template.lesson
         ? (locale === "vi" ? template.lesson.title_vi : template.lesson.title_en)
         : "";
+      const gradeTitle = template.lesson?.grade
+        ? (locale === "vi" ? template.lesson.grade.title_vi : template.lesson.grade.title_en)
+        : "";
       const searchHaystack = [
         template.template_type,
         template.difficulty,
@@ -120,6 +168,7 @@ export default function QuestionsAdminPage() {
         template.body_template_en,
         template.body_template_vi,
         lessonTitle,
+        gradeTitle,
       ]
         .filter(Boolean)
         .join(" ")
@@ -190,8 +239,8 @@ export default function QuestionsAdminPage() {
       </header>
 
       <section className="rounded-[1.5rem] border border-sol-border/10 bg-sol-surface/20 p-4 md:rounded-[2rem] md:p-6">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <div className="space-y-2 md:col-span-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+          <div className="space-y-2 md:col-span-4">
             <label className="text-xs font-black uppercase tracking-widest text-sol-muted">
               {t("filters.search")}
             </label>
@@ -238,9 +287,27 @@ export default function QuestionsAdminPage() {
               className="w-full rounded-2xl border border-sol-border/20 bg-sol-bg px-4 py-3 text-sm font-medium text-sol-text transition-all focus:ring-2 focus:ring-sol-accent/30 md:px-6 md:py-4 md:text-base"
             >
               <option value="all">{t("filters.allLessons")}</option>
-              {lessonOptions.map((lesson) => (
+              {visibleLessonOptions.map((lesson) => (
                 <option key={lesson.id} value={lesson.id}>
                   {lesson.title}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-black uppercase tracking-widest text-sol-muted">
+              {t("filters.grade")}
+            </label>
+            <select
+              value={gradeIdFilter}
+              onChange={(e) => setGradeIdFilter(e.target.value)}
+              className="w-full rounded-2xl border border-sol-border/20 bg-sol-bg px-4 py-3 text-sm font-medium text-sol-text transition-all focus:ring-2 focus:ring-sol-accent/30 md:px-6 md:py-4 md:text-base"
+            >
+              <option value="all">{t("filters.allGrades")}</option>
+              {gradeOptions.map((grade) => (
+                <option key={grade.id} value={grade.id}>
+                  {grade.title}
                 </option>
               ))}
             </select>
