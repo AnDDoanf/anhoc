@@ -1,6 +1,7 @@
 "use client";
 
 import ProtectedRoute from "@/components/guard/ProtectedRoute";
+import PillBadge from "@/components/ui/PillBadge";
 import { adminService, type AdminLessonRef, type AdminUserInsights } from "@/services/adminService";
 import { Activity, ArrowLeft, BookOpen, CalendarDays, Clock, Eye, Loader2, Mail, Sparkles, Target, Trophy, Zap } from "lucide-react";
 import { format } from "date-fns";
@@ -40,7 +41,7 @@ export default function AdminUserInsightPage() {
 
   return (
     <ProtectedRoute requiredRole="admin">
-      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="mx-auto max-w-7xl space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <Link
           href="/admin/dashboard"
           className="inline-flex items-center gap-2 rounded-lg border border-sol-border/30 bg-sol-surface px-4 py-2 text-sm font-black text-sol-muted transition hover:border-sol-accent/40 hover:text-sol-accent"
@@ -93,10 +94,7 @@ function UserInsightsDashboard({
       <section className="rounded-lg border border-sol-border/10 bg-sol-surface shadow-sm overflow-hidden">
         <div className="flex flex-col gap-4 border-b border-sol-border/10 bg-sol-bg/40 p-6 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
-            <div className="mb-3 pill-badge inline-flex items-center gap-2 rounded-full border px-4 py-1 text-xs font-black uppercase tracking-[0.28em]">
-              <Sparkles size={15} />
-              {t("userDetail.eyebrow")}
-            </div>
+            <PillBadge icon={<Sparkles size={15} />} label={t("userDetail.eyebrow")} className="mb-3" />
             <h1 className="truncate text-3xl font-black text-sol-text sm:text-4xl">
               {insights.user.username}
             </h1>

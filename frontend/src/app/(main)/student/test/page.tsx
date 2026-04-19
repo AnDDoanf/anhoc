@@ -2,6 +2,7 @@
 
 import { useTranslations, useLocale } from "next-intl";
 import TestCard from "@/components/feature/TestCard";
+import Hero from "@/components/ui/Hero";
 import { Medal, BookOpen, Sparkles, Loader2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { testService } from "@/services/testService";
@@ -79,25 +80,23 @@ export default function TestPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8 py-4 md:space-y-16 md:py-10">
-      <header className="group relative overflow-hidden rounded-[2rem] border border-sol-border/10 bg-sol-surface/30 p-5 sm:p-6 md:rounded-[3rem] md:p-16">
-        <div className="absolute right-0 top-0 p-4 opacity-10 transition-transform duration-1000 group-hover:scale-110 sm:p-6 md:p-10">
-          <Medal size={112} className="text-sol-accent md:h-40 md:w-40" />
+    <div className="mx-auto max-w-7xl space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <Hero
+        icon={<Medal size={112} className="text-sol-accent md:h-40 md:w-40" />}
+        className="md:rounded-[3rem]"
+        containerClassName="relative z-10 max-w-2xl space-y-3 md:space-y-6"
+      >
+        <div className="inline-flex items-center gap-2 rounded-full border border-sol-accent/20 bg-sol-accent/10 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-sol-accent sm:px-3 sm:py-1.5 md:text-xs">
+          <Sparkles size={11} className="md:h-3.5 md:w-3.5" />
+          <span>{t("examinationHub")}</span>
         </div>
-
-        <div className="relative z-10 max-w-2xl space-y-3 md:space-y-6">
-          <div className="inline-flex items-center gap-2 rounded-full border border-sol-accent/20 bg-sol-accent/10 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-sol-accent sm:px-3 sm:py-1.5 md:text-xs">
-            <Sparkles size={11} className="md:h-3.5 md:w-3.5" />
-            <span>{t("examinationHub")}</span>
-          </div>
-          <h1 className="max-w-[11ch] text-[1.75rem] font-black leading-[1.05] tracking-tight text-sol-text sm:text-4xl md:max-w-none md:text-6xl">
-            {t("title")}
-          </h1>
-          <p className="max-w-xl text-[13px] leading-relaxed text-sol-muted sm:text-sm md:text-xl">
-            {t("subtitle")}
-          </p>
-        </div>
-      </header>
+        <h1 className="max-w-[11ch] text-[1.75rem] font-black leading-[1.05] tracking-tight text-sol-text sm:text-4xl md:max-w-none md:text-6xl">
+          {t("title")}
+        </h1>
+        <p className="max-w-xl text-[13px] leading-relaxed text-sol-muted sm:text-sm md:text-xl">
+          {t("subtitle")}
+        </p>
+      </Hero>
 
       <div className="space-y-10 md:space-y-20">
         {Object.entries(groupedData).map(([gradeId, gradeTests]) => (

@@ -8,6 +8,8 @@ import PreviewTemplateModal from "@/components/feature/PreviewTemplateModal";
 import TemplateCard from "@/components/feature/TemplateCard";
 import { testService } from "@/services/testService";
 import Can from "@/components/auth/Can";
+import Hero from "@/components/ui/Hero";
+import FilterBar from "@/components/ui/FilterBar";
 
 export default function QuestionsAdminPage() {
   const t = useTranslations("Questions");
@@ -205,133 +207,129 @@ export default function QuestionsAdminPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8 py-4 md:space-y-16 md:py-10">
+    <div className="mx-auto max-w-7xl space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
       {/* Header */}
-      <header className="group relative overflow-hidden rounded-[2rem] border border-sol-border/10 bg-sol-surface/30 p-5 sm:p-6 md:rounded-[3rem] md:p-16">
-        <div className="absolute right-0 top-0 p-4 opacity-10 transition-transform duration-1000 group-hover:scale-110 sm:p-6 md:p-10">
-          <Database size={112} className="text-sol-accent md:h-40 md:w-40" />
+      <Hero 
+        icon={<Database size={112} className="text-sol-accent md:h-40 md:w-40" />}
+        className="md:rounded-[3rem]"
+        containerClassName="relative z-10 flex w-full flex-col items-start gap-4 lg:max-w-4xl lg:flex-row lg:justify-between"
+      >
+        <div className="space-y-3 md:space-y-6">
+          <div className="inline-flex items-center gap-2 rounded-full border border-sol-accent/20 bg-sol-accent/10 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-sol-accent sm:px-3 sm:py-1.5 md:text-xs">
+            <Code2 size={11} className="md:h-3.5 md:w-3.5" />
+            <span>{t("adminToolbox")}</span>
+          </div>
+          <h1 className="max-w-[11ch] text-[1.75rem] font-black leading-[1.05] tracking-tight text-sol-text sm:text-4xl md:max-w-none md:text-6xl">
+            {t("title")}
+          </h1>
+          <p className="max-w-xl text-[13px] leading-relaxed text-sol-muted sm:text-sm md:text-xl">
+            {t("subtitle")}
+          </p>
+        </div>
+        <Can I="manage" a="lesson">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-2 rounded-2xl bg-sol-accent px-4 py-2.5 text-sm font-bold text-sol-bg shadow-lg shadow-sol-accent/20 transition-transform hover:scale-105 cursor-pointer md:px-6 md:py-3"
+          >
+            <PlusCircle size={18} className="md:h-5 md:w-5" />
+            <span>{t("newTemplate")}</span>
+          </button>
+        </Can>
+      </Hero>
+
+      <FilterBar gridClassName="grid grid-cols-1 gap-4 md:grid-cols-4">
+        <div className="space-y-2 md:col-span-4">
+          <label className="text-xs font-black uppercase tracking-widest text-sol-muted">
+            {t("filters.search")}
+          </label>
+          <div className="relative">
+            <Search
+              size={16}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-sol-muted md:left-5 md:h-[18px] md:w-[18px]"
+            />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={t("filters.searchPlaceholder")}
+              className="w-full rounded-2xl border border-sol-border/20 bg-sol-bg py-3 pl-11 pr-4 text-sm font-medium text-sol-text transition-all focus:ring-2 focus:ring-sol-accent/30 md:px-6 md:py-4 md:pl-14 md:text-base"
+            />
+          </div>
         </div>
 
-        <div className="relative z-10 flex w-full flex-col items-start gap-4 lg:max-w-4xl lg:flex-row lg:justify-between">
-          <div className="space-y-3 md:space-y-6">
-            <div className="inline-flex items-center gap-2 rounded-full border border-sol-accent/20 bg-sol-accent/10 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-sol-accent sm:px-3 sm:py-1.5 md:text-xs">
-              <Code2 size={11} className="md:h-3.5 md:w-3.5" />
-              <span>{t("adminToolbox")}</span>
-            </div>
-            <h1 className="max-w-[11ch] text-[1.75rem] font-black leading-[1.05] tracking-tight text-sol-text sm:text-4xl md:max-w-none md:text-6xl">
-              {t("title")}
-            </h1>
-            <p className="max-w-xl text-[13px] leading-relaxed text-sol-muted sm:text-sm md:text-xl">
-              {t("subtitle")}
-            </p>
-          </div>
-          <Can I="manage" a="lesson">
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-2 rounded-2xl bg-sol-accent px-4 py-2.5 text-sm font-bold text-sol-bg shadow-lg shadow-sol-accent/20 transition-transform hover:scale-105 cursor-pointer md:px-6 md:py-3"
-            >
-              <PlusCircle size={18} className="md:h-5 md:w-5" />
-              <span>{t("newTemplate")}</span>
-            </button>
-          </Can>
+        <div className="space-y-2">
+          <label className="text-xs font-black uppercase tracking-widest text-sol-muted">
+            {t("filters.templateType")}
+          </label>
+          <select
+            value={templateTypeFilter}
+            onChange={(e) => setTemplateTypeFilter(e.target.value)}
+            className="w-full rounded-2xl border border-sol-border/20 bg-sol-bg px-4 py-3 text-sm font-medium text-sol-text transition-all focus:ring-2 focus:ring-sol-accent/30 md:px-6 md:py-4 md:text-base"
+          >
+            <option value="all">{t("filters.allTemplateTypes")}</option>
+            {templateTypeOptions.map((templateType) => (
+              <option key={templateType} value={templateType}>
+                {templateType}
+              </option>
+            ))}
+          </select>
         </div>
-      </header>
 
-      <section className="rounded-[1.5rem] border border-sol-border/10 bg-sol-surface/20 p-4 md:rounded-[2rem] md:p-6">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-          <div className="space-y-2 md:col-span-4">
-            <label className="text-xs font-black uppercase tracking-widest text-sol-muted">
-              {t("filters.search")}
-            </label>
-            <div className="relative">
-              <Search
-                size={16}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-sol-muted md:left-5 md:h-[18px] md:w-[18px]"
-              />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t("filters.searchPlaceholder")}
-                className="w-full rounded-2xl border border-sol-border/20 bg-sol-bg py-3 pl-11 pr-4 text-sm font-medium text-sol-text transition-all focus:ring-2 focus:ring-sol-accent/30 md:px-6 md:py-4 md:pl-14 md:text-base"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-xs font-black uppercase tracking-widest text-sol-muted">
-              {t("filters.templateType")}
-            </label>
-            <select
-              value={templateTypeFilter}
-              onChange={(e) => setTemplateTypeFilter(e.target.value)}
-              className="w-full rounded-2xl border border-sol-border/20 bg-sol-bg px-4 py-3 text-sm font-medium text-sol-text transition-all focus:ring-2 focus:ring-sol-accent/30 md:px-6 md:py-4 md:text-base"
-            >
-              <option value="all">{t("filters.allTemplateTypes")}</option>
-              {templateTypeOptions.map((templateType) => (
-                <option key={templateType} value={templateType}>
-                  {templateType}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-xs font-black uppercase tracking-widest text-sol-muted">
-              {t("filters.lesson")}
-            </label>
-            <select
-              value={lessonIdFilter}
-              onChange={(e) => setLessonIdFilter(e.target.value)}
-              className="w-full rounded-2xl border border-sol-border/20 bg-sol-bg px-4 py-3 text-sm font-medium text-sol-text transition-all focus:ring-2 focus:ring-sol-accent/30 md:px-6 md:py-4 md:text-base"
-            >
-              <option value="all">{t("filters.allLessons")}</option>
-              {visibleLessonOptions.map((lesson) => (
-                <option key={lesson.id} value={lesson.id}>
-                  {lesson.title}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-xs font-black uppercase tracking-widest text-sol-muted">
-              {t("filters.grade")}
-            </label>
-            <select
-              value={gradeIdFilter}
-              onChange={(e) => setGradeIdFilter(e.target.value)}
-              className="w-full rounded-2xl border border-sol-border/20 bg-sol-bg px-4 py-3 text-sm font-medium text-sol-text transition-all focus:ring-2 focus:ring-sol-accent/30 md:px-6 md:py-4 md:text-base"
-            >
-              <option value="all">{t("filters.allGrades")}</option>
-              {gradeOptions.map((grade) => (
-                <option key={grade.id} value={grade.id}>
-                  {grade.title}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-xs font-black uppercase tracking-widest text-sol-muted">
-              {t("filters.difficulty")}
-            </label>
-            <select
-              value={difficultyFilter}
-              onChange={(e) => setDifficultyFilter(e.target.value)}
-              className="w-full rounded-2xl border border-sol-border/20 bg-sol-bg px-4 py-3 text-sm font-medium text-sol-text transition-all focus:ring-2 focus:ring-sol-accent/30 md:px-6 md:py-4 md:text-base"
-            >
-              <option value="all">{t("filters.allDifficulties")}</option>
-              {difficultyOptions.map((difficulty) => (
-                <option key={difficulty} value={difficulty}>
-                  {t(`modal.difficultyOptions.${difficulty}`)}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className="space-y-2">
+          <label className="text-xs font-black uppercase tracking-widest text-sol-muted">
+            {t("filters.lesson")}
+          </label>
+          <select
+            value={lessonIdFilter}
+            onChange={(e) => setLessonIdFilter(e.target.value)}
+            className="w-full rounded-2xl border border-sol-border/20 bg-sol-bg px-4 py-3 text-sm font-medium text-sol-text transition-all focus:ring-2 focus:ring-sol-accent/30 md:px-6 md:py-4 md:text-base"
+          >
+            <option value="all">{t("filters.allLessons")}</option>
+            {visibleLessonOptions.map((lesson) => (
+              <option key={lesson.id} value={lesson.id}>
+                {lesson.title}
+              </option>
+            ))}
+          </select>
         </div>
-      </section>
+
+        <div className="space-y-2">
+          <label className="text-xs font-black uppercase tracking-widest text-sol-muted">
+            {t("filters.grade")}
+          </label>
+          <select
+            value={gradeIdFilter}
+            onChange={(e) => setGradeIdFilter(e.target.value)}
+            className="w-full rounded-2xl border border-sol-border/20 bg-sol-bg px-4 py-3 text-sm font-medium text-sol-text transition-all focus:ring-2 focus:ring-sol-accent/30 md:px-6 md:py-4 md:text-base"
+          >
+            <option value="all">{t("filters.allGrades")}</option>
+            {gradeOptions.map((grade) => (
+              <option key={grade.id} value={grade.id}>
+                {grade.title}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-xs font-black uppercase tracking-widest text-sol-muted">
+            {t("filters.difficulty")}
+          </label>
+          <select
+            value={difficultyFilter}
+            onChange={(e) => setDifficultyFilter(e.target.value)}
+            className="w-full rounded-2xl border border-sol-border/20 bg-sol-bg px-4 py-3 text-sm font-medium text-sol-text transition-all focus:ring-2 focus:ring-sol-accent/30 md:px-6 md:py-4 md:text-base"
+          >
+            <option value="all">{t("filters.allDifficulties")}</option>
+            {difficultyOptions.map((difficulty) => (
+              <option key={difficulty} value={difficulty}>
+                {t(`modal.difficultyOptions.${difficulty}`)}
+              </option>
+            ))}
+          </select>
+        </div>
+      </FilterBar>
 
       {/* Grid */}
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-6 lg:grid-cols-3 lg:gap-8">

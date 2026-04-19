@@ -69,7 +69,11 @@ export interface Lesson {
 
 export interface LessonMastery {
   lesson_id: string;
-  [key: string]: unknown;
+  completion_status: string;
+  mastery_score: number;
+  total_study_time?: number;
+  total_test_time?: number;
+  last_activity_at?: string;
 }
 
 export const lessonService = {

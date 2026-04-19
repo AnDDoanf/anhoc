@@ -8,7 +8,6 @@ import { useTranslations } from "next-intl";
 export default function RootPage() {
   const router = useRouter();
   const t = useTranslations("Common");
-  // Add 'isLoading' if your auth slice has it
   const { user, token } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {

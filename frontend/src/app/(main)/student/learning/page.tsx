@@ -6,6 +6,7 @@ import LearningCard from "@/components/feature/LearningCard";
 import Can from "@/components/auth/Can";
 import { GraduationCap, Library, Globe, ArrowUpRight, PlusCircle, Layers, BookMarked, ChevronRight } from "lucide-react";
 import CreateLessonModal from "@/components/feature/CreateLessonModal";
+import Hero from "@/components/ui/Hero";
 import { useState, useEffect, useCallback } from "react";
 import { Lesson, LessonMastery, Subject, lessonService } from "@/services/lessonService";
 import { isAxiosError } from "axios";
@@ -125,60 +126,31 @@ export default function LearningDashboard() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl space-y-10 py-4 md:space-y-20 md:py-10">
+    <div className="mx-auto max-w-7xl space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Educational Hero Header */}
-      <header className="group relative overflow-hidden rounded-[2rem] border border-sol-border/10 bg-sol-surface/30 p-5 sm:p-6 md:rounded-[4rem] md:p-20">
-        <div className="absolute -bottom-10 -right-8 p-8 opacity-5 rotate-12 transition-transform duration-1000 group-hover:rotate-0 group-hover:scale-105 md:-bottom-20 md:-right-20 md:p-20">
-          <GraduationCap size={160} className="text-sol-accent md:h-[300px] md:w-[300px]" />
-        </div>
-
-        <div className="relative z-10 max-w-4xl space-y-4 md:space-y-8">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="space-y-3 md:space-y-4">
-              <div className="flex items-center gap-2 md:gap-3">
-                <span className="h-px w-8 bg-sol-accent/30 md:w-12"></span>
-                <span className="text-[9px] font-bold uppercase tracking-[0.25em] text-sol-accent sm:text-xs md:text-sm md:tracking-[0.3em]">
-                  {commonT("adventure")}
-                </span>
-              </div>
-
-              <h1 className="max-w-[11ch] text-[1.9rem] font-black leading-[1] tracking-tighter text-sol-text sm:text-5xl md:max-w-none md:text-7xl">
-                {t("title")}
-              </h1>
+      <Hero
+        iconPosition="bottom-right"
+        icon={<GraduationCap size={160} className="text-sol-accent md:h-[300px] md:w-[300px]" />}
+        className="md:rounded-[3rem]"
+        containerClassName="relative z-10 flex w-full flex-col items-start gap-4 lg:max-w-4xl lg:flex-row lg:justify-between"
+      >
+        <div className="space-y-5 md:space-y-8">
+          <div className="space-y-3 md:space-y-5">
+            <div className="inline-flex items-center gap-2 rounded-full border border-sol-accent/20 bg-sol-accent/10 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-sol-accent sm:px-3 sm:py-1.5 md:text-xs">
+              <GraduationCap size={11} className="md:h-3.5 md:w-3.5" />
+              <span>{commonT("adventure")}</span>
             </div>
 
-            <Can I="manage" a="lesson">
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => setMetaModal("subject")}
-                  className="flex items-center gap-2 rounded-2xl border border-sol-border/20 bg-sol-surface px-4 py-2.5 text-sm font-bold text-sol-text transition-transform hover:scale-105 hover:text-sol-accent cursor-pointer md:px-5 md:py-3"
-                >
-                  <BookMarked size={18} className="md:h-5 md:w-5" />
-                  <span>{t("newSubject")}</span>
-                </button>
-                <button
-                  onClick={() => setMetaModal("grade")}
-                  className="flex items-center gap-2 rounded-2xl border border-sol-border/20 bg-sol-surface px-4 py-2.5 text-sm font-bold text-sol-text transition-transform hover:scale-105 hover:text-sol-accent cursor-pointer md:px-5 md:py-3"
-                >
-                  <Layers size={18} className="md:h-5 md:w-5" />
-                  <span>{t("newGrade")}</span>
-                </button>
-                <button
-                  onClick={() => setIsModalOpen(true)}
-                  className="flex items-center gap-2 rounded-2xl bg-sol-accent px-4 py-2.5 text-sm font-bold text-sol-bg shadow-lg shadow-sol-accent/20 transition-transform hover:scale-105 cursor-pointer md:px-6 md:py-3"
-                >
-                  <PlusCircle size={18} className="md:h-5 md:w-5" />
-                  <span>{t("newLesson")}</span>
-                </button>
-              </div>
-            </Can>
+            <h1 className="max-w-[11ch] text-[1.75rem] font-black leading-[1.05] tracking-tight text-sol-text sm:text-4xl md:max-w-none md:text-6xl">
+              {t("title")}
+            </h1>
+            
+            <p className="max-w-xl text-[13px] leading-relaxed text-sol-muted sm:text-sm md:text-xl">
+              {t("subtitle")}
+            </p>
           </div>
 
-          <p className="max-w-xl text-[13px] font-medium leading-relaxed text-sol-muted sm:text-base md:text-2xl">
-            {t("subtitle")}
-          </p>
-
-          <div className="flex flex-wrap gap-3 pt-2 md:gap-4 md:pt-4">
+          <div className="flex flex-wrap items-center gap-2 md:gap-4">
             <div className="flex items-center gap-2 rounded-2xl bg-sol-accent px-4 py-2 text-sm font-bold text-sol-bg shadow-lg shadow-sol-accent/20 md:px-5 md:py-2.5">
               <Globe size={16} className="md:h-[18px] md:w-[18px]" />
               <span>{commonT("curriculumYear")}</span>
@@ -189,7 +161,33 @@ export default function LearningDashboard() {
             </div>
           </div>
         </div>
-      </header>
+
+        <Can I="manage" a="lesson">
+          <div className="flex flex-wrap gap-2 shrink-0">
+            <button
+              onClick={() => setMetaModal("subject")}
+              className="flex items-center gap-2 rounded-2xl border border-sol-border/20 bg-sol-surface px-4 py-2.5 text-sm font-bold text-sol-text transition-transform hover:scale-105 hover:text-sol-accent cursor-pointer md:px-5 md:py-3"
+            >
+              <BookMarked size={18} className="md:h-5 md:w-5" />
+              <span>{t("newSubject")}</span>
+            </button>
+            <button
+              onClick={() => setMetaModal("grade")}
+              className="flex items-center gap-2 rounded-2xl border border-sol-border/20 bg-sol-surface px-4 py-2.5 text-sm font-bold text-sol-text transition-transform hover:scale-105 hover:text-sol-accent cursor-pointer md:px-5 md:py-3"
+            >
+              <Layers size={18} className="md:h-5 md:w-5" />
+              <span>{t("newGrade")}</span>
+            </button>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center gap-2 rounded-2xl bg-sol-accent px-4 py-2.5 text-sm font-bold text-sol-bg shadow-lg shadow-sol-accent/20 transition-transform hover:scale-105 cursor-pointer md:px-6 md:py-3"
+            >
+              <PlusCircle size={18} className="md:h-5 md:w-5" />
+              <span>{t("newLesson")}</span>
+            </button>
+          </div>
+        </Can>
+      </Hero>
 
       {/* Subject + Grade Sections */}
       <div className="space-y-12 md:space-y-24">

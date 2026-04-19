@@ -2,6 +2,7 @@
 
 import ProtectedRoute from "@/components/guard/ProtectedRoute";
 import ConfirmModal from "@/components/ui/ConfirmModal";
+import PillBadge from "@/components/ui/PillBadge";
 import { useAuth } from "@/hooks/useAuth";
 import {
   adminService,
@@ -215,7 +216,7 @@ export default function AdminUsersPage() {
 
   return (
     <ProtectedRoute requiredRole="admin">
-      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="mx-auto max-w-7xl space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <section className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <PillBadge label={t("eyebrow")} icon={<Sparkles size={16} />} className="mb-3" />
@@ -266,7 +267,7 @@ export default function AdminUsersPage() {
               </div>
               {editingUser && (
                 <button
-                  onClick={resetForm}
+                  onClick={() => resetForm()}
                   className="rounded-lg p-2 text-sol-muted transition hover:bg-sol-bg hover:text-sol-text"
                   aria-label={t("actions.cancelEdit")}
                 >
@@ -502,28 +503,7 @@ function Metric({
   );
 }
 
-function PillBadge({
-  label,
-  icon,
-  compact = false,
-  className = "",
-}: {
-  label: string;
-  icon?: ReactNode;
-  compact?: boolean;
-  className?: string;
-}) {
-  return (
-    <span
-      className={`pill-badge inline-flex max-w-full items-center justify-center gap-2 rounded-full border font-black uppercase tracking-[0.28em] transition-colors duration-300 ${
-        compact ? "px-3 py-1 text-[10px]" : "px-5 py-2 text-xs"
-      } ${className}`}
-    >
-      {icon && <span className="shrink-0">{icon}</span>}
-      <span className="truncate">{label}</span>
-    </span>
-  );
-}
+
 
 function Field({
   label,

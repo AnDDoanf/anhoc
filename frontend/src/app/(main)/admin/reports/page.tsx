@@ -7,6 +7,7 @@ import { formatTemplate } from "@/utils/mathService";
 import { AlertTriangle, CheckCircle2, Clock3, Flag, Loader2, Pencil, RefreshCw, Search } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
+import FilterBar from "@/components/ui/FilterBar";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -169,7 +170,7 @@ export default function AdminReportsPage() {
 
   return (
     <ProtectedRoute requiredRole="admin">
-      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="mx-auto max-w-7xl space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <section className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <div className="mb-2 inline-flex items-center gap-2 rounded-lg border border-sol-border/20 bg-sol-surface px-3 py-1 text-[10px] font-black uppercase tracking-widest text-sol-accent">
@@ -197,35 +198,33 @@ export default function AdminReportsPage() {
           <MetricCard label={t("metrics.resolved")} value={totals.resolved} icon={<CheckCircle2 size={20} />} />
         </div>
 
-        <section className="rounded-lg border border-sol-border/10 bg-sol-surface p-4 shadow-sm">
-          <div className="grid gap-3 lg:grid-cols-[220px_1fr]">
-            <label className="space-y-1">
-              <span className="text-[10px] font-black uppercase tracking-widest text-sol-muted">{t("statusFilter")}</span>
-              <select
-                value={status}
-                onChange={(event) => setStatus(event.target.value as ReportStatus)}
-                className="w-full rounded-lg border border-sol-border/30 bg-sol-bg px-3 py-3 text-sm font-bold text-sol-text outline-none focus:border-sol-accent"
-              >
-                {statusOptions.map((item) => (
-                  <option key={item} value={item}>{t(`statuses.${item}`)}</option>
-                ))}
-              </select>
-            </label>
+        <FilterBar className="p-4 shadow-sm" gridClassName="grid gap-3 lg:grid-cols-[220px_1fr]">
+          <label className="space-y-1">
+            <span className="text-[10px] font-black uppercase tracking-widest text-sol-muted">{t("statusFilter")}</span>
+            <select
+              value={status}
+              onChange={(event) => setStatus(event.target.value as ReportStatus)}
+              className="w-full rounded-lg border border-sol-border/30 bg-sol-bg px-3 py-3 text-sm font-bold text-sol-text outline-none focus:border-sol-accent"
+            >
+              {statusOptions.map((item) => (
+                <option key={item} value={item}>{t(`statuses.${item}`)}</option>
+              ))}
+            </select>
+          </label>
 
-            <label className="space-y-1">
-              <span className="text-[10px] font-black uppercase tracking-widest text-sol-muted">{t("search")}</span>
-              <div className="flex items-center gap-2 rounded-lg border border-sol-border/30 bg-sol-bg px-3 py-3 focus-within:border-sol-accent">
-                <Search size={16} className="text-sol-muted" />
-                <input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder={t("searchPlaceholder")}
-                  className="w-full bg-transparent text-sm font-bold text-sol-text outline-none placeholder:text-sol-muted/60"
-                />
-              </div>
-            </label>
-          </div>
-        </section>
+          <label className="space-y-1">
+            <span className="text-[10px] font-black uppercase tracking-widest text-sol-muted">{t("search")}</span>
+            <div className="flex items-center gap-2 rounded-lg border border-sol-border/30 bg-sol-bg px-3 py-3 focus-within:border-sol-accent">
+              <Search size={16} className="text-sol-muted" />
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder={t("searchPlaceholder")}
+                className="w-full bg-transparent text-sm font-bold text-sol-text outline-none placeholder:text-sol-muted/60"
+              />
+            </div>
+          </label>
+        </FilterBar>
 
         {error && (
           <div className="flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-bold text-red-500">

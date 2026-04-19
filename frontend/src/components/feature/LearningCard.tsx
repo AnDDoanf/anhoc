@@ -1,6 +1,8 @@
 // src/components/feature/LearningCard.tsx
 "use client";
 
+import Can from "@/components/auth/Can";
+import { LessonMastery } from "@/services/lessonService";
 import {
   Book,
   Bookmark,
@@ -12,17 +14,13 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import Can from "@/components/auth/Can";
 
 interface LearningCardProps {
   lessonId: string;
   gradeId: string;
   title: string;
   index: number;
-  mastery?: {
-    mastery_score: number | string;
-    completion_status: string;
-  };
+  mastery?: LessonMastery
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
 }
@@ -86,20 +84,20 @@ export default function LearningCard({ lessonId, gradeId, title, index, mastery,
           <h3 className="text-2xl font-bold text-sol-text leading-tight group-hover:text-sol-accent transition-colors">
             {title}
           </h3>
-          
+
           {mastery && (
             <div className="space-y-2">
               <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
-                 <span className={`${mastery.completion_status === 'completed' ? 'text-green-500' : 'text-sol-accent'}`}>
-                   {mastery.completion_status.replace('_', ' ')}
-                 </span>
-                 <span className="text-sol-muted">{Number(mastery.mastery_score).toFixed(0)}% Mastery</span>
+                <span className={`${mastery.completion_status === 'completed' ? 'text-green-500' : 'text-sol-accent'}`}>
+                  {mastery.completion_status.replace('_', ' ')}
+                </span>
+                <span className="text-sol-muted">{Number(mastery.mastery_score).toFixed(0)}% Mastery</span>
               </div>
               <div className="h-1.5 w-full bg-sol-bg/50 rounded-full overflow-hidden">
-                 <div 
-                   className={`h-full transition-all duration-1000 ${mastery.completion_status === 'completed' ? 'bg-green-500' : 'bg-sol-accent'}`}
-                   style={{ width: `${mastery.mastery_score}%` }}
-                 />
+                <div
+                  className={`h-full transition-all duration-1000 ${mastery.completion_status === 'completed' ? 'bg-green-500' : 'bg-sol-accent'}`}
+                  style={{ width: `${mastery.mastery_score}%` }}
+                />
               </div>
             </div>
           )}
@@ -121,11 +119,11 @@ export default function LearningCard({ lessonId, gradeId, title, index, mastery,
         <div className="mt-8 flex items-center justify-between text-sol-accent font-bold text-sm">
           <span className="group-hover:translate-x-1 transition-transform">{t("viewLesson")}</span>
           <div className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all duration-500
-            ${mastery?.completion_status === 'completed' 
-              ? 'bg-green-500/10 border-green-500/20 text-green-500 group-hover:bg-green-500 group-hover:text-sol-bg' 
+            ${mastery?.completion_status === 'completed'
+              ? 'bg-green-500/10 border-green-500/20 text-green-500 group-hover:bg-green-500 group-hover:text-sol-bg'
               : 'border-sol-accent/20 group-hover:bg-sol-accent group-hover:text-sol-bg'}
           `}>
-             <ChevronRight size={20} />
+            <ChevronRight size={20} />
           </div>
         </div>
       </div>

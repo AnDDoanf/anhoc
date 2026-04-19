@@ -6,6 +6,7 @@ import { lessonService } from "@/services/lessonService";
 import { testService } from "@/services/testService";
 import PracticeCard from "@/components/feature/PracticeCard";
 import PracticeResultModal from "@/components/feature/PracticeResultModal";
+import Hero from "@/components/ui/Hero";
 import { Sparkles, Trophy, BookOpen, Clock, Award, History as HistoryIcon, ArrowRight, Brain } from "lucide-react";
 import { format } from "date-fns";
 
@@ -86,7 +87,7 @@ export default function PracticePage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8 py-4 md:space-y-16 md:py-10">
+    <div className="mx-auto max-w-7xl space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <PracticeResultModal 
         isOpen={!!selectedAttemptId} 
         onClose={() => setSelectedAttemptId(null)} 
@@ -94,24 +95,22 @@ export default function PracticePage() {
       />
       
       {/* Hero Header */}
-      <header className="group relative overflow-hidden rounded-[2rem] border border-sol-border/10 bg-sol-surface/30 p-5 sm:p-6 md:rounded-[3rem] md:p-16">
-        <div className="absolute right-0 top-0 p-4 opacity-10 transition-transform duration-1000 group-hover:scale-110 sm:p-6 md:p-10">
-          <Trophy size={112} className="text-sol-accent md:h-40 md:w-40" />
+      <Hero 
+        icon={<Trophy size={112} className="text-sol-accent md:h-40 md:w-40" />}
+        className="md:rounded-[3rem]"
+        containerClassName="relative z-10 max-w-2xl space-y-3 md:space-y-6"
+      >
+        <div className="inline-flex items-center gap-2 rounded-full border border-sol-accent/20 bg-sol-accent/10 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-sol-accent sm:px-3 sm:py-1.5 md:text-xs">
+          <Sparkles size={11} className="md:h-3.5 md:w-3.5" />
+          <span>{t("hubBadge")}</span>
         </div>
-        
-        <div className="relative z-10 max-w-2xl space-y-3 md:space-y-6">
-          <div className="inline-flex items-center gap-2 rounded-full border border-sol-accent/20 bg-sol-accent/10 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-sol-accent sm:px-3 sm:py-1.5 md:text-xs">
-            <Sparkles size={11} className="md:h-3.5 md:w-3.5" />
-            <span>{t("hubBadge")}</span>
-          </div>
-          <h1 className="max-w-[11ch] text-[1.75rem] font-black leading-[1.05] tracking-tight text-sol-text sm:text-4xl md:max-w-none md:text-6xl">
-            {t("title")}
-          </h1>
-          <p className="max-w-xl text-[13px] leading-relaxed text-sol-muted sm:text-sm md:text-xl">
-            {t("subtitle")}
-          </p>
-        </div>
-      </header>
+        <h1 className="max-w-[11ch] text-[1.75rem] font-black leading-[1.05] tracking-tight text-sol-text sm:text-4xl md:max-w-none md:text-6xl">
+          {t("title")}
+        </h1>
+        <p className="max-w-xl text-[13px] leading-relaxed text-sol-muted sm:text-sm md:text-xl">
+          {t("subtitle")}
+        </p>
+      </Hero>
 
       {/* Main Content Layout */}
       <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-4 xl:gap-12">
