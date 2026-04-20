@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import express, { type Application, type Request, type Response, type NextFunction } from 'express';
 import cors from 'cors';
-import prisma from './lib/db';
+import prisma from './lib/db.ts';
 
 import authRoutes from './routes/auth';
 import lessonRoutes from './routes/lessons';
