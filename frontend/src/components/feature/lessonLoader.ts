@@ -3,21 +3,30 @@ import remarkMath from "remark-math";
 import remarkRehype from "remark-rehype";
 import rehypeKatex from "rehype-katex";
 import rehypeStringify from "rehype-stringify";
-import prisma from "@/lib/db";
+import { cookies } from "next/headers";
+
+type LessonApiResponse = {
+  title_en: string;
+  title_vi: string;
+  content_markdown_en: string;
+  content_markdown_vi: string;
+  grade?: { title_vi: string } | null;
+  subject?: { title_vi: string } | null;
+};
 
 export async function getLesson(lessonId: string, locale: string = "vi") {
-  const lesson = await prisma.lesson.findUnique({
-    where: { id: lessonId },
-    include: {
-      grade: true,
-      subject: true
-    }
+  const token = (await cookies()).get("token")?.value;
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api/v1";
+  const response = await fetch(`${apiBaseUrl.replace(/\/$/, "")}/lessons/${encodeURIComponent(lessonId)}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    cache: "no-store",
   });
 
-  if (!lesson) {
-    throw new Error("Lesson not found");
+  if (!response.ok) {
+    throw new Error("Failed to load lesson");
   }
 
+  const lesson = (await response.json()) as LessonApiResponse;
   const content = locale === "vi" ? lesson.content_markdown_vi : lesson.content_markdown_en;
   const title = locale === "vi" ? lesson.title_vi : lesson.title_en;
   const description = lesson.grade ? `${lesson.grade.title_vi} - ${lesson.subject?.title_vi}` : "";
