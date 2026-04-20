@@ -10,6 +10,7 @@ import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { formatTemplate, evaluateFormula } from "@/utils/mathService";
 import { format } from "date-fns";
+import { vi, enUS } from "date-fns/locale";
 
 interface PracticeResultModalProps {
   isOpen: boolean;
@@ -45,6 +46,8 @@ export default function PracticeResultModal({ isOpen, onClose, attemptId }: Prac
     }
   };
 
+  const dateLocale = locale === "vi" ? vi : enUS;
+
   if (!isOpen) return null;
 
   return (
@@ -71,7 +74,7 @@ export default function PracticeResultModal({ isOpen, onClose, attemptId }: Prac
               <div className="flex items-center gap-4 mt-1">
                 <div className="flex items-center gap-1.5 text-xs text-sol-muted font-bold">
                   <Clock size={14} className="text-sol-accent" />
-                  <span>{attempt?.completed_at ? format(new Date(attempt.completed_at), "MMM d, yyyy HH:mm") : "..."}</span>
+                  <span>{attempt?.completed_at ? format(new Date(attempt.completed_at), locale === "vi" ? "d MMM, yyyy HH:mm" : "MMM d, yyyy HH:mm", { locale: dateLocale }) : "..."}</span>
                 </div>
                 <div className="flex items-center gap-1.5 text-xs font-bold text-sol-accent bg-sol-accent/5 px-2 py-0.5 rounded-full border border-sol-accent/10">
                    {t("scoreLabel", { score: attempt?.total_score || 0 })}

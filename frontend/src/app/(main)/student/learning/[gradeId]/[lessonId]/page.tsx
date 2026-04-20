@@ -65,7 +65,7 @@ export default async function LessonPage({ params }: Props) {
         </nav>
 
         {/* Main Header Block */}
-        <header className="bg-sol-surface/30 p-10 md:p-16 rounded-[3rem] border border-sol-border/5 shadow-2xl relative overflow-hidden group">
+        <header className="bg-sol-surface/30 p-4 md:p-8 rounded-[2rem] md:rounded-[3rem] border border-sol-border/5 shadow-2xl relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-12 opacity-5 group-hover:opacity-10 transition-opacity">
             <GraduationCap size={200} className="text-sol-accent -rotate-12" />
           </div>
@@ -90,7 +90,7 @@ export default async function LessonPage({ params }: Props) {
             {sections.map((sectionHtml, idx) => (
               <article
                 key={idx}
-                className="bg-sol-surface/20 p-10 md:p-16 rounded-[3rem] border border-sol-border/5 shadow-sm hover:shadow-2xl hover:bg-sol-surface/30 transition-all duration-500 relative group overflow-hidden"
+                className="bg-sol-surface/20 p-4 md:p-8 rounded-[2rem] md:rounded-[3rem] border border-sol-border/5 shadow-sm hover:shadow-2xl hover:bg-sol-surface/30 transition-all duration-500 relative group overflow-hidden"
               >
                 <div className="absolute -top-6 -right-6 w-32 h-32 bg-sol-accent/5 rounded-full flex items-center justify-center -rotate-12 group-hover:rotate-0 transition-transform duration-700">
                   <span className="text-4xl font-black text-sol-accent/10">{idx + 1}</span>
@@ -98,15 +98,15 @@ export default async function LessonPage({ params }: Props) {
 
                 <div
                   className="lesson-content max-w-none 
-                    [&>h2]:text-3xl [&>h2:first-child]:mt-0 [&>h2]:font-black [&>h2]:mt-20 [&>h2]:mb-10 [&>h2]:text-sol-text [&>h2]:tracking-tight
-                    [&>h3]:text-2xl [&>h3:first-child]:mt-0 [&>h3]:font-black [&>h3]:mt-12 [&>h3]:mb-8 [&>h3]:text-sol-text [&>h3]:tracking-tight
-                    [&>p]:text-lg [&>p]:mb-8 [&>p]:leading-[2] [&>p]:text-sol-text/80 [&>p]:font-medium
-                    [&_ul]:list-disc [&_ul]:pl-10 [&_ul]:mb-10 [&_ul]:space-y-4 [&_ul]:text-sol-text/70
-                    [&_ol]:list-decimal [&_ol]:pl-10 [&_ol]:mb-10 [&_ol]:space-y-4 [&_ol]:text-sol-text/70
-                    [&_li]:text-lg [&_li]:leading-[2]
-                    [&_.katex-display]:text-center [&_.katex-display]:my-16 [&_.katex-display]:w-full [&_.katex-display]:overflow-x-auto [&_.katex-display]:overflow-y-hidden [&_.katex-display]:py-4
-                    [&>pre]:bg-sol-bg/40 [&>pre]:p-10 [&>pre]:rounded-[2rem] [&>pre]:border [&>pre]:border-sol-border/10 [&>pre]:my-12 [&>pre]:shadow-2xl
-                    [&>blockquote]:border-l-[6px] [&>blockquote]:border-sol-accent [&>blockquote]:pl-10 [&>blockquote]:italic [&>blockquote]:my-12 [&>blockquote]:text-sol-muted [&>blockquote]:bg-sol-accent/5 [&>blockquote]:py-10 [&>blockquote]:pr-10 [&>blockquote]:rounded-r-[2.5rem]"
+                    [&>h2]:text-2xl md:[&>h2]:text-3xl [&>h2:first-child]:mt-0 [&>h2]:font-black [&>h2]:mt-16 md:[&>h2]:mt-20 [&>h2]:mb-8 md:[&>h2]:mb-10 [&>h2]:text-sol-text [&>h2]:tracking-tight
+                    [&>h3]:text-xl md:[&>h3]:text-2xl [&>h3:first-child]:mt-0 [&>h3]:font-black [&>h3]:mt-10 md:[&>h3]:mt-12 [&>h3]:mb-6 md:[&>h3]:mb-8 [&>h3]:text-sol-text [&>h3]:tracking-tight
+                    [&>p]:text-base md:[&>p]:text-lg [&>p]:mb-6 md:[&>p]:mb-8 [&>p]:leading-relaxed md:[&>p]:leading-[2] [&>p]:text-sol-text/80 [&>p]:font-medium
+                    [&_ul]:list-disc [&_ul]:pl-6 md:[_ul]:pl-10 [&_ul]:mb-8 md:[_ul]:mb-10 [&_ul]:space-y-3 md:[_ul]:space-y-4 [&_ul]:text-sol-text/70
+                    [&_ol]:list-decimal [&_ol]:pl-6 md:[_ol]:pl-10 [&_ol]:mb-8 md:[_ol]:mb-10 [&_ol]:space-y-3 md:[_ol]:space-y-4 [&_ol]:text-sol-text/70
+                    [&_li]:text-base md:[&_li]:text-lg [&_li]:leading-relaxed md:[&_li]:leading-[2]
+                    [&_.katex-display]:text-center [&_.katex-display]:my-10 md:[_.katex-display]:my-16 [&_.katex-display]:w-full [&_.katex-display]:overflow-x-auto [&_.katex-display]:overflow-y-hidden [&_.katex-display]:py-4
+                    [&>pre]:bg-sol-bg/40 [&>pre]:p-6 md:[&>pre]:p-10 [&>pre]:rounded-2xl md:[&>pre]:rounded-[2rem] [&>pre]:border [&>pre]:border-sol-border/10 [&>pre]:my-8 md:[&>pre]:my-12 [&>pre]:shadow-2xl
+                    [&>blockquote]:border-l-4 md:[&>blockquote]:border-l-[6px] [&>blockquote]:border-sol-accent [&>blockquote]:pl-6 md:[&>blockquote]:pl-10 [&>blockquote]:italic [&>blockquote]:my-8 md:[&>blockquote]:my-12 [&>blockquote]:text-sol-muted [&>blockquote]:bg-sol-accent/5 [&>blockquote]:p-6 md:[&>blockquote]:py-10 md:[&>blockquote]:pr-10 [&>blockquote]:rounded-r-2xl md:[&>blockquote]:rounded-r-[2.5rem]"
                   dangerouslySetInnerHTML={{ __html: sectionHtml }}
                 />
               </article>

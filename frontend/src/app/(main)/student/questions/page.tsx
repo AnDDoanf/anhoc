@@ -210,7 +210,7 @@ export default function QuestionsAdminPage() {
     <div className="mx-auto max-w-7xl space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
       {/* Header */}
-      <Hero 
+      <Hero
         icon={<Database size={112} className="text-sol-accent md:h-40 md:w-40" />}
         className="md:rounded-[3rem]"
         containerClassName="relative z-10 flex w-full flex-col items-start gap-4 lg:max-w-4xl lg:flex-row lg:justify-between"
@@ -278,24 +278,6 @@ export default function QuestionsAdminPage() {
 
         <div className="space-y-2">
           <label className="text-xs font-black uppercase tracking-widest text-sol-muted">
-            {t("filters.lesson")}
-          </label>
-          <select
-            value={lessonIdFilter}
-            onChange={(e) => setLessonIdFilter(e.target.value)}
-            className="w-full rounded-2xl border border-sol-border/20 bg-sol-bg px-4 py-3 text-sm font-medium text-sol-text transition-all focus:ring-2 focus:ring-sol-accent/30 md:px-6 md:py-4 md:text-base"
-          >
-            <option value="all">{t("filters.allLessons")}</option>
-            {visibleLessonOptions.map((lesson) => (
-              <option key={lesson.id} value={lesson.id}>
-                {lesson.title}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-xs font-black uppercase tracking-widest text-sol-muted">
             {t("filters.grade")}
           </label>
           <select
@@ -307,6 +289,24 @@ export default function QuestionsAdminPage() {
             {gradeOptions.map((grade) => (
               <option key={grade.id} value={grade.id}>
                 {grade.title}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-xs font-black uppercase tracking-widest text-sol-muted">
+            {t("filters.lesson")}
+          </label>
+          <select
+            value={lessonIdFilter}
+            onChange={(e) => setLessonIdFilter(e.target.value)}
+            className="w-full rounded-2xl border border-sol-border/20 bg-sol-bg px-4 py-3 text-sm font-medium text-sol-text transition-all focus:ring-2 focus:ring-sol-accent/30 md:px-6 md:py-4 md:text-base"
+          >
+            <option value="all">{t("filters.allLessons")}</option>
+            {visibleLessonOptions.map((lesson) => (
+              <option key={lesson.id} value={lesson.id}>
+                {lesson.title}
               </option>
             ))}
           </select>

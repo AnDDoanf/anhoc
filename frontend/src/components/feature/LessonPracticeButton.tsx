@@ -31,7 +31,7 @@ export default function LessonPracticeButton({ lessonId }: LessonPracticeButtonP
   };
 
   return (
-    <div className="mt-12 pt-8 border-t border-sol-border/10 space-y-6">
+    <div className="mt-4 pt-4 border-t border-sol-border/10 space-y-6">
       <div className="space-y-3">
         <label className="text-[11px] font-black uppercase tracking-[0.2em] text-sol-muted px-1">
           {t("difficulty")}

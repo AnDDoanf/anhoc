@@ -42,59 +42,62 @@ export default function AchievementGallery() {
   }
 
   return (
-    <div className="max-w-full space-y-6 overflow-x-hidden md:space-y-12">
+    <div className="max-w-full space-y-12 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-1000">
       {/* Header & Stats */}
       <Hero
-        className="md:rounded-[3rem]"
-        containerClassName="relative z-10 flex w-full flex-col items-start gap-4 lg:max-w-4xl lg:flex-row lg:justify-between"
+        className="md:rounded-[3rem] overflow-hidden"
+        containerClassName="relative z-10 flex w-full flex-col items-center gap-8 lg:flex-row lg:justify-between"
       >
-        <div className="space-y-3 md:space-y-6">
-          <div className="inline-flex items-center gap-2 rounded-full border border-sol-accent/20 bg-sol-accent/10 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-sol-accent sm:px-3 sm:py-1.5 md:text-xs">
-            <Trophy size={11} className="md:h-3.5 md:w-3.5" />
+        <div className="space-y-4 md:space-y-8 text-center lg:text-left">
+          <div className="inline-flex items-center gap-3 rounded-full border border-sol-accent/30 bg-sol-accent/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] text-sol-accent">
+            <Trophy size={14} className="animate-bounce" />
             <span>{t("title")}</span>
           </div>
-          <h2 className="max-w-[11ch] text-[1.75rem] font-black leading-[1.05] tracking-tight text-sol-text sm:text-4xl md:max-w-none md:text-6xl">
+          <h2 className="text-4xl md:text-7xl font-black leading-[0.95] tracking-tighter text-sol-text max-w-[15ch] lg:max-w-none">
             {t("hallTitle")}
           </h2>
-          <p className="max-w-xl text-[13px] leading-relaxed text-sol-muted sm:text-sm md:text-xl">
+          <p className="max-w-2xl text-[14px] leading-relaxed text-sol-muted md:text-xl font-medium">
             {t("subtitle")}
           </p>
         </div>
 
-        {/* Stats Card - Optimized for narrow screens */}
-        <div className="shrink-0 grid w-full grid-cols-2 gap-2 rounded-2xl border border-sol-border/10 bg-sol-surface p-3 shadow-sm sm:flex sm:flex-wrap sm:items-center sm:justify-around sm:gap-4 sm:p-4 md:rounded-[2rem] md:p-6 lg:w-auto lg:min-w-[220px] lg:justify-start lg:gap-6">
-           <div className="text-center sm:min-w-[70px]">
-             <div className="text-xl font-black text-sol-accent sm:text-2xl md:text-3xl">{earnedCount}</div>
-             <div className="text-[9px] font-bold text-sol-muted uppercase tracking-wider">{t("collected")}</div>
-           </div>
-           <div className="hidden h-8 w-px bg-sol-border/20 sm:block" />
-           <div className="text-center sm:min-w-[70px]">
-             <div className="text-xl font-black text-sol-text sm:text-2xl md:text-3xl">{achievements.length}</div>
-             <div className="text-[9px] font-bold text-sol-muted uppercase tracking-wider">{t("total")}</div>
+        {/* Stats Card - Optimized for impact */}
+        <div className="flex items-center gap-8 bg-sol-bg/40 backdrop-blur-2xl border border-sol-border/10 p-8 md:p-12 rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
+           <div className="absolute inset-0 bg-sol-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+           <div className="relative z-10 flex items-center gap-10">
+              <div className="text-center">
+                <div className="text-4xl md:text-6xl font-black text-sol-accent tracking-tighter mb-1">{earnedCount}</div>
+                <div className="text-[10px] font-black text-sol-muted uppercase tracking-[0.2em]">{t("collected")}</div>
+              </div>
+              <div className="h-16 w-[2px] bg-sol-accent/20 rounded-full" />
+              <div className="text-center">
+                <div className="text-4xl md:text-6xl font-black text-sol-text tracking-tighter mb-1">{achievements.length}</div>
+                <div className="text-[10px] font-black text-sol-muted uppercase tracking-[0.2em]">{t("total")}</div>
+              </div>
            </div>
         </div>
       </Hero>
 
-      {/* Filter Tabs - Forced Scroll with No-Scrollbar */}
-      <div className="flex items-center gap-2 overflow-x-auto rounded-xl border border-sol-border/5 bg-sol-surface/50 p-1 no-scrollbar sm:flex-wrap">
+      {/* Filter Tabs - Capsule Style */}
+      <div className="flex w-full items-center gap-2 overflow-x-auto pb-4 no-scrollbar pt-2 sm:gap-3">
         {categories.map(cat => (
           <button
             key={cat}
             onClick={() => setFilter(cat)}
-            className={`shrink-0 rounded-lg px-2.5 py-1.5 text-[11px] font-bold whitespace-nowrap transition-all sm:px-3 sm:py-2 sm:text-xs md:px-4 md:text-sm
-              ${filter === cat 
-                ? "bg-sol-accent text-sol-bg shadow-md" 
-                : "text-sol-muted hover:text-sol-text"
+            className={`flex-1 shrink-0 flex items-center justify-center rounded-full px-4 h-11 text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-all duration-300 border-2 min-w-[100px] sm:min-w-0
+              ${filter === cat
+                ? "bg-sol-accent text-sol-bg border-sol-accent shadow-[0_0_20px_rgba(var(--sol-accent-rgb),0.3)]"
+                : "bg-sol-surface/30 text-sol-muted border-transparent hover:border-sol-border/10 hover:text-sol-text"
               }
             `}
           >
-            {t(`categories.${cat}`)}
+            <span className="leading-tight text-center">{t(`categories.${cat}`)}</span>
           </button>
         ))}
       </div>
 
-      {/* Grid - 1 col on mobile, 2 on tablet, 3+ on desktop */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:gap-6 lg:grid-cols-3 xl:grid-cols-4">
+      {/* Grid */}
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {filtered.map(a => (
           <AchievementCard key={a.id} achievement={a} />
         ))}

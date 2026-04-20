@@ -3,9 +3,11 @@
 import { useTranslations, useLocale } from "next-intl";
 import TestCard from "@/components/feature/TestCard";
 import Hero from "@/components/ui/Hero";
-import { Medal, BookOpen, Sparkles, Loader2 } from "lucide-react";
+import FilterBar from "@/components/ui/FilterBar";
+import { Medal, BookOpen, Sparkles, Loader2, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { testService } from "@/services/testService";
+import { lessonService } from "@/services/lessonService";
 
 type GradeTest = {
   id: string;
@@ -33,6 +35,12 @@ type GradeTest = {
     slug: string;
     title_en: string;
     title_vi: string;
+    lessons?: {
+      id: string;
+      slug: string;
+      title_en: string;
+      title_vi: string;
+    }[];
   };
 };
 
@@ -40,30 +48,104 @@ export default function TestPage() {
   const t = useTranslations("Test");
   const locale = useLocale();
   const [tests, setTests] = useState<GradeTest[]>([]);
+  const [lessons, setLessons] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Filter States
+  const [gradeIdFilter, setGradeIdFilter] = useState("all");
+  const [lessonIdFilter, setLessonIdFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+
   useEffect(() => {
-    const fetchTests = async () => {
+    const fetchData = async () => {
       setLoading(true);
       try {
-        const data = await testService.listGradeTests();
-        setTests(data);
+        const [testData, lessonData] = await Promise.all([
+          testService.listGradeTests(),
+          lessonService.getAvailablePractices() // Good for getting all lessons
+        ]);
+        setTests(testData);
+        setLessons(lessonData);
       } catch (error) {
-        console.error("Failed to load grade tests:", error);
+        console.error("Failed to load test page data:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchTests();
+    fetchData();
   }, []);
 
-  const groupedData = useMemo(() => tests.reduce((acc, curr) => {
+  // Options
+  const gradeOptions = useMemo(() => {
+    return Array.from(
+      new Map(
+        tests.filter(t => t.grade).map(t => [
+          String(t.grade!.id),
+          { id: String(t.grade!.id), title: locale === "vi" ? t.grade!.title_vi : t.grade!.title_en }
+        ])
+      ).values()
+    ).sort((a, b) => a.title.localeCompare(b.title));
+  }, [tests, locale]);
+
+  const lessonOptions = useMemo(() => {
+    return lessons.map(l => ({
+      id: l.id,
+      title: locale === "vi" ? l.title_vi : l.title_en,
+      gradeId: String(l.grade?.id || "")
+    })).sort((a, b) => a.title.localeCompare(b.title));
+  }, [lessons, locale]);
+
+  const visibleLessonOptions = useMemo(() => {
+    return lessonOptions.filter(l => gradeIdFilter === "all" || l.gradeId === gradeIdFilter);
+  }, [lessonOptions, gradeIdFilter]);
+
+  // Reset lesson if grade changes
+  useEffect(() => {
+    if (lessonIdFilter === "all") return;
+    const currentLesson = lessonOptions.find(l => l.id === lessonIdFilter);
+    if (gradeIdFilter !== "all" && currentLesson?.gradeId !== gradeIdFilter) {
+      setLessonIdFilter("all");
+    }
+  }, [gradeIdFilter, lessonIdFilter, lessonOptions]);
+
+  const filteredTests = useMemo(() => {
+    return tests.filter(test => {
+      const gradeIdStr = String(test.grade_id);
+      
+      // Grade filter
+      if (gradeIdFilter !== "all" && gradeIdStr !== gradeIdFilter) return false;
+      
+      // Lesson filter - if a lesson is selected, only show the grade test that contains this lesson
+      if (lessonIdFilter !== "all") {
+        const hasLesson = test.grade?.lessons?.some((l: any) => l.id === lessonIdFilter);
+        if (!hasLesson) return false;
+      }
+
+      // Search query
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const gradeTitle = (locale === "vi" ? test.grade?.title_vi : test.grade?.title_en) ?? "";
+        const testTitle = (locale === "vi" ? test.title_vi : test.title_en).toLowerCase();
+        // Also search in lessons of this grade test
+        const lessonMatch = test.grade?.lessons?.some((l: any) => {
+          const lTitle = (locale === "vi" ? l.title_vi : l.title_en).toLowerCase();
+          return lTitle.includes(q);
+        });
+        
+        if (!gradeTitle.toLowerCase().includes(q) && !testTitle.includes(q) && !lessonMatch) return false;
+      }
+      
+      return true;
+    });
+  }, [tests, gradeIdFilter, lessonIdFilter, searchQuery, locale]);
+
+  const groupedData = useMemo(() => filteredTests.reduce((acc, curr) => {
     const gradeKey = curr.grade_slug || String(curr.grade_id);
     if (!acc[gradeKey]) acc[gradeKey] = [];
     acc[gradeKey].push(curr);
     return acc;
-  }, {} as Record<string, GradeTest[]>), [tests]);
+  }, {} as Record<string, GradeTest[]>), [filteredTests]);
 
   const getGradeTitle = (items: GradeTest[], gradeId: string) => {
     const grade = items[0]?.grade;
@@ -81,22 +163,85 @@ export default function TestPage() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <Hero
-        icon={<Medal size={112} className="text-sol-accent md:h-40 md:w-40" />}
-        className="md:rounded-[3rem]"
-        containerClassName="relative z-10 max-w-2xl space-y-3 md:space-y-6"
+      <Hero 
+        icon={<Medal size={120} className="text-sol-accent md:h-48 md:w-48 animate-bounce-slow" />}
+        className="md:rounded-[3rem] overflow-hidden border-b border-sol-accent/5"
+        containerClassName="relative z-10 flex w-full flex-col items-center gap-8 lg:flex-row lg:justify-between"
       >
-        <div className="inline-flex items-center gap-2 rounded-full border border-sol-accent/20 bg-sol-accent/10 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-sol-accent sm:px-3 sm:py-1.5 md:text-xs">
-          <Sparkles size={11} className="md:h-3.5 md:w-3.5" />
-          <span>{t("examinationHub")}</span>
+        <div className="space-y-4 md:space-y-8 text-center lg:text-left">
+          <div className="inline-flex items-center gap-3 rounded-full border border-sol-accent/30 bg-sol-accent/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] text-sol-accent">
+            <Sparkles size={14} className="animate-pulse" />
+            <span>{t("challengeBadge")}</span>
+          </div>
+          <h1 className="text-4xl md:text-7xl font-black leading-[0.95] tracking-tighter text-sol-text max-w-[15ch] lg:max-w-none">
+            {t("title")}
+          </h1>
+          <p className="max-w-2xl text-[14px] leading-relaxed text-sol-muted md:text-xl font-medium">
+            {t("subtitle")}
+          </p>
         </div>
-        <h1 className="max-w-[11ch] text-[1.75rem] font-black leading-[1.05] tracking-tight text-sol-text sm:text-4xl md:max-w-none md:text-6xl">
-          {t("title")}
-        </h1>
-        <p className="max-w-xl text-[13px] leading-relaxed text-sol-muted sm:text-sm md:text-xl">
-          {t("subtitle")}
-        </p>
       </Hero>
+
+      {/* Filters */}
+      <FilterBar gridClassName="grid grid-cols-1 gap-4 md:grid-cols-12">
+        {/* Grade Filter */}
+        <div className="space-y-2 md:col-span-3">
+          <label className="text-xs font-black uppercase tracking-widest text-sol-muted px-1">
+            {t("filters.grade")}
+          </label>
+          <select
+            value={gradeIdFilter}
+            onChange={(e) => setGradeIdFilter(e.target.value)}
+            className="w-full rounded-2xl border border-sol-border/20 bg-sol-bg px-4 py-3 text-sm font-bold text-sol-text transition-all focus:ring-4 focus:ring-sol-accent/5 focus:border-sol-accent/30 md:px-6 md:py-4 md:text-base cursor-pointer"
+          >
+            <option value="all">{t("filters.allGrades")}</option>
+            {gradeOptions.map((grade) => (
+              <option key={grade.id} value={grade.id}>
+                {grade.title}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Lesson Filter */}
+        <div className="space-y-2 md:col-span-4">
+          <label className="text-xs font-black uppercase tracking-widest text-sol-muted px-1">
+            {t("filters.lesson")}
+          </label>
+          <select
+            value={lessonIdFilter}
+            onChange={(e) => setLessonIdFilter(e.target.value)}
+            className="w-full rounded-2xl border border-sol-border/20 bg-sol-bg px-4 py-3 text-sm font-bold text-sol-text transition-all focus:ring-4 focus:ring-sol-accent/5 focus:border-sol-accent/30 md:px-6 md:py-4 md:text-base cursor-pointer"
+          >
+            <option value="all">{t("filters.allLessons")}</option>
+            {visibleLessonOptions.map((lesson) => (
+              <option key={lesson.id} value={lesson.id}>
+                {lesson.title}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Search Bar */}
+        <div className="space-y-2 md:col-span-5">
+          <label className="text-xs font-black uppercase tracking-widest text-sol-muted px-1">
+            {t("filters.search")}
+          </label>
+          <div className="relative">
+            <Search
+              size={18}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-sol-muted md:left-5"
+            />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={t("filters.searchPlaceholder")}
+              className="w-full rounded-2xl border border-sol-border/20 bg-sol-bg py-3 pl-11 pr-4 text-sm font-bold text-sol-text transition-all focus:ring-4 focus:ring-sol-accent/5 focus:border-sol-accent/30 md:px-6 md:py-4 md:pl-14 md:text-base"
+            />
+          </div>
+        </div>
+      </FilterBar>
 
       <div className="space-y-10 md:space-y-20">
         {Object.entries(groupedData).map(([gradeId, gradeTests]) => (

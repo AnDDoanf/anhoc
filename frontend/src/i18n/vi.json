@@ -99,7 +99,14 @@
       "medium": "Trung bình",
       "hard": "Khó"
     },
-    "allGrades": "Tất cả các lớp",
+    "filters": {
+      "grade": "Khối lớp",
+      "lesson": "Bài học",
+      "search": "Tìm kiếm",
+      "searchPlaceholder": "Tìm theo lớp hoặc bài học...",
+      "allGrades": "Tất cả các khối",
+      "allLessons": "Tất cả bài học"
+    },
     "finishAbandon": "Hoàn thành / Thoát",
     "questionInfo": "Câu hỏi {current} trên {total}",
     "yourAnswer": "Đáp án của bạn: {answer}",
@@ -223,6 +230,7 @@
     "starting": "Đang bắt đầu...",
     "startError": "Không thể bắt đầu bài kiểm tra này.",
     "stats": "{count} câu hỏi",
+    "challengeBadge": "Trung tâm Kiểm tra",
     "examinationHub": "Lò luyện thi",
     "emptyTitle": "Chưa có bài kiểm tra.",
     "emptySubtitle": "Thêm mẫu câu hỏi vào các bài học trong một lớp để mở bài kiểm tra theo lớp.",
@@ -231,7 +239,15 @@
     "noAttempts": "Chưa có lượt làm.",
     "completedAttempt": "Đã hoàn thành",
     "inProgressAttempt": "Đang làm",
-    "resumeAttempt": "Tiếp tục"
+    "resumeAttempt": "Tiếp tục",
+    "filters": {
+      "grade": "Khối lớp",
+      "lesson": "Bài học",
+      "search": "Tìm kiếm",
+      "searchPlaceholder": "Tìm bài kiểm tra...",
+      "allGrades": "Tất cả các khối",
+      "allLessons": "Tất cả bài học"
+    }
   },
   "NotFound": {
     "title": "Trang không tồn tại",
@@ -617,6 +633,7 @@
     "viewAll": "Xem tất cả Thành tích",
     "categories": {
       "all": "Tất cả",
+      "general": "Chung",
       "progress": "Tiến trình",
       "performance": "Hiệu suất",
       "streak": "Chuỗi ngày",

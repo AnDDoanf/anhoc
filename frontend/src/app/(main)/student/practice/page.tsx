@@ -7,8 +7,10 @@ import { testService } from "@/services/testService";
 import PracticeCard from "@/components/feature/PracticeCard";
 import PracticeResultModal from "@/components/feature/PracticeResultModal";
 import Hero from "@/components/ui/Hero";
-import { Sparkles, Trophy, BookOpen, Clock, Award, History as HistoryIcon, ArrowRight, Brain } from "lucide-react";
+import FilterBar from "@/components/ui/FilterBar";
+import { Sparkles, Trophy, BookOpen, Clock, Award, History as HistoryIcon, ArrowRight, Brain, Search } from "lucide-react";
 import { format } from "date-fns";
+import { vi, enUS } from "date-fns/locale";
 
 interface AvailableLesson {
   id: string;
@@ -47,6 +49,11 @@ export default function PracticePage() {
   const [history, setHistory] = useState<PracticeHistory[]>([]);
   const [selectedAttemptId, setSelectedAttemptId] = useState<string | null>(null);
 
+  // Filter States
+  const [gradeIdFilter, setGradeIdFilter] = useState("all");
+  const [lessonIdFilter, setLessonIdFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -67,12 +74,59 @@ export default function PracticePage() {
     }
   };
 
-  // Group practice data by grade
-  const groupedData = availableLessons.reduce((acc, curr) => {
+  // Derive Options
+  const gradeOptions = Array.from(
+    new Map(
+      availableLessons
+        .filter((l) => l.grade)
+        .map((l) => [
+          l.grade!.id,
+          { id: l.grade!.id, title: locale === "vi" ? l.grade!.title_vi : l.grade!.title_en }
+        ])
+    ).values()
+  ).sort((a, b) => a.title.localeCompare(b.title));
+
+  const lessonOptions = availableLessons
+    .map((l) => ({
+      id: l.id,
+      title: locale === "vi" ? l.title_vi : l.title_en,
+      gradeId: l.grade?.id || "other"
+    }))
+    .sort((a, b) => a.title.localeCompare(b.title));
+
+  const visibleLessonOptions = lessonOptions.filter(
+    (l) => gradeIdFilter === "all" || l.gradeId === gradeIdFilter
+  );
+
+  // Reset lesson filter if grade changes
+  useEffect(() => {
+    if (lessonIdFilter === "all") return;
+    const currentLesson = lessonOptions.find(l => l.id === lessonIdFilter);
+    if (gradeIdFilter !== "all" && currentLesson?.gradeId !== gradeIdFilter) {
+      setLessonIdFilter("all");
+    }
+  }, [gradeIdFilter, lessonIdFilter, lessonOptions]);
+
+  // Filter Logic
+  const filteredLessons = availableLessons.filter((lesson) => {
+    if (gradeIdFilter !== "all" && lesson.grade?.id !== gradeIdFilter) return false;
+    if (lessonIdFilter !== "all" && lesson.id !== lessonIdFilter) return false;
+    
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const title = (locale === "vi" ? lesson.title_vi : lesson.title_en).toLowerCase();
+      const gradeTitle = (locale === "vi" ? lesson.grade?.title_vi : lesson.grade?.title_en) ?? "";
+      if (!title.includes(q) && !gradeTitle.toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+
+  // Group practice data by grade (using filtered results)
+  const groupedData = filteredLessons.reduce((acc, curr) => {
     const gradeId = curr.grade?.id || "other";
-    if (!acc[gradeId]) acc[gradeId] = { 
+    if (!acc[gradeId]) acc[gradeId] = {
       title: locale === "vi" ? curr.grade?.title_vi : curr.grade?.title_en,
-      lessons: [] 
+      lessons: []
     };
     acc[gradeId].lessons.push(curr);
     return acc;
@@ -86,35 +140,100 @@ export default function PracticePage() {
     );
   }
 
+  const dateLocale = locale === "vi" ? vi : enUS;
+
   return (
     <div className="mx-auto max-w-7xl space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <PracticeResultModal 
-        isOpen={!!selectedAttemptId} 
-        onClose={() => setSelectedAttemptId(null)} 
-        attemptId={selectedAttemptId} 
+      <PracticeResultModal
+        isOpen={!!selectedAttemptId}
+        onClose={() => setSelectedAttemptId(null)}
+        attemptId={selectedAttemptId}
       />
-      
+
       {/* Hero Header */}
       <Hero 
-        icon={<Trophy size={112} className="text-sol-accent md:h-40 md:w-40" />}
-        className="md:rounded-[3rem]"
-        containerClassName="relative z-10 max-w-2xl space-y-3 md:space-y-6"
+        icon={<Trophy size={120} className="text-sol-accent md:h-48 md:w-48 animate-pulse" />}
+        className="md:rounded-[3rem] overflow-hidden border-b border-sol-accent/5"
+        containerClassName="relative z-10 flex w-full flex-col items-center gap-8 lg:flex-row lg:justify-between"
       >
-        <div className="inline-flex items-center gap-2 rounded-full border border-sol-accent/20 bg-sol-accent/10 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-sol-accent sm:px-3 sm:py-1.5 md:text-xs">
-          <Sparkles size={11} className="md:h-3.5 md:w-3.5" />
-          <span>{t("hubBadge")}</span>
+        <div className="space-y-4 md:space-y-8 text-center lg:text-left">
+          <div className="inline-flex items-center gap-3 rounded-full border border-sol-accent/30 bg-sol-accent/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] text-sol-accent">
+            <Sparkles size={14} className="animate-spin-slow" />
+            <span>{t("hubBadge")}</span>
+          </div>
+          <h1 className="text-4xl md:text-7xl font-black leading-[0.95] tracking-tighter text-sol-text max-w-[15ch] lg:max-w-none">
+            {t("title")}
+          </h1>
+          <p className="max-w-2xl text-[14px] leading-relaxed text-sol-muted md:text-xl font-medium">
+            {t("subtitle")}
+          </p>
         </div>
-        <h1 className="max-w-[11ch] text-[1.75rem] font-black leading-[1.05] tracking-tight text-sol-text sm:text-4xl md:max-w-none md:text-6xl">
-          {t("title")}
-        </h1>
-        <p className="max-w-xl text-[13px] leading-relaxed text-sol-muted sm:text-sm md:text-xl">
-          {t("subtitle")}
-        </p>
       </Hero>
+
+      {/* Filters */}
+      <FilterBar gridClassName="grid grid-cols-1 gap-4 md:grid-cols-12">
+        {/* Grade Filter */}
+        <div className="space-y-2 md:col-span-3">
+          <label className="text-xs font-black uppercase tracking-widest text-sol-muted px-1">
+            {t("filters.grade")}
+          </label>
+          <select
+            value={gradeIdFilter}
+            onChange={(e) => setGradeIdFilter(e.target.value)}
+            className="w-full rounded-2xl border border-sol-border/20 bg-sol-bg px-4 py-3 text-sm font-bold text-sol-text transition-all focus:ring-4 focus:ring-sol-accent/5 focus:border-sol-accent/30 md:px-6 md:py-4 md:text-base cursor-pointer"
+          >
+            <option value="all">{t("filters.allGrades")}</option>
+            {gradeOptions.map((grade) => (
+              <option key={grade.id} value={grade.id}>
+                {grade.title}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Lesson Filter */}
+        <div className="space-y-2 md:col-span-4">
+          <label className="text-xs font-black uppercase tracking-widest text-sol-muted px-1">
+            {t("filters.lesson")}
+          </label>
+          <select
+            value={lessonIdFilter}
+            onChange={(e) => setLessonIdFilter(e.target.value)}
+            className="w-full rounded-2xl border border-sol-border/20 bg-sol-bg px-4 py-3 text-sm font-bold text-sol-text transition-all focus:ring-4 focus:ring-sol-accent/5 focus:border-sol-accent/30 md:px-6 md:py-4 md:text-base cursor-pointer"
+          >
+            <option value="all">{t("filters.allLessons")}</option>
+            {visibleLessonOptions.map((lesson) => (
+              <option key={lesson.id} value={lesson.id}>
+                {lesson.title}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Search Bar */}
+        <div className="space-y-2 md:col-span-5">
+          <label className="text-xs font-black uppercase tracking-widest text-sol-muted px-1">
+            {t("filters.search")}
+          </label>
+          <div className="relative">
+            <Search
+              size={18}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-sol-muted md:left-5"
+            />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={t("filters.searchPlaceholder")}
+              className="w-full rounded-2xl border border-sol-border/20 bg-sol-bg py-3 pl-11 pr-4 text-sm font-bold text-sol-text transition-all focus:ring-4 focus:ring-sol-accent/5 focus:border-sol-accent/30 md:px-6 md:py-4 md:pl-14 md:text-base"
+            />
+          </div>
+        </div>
+      </FilterBar>
 
       {/* Main Content Layout */}
       <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-4 xl:gap-12">
-        
+
         {/* Available Practices List (3/4 on large screens) */}
         <div className="space-y-10 xl:col-span-3 xl:space-y-20">
           {Object.entries(groupedData).map(([gradeId, group]) => (
@@ -155,18 +274,18 @@ export default function PracticePage() {
                 </div>
               ) : (
                 history.map((attempt) => (
-                  <button 
+                  <button
                     key={attempt.id}
                     onClick={() => setSelectedAttemptId(attempt.id)}
                     className="group block w-full rounded-2xl border border-sol-border/10 bg-sol-surface p-3 text-left shadow-sm transition-all active:scale-95 hover:border-sol-accent/30 md:p-4"
                   >
                     <div className="mb-2 flex items-start justify-between gap-2">
-                       <span className="text-[9px] uppercase font-bold text-sol-muted bg-sol-bg px-2 py-1 rounded-md border border-sol-border/5">
-                         {attempt.lesson?.grade?.title_en || "Practice"}
-                       </span>
-                       <span className="text-[9px] text-sol-muted whitespace-nowrap">
-                         {format(new Date(attempt.completed_at), "MMM d, HH:mm")}
-                       </span>
+                      <span className="text-[9px] uppercase font-bold text-sol-muted bg-sol-bg px-2 py-1 rounded-md border border-sol-border/5">
+                        {(locale === "vi" ? attempt.lesson?.grade?.title_vi : attempt.lesson?.grade?.title_en) || "Practice"}
+                      </span>
+                      <span className="text-[9px] text-sol-muted whitespace-nowrap">
+                        {format(new Date(attempt.completed_at), locale === "vi" ? "d MMM, HH:mm" : "MMM d, HH:mm", { locale: dateLocale })}
+                      </span>
                     </div>
                     <p className="mb-2 line-clamp-2 text-sm font-bold text-sol-text transition-colors group-hover:text-sol-accent">
                       {locale === "vi" ? attempt.lesson?.title_vi : attempt.lesson?.title_en}
@@ -201,9 +320,9 @@ export default function PracticePage() {
 
       {/* Footer Info */}
       <footer className="rounded-[2rem] border border-sol-accent/10 bg-sol-accent/5 p-6 text-center md:rounded-[2.5rem] md:p-12">
-         <p className="text-sol-muted italic">
-           {t("footerQuote")}
-         </p>
+        <p className="text-sol-muted italic">
+          {t("footerQuote")}
+        </p>
       </footer>
     </div>
   );

@@ -99,7 +99,14 @@
       "medium": "Medium",
       "hard": "Hard"
     },
-    "allGrades": "All Grades",
+    "filters": {
+      "grade": "Grade",
+      "lesson": "Lesson",
+      "search": "Search",
+      "searchPlaceholder": "Search by grade or lesson title...",
+      "allGrades": "All Grades",
+      "allLessons": "All Lessons"
+    },
     "finishAbandon": "Finish / Abandon",
     "questionInfo": "Question {current} of {total}",
     "yourAnswer": "Your Answer: {answer}",
@@ -223,6 +230,7 @@
     "starting": "Starting...",
     "startError": "Could not start this test.",
     "stats": "{count} questions",
+    "challengeBadge": "Examination Hub",
     "examinationHub": "Examination Hub",
     "emptyTitle": "No tests available.",
     "emptySubtitle": "Add question templates to lessons in a grade to unlock a grade test.",
@@ -231,7 +239,15 @@
     "noAttempts": "No attempts yet.",
     "completedAttempt": "Completed",
     "inProgressAttempt": "In progress",
-    "resumeAttempt": "Resume"
+    "resumeAttempt": "Resume",
+    "filters": {
+      "grade": "Grade",
+      "lesson": "Lesson",
+      "search": "Search",
+      "searchPlaceholder": "Search tests...",
+      "allGrades": "All Grades",
+      "allLessons": "All Lessons"
+    }
   },
   "NotFound": {
     "title": "Page Not Found",
@@ -617,6 +633,7 @@
     "viewAll": "View All Achievements",
     "categories": {
       "all": "All",
+      "general": "General",
       "progress": "Progress",
       "performance": "Performance",
       "streak": "Streaks",
