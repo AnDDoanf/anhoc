@@ -583,6 +583,48 @@ router.get('/stats', authenticate, authorize('manage', 'lesson'), async (req, re
       })
     ]);
 
+    // Get activity history for the last 14 days
+    const fourteenDaysAgo = new Date();
+    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+
+    const [dailyRegistrations, dailyAttempts] = await Promise.all([
+      prisma.user.groupBy({
+        by: ['created_at'],
+        where: { created_at: { gte: fourteenDaysAgo } },
+        _count: { id: true }
+      }),
+      prisma.testAttempt.groupBy({
+        by: ['started_at'],
+        where: { started_at: { gte: fourteenDaysAgo } },
+        _count: { id: true }
+      })
+    ]);
+
+    // Aggregate by day
+    const historyMap = new Map();
+    for (let i = 0; i < 14; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      historyMap.set(dateStr, { date: dateStr, users: 0, attempts: 0 });
+    }
+
+    dailyRegistrations.forEach(reg => {
+      const dateStr = reg.created_at.toISOString().split('T')[0];
+      if (historyMap.has(dateStr)) {
+        historyMap.get(dateStr).users += reg._count.id;
+      }
+    });
+
+    dailyAttempts.forEach(att => {
+      const dateStr = att.started_at.toISOString().split('T')[0];
+      if (historyMap.has(dateStr)) {
+        historyMap.get(dateStr).attempts += att._count.id;
+      }
+    });
+
+    const activityHistory = Array.from(historyMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+
     // Average score across all attempts
     const avgScoreResult = await prisma.testAttempt.aggregate({
       where: { is_completed: true },
@@ -603,7 +645,8 @@ router.get('/stats', authenticate, authorize('manage', 'lesson'), async (req, re
         attempts: u._count.test_attempts,
         xp: u.student_stats?.total_xp || 0
       })),
-      recentActivity: recentAttempts
+      recentActivity: recentAttempts,
+      activityHistory
     });
   } catch (error: any) {
     res.status(500).json({ error: "Failed to fetch admin stats", details: error.message });
