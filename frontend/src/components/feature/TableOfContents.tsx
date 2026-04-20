@@ -61,36 +61,37 @@ export default function TableOfContents({ toc }: TableOfContentsProps) {
   const t = useTranslations("Common");
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 text-sol-muted mb-6">
-        <List size={18} className="text-sol-accent" />
-        <span className="text-xs font-bold uppercase tracking-widest">{t("tableOfContents")}</span>
+    <div className="flex flex-col h-full">
+      <div className="flex items-center gap-3 text-sol-text/60 mb-8 px-1">
+        <List size={20} className="text-sol-accent" />
+        <span className="text-sm font-black uppercase tracking-[0.2em]">{t("tableOfContents")}</span>
       </div>
 
-      <nav className="relative">
-        <div className="absolute left-[3px] top-2 bottom-2 w-[1px] bg-sol-border/20" />
+      <nav className="relative flex-1">
+        {/* Subtle vertical line for indicators */}
+        <div className="absolute left-[3px] top-2 bottom-2 w-[1.5px] bg-sol-border/10" />
 
-        <ul className="space-y-1">
+        <ul className="space-y-3">
           {toc.map((item) => (
             <li
               key={item.id}
-              style={{ paddingLeft: `${(item.level - 2) * 16}px` }}
+              style={{ paddingLeft: `${(item.level - 2) * 12}px` }}
               className="relative"
             >
               <a
                 href={`#${item.id}`}
                 onClick={(e) => handleClick(e, item.id)}
-                className={`group flex items-center py-1.5 text-sm transition-all duration-300 pl-4
+                className={`group flex items-center py-1 text-sm transition-all duration-500 pl-5
                   ${activeId === item.id
-                    ? "text-sol-accent font-medium translate-x-1"
+                    ? "text-sol-accent font-bold translate-x-1"
                     : "text-sol-muted hover:text-sol-text hover:translate-x-1"}
                 `}
               >
                 {activeId === item.id && (
-                  <div className="absolute left-[1px] w-1 h-4 bg-sol-accent rounded-full animate-in fade-in slide-in-from-left-1 duration-300" />
+                  <div className="absolute left-[1px] w-[3px] h-4 bg-sol-accent rounded-full shadow-[0_0_8px_rgba(38,139,210,0.5)] animate-in fade-in slide-in-from-left-1 duration-500" />
                 )}
 
-                <span className="truncate">{item.text}</span>
+                <span className="truncate leading-relaxed">{item.text}</span>
               </a>
             </li>
           ))}

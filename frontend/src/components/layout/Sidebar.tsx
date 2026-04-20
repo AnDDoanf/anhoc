@@ -150,6 +150,11 @@ export default function Sidebar() {
 
   const getGradeKey = (subject: string, grade: string) => `${subject}:${grade}`;
 
+  const toggleGrade = (subject: string, grade: string) => {
+    const gradeKey = getGradeKey(subject, grade);
+    setExpandedGrades((current) => ({ ...current, [gradeKey]: !current[gradeKey] }));
+  };
+
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
 
@@ -167,11 +172,6 @@ export default function Sidebar() {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, [lastScrollY]);
-
-  const toggleGrade = (subject: string, grade: string) => {
-    const gradeKey = getGradeKey(subject, grade);
-    setExpandedGrades((current) => ({ ...current, [gradeKey]: !current[gradeKey] }));
-  };
 
   const toggleSidebar = () => {
     const newState = !isCollapsed;
@@ -205,10 +205,10 @@ export default function Sidebar() {
 
       <div className={`transition-all duration-500 ease-in-out w-0 ${isCollapsed ? "md:w-20" : "md:w-64"}`}>
         <aside
-          className={`h-[100dvh] border-r border-sol-border/30 bg-sol-surface flex flex-col transition-all duration-500 ease-in-out z-50
+          className={`h-screen border-r border-sol-border/30 bg-sol-surface flex flex-col transition-all duration-500 ease-in-out z-50
           ${isMobile
             ? `fixed inset-y-0 left-0 w-72 shadow-2xl ${isMobileOpen ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0 pointer-events-none"}`
-            : `sticky top-0 w-full sticky-sidebar`}
+            : `sticky top-0 w-full`}
         `}
         >
           {/* Sidebar Header */}
