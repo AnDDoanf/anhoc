@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations, useLocale } from "next-intl";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { lessonService } from "@/services/lessonService";
 import { testService } from "@/services/testService";
 import PracticeCard from "@/components/feature/PracticeCard";
@@ -17,7 +17,7 @@ interface AvailableLesson {
   title_en: string;
   title_vi: string;
   grade?: {
-    id: string;
+    id: string | number;
     title_en: string;
     title_vi: string;
   };
@@ -75,28 +75,34 @@ export default function PracticePage() {
   };
 
   // Derive Options
-  const gradeOptions = Array.from(
-    new Map(
-      availableLessons
-        .filter((l) => l.grade)
-        .map((l) => [
-          l.grade!.id,
-          { id: l.grade!.id, title: locale === "vi" ? l.grade!.title_vi : l.grade!.title_en }
-        ])
-    ).values()
-  ).sort((a, b) => a.title.localeCompare(b.title));
+  const gradeOptions = useMemo(() => {
+    return Array.from(
+      new Map(
+        availableLessons
+          .filter((l: AvailableLesson) => l.grade)
+          .map((l: AvailableLesson) => [
+            String(l.grade!.id),
+            { id: String(l.grade!.id), title: locale === "vi" ? l.grade!.title_vi : l.grade!.title_en }
+          ])
+      ).values()
+    ).sort((a, b) => a.title.localeCompare(b.title));
+  }, [availableLessons, locale]);
 
-  const lessonOptions = availableLessons
-    .map((l) => ({
-      id: l.id,
-      title: locale === "vi" ? l.title_vi : l.title_en,
-      gradeId: l.grade?.id || "other"
-    }))
-    .sort((a, b) => a.title.localeCompare(b.title));
+  const lessonOptions = useMemo(() => {
+    return availableLessons
+      .map((l: AvailableLesson) => ({
+        id: l.id,
+        title: locale === "vi" ? l.title_vi : l.title_en,
+        gradeId: l.grade?.id ? String(l.grade.id) : "other"
+      }))
+      .sort((a, b) => a.title.localeCompare(b.title));
+  }, [availableLessons, locale]);
 
-  const visibleLessonOptions = lessonOptions.filter(
-    (l) => gradeIdFilter === "all" || l.gradeId === gradeIdFilter
-  );
+  const visibleLessonOptions = useMemo(() => {
+    return lessonOptions.filter(
+      (l) => gradeIdFilter === "all" || l.gradeId === gradeIdFilter
+    );
+  }, [lessonOptions, gradeIdFilter]);
 
   // Reset lesson filter if grade changes
   useEffect(() => {
@@ -108,29 +114,33 @@ export default function PracticePage() {
   }, [gradeIdFilter, lessonIdFilter, lessonOptions]);
 
   // Filter Logic
-  const filteredLessons = availableLessons.filter((lesson) => {
-    if (gradeIdFilter !== "all" && lesson.grade?.id !== gradeIdFilter) return false;
-    if (lessonIdFilter !== "all" && lesson.id !== lessonIdFilter) return false;
-    
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      const title = (locale === "vi" ? lesson.title_vi : lesson.title_en).toLowerCase();
-      const gradeTitle = (locale === "vi" ? lesson.grade?.title_vi : lesson.grade?.title_en) ?? "";
-      if (!title.includes(q) && !gradeTitle.toLowerCase().includes(q)) return false;
-    }
-    return true;
-  });
+  const filteredLessons = useMemo(() => {
+    return availableLessons.filter((lesson: AvailableLesson) => {
+      if (gradeIdFilter !== "all" && String(lesson.grade?.id) !== gradeIdFilter) return false;
+      if (lessonIdFilter !== "all" && String(lesson.id) !== lessonIdFilter) return false;
+      
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const title = (locale === "vi" ? lesson.title_vi : lesson.title_en).toLowerCase();
+        const gradeTitle = (locale === "vi" ? lesson.grade?.title_vi : lesson.grade?.title_en) ?? "";
+        if (!title.includes(q) && !gradeTitle.toLowerCase().includes(q)) return false;
+      }
+      return true;
+    });
+  }, [availableLessons, gradeIdFilter, lessonIdFilter, searchQuery, locale]);
 
   // Group practice data by grade (using filtered results)
-  const groupedData = filteredLessons.reduce((acc, curr) => {
-    const gradeId = curr.grade?.id || "other";
-    if (!acc[gradeId]) acc[gradeId] = {
-      title: locale === "vi" ? curr.grade?.title_vi : curr.grade?.title_en,
-      lessons: []
-    };
-    acc[gradeId].lessons.push(curr);
-    return acc;
-  }, {} as Record<string, { title?: string, lessons: AvailableLesson[] }>);
+  const groupedData = useMemo(() => {
+    return filteredLessons.reduce((acc: Record<string, { title?: string, lessons: AvailableLesson[] }>, curr: AvailableLesson) => {
+      const gradeId = curr.grade?.id ? String(curr.grade.id) : "other";
+      if (!acc[gradeId]) acc[gradeId] = {
+        title: locale === "vi" ? curr.grade?.title_vi : curr.grade?.title_en,
+        lessons: []
+      };
+      acc[gradeId].lessons.push(curr);
+      return acc;
+    }, {} as Record<string, { title?: string, lessons: AvailableLesson[] }>);
+  }, [filteredLessons, locale]);
 
   if (loading) {
     return (
