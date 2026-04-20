@@ -5,9 +5,9 @@
   "main": "server.ts",
 
   "scripts": {
-    "dev": "tsx watch server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "dev": "tsx watch server.ts",
 
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
