@@ -5,14 +5,14 @@
   "main": "server.ts",
 
   "scripts": {
-    "build": "prisma generate",
+    "build": "node ./node_modules/prisma/build/index.js generate",
     "start": "tsx server.ts",
     "dev": "tsx watch server.ts",
 
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:reset": "prisma migrate reset",
-    "prisma:seed": "prisma db seed"
+    "prisma:generate": "node ./node_modules/prisma/build/index.js generate",
+    "prisma:migrate": "node ./node_modules/prisma/build/index.js migrate dev",
+    "prisma:reset": "node ./node_modules/prisma/build/index.js migrate reset",
+    "prisma:seed": "node ./node_modules/prisma/build/index.js db seed"
   },
 
   "dependencies": {
