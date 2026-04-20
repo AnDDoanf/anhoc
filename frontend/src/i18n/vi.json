@@ -66,7 +66,6 @@
     "passwordError": "Đổi mật khẩu thất bại. Vui lòng kiểm tra mật khẩu hiện tại."
   },
   "Sidebar": {
-    "backToGrade": "Quay lại Lớp",
     "learning": "Học tập",
     "practice": "Luyện tập",
     "achievements": "Thành tích",
@@ -150,6 +149,7 @@
     }
   },
   "Learning": {
+    "backToGrade": "Quay lại Lớp",
     "title": "Trung tâm Học tập",
     "subtitle": "Khám phá các bài học và làm chủ những kiến thức mới ngay hôm nay.",
     "viewLesson": "Bắt đầu Học",
