@@ -3,12 +3,12 @@ import express, { type Application, type Request, type Response, type NextFuncti
 import cors from 'cors';
 import prisma from './lib/db.ts';
 
-import authRoutes from './routes/auth';
-import lessonRoutes from './routes/lessons';
-import testRoutes from './routes/tests';
-import adminRoutes from './routes/admin';
-import achievementRoutes from './routes/achievements';
-import { seedAchievements } from './services/achievementService';
+import authRoutes from './routes/auth.ts';
+import lessonRoutes from './routes/lessons.ts';
+import testRoutes from './routes/tests.ts';
+import adminRoutes from './routes/admin.ts';
+import achievementRoutes from './routes/achievements.ts';
+import { seedAchievements } from './services/achievementService.ts';
 
 const app: Application = express();
 
