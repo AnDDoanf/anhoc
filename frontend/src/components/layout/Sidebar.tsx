@@ -193,7 +193,7 @@ export default function Sidebar() {
 
       <div className={`transition-all duration-500 ease-in-out w-0 ${isCollapsed ? "md:w-20" : "md:w-64"}`}>
         <aside
-          className={`h-screen border-r border-sol-border/30 bg-sol-surface flex flex-col transition-all duration-500 ease-in-out z-50
+          className={`pb-20 md:pb-10 h-screen border-r border-sol-border/30 bg-sol-surface flex flex-col transition-all duration-500 ease-in-out z-50
           ${isMobile
               ? `fixed pt-16 inset-y-0 left-0 w-72 shadow-2xl ${isMobileOpen ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0 pointer-events-none"}`
               : `sticky top-0 w-full`}
