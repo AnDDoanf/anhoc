@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
 import LanguageToggle from "../ui/LanguageToggle";
@@ -12,9 +12,27 @@ export default function SettingBar() {
   const t = useTranslations("Settings");
   const [isOpen, setIsOpen] = useState(false);
   const { user, logout } = useAuth();
+  
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY > lastScrollY && currentScrollY > 50) {
+        setIsVisible(false);
+      } else {
+        setIsVisible(true);
+      }
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [lastScrollY]);
 
   return (
-    <div className="fixed top-4 right-6 z-50">
+    <div className={`fixed top-4 right-6 z-50 transition-all duration-300 ${isVisible || isOpen ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none"}`}>
       <div className="relative flex flex-col items-end">
         <button
 
@@ -22,7 +40,7 @@ export default function SettingBar() {
           className={`flex items-center gap-3 p-1.5 pr-3 hover:cursor-pointer rounded-full border transition-all duration-300 shadow-sm z-30 relative
             ${isOpen
               ? "bg-sol-surface border-sol-accent shadow-lg ring-4 ring-sol-accent/5"
-              : "bg-sol-surface border-sol-border/30 hover:border-sol-accent"
+              : "bg-sol-surface/80 backdrop-blur-md border-sol-border/30 hover:border-sol-accent"
             }`}
         >
           <div
