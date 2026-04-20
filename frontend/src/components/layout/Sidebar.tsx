@@ -55,6 +55,18 @@ export default function Sidebar() {
     setIsMobileOpen(false);
   }, [pathname]);
 
+  // Lock body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (isMobile && isMobileOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMobile, isMobileOpen]);
+
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -193,14 +205,14 @@ export default function Sidebar() {
 
       <div className={`transition-all duration-500 ease-in-out w-0 ${isCollapsed ? "md:w-20" : "md:w-64"}`}>
         <aside
-          className={`pb-20 md:pb-10 h-screen border-r border-sol-border/30 bg-sol-surface flex flex-col transition-all duration-500 ease-in-out z-50
+          className={`h-[100dvh] border-r border-sol-border/30 bg-sol-surface flex flex-col transition-all duration-500 ease-in-out z-50
           ${isMobile
-              ? `fixed pt-16 inset-y-0 left-0 w-72 shadow-2xl ${isMobileOpen ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0 pointer-events-none"}`
-              : `sticky top-0 w-full`}
+            ? `fixed inset-y-0 left-0 w-72 shadow-2xl ${isMobileOpen ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0 pointer-events-none"}`
+            : `sticky top-0 w-full sticky-sidebar`}
         `}
         >
           {/* Sidebar Header */}
-          <div className={`flex items-center p-6 pb-2 transition-all duration-500 overflow-hidden ${isCollapsed ? "justify-center px-0" : "justify-between"}`}>
+          <div className={`flex items-center p-6 pb-2 transition-all duration-500 overflow-hidden ${isMobile ? "pt-16" : ""} ${isCollapsed ? "justify-center px-0" : "justify-between"}`}>
             <Link href="/" className="group flex items-center gap-2 whitespace-nowrap" prefetch={false}>
               <div className="flex-shrink-0">
                 <Image src={logo} alt="Logo" className="w-16 h-8 object-contain" />
@@ -239,7 +251,7 @@ export default function Sidebar() {
             </button>
           )}
 
-          <div className={`flex-1 overflow-y-auto p-2 md:p-4 space-y-8 scrollbar-hide`}>
+          <div className={`flex-1 overflow-y-auto p-2 md:p-4 pb-24 md:pb-10 space-y-8 scrollbar-hide`}>
             {/* Main Navigation */}
             <div className="space-y-1">
               <Can I="manage" a="lesson">
