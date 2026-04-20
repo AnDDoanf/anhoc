@@ -149,6 +149,7 @@
     }
   },
   "Learning": {
+    "backToGrade": "Back to Grade",
     "title": "Learning Hub",
     "subtitle": "Dive into your lessons and master new concepts today.",
     "viewLesson": "Start Learning",
