@@ -7,11 +7,13 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import Image from "next/image";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
   const t = useTranslations("Login");
   const { login, error: authError } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Define schema inside to use the 't' function for validation messages
   const loginSchema = z.object({
@@ -76,13 +78,20 @@ export default function LoginPage() {
             </div>
 
             {/* Password */}
-            <div>
+            <div className="relative group/pass">
               <input
                 {...register("password")}
-                type="password"
+                type={showPassword ? "text" : "password"}
                 placeholder={t("password_placeholder")}
-                className="w-full px-4 py-3 rounded-lg border border-sol-border/50 bg-sol-bg text-sol-text placeholder-sol-muted/60 focus:outline-none focus:ring-2 focus:ring-sol-accent/50 focus:border-sol-accent transition-all"
+                className="w-full px-4 py-3 rounded-lg border border-sol-border/50 bg-sol-bg text-sol-text placeholder-sol-muted/60 focus:outline-none focus:ring-2 focus:ring-sol-accent/50 focus:border-sol-accent transition-all pr-12"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-sol-muted hover:text-sol-accent transition-colors duration-200"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
               {errors.password && (
                 <p className="text-xs text-sol-orange mt-1">{errors.password.message}</p>
               )}

@@ -45,8 +45,26 @@ export const authorize = (action: string, resource: string) => {
 };
 
 export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
-  if ((req as any).user.role !== 'admin') {
+  if (!(req as any).user || (req as any).user.role !== 'admin') {
     return res.status(403).json({ message: "Admin access required" });
   }
   next();
+};
+
+export const selfOrAdmin = (idParam = 'id') => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const user = (req as any).user;
+    if (!user) return res.status(401).json({ message: 'Unauthorized' });
+
+    if (user.role === 'admin') return next();
+
+    const targetId = req.params[idParam] as string;
+    if (user.id === targetId) {
+      return next();
+    }
+
+    return res.status(403).json({
+      message: 'Forbidden: You can only access your own data',
+    });
+  };
 };

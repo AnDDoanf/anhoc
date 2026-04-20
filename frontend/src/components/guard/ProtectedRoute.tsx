@@ -8,7 +8,7 @@ import { useTranslations } from "next-intl";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: string;
+  requiredRole?: string | string[];
 }
 
 export default function ProtectedRoute({
@@ -63,16 +63,39 @@ export default function ProtectedRoute({
     );
   }
 
-  // 6. Role Validation
+  // 6. Role & Permission Validation
   const userRole = user?.role?.toLowerCase();
-  const targetRole = requiredRole?.toLowerCase();
+  
+  const isRoleAllowed = () => {
+    if (!requiredRole) return true;
+    
+    const requiredRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+    const normalizedRequiredRoles = requiredRoles.map(r => r.toLowerCase());
+    
+    // Check direct role match
+    if (normalizedRequiredRoles.includes(userRole)) return true;
 
-  if (targetRole && userRole !== targetRole) {
+    // Special Case: "student" role requirement
+    // If 'student' is required, allow any role that has read:lesson permission
+    // This allows custom student roles (like isom_student) that have been given student permissions
+    if (normalizedRequiredRoles.includes("student")) {
+       const permissions = user.permissions || {};
+       const lessonPerms = permissions["lesson"] || [];
+       if (lessonPerms.includes("read") || lessonPerms.includes("manage")) return true;
+    }
+
+    return false;
+  };
+
+  if (!isRoleAllowed()) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen text-gray-900">
         <h1 className="text-2xl font-bold text-red-600">{t("accessDenied")}</h1>
         <p className="mt-2 text-gray-600">
-          {t("requiredFound", { required: requiredRole ?? "", found: user.role ?? "" })}
+          {t("requiredFound", { 
+            required: Array.isArray(requiredRole) ? requiredRole.join(", ") : (requiredRole ?? ""), 
+            found: user.role ?? "" 
+          })}
         </p>
         <button 
           onClick={() => router.push("/")}

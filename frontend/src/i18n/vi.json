@@ -20,7 +20,15 @@
     "backToHome": "Quay về trang chủ",
     "footerCopyright": "© 2026 Your App",
     "welcomeBack": "Chào mừng trở lại, {email}!",
-    "dashboardPlaceholder": "Nội dung tổng quan của bạn sẽ hiển thị ở đây."
+    "dashboardPlaceholder": "Nội dung tổng quan của bạn sẽ hiển thị ở đây.",
+    "dashboard": "Tổng quan",
+    "statistics": "Thống kê",
+    "activity": "Hoạt động",
+    "level": "Cấp độ",
+    "xp": "XP",
+    "lessonsCompleted": "Bài học hoàn thành",
+    "averageScore": "Điểm trung bình",
+    "xpEarned": "XP đạt được"
   },
   "Difficulty": {
     "Beginner": "Cơ bản",
@@ -45,7 +53,17 @@
   "Settings": {
     "appearance": "Giao diện",
     "accountSettings": "Cài đặt tài khoản",
-    "signOut": "Đăng xuất"
+    "signOut": "Đăng xuất",
+    "userSettings": "Cài đặt người dùng",
+    "modifyPassword": "Đổi mật khẩu",
+    "currentPassword": "Mật khẩu hiện tại",
+    "newPassword": "Mật khẩu mới",
+    "confirmPassword": "Xác nhận mật khẩu",
+    "updatePassword": "Cập nhật mật khẩu",
+    "updating": "Đang cập nhật...",
+    "passwordMismatch": "Mật khẩu mới không khớp",
+    "passwordSuccess": "Đổi mật khẩu thành công",
+    "passwordError": "Đổi mật khẩu thất bại. Vui lòng kiểm tra mật khẩu hiện tại."
   },
   "Sidebar": {
     "learning": "Học tập",

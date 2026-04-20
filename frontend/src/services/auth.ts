@@ -9,6 +9,7 @@ export interface LoginResponse {
   user: {
     id: string;
     email: string;
+    username?: string;
     role: string;
     // Updated to match the grouped object structure we created earlier
     permissions: Record<string, string[]>;
@@ -64,6 +65,16 @@ export const authService = {
 
   getProfile: async () => {
     const response = await api.get("/auth/profile");
+    return response.data;
+  },
+
+  updatePassword: async (data: any) => {
+    const response = await api.patch("/auth/password", data);
+    return response.data;
+  },
+
+  getActivity: async () => {
+    const response = await api.get("/auth/activity");
     return response.data;
   }
 };

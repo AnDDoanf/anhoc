@@ -180,4 +180,74 @@ router.get('/profile', authenticate, async (req: Request, res: Response) => {
   }
 });
 
-export default router;
+// --- 5. Update Password ---
+router.patch('/password', authenticate, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.id;
+    const { currentPassword, newPassword } = req.body;
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
+    if (!isMatch) {
+      return res.status(400).json({ error: "Incorrect current password" });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(newPassword, salt);
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password_hash: passwordHash }
+    });
+
+    res.json({ message: "Password updated successfully" });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update password" });
+  }
+});
+
+// --- 6. Get Activity Stats (for chart) ---
+router.get('/activity', authenticate, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.id;
+    
+    // Get last 7 days of XP logs
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const xpLogs = await prisma.xpLog.findMany({
+      where: {
+        user_id: userId,
+        occurred_at: { gte: sevenDaysAgo }
+      },
+      orderBy: { occurred_at: 'asc' }
+    });
+
+    // Group by date
+    const activity = xpLogs.reduce((acc: Record<string, number>, log) => {
+      const date = log.occurred_at.toISOString().split('T')[0];
+      acc[date] = (acc[date] || 0) + log.amount;
+      return acc;
+    }, {});
+
+    // Ensure all 7 days are represented
+    const result = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      result.push({
+        date: dateStr,
+        xp: activity[dateStr] || 0
+      });
+    }
+
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch activity" });
+  }
+});
+
+export default router;

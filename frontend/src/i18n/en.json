@@ -20,7 +20,15 @@
     "backToHome": "Back to Home",
     "footerCopyright": "© 2026 Your App"
     ,"welcomeBack": "Welcome back, {email}!",
-    "dashboardPlaceholder": "Your dashboard content goes here."
+    "dashboardPlaceholder": "Your dashboard content goes here.",
+    "dashboard": "Dashboard",
+    "statistics": "Statistics",
+    "activity": "Activity",
+    "level": "Level",
+    "xp": "XP",
+    "lessonsCompleted": "Lessons Completed",
+    "averageScore": "Avg Score",
+    "xpEarned": "XP Earned"
   },
   "Difficulty": {
     "Beginner": "Beginner",
@@ -45,7 +53,17 @@
   "Settings": {
     "appearance": "Appearance",
     "accountSettings": "Account Settings",
-    "signOut": "Sign Out"
+    "signOut": "Sign Out",
+    "userSettings": "User Settings",
+    "modifyPassword": "Modify Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm Password",
+    "updatePassword": "Update Password",
+    "updating": "Updating...",
+    "passwordMismatch": "New passwords do not match",
+    "passwordSuccess": "Password updated successfully",
+    "passwordError": "Failed to update password. Check your current password."
   },
   "Sidebar": {
     "learning": "Learning",

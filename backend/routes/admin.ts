@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import prisma from '../lib/db';
-import { authenticate, authorize } from '../middleware/auth';
+import { authenticate, authorize, selfOrAdmin } from '../middleware/auth';
 
 const router = Router();
 
@@ -242,12 +242,12 @@ router.patch('/users/:id/role', authenticate, authorize('manage', 'user'), async
     if (!Number.isInteger(roleId)) return res.status(400).json({ error: 'Invalid role id' });
 
     const user = await prisma.user.update({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
       data: { role_id: roleId },
       select: userSelect
     });
 
-    res.json(serializeUser(user));
+    res.json(serializeUser(user as any));
   } catch (error: any) {
     if (error?.code === 'P2025') {
       return res.status(404).json({ error: 'User or role not found' });
@@ -283,9 +283,9 @@ router.get('/users', authenticate, authorize('manage', 'user'), async (req, res)
   }
 });
 
-router.get('/users/:id/insights', authenticate, authorize('manage', 'user'), async (req, res) => {
+router.get('/users/:id/insights', authenticate, selfOrAdmin('id'), async (req, res) => {
   try {
-    const userId = req.params.id;
+    const userId = req.params.id as string;
 
     const [
       user,
@@ -299,13 +299,13 @@ router.get('/users/:id/insights', authenticate, authorize('manage', 'user'), asy
       prisma.user.findUnique({
         where: { id: userId },
         select: userSelect
-      }),
+      }) as any,
       prisma.testAttempt.aggregate({
         where: { user_id: userId },
         _count: { id: true },
         _avg: { total_score: true },
         _max: { total_score: true }
-      }),
+      }) as any,
       prisma.testAttempt.findFirst({
         where: { user_id: userId, total_score: { not: null } },
         orderBy: { total_score: 'desc' },
@@ -318,7 +318,7 @@ router.get('/users/:id/insights', authenticate, authorize('manage', 'user'), asy
             }
           }
         }
-      }),
+      }) as any,
       prisma.testAttempt.findMany({
         where: { user_id: userId },
         take: 8,
@@ -367,7 +367,7 @@ router.get('/users/:id/insights', authenticate, authorize('manage', 'user'), asy
             }
           }
         }
-      }),
+      }) as any,
       prisma.xpLog.findMany({
         where: { user_id: userId },
         take: 6,
@@ -378,7 +378,7 @@ router.get('/users/:id/insights', authenticate, authorize('manage', 'user'), asy
           reason: true,
           occurred_at: true
         }
-      })
+      }) as any
     ]);
 
     if (!user) {
@@ -388,35 +388,35 @@ router.get('/users/:id/insights', authenticate, authorize('manage', 'user'), asy
     res.json({
       user: serializeUser(user),
       summary: {
-        attempts: attemptSummary._count.id,
-        avgScore: Number(attemptSummary._avg.total_score || 0),
-        bestScore: Number(attemptSummary._max.total_score || 0),
-        completedLessons: user.student_stats?.lessons_completed || 0,
-        totalXp: user.student_stats?.total_xp || 0,
-        level: user.student_stats?.level || 1,
-        lastActive: user.student_stats?.last_active || null
+        attempts: (attemptSummary as any)._count.id,
+        avgScore: Number((attemptSummary as any)._avg.total_score || 0),
+        bestScore: Number((attemptSummary as any)._max.total_score || 0),
+        completedLessons: (user as any).student_stats?.lessons_completed || 0,
+        totalXp: (user as any).student_stats?.total_xp || 0,
+        level: (user as any).student_stats?.level || 1,
+        lastActive: (user as any).student_stats?.last_active || null
       },
       bestAttempt: bestAttempt
         ? {
-            id: bestAttempt.id,
-            score: Number(bestAttempt.total_score || 0),
-            started_at: bestAttempt.started_at,
-            completed_at: bestAttempt.completed_at,
-            is_practice: bestAttempt.is_practice,
-            lesson: bestAttempt.lesson
+            id: (bestAttempt as any).id,
+            score: Number((bestAttempt as any).total_score || 0),
+            started_at: (bestAttempt as any).started_at,
+            completed_at: (bestAttempt as any).completed_at,
+            is_practice: (bestAttempt as any).is_practice,
+            lesson: (bestAttempt as any).lesson
           }
         : null,
-      recentAttempts: recentAttempts.map((attempt) => ({
+      recentAttempts: (recentAttempts as any[]).map((attempt: any) => ({
         id: attempt.id,
         total_score: Number(attempt.total_score || 0),
         is_completed: attempt.is_completed,
         is_practice: attempt.is_practice,
         started_at: attempt.started_at,
         completed_at: attempt.completed_at,
-        question_count: attempt._count.snapshots,
+        question_count: attempt._count?.snapshots || 0,
         lesson: attempt.lesson
       })),
-      mastery: mastery.map((record) => ({
+      mastery: (mastery as any[]).map((record: any) => ({
         lesson_id: record.lesson_id,
         mastery_score: Number(record.mastery_score || 0),
         total_study_time: record.total_study_time,
@@ -425,9 +425,9 @@ router.get('/users/:id/insights', authenticate, authorize('manage', 'user'), asy
         last_activity_at: record.last_activity_at,
         lesson: record.lesson
       })),
-      achievements: achievements.map((record) => ({
+      achievements: (achievements as any[]).map((record: any) => ({
         earned_at: record.earned_at,
-        achievement: record.achievement
+        achievement: record.achievement || record.achievement_id
       })),
       xpLogs
     });
@@ -468,26 +468,39 @@ router.post('/users', authenticate, authorize('manage', 'user'), async (req, res
   }
 });
 
-router.patch('/users/:id', authenticate, authorize('manage', 'user'), async (req, res) => {
+router.patch('/users/:id', authenticate, selfOrAdmin('id'), async (req, res) => {
   try {
     const payload = parseUserPayload(req.body, false);
     if ('error' in payload) return res.status(400).json({ error: payload.error });
 
+    const isAdmin = (req as any).user.role === 'admin';
     const roleRecord = await prisma.role.findUnique({ where: { name: payload.roleName } });
     if (!roleRecord) return res.status(400).json({ error: 'Invalid role specified' });
+
+    // Security check: Only admins can change roles
+    const existingUser = await prisma.user.findUnique({ where: { id: req.params.id as string } });
+    if (!existingUser) return res.status(404).json({ error: 'User not found' });
+
+    if (!isAdmin && existingUser.role_id !== roleRecord.id) {
+      return res.status(403).json({ error: "You are not allowed to change your own role. Contact an administrator." });
+    }
 
     const data: any = {
       username: payload.username,
       email: payload.email,
-      role_id: roleRecord.id
     };
+
+    // Only update role if user is admin
+    if (isAdmin) {
+      data.role_id = roleRecord.id;
+    }
 
     if (payload.password) {
       data.password_hash = await bcrypt.hash(payload.password, 10);
     }
 
     const user = await prisma.user.update({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
       data,
       select: userSelect
     });
@@ -518,9 +531,9 @@ router.delete('/users/:id', authenticate, authorize('manage', 'user'), async (re
     }
 
     await prisma.$transaction([
-      prisma.auditLog.deleteMany({ where: { user_id: req.params.id } }),
-      prisma.lesson.updateMany({ where: { created_by: req.params.id }, data: { created_by: null } }),
-      prisma.user.delete({ where: { id: req.params.id } })
+      prisma.auditLog.deleteMany({ where: { user_id: req.params.id as string } }),
+      prisma.lesson.updateMany({ where: { created_by: req.params.id as string }, data: { created_by: null } }),
+      prisma.user.delete({ where: { id: req.params.id as string } })
     ]);
 
     res.status(204).send();

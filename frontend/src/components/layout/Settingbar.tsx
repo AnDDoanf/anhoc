@@ -35,12 +35,20 @@ export default function SettingBar() {
             <UserCog size={18} />
           </div>
 
-          <span
-            className={`text-sm font-medium transition-colors ${isOpen ? "text-sol-text" : "text-sol-muted"
-              }`}
-          >
-            {user?.email?.split("@")[0]}
-          </span>
+          <div className="flex flex-col items-start mr-1">
+            <span
+              className={`text-xs font-black uppercase tracking-tighter transition-colors ${isOpen ? "text-sol-accent" : "text-sol-muted"
+                }`}
+            >
+              {user?.role || "Student"}
+            </span>
+            <span
+              className={`text-sm font-bold transition-colors ${isOpen ? "text-sol-text" : "text-sol-text/80"
+                }`}
+            >
+              {user?.username || user?.email?.split("@")[0]}
+            </span>
+          </div>
           <ChevronDown
             size={16}
             className={`transition-transform duration-300 ${isOpen ? "rotate-180 text-sol-accent" : "text-sol-muted"
@@ -55,7 +63,7 @@ export default function SettingBar() {
               onClick={() => setIsOpen(false)}
             />
 
-            <div className="absolute top-0 right-0 w-72 bg-sol-surface border border-sol-accent/20 rounded-2xl shadow-2xl z-20 origin-top-right animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
+            <div className="absolute top-15 right-0 w-72 bg-sol-surface border border-sol-accent/20 rounded-2xl shadow-2xl z-20 origin-top-right animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
 
               <div className="p-3 pt-0 flex flex-col gap-1">
                 <div className="space-y-3 px-1 py-2">
@@ -84,7 +92,7 @@ export default function SettingBar() {
                       size={18}
                       className="text-sol-muted group-hover/item:text-sol-accent transition-colors"
                     />
-                    <span className="flex-1">{t("accountSettings")}</span>
+                    <span className="flex-1 font-bold">{t("userSettings")}</span>
                   </Link>
 
                   <button
