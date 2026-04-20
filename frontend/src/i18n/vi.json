@@ -623,5 +623,22 @@
       "social": "Khám phá",
       "recovery": "Bền bỉ"
     }
+  },
+  "Dashboard": {
+    "studentHub": "Trung tâm Học viên",
+    "welcomeBackMessage": "Chào mừng trở lại, {email}!",
+    "readyMessage": "Sẵn sàng cho cuộc phiêu lưu học tập tiếp theo chưa?",
+    "continueLearning": "Tiếp tục học tập",
+    "viewBadges": "Xem huy hiệu",
+    "activityDescription": "Hiệu suất học tập của bạn trong 7 ngày qua",
+    "last7Days": "7 ngày qua",
+    "quickTips": "Mẹo nhanh",
+    "dailyStreak": "Chuỗi ngày học tập",
+    "dailyStreakDesc": "Hoàn thành một bài học mỗi ngày để duy trì hệ số nhân XP.",
+    "masteryFocus": "Tập trung thành thạo",
+    "masteryFocusDesc": "Xem lại bài học có điểm dưới 80% để tối ưu hóa kết quả.",
+    "newChallenges": "Thử thách mới",
+    "newChallengesDesc": "Các bài kiểm tra mới đã sẵn sàng trong lớp của bạn.",
+    "openPracticeHub": "Mở Trung tâm Luyện tập"
   }
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "@/hooks/useTheme";
 import { authService } from "@/services/auth";
 import ProtectedRoute from "@/components/guard/ProtectedRoute";
 import { useTranslations } from "next-intl";
@@ -28,7 +29,9 @@ import Link from "next/link";
 
 export default function UserHomePage() {
   const { user } = useAuth();
+  const { theme } = useTheme();
   const t = useTranslations("Common");
+  const dt = useTranslations("Dashboard");
   const [profile, setProfile] = useState<any>(null);
   const [activity, setActivity] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -90,27 +93,27 @@ export default function UserHomePage() {
             <div className="space-y-4">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sol-accent/10 border border-sol-accent/20 text-sol-accent text-sm font-black uppercase tracking-wider">
                 <Sparkles size={14} />
-                Student Hub
+                {dt("studentHub")}
               </div>
               <h1 className="text-4xl md:text-5xl font-black text-sol-text tracking-tight">
-                {t("welcomeBack", { email: user?.username || user?.email?.split("@")[0] || "" })}
+                {dt("welcomeBackMessage", { email: user?.username || user?.email?.split("@")[0] || "" })}
               </h1>
               <p className="text-lg text-sol-muted font-medium max-w-xl">
-                Ready to continue your learning journey? Check your progress and jump back into your lessons.
+                {dt("readyMessage")}
               </p>
               <div className="flex flex-wrap gap-4 pt-2">
                 <Link 
                   href="/student/learning"
                   className="px-6 py-3 bg-sol-accent text-sol-bg font-black rounded-2xl shadow-lg shadow-sol-accent/20 hover:opacity-90 active:scale-95 transition-all flex items-center gap-2"
                 >
-                  Continue Learning
+                  {dt("continueLearning")}
                   <ChevronRight size={18} />
                 </Link>
                 <Link 
                   href="/student/achievements"
                   className="px-6 py-3 bg-sol-bg text-sol-text border border-sol-border font-black rounded-2xl hover:bg-sol-surface active:scale-95 transition-all flex items-center gap-2"
                 >
-                  View Badges
+                  {dt("viewBadges")}
                   <Trophy size={18} />
                 </Link>
               </div>
@@ -123,7 +126,7 @@ export default function UserHomePage() {
                   <span className="text-4xl font-black text-sol-accent">{profile?.student_stats?.level || 1}</span>
                 </div>
                 <div className="absolute -bottom-1 -right-1 bg-sol-orange text-sol-bg text-[10px] font-black px-2 py-1 rounded-lg">
-                  LVL
+                  {t("level").toUpperCase().substring(0, 3)}
                 </div>
               </div>
               <div className="space-y-1">
@@ -170,28 +173,28 @@ export default function UserHomePage() {
                     <Clock className="text-sol-accent" size={24} />
                     {t("activity")}
                   </h2>
-                  <p className="text-sol-muted font-medium">Your learning performance over the last 7 days</p>
+                  <p className="text-sol-muted font-medium">{dt("activityDescription")}</p>
                 </div>
                 <div className="hidden sm:block px-4 py-2 bg-sol-bg rounded-xl border border-sol-border/30 text-sm font-bold text-sol-muted">
-                  Last 7 Days
+                  {dt("last7Days")}
                 </div>
              </div>
 
              <div className="h-[300px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={activity}>
+                  <AreaChart data={activity} key={theme || 'light'}>
                     <defs>
                       <linearGradient id="colorXp" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="var(--sol-accent)" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="var(--sol-accent)" stopOpacity={0}/>
+                        <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="var(--accent)" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--sol-border)" opacity={0.1} />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.1} />
                     <XAxis 
                       dataKey="date" 
                       axisLine={false} 
                       tickLine={false} 
-                      tick={{ fill: 'var(--sol-muted)', fontSize: 12, fontWeight: 700 }}
+                      tick={{ fill: 'var(--text-secondary)', fontSize: 12, fontWeight: 700 }}
                       tickFormatter={(value) => {
                         const date = new Date(value);
                         return date.toLocaleDateString(undefined, { weekday: 'short' });
@@ -200,22 +203,22 @@ export default function UserHomePage() {
                     <YAxis 
                       axisLine={false} 
                       tickLine={false} 
-                      tick={{ fill: 'var(--sol-muted)', fontSize: 12, fontWeight: 700 }}
+                      tick={{ fill: 'var(--text-secondary)', fontSize: 12, fontWeight: 700 }}
                     />
                     <Tooltip 
                       contentStyle={{ 
-                        backgroundColor: 'var(--sol-surface)', 
-                        border: '1px solid var(--sol-border)',
+                        backgroundColor: 'var(--bg-secondary)', 
+                        border: '1px solid var(--border)',
                         borderRadius: '1rem',
                         boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
                         fontWeight: 900
                       }}
-                      itemStyle={{ color: 'var(--sol-accent)' }}
+                      itemStyle={{ color: 'var(--accent)' }}
                     />
                     <Area 
                       type="monotone" 
                       dataKey="xp" 
-                      stroke="var(--sol-accent)" 
+                      stroke="var(--accent)" 
                       strokeWidth={4}
                       fillOpacity={1} 
                       fill="url(#colorXp)" 
@@ -231,13 +234,13 @@ export default function UserHomePage() {
             <div className="bg-sol-surface border border-sol-border/30 rounded-[2.5rem] p-8 shadow-xl h-full relative overflow-hidden">
               <h3 className="text-xl font-black text-sol-text mb-6 flex items-center gap-2">
                 <Trophy className="text-sol-orange" size={20} />
-                Quick Tips
+                {dt("quickTips")}
               </h3>
               <div className="space-y-6">
                 {[
-                  { title: "Daily Streak", desc: "Complete one lesson daily to maintain your XP multiplier.", icon: <Flame className="text-sol-orange" /> },
-                  { title: "Mastery Focus", desc: "Review lessons with score below 80% to maximize gains.", icon: <Target className="text-sol-blue" /> },
-                  { title: "New Challenges", desc: "New tests are available in your grade area.", icon: <Sparkles className="text-sol-accent" /> }
+                  { title: dt("dailyStreak"), desc: dt("dailyStreakDesc"), icon: <Flame className="text-sol-orange" /> },
+                  { title: dt("masteryFocus"), desc: dt("masteryFocusDesc"), icon: <Target className="text-sol-blue" /> },
+                  { title: dt("newChallenges"), desc: dt("newChallengesDesc"), icon: <Sparkles className="text-sol-accent" /> }
                 ].map((item, i) => (
                   <div key={i} className="flex gap-4 group cursor-default">
                     <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-sol-bg border border-sol-border/30 flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all">
@@ -255,7 +258,7 @@ export default function UserHomePage() {
                   href="/student/practice"
                   className="w-full py-4 bg-sol-bg border border-sol-border/30 text-sol-text font-black rounded-2xl hover:border-sol-accent hover:text-sol-accent transition-all flex items-center justify-center gap-2 group"
                 >
-                  Open Practice Hub
+                  {dt("openPracticeHub")}
                   <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
                 </Link>
               </div>

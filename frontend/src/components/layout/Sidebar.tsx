@@ -218,6 +218,14 @@ export default function Sidebar() {
               isCollapsed={isCollapsed}
             />
           </Can>
+          
+          <NavItem
+            href="/student"
+            label={t("dashboard")}
+            icon={<LayoutDashboard size={18} />}
+            pathname={pathname}
+            isCollapsed={isCollapsed}
+          />
           <NavItem
             href="/student/learning"
             label={t("learning")}
@@ -351,7 +359,7 @@ function NavItem({
   pathname: string;
   isCollapsed: boolean;
 }) {
-  const isActive = pathname === href || (href !== "/student/learning" && pathname.startsWith(href));
+  const isActive = pathname === href || (href !== "/" && href !== "/student" && pathname.startsWith(href));
 
   return (
     <Link

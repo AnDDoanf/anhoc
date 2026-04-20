@@ -11,19 +11,21 @@ export default function RootPage() {
   const { user, token } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
-    if (!token) {
-      router.push("/login");
+    // Wait for auth to be fully hydrated from localStorage/provider
+    const storedToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    
+    if (!token && !storedToken) {
+      router.replace("/login");
       return;
     }
 
     if (!user) return;
 
-    console.log("Redirecting based on role:", user.role);
-
     if (user.role === "admin") {
-      router.push("/admin/dashboard");
+      router.replace("/admin/dashboard");
     } else {
-      router.push("/student/learning");
+      // Redirect to the new student dashboard
+      router.replace("/student");
     }
   }, [token, user, router]);
 
