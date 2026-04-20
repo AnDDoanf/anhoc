@@ -1,6 +1,7 @@
 import Sidebar from "@/components/layout/Sidebar";
 import Footer from "@/components/layout/Footer";
 import Settingbar from "@/components/layout/Settingbar";
+import ScrollToTop from "@/components/ui/ScrollToTop";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -17,6 +18,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         </main>
         
         <Footer />
+        <ScrollToTop />
       </div>
     </div>
   );
