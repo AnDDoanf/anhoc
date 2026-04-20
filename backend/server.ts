@@ -13,14 +13,22 @@ import { seedAchievements } from './services/achievementService.ts';
 const app: Application = express();
 
 const PORT = process.env.SERVER_PORT || process.env.PORT || 5001;
-const defaultAllowedOrigins = ['http://localhost:5000'];
+const normalizeOrigin = (origin: string) => origin.replace(/\/+$/, '');
+const defaultAllowedOrigins = ['http://localhost:5000'].map(normalizeOrigin);
 const allowedOrigins = (process.env.CORS_ORIGINS || process.env.FRONTEND_URL || '')
   .split(',')
-  .map((origin) => origin.trim())
+  .map((origin) => normalizeOrigin(origin.trim()))
   .filter(Boolean);
+const corsOrigins = allowedOrigins.length > 0 ? allowedOrigins : defaultAllowedOrigins;
 
 app.use(cors({
-  origin: allowedOrigins.length > 0 ? allowedOrigins : defaultAllowedOrigins,
+  origin(origin, callback) {
+    if (!origin || corsOrigins.includes(normalizeOrigin(origin))) {
+      callback(null, true);
+      return;
+    }
+    callback(new Error(`Origin ${origin} is not allowed by CORS`));
+  },
   credentials: true,
 }));
 app.use(express.json()); 
