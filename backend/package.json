@@ -6,8 +6,8 @@
 
   "scripts": {
     "build": "node ./node_modules/prisma/build/index.js generate",
-    "start": "tsx server.ts",
-    "dev": "tsx watch server.ts",
+    "start": "node ./node_modules/tsx/dist/cli.mjs server.ts",
+    "dev": "node ./node_modules/tsx/dist/cli.mjs watch server.ts",
 
     "prisma:generate": "node ./node_modules/prisma/build/index.js generate",
     "prisma:migrate": "node ./node_modules/prisma/build/index.js migrate dev",
