@@ -279,6 +279,7 @@ model XpLog {
 model Achievement {
   id             String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   slug           String            @unique @db.VarChar(50)
+  theme_id       String?           @db.Uuid
   title_en       String
   title_vi       String
   description_en String            @default("")
@@ -286,9 +287,25 @@ model Achievement {
   category       String            @default("general") @db.VarChar(50)
   xp_reward      Int               @default(0)
   icon           String?           @db.VarChar(50)
+  theme          Theme?            @relation(fields: [theme_id], references: [id], onDelete: SetNull)
   users          UserAchievement[]
 
   @@map("achievements")
+}
+
+model Theme {
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug           String        @unique @db.VarChar(50)
+  title_en       String
+  title_vi       String
+  description_en String        @default("")
+  description_vi String        @default("")
+  preview_color  String?       @db.VarChar(20)
+  light_variables Json         @default("{}")
+  dark_variables  Json         @default("{}")
+  achievements   Achievement[]
+
+  @@map("themes")
 }
 
 model UserAchievement {

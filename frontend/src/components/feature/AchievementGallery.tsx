@@ -1,36 +1,76 @@
 "use client";
 
-import { Achievement, achievementService } from "@/services/achievementService";
+import { Achievement, achievementService, ThemeUnlock } from "@/services/achievementService";
 import { Loader2, Trophy } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import AchievementCard from "./AchievementCard";
 import Hero from "@/components/ui/Hero";
+import { APP_THEME_EVENT, applyStoredTheme, getStoredAppTheme, StoredAppTheme } from "@/lib/appTheme";
 
 export default function AchievementGallery() {
   const t = useTranslations("Achievements");
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [summary, setSummary] = useState({ total: 0, earned: 0 });
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [activeThemeSlug, setActiveThemeSlug] = useState<string>(() => getStoredAppTheme()?.slug || "default");
 
   useEffect(() => {
-    fetchAchievements();
+    setPage(1);
+    fetchAchievements(1, false, filter);
+  }, [filter]);
+
+  useEffect(() => {
+    const syncTheme = (event?: Event) => {
+      const customEvent = event as CustomEvent<{ theme?: StoredAppTheme | null }> | undefined;
+      setActiveThemeSlug(customEvent?.detail?.theme?.slug || getStoredAppTheme()?.slug || "default");
+    };
+
+    syncTheme();
+    window.addEventListener(APP_THEME_EVENT, syncTheme as EventListener);
+    return () => window.removeEventListener(APP_THEME_EVENT, syncTheme as EventListener);
   }, []);
 
-  const fetchAchievements = async () => {
+  const fetchAchievements = async (nextPage = 1, append = false, category = filter) => {
+    if (append) setLoadingMore(true);
+    else setLoading(true);
     try {
-      const data = await achievementService.getAll();
-      setAchievements(data);
+      const data = await achievementService.getAll({
+        page: nextPage,
+        pageSize: 10,
+        category,
+      });
+      setAchievements((current) => append ? [...current, ...data.items] : data.items);
+      setSummary(data.summary);
+      setHasMore(data.pagination.hasMore);
+      setPage(data.pagination.page);
     } catch (err) {
       console.error("Failed to load achievements", err);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
-  const categories = ["all", "progress", "performance", "streak", "time", "speed", "social", "recovery"];
-  const filtered = filter === "all" ? achievements : achievements.filter(a => a.category === filter);
-  const earnedCount = achievements.filter(a => a.earned).length;
+  const categories = ["all", "progress", "performance", "streak", "time", "speed", "social", "recovery", "special"];
+  const earnedCount = summary.earned;
+  const activateTheme = (theme: ThemeUnlock) => {
+    applyStoredTheme({
+      slug: theme.slug,
+      title_en: theme.title_en,
+      title_vi: theme.title_vi,
+      preview_color: theme.preview_color,
+      light_variables: theme.light_variables,
+      dark_variables: theme.dark_variables,
+    });
+  };
+  const clearTheme = () => {
+    applyStoredTheme(null);
+  };
 
   if (loading) {
     return (
@@ -71,7 +111,7 @@ export default function AchievementGallery() {
               </div>
               <div className="h-16 w-[2px] bg-sol-accent/20 rounded-full" />
               <div className="text-center">
-                <div className="text-4xl md:text-6xl font-black text-sol-text tracking-tighter mb-1">{achievements.length}</div>
+                <div className="text-4xl md:text-6xl font-black text-sol-text tracking-tighter mb-1">{summary.total}</div>
                 <div className="text-[10px] font-black text-sol-muted uppercase tracking-[0.2em]">{t("total")}</div>
               </div>
            </div>
@@ -98,10 +138,28 @@ export default function AchievementGallery() {
 
       {/* Grid */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {filtered.map(a => (
-          <AchievementCard key={a.id} achievement={a} />
+        {achievements.map(a => (
+          <AchievementCard
+            key={a.id}
+            achievement={a}
+            activeThemeSlug={activeThemeSlug}
+            onActivateTheme={activateTheme}
+            onClearTheme={clearTheme}
+          />
         ))}
       </div>
+
+      {hasMore && (
+        <div className="flex justify-center">
+          <button
+            onClick={() => fetchAchievements(page + 1, true)}
+            disabled={loadingMore}
+            className="rounded-2xl border border-sol-border/20 bg-sol-surface px-6 py-3 text-sm font-black text-sol-text transition hover:border-sol-accent/40 hover:text-sol-accent disabled:opacity-60"
+          >
+            {loadingMore ? t("loadingMore") : t("showMore")}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -37,7 +37,7 @@ import {
   Fingerprint,
   Footprints
 } from "lucide-react";
-import { Achievement } from "@/services/achievementService";
+import { Achievement, ThemeUnlock } from "@/services/achievementService";
 import { format } from "date-fns";
 import { vi, enUS } from "date-fns/locale";
 
@@ -50,15 +50,27 @@ const iconMap: any = {
 
 interface AchievementCardProps {
   achievement: Achievement;
+  activeThemeSlug?: string;
+  onActivateTheme?: (theme: ThemeUnlock) => void;
+  onClearTheme?: () => void;
 }
 
-export default function AchievementCard({ achievement }: AchievementCardProps) {
+export default function AchievementCard({
+  achievement,
+  activeThemeSlug,
+  onActivateTheme,
+  onClearTheme,
+}: AchievementCardProps) {
   const t = useTranslations("Achievements");
   const locale = useLocale();
   const IconComponent = iconMap[achievement.icon || "Trophy"] || Trophy;
 
   const title = locale === "vi" ? achievement.title_vi : achievement.title_en;
   const description = locale === "vi" ? achievement.description_vi : achievement.description_en;
+  const themeTitle = achievement.theme
+    ? (locale === "vi" ? achievement.theme.title_vi : achievement.theme.title_en)
+    : "";
+  const isThemeActive = !!achievement.theme && achievement.theme.slug === activeThemeSlug;
 
   const dateLocale = locale === "vi" ? vi : enUS;
 
@@ -104,6 +116,24 @@ export default function AchievementCard({ achievement }: AchievementCardProps) {
            <p className="text-[13px] leading-relaxed text-sol-muted sm:text-sm font-medium line-clamp-3">
              {description}
            </p>
+           {achievement.theme && (
+             <div className="rounded-2xl border border-sol-border/10 bg-sol-bg/30 p-3">
+               <div className="flex items-center gap-3">
+                 <span
+                   className="h-4 w-4 rounded-full border border-white/40 shadow-sm"
+                   style={{ backgroundColor: achievement.theme.preview_color || "var(--accent)" }}
+                 />
+                 <div className="min-w-0">
+                   <div className="text-[10px] font-black uppercase tracking-[0.2em] text-sol-muted">
+                     {t("themeUnlock")}
+                   </div>
+                   <div className="truncate text-sm font-black text-sol-text">
+                     {themeTitle}
+                   </div>
+                 </div>
+               </div>
+             </div>
+           )}
         </div>
 
         <div className="mt-8 pt-6 border-t border-sol-border/5">
@@ -130,6 +160,27 @@ export default function AchievementCard({ achievement }: AchievementCardProps) {
               </span>
             )}
           </div>
+
+          {achievement.earned && achievement.theme && onActivateTheme && (
+            <button
+              type="button"
+              onClick={() => {
+                if (isThemeActive) {
+                  onClearTheme?.();
+                  return;
+                }
+                onActivateTheme(achievement.theme!);
+              }}
+              className={`mt-4 w-full rounded-2xl px-4 py-3 text-sm font-black transition
+                ${isThemeActive
+                  ? "bg-sol-accent text-sol-bg"
+                  : "border border-sol-border/20 bg-sol-surface text-sol-text hover:border-sol-accent/40 hover:text-sol-accent"
+                }
+              `}
+            >
+              {isThemeActive ? t("backToDefault") : t("activateTheme")}
+            </button>
+          )}
         </div>
       </div>
     </div>

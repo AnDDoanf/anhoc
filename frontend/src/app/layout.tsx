@@ -25,10 +25,27 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               (function() {
                 try {
                   var theme = localStorage.getItem('theme');
+                  var appThemeRaw = localStorage.getItem('app-theme');
                   var supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
                   if (!theme && supportDarkMode) theme = 'dark';
                   if (theme === 'dark') {
                     document.documentElement.classList.add('dark');
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                  } else {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                  }
+
+                  if (appThemeRaw) {
+                    var appTheme = JSON.parse(appThemeRaw);
+                    var variables = theme === 'dark' ? appTheme.dark_variables : appTheme.light_variables;
+                    document.documentElement.setAttribute('data-app-theme', appTheme.slug || 'default');
+                    if (variables && typeof variables === 'object') {
+                      Object.entries(variables).forEach(function(entry) {
+                        document.documentElement.style.setProperty(entry[0], entry[1]);
+                      });
+                    }
+                  } else {
+                    document.documentElement.setAttribute('data-app-theme', 'default');
                   }
                 } catch (e) {}
               })();

@@ -8,6 +8,7 @@ import { levelService } from './levelService';
 
 interface AchievementDef {
   slug: string;
+  theme_slug?: string;
   title_en: string;
   title_vi: string;
   description_en: string;
@@ -17,6 +18,248 @@ interface AchievementDef {
   icon: string;
   check: (userId: string, db: any, context?: any) => Promise<boolean>;
 }
+
+interface ThemeDef {
+  slug: string;
+  title_en: string;
+  title_vi: string;
+  description_en: string;
+  description_vi: string;
+  preview_color: string;
+  light_variables: Record<string, string>;
+  dark_variables: Record<string, string>;
+}
+
+export const THEME_DEFS: ThemeDef[] = [
+  {
+    slug: 'solarized-sunset',
+    title_en: 'Solarized Sunset',
+    title_vi: 'Solarized Sunset',
+    description_en: 'A warm amber variation with sunset accents.',
+    description_vi: 'Giao dien tong am voi diem nhan hoang hon.',
+    preview_color: '#d97706',
+    light_variables: {
+      '--bg-primary': '#fff7ed',
+      '--bg-secondary': '#ffedd5',
+      '--text-primary': '#7c2d12',
+      '--text-secondary': '#9a3412',
+      '--accent': '#d97706',
+      '--border': '#fed7aa',
+      '--pill-badge-bg': 'rgba(217, 119, 6, 0.12)',
+      '--pill-badge-border': 'rgba(217, 119, 6, 0.34)',
+      '--pill-badge-text': '#b45309',
+      '--pill-badge-highlight': 'rgba(255, 255, 255, 0.4)',
+      '--scrollbar-track': 'rgba(255, 237, 213, 0.8)',
+      '--scrollbar-thumb': 'rgba(217, 119, 6, 0.38)',
+      '--scrollbar-thumb-hover': 'rgba(217, 119, 6, 0.62)',
+    },
+    dark_variables: {
+      '--bg-primary': '#1c1917',
+      '--bg-secondary': '#292524',
+      '--text-primary': '#fed7aa',
+      '--text-secondary': '#fdba74',
+      '--accent': '#f59e0b',
+      '--border': '#44403c',
+      '--pill-badge-bg': 'rgba(245, 158, 11, 0.18)',
+      '--pill-badge-border': '#b45309',
+      '--pill-badge-text': '#fbbf24',
+      '--pill-badge-highlight': 'rgba(255, 255, 255, 0.08)',
+      '--scrollbar-track': 'rgba(41, 37, 36, 0.75)',
+      '--scrollbar-thumb': 'rgba(245, 158, 11, 0.42)',
+      '--scrollbar-thumb-hover': 'rgba(245, 158, 11, 0.7)',
+    },
+  },
+  {
+    slug: 'mint-horizon',
+    title_en: 'Mint Horizon',
+    title_vi: 'Mint Horizon',
+    description_en: 'A calm mint palette with cool contrast.',
+    description_vi: 'Bang mau xanh bac ha diu mat voi do tuong phan lanh.',
+    preview_color: '#0f9d7a',
+    light_variables: {
+      '--bg-primary': '#f0fdfa',
+      '--bg-secondary': '#ccfbf1',
+      '--text-primary': '#134e4a',
+      '--text-secondary': '#0f766e',
+      '--accent': '#0f9d7a',
+      '--border': '#99f6e4',
+      '--pill-badge-bg': 'rgba(15, 157, 122, 0.12)',
+      '--pill-badge-border': 'rgba(15, 157, 122, 0.3)',
+      '--pill-badge-text': '#0f766e',
+      '--pill-badge-highlight': 'rgba(255, 255, 255, 0.36)',
+      '--scrollbar-track': 'rgba(204, 251, 241, 0.75)',
+      '--scrollbar-thumb': 'rgba(15, 157, 122, 0.36)',
+      '--scrollbar-thumb-hover': 'rgba(15, 157, 122, 0.6)',
+    },
+    dark_variables: {
+      '--bg-primary': '#022c22',
+      '--bg-secondary': '#064e3b',
+      '--text-primary': '#a7f3d0',
+      '--text-secondary': '#6ee7b7',
+      '--accent': '#34d399',
+      '--border': '#065f46',
+      '--pill-badge-bg': 'rgba(52, 211, 153, 0.16)',
+      '--pill-badge-border': '#0f766e',
+      '--pill-badge-text': '#a7f3d0',
+      '--pill-badge-highlight': 'rgba(255, 255, 255, 0.08)',
+      '--scrollbar-track': 'rgba(6, 78, 59, 0.72)',
+      '--scrollbar-thumb': 'rgba(52, 211, 153, 0.4)',
+      '--scrollbar-thumb-hover': 'rgba(52, 211, 153, 0.68)',
+    },
+  },
+  {
+    slug: 'rose-night',
+    title_en: 'Rose Night',
+    title_vi: 'Rose Night',
+    description_en: 'A moody rose palette for late-night study.',
+    description_vi: 'Bang mau hong toi cho nhung buoi hoc dem.',
+    preview_color: '#e11d48',
+    light_variables: {
+      '--bg-primary': '#fff1f2',
+      '--bg-secondary': '#ffe4e6',
+      '--text-primary': '#881337',
+      '--text-secondary': '#9f1239',
+      '--accent': '#e11d48',
+      '--border': '#fecdd3',
+      '--pill-badge-bg': 'rgba(225, 29, 72, 0.11)',
+      '--pill-badge-border': 'rgba(225, 29, 72, 0.28)',
+      '--pill-badge-text': '#be123c',
+      '--pill-badge-highlight': 'rgba(255, 255, 255, 0.38)',
+      '--scrollbar-track': 'rgba(255, 228, 230, 0.8)',
+      '--scrollbar-thumb': 'rgba(225, 29, 72, 0.35)',
+      '--scrollbar-thumb-hover': 'rgba(225, 29, 72, 0.58)',
+    },
+    dark_variables: {
+      '--bg-primary': '#1f1120',
+      '--bg-secondary': '#3b1026',
+      '--text-primary': '#fecdd3',
+      '--text-secondary': '#fda4af',
+      '--accent': '#fb7185',
+      '--border': '#4c1d32',
+      '--pill-badge-bg': 'rgba(251, 113, 133, 0.14)',
+      '--pill-badge-border': '#9f1239',
+      '--pill-badge-text': '#fda4af',
+      '--pill-badge-highlight': 'rgba(255, 255, 255, 0.08)',
+      '--scrollbar-track': 'rgba(59, 16, 38, 0.72)',
+      '--scrollbar-thumb': 'rgba(251, 113, 133, 0.38)',
+      '--scrollbar-thumb-hover': 'rgba(251, 113, 133, 0.64)',
+    },
+  },
+  {
+    slug: 'ocean-ink',
+    title_en: 'Ocean Ink',
+    title_vi: 'Ocean Ink',
+    description_en: 'Deep ocean blues with crisp academic contrast.',
+    description_vi: 'Tong xanh duong dam voi do tuong phan sac net.',
+    preview_color: '#2563eb',
+    light_variables: {
+      '--bg-primary': '#eff6ff',
+      '--bg-secondary': '#dbeafe',
+      '--text-primary': '#1e3a8a',
+      '--text-secondary': '#1d4ed8',
+      '--accent': '#2563eb',
+      '--border': '#bfdbfe',
+      '--pill-badge-bg': 'rgba(37, 99, 235, 0.1)',
+      '--pill-badge-border': 'rgba(37, 99, 235, 0.28)',
+      '--pill-badge-text': '#1d4ed8',
+      '--pill-badge-highlight': 'rgba(255, 255, 255, 0.38)',
+      '--scrollbar-track': 'rgba(219, 234, 254, 0.8)',
+      '--scrollbar-thumb': 'rgba(37, 99, 235, 0.34)',
+      '--scrollbar-thumb-hover': 'rgba(37, 99, 235, 0.58)',
+    },
+    dark_variables: {
+      '--bg-primary': '#0f172a',
+      '--bg-secondary': '#1e293b',
+      '--text-primary': '#bfdbfe',
+      '--text-secondary': '#93c5fd',
+      '--accent': '#60a5fa',
+      '--border': '#334155',
+      '--pill-badge-bg': 'rgba(96, 165, 250, 0.14)',
+      '--pill-badge-border': '#2563eb',
+      '--pill-badge-text': '#93c5fd',
+      '--pill-badge-highlight': 'rgba(255, 255, 255, 0.08)',
+      '--scrollbar-track': 'rgba(30, 41, 59, 0.72)',
+      '--scrollbar-thumb': 'rgba(96, 165, 250, 0.38)',
+      '--scrollbar-thumb-hover': 'rgba(96, 165, 250, 0.64)',
+    },
+  },
+  {
+    slug: 'forest-notebook',
+    title_en: 'Forest Notebook',
+    title_vi: 'Forest Notebook',
+    description_en: 'Natural green tones with a study-journal feel.',
+    description_vi: 'Tong xanh rung tu nhien nhu so tay hoc tap.',
+    preview_color: '#65a30d',
+    light_variables: {
+      '--bg-primary': '#f7fee7',
+      '--bg-secondary': '#ecfccb',
+      '--text-primary': '#365314',
+      '--text-secondary': '#4d7c0f',
+      '--accent': '#65a30d',
+      '--border': '#d9f99d',
+      '--pill-badge-bg': 'rgba(101, 163, 13, 0.1)',
+      '--pill-badge-border': 'rgba(101, 163, 13, 0.28)',
+      '--pill-badge-text': '#4d7c0f',
+      '--pill-badge-highlight': 'rgba(255, 255, 255, 0.38)',
+      '--scrollbar-track': 'rgba(236, 252, 203, 0.78)',
+      '--scrollbar-thumb': 'rgba(101, 163, 13, 0.34)',
+      '--scrollbar-thumb-hover': 'rgba(101, 163, 13, 0.56)',
+    },
+    dark_variables: {
+      '--bg-primary': '#1a2e05',
+      '--bg-secondary': '#243c0a',
+      '--text-primary': '#d9f99d',
+      '--text-secondary': '#bef264',
+      '--accent': '#84cc16',
+      '--border': '#365314',
+      '--pill-badge-bg': 'rgba(132, 204, 22, 0.14)',
+      '--pill-badge-border': '#4d7c0f',
+      '--pill-badge-text': '#bef264',
+      '--pill-badge-highlight': 'rgba(255, 255, 255, 0.08)',
+      '--scrollbar-track': 'rgba(36, 60, 10, 0.74)',
+      '--scrollbar-thumb': 'rgba(132, 204, 22, 0.38)',
+      '--scrollbar-thumb-hover': 'rgba(132, 204, 22, 0.62)',
+    },
+  },
+  {
+    slug: 'violet-lab',
+    title_en: 'Violet Lab',
+    title_vi: 'Violet Lab',
+    description_en: 'A sharper palette with cool violet energy.',
+    description_vi: 'Bang mau tim lanh sac net va hien dai.',
+    preview_color: '#7c3aed',
+    light_variables: {
+      '--bg-primary': '#f5f3ff',
+      '--bg-secondary': '#ede9fe',
+      '--text-primary': '#4c1d95',
+      '--text-secondary': '#6d28d9',
+      '--accent': '#7c3aed',
+      '--border': '#ddd6fe',
+      '--pill-badge-bg': 'rgba(124, 58, 237, 0.1)',
+      '--pill-badge-border': 'rgba(124, 58, 237, 0.28)',
+      '--pill-badge-text': '#6d28d9',
+      '--pill-badge-highlight': 'rgba(255, 255, 255, 0.38)',
+      '--scrollbar-track': 'rgba(237, 233, 254, 0.8)',
+      '--scrollbar-thumb': 'rgba(124, 58, 237, 0.34)',
+      '--scrollbar-thumb-hover': 'rgba(124, 58, 237, 0.58)',
+    },
+    dark_variables: {
+      '--bg-primary': '#1e1b4b',
+      '--bg-secondary': '#312e81',
+      '--text-primary': '#ddd6fe',
+      '--text-secondary': '#c4b5fd',
+      '--accent': '#a78bfa',
+      '--border': '#4338ca',
+      '--pill-badge-bg': 'rgba(167, 139, 250, 0.14)',
+      '--pill-badge-border': '#6d28d9',
+      '--pill-badge-text': '#c4b5fd',
+      '--pill-badge-highlight': 'rgba(255, 255, 255, 0.08)',
+      '--scrollbar-track': 'rgba(49, 46, 129, 0.74)',
+      '--scrollbar-thumb': 'rgba(167, 139, 250, 0.38)',
+      '--scrollbar-thumb-hover': 'rgba(167, 139, 250, 0.64)',
+    },
+  },
+];
 
 const countCompletedPractices = async (uid: string, db: any) =>
   await db.testAttempt.count({ where: { user_id: uid, is_completed: true, is_practice: true } });
@@ -272,6 +515,81 @@ const comebackMilestoneDefs: AchievementDef[] = [
     return comebacks >= milestone.count;
   },
 }));
+
+const specialThemeDefs: AchievementDef[] = [
+  {
+    slug: 'theme-solarized-sunset',
+    theme_slug: 'solarized-sunset',
+    title_en: 'Sunset Stylist',
+    title_vi: 'Sunset Stylist',
+    description_en: 'Earn 5 achievements to unlock the Solarized Sunset theme.',
+    description_vi: 'Dat 5 thanh tich de mo khoa giao dien Solarized Sunset.',
+    category: 'special',
+    xp_reward: 120,
+    icon: 'Sunrise',
+    check: async (uid, db) => (await db.userAchievement.count({ where: { user_id: uid } })) >= 5,
+  },
+  {
+    slug: 'theme-mint-horizon',
+    theme_slug: 'mint-horizon',
+    title_en: 'Mint Curator',
+    title_vi: 'Mint Curator',
+    description_en: 'Earn 12 achievements to unlock the Mint Horizon theme.',
+    description_vi: 'Dat 12 thanh tich de mo khoa giao dien Mint Horizon.',
+    category: 'special',
+    xp_reward: 180,
+    icon: 'Sparkles',
+    check: async (uid, db) => (await db.userAchievement.count({ where: { user_id: uid } })) >= 12,
+  },
+  {
+    slug: 'theme-rose-night',
+    theme_slug: 'rose-night',
+    title_en: 'Night Bloom',
+    title_vi: 'Night Bloom',
+    description_en: 'Earn 20 achievements to unlock the Rose Night theme.',
+    description_vi: 'Dat 20 thanh tich de mo khoa giao dien Rose Night.',
+    category: 'special',
+    xp_reward: 260,
+    icon: 'Moon',
+    check: async (uid, db) => (await db.userAchievement.count({ where: { user_id: uid } })) >= 20,
+  },
+  {
+    slug: 'theme-ocean-ink',
+    theme_slug: 'ocean-ink',
+    title_en: 'Ocean Scholar',
+    title_vi: 'Ocean Scholar',
+    description_en: 'Earn 28 achievements to unlock the Ocean Ink theme.',
+    description_vi: 'Dat 28 thanh tich de mo khoa giao dien Ocean Ink.',
+    category: 'special',
+    xp_reward: 320,
+    icon: 'Compass',
+    check: async (uid, db) => (await db.userAchievement.count({ where: { user_id: uid } })) >= 28,
+  },
+  {
+    slug: 'theme-forest-notebook',
+    theme_slug: 'forest-notebook',
+    title_en: 'Forest Scribe',
+    title_vi: 'Forest Scribe',
+    description_en: 'Earn 36 achievements to unlock the Forest Notebook theme.',
+    description_vi: 'Dat 36 thanh tich de mo khoa giao dien Forest Notebook.',
+    category: 'special',
+    xp_reward: 400,
+    icon: 'Leaf',
+    check: async (uid, db) => (await db.userAchievement.count({ where: { user_id: uid } })) >= 36,
+  },
+  {
+    slug: 'theme-violet-lab',
+    theme_slug: 'violet-lab',
+    title_en: 'Lab Visionary',
+    title_vi: 'Lab Visionary',
+    description_en: 'Earn 45 achievements to unlock the Violet Lab theme.',
+    description_vi: 'Dat 45 thanh tich de mo khoa giao dien Violet Lab.',
+    category: 'special',
+    xp_reward: 520,
+    icon: 'Sparkles',
+    check: async (uid, db) => (await db.userAchievement.count({ where: { user_id: uid } })) >= 45,
+  },
+];
 
 export const ACHIEVEMENT_DEFS: AchievementDef[] = [
   // ── PROGRESS ──────────────────────────────────────────────────────────────
@@ -627,16 +945,65 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
   ...evidenceMilestoneDefs,
   ...fastCompletionDefs,
   ...comebackMilestoneDefs,
+  ...specialThemeDefs,
 ];
 
 // ─── Seed achievements into DB ────────────────────────────────────────────────
 
 export async function seedAchievements() {
+  const themesBySlug = new Map<string, any>();
+
+  for (const themeDef of THEME_DEFS) {
+    const theme = await (prisma as any).theme.upsert({
+      where: { slug: themeDef.slug },
+      update: {
+        title_en: themeDef.title_en,
+        title_vi: themeDef.title_vi,
+        description_en: themeDef.description_en,
+        description_vi: themeDef.description_vi,
+        preview_color: themeDef.preview_color,
+        light_variables: themeDef.light_variables,
+        dark_variables: themeDef.dark_variables,
+      },
+      create: {
+        slug: themeDef.slug,
+        title_en: themeDef.title_en,
+        title_vi: themeDef.title_vi,
+        description_en: themeDef.description_en,
+        description_vi: themeDef.description_vi,
+        preview_color: themeDef.preview_color,
+        light_variables: themeDef.light_variables,
+        dark_variables: themeDef.dark_variables,
+      },
+    });
+    themesBySlug.set(theme.slug, theme);
+  }
+
   for (const def of ACHIEVEMENT_DEFS) {
+    const theme = def.theme_slug ? themesBySlug.get(def.theme_slug) : null;
     await (prisma as any).achievement.upsert({
       where: { slug: def.slug },
-      update: { title_en: def.title_en, title_vi: def.title_vi, description_en: def.description_en, description_vi: def.description_vi, category: def.category, xp_reward: def.xp_reward, icon: def.icon },
-      create: { slug: def.slug, title_en: def.title_en, title_vi: def.title_vi, description_en: def.description_en, description_vi: def.description_vi, category: def.category, xp_reward: def.xp_reward, icon: def.icon },
+      update: {
+        title_en: def.title_en,
+        title_vi: def.title_vi,
+        description_en: def.description_en,
+        description_vi: def.description_vi,
+        category: def.category,
+        xp_reward: def.xp_reward,
+        icon: def.icon,
+        theme_id: theme?.id ?? null,
+      },
+      create: {
+        slug: def.slug,
+        title_en: def.title_en,
+        title_vi: def.title_vi,
+        description_en: def.description_en,
+        description_vi: def.description_vi,
+        category: def.category,
+        xp_reward: def.xp_reward,
+        icon: def.icon,
+        theme_id: theme?.id ?? null,
+      },
     });
   }
 }
@@ -649,6 +1016,14 @@ export interface NewAchievement {
   title_vi: string; 
   icon: string | null; 
   xp_reward: number; 
+  theme?: {
+    slug: string;
+    title_en: string;
+    title_vi: string;
+    preview_color: string | null;
+    light_variables: Record<string, string>;
+    dark_variables: Record<string, string>;
+  } | null;
 }
 
 export async function checkAndAwardAchievements(userId: string): Promise<NewAchievement[]> {
@@ -682,7 +1057,10 @@ export async function checkAndAwardAchievements(userId: string): Promise<NewAchi
       const qualifies = await def.check(userId, prisma, context);
       if (!qualifies) continue;
 
-      const achievement = await (prisma as any).achievement.findUnique({ where: { slug: def.slug } });
+      const achievement = await (prisma as any).achievement.findUnique({
+        where: { slug: def.slug },
+        include: { theme: true }
+      });
       if (!achievement) continue;
 
       // Award achievement
@@ -700,7 +1078,17 @@ export async function checkAndAwardAchievements(userId: string): Promise<NewAchi
         title_en: achievement.title_en,
         title_vi: achievement.title_vi,
         icon: achievement.icon,
-        xp_reward: achievement.xp_reward
+        xp_reward: achievement.xp_reward,
+        theme: achievement.theme
+          ? {
+              slug: achievement.theme.slug,
+              title_en: achievement.theme.title_en,
+              title_vi: achievement.theme.title_vi,
+              preview_color: achievement.theme.preview_color,
+              light_variables: achievement.theme.light_variables,
+              dark_variables: achievement.theme.dark_variables,
+            }
+          : null,
       });
     } catch (e) {
       console.error(`Achievement check failed [${def.slug}]:`, e);
