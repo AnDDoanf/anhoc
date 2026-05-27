@@ -24,21 +24,62 @@ export default function QuestionsAdminPage() {
   const [lessonIdFilter, setLessonIdFilter] = useState("all");
   const [difficultyFilter, setDifficultyFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterMeta, setFilterMeta] = useState<{
+    templateTypes: string[];
+    grades: Array<{ id: string; slug: string; title_en: string; title_vi: string }>;
+    lessons: Array<{ id: string; title_en: string; title_vi: string; grade_id: string }>;
+    difficulties: string[];
+  }>({
+    templateTypes: [],
+    grades: [],
+    lessons: [],
+    difficulties: ["easy", "medium", "hard"],
+  });
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  const fetchTemplates = async () => {
+  const fetchTemplates = async (nextPage = 1, append = false) => {
+    if (append) setLoadingMore(true);
+    else setLoading(true);
     try {
-      const data = await testService.listTemplates();
-      setTemplates(data);
+      const data = await testService.listTemplates({
+        page: nextPage,
+        pageSize: 10,
+        search: searchQuery || undefined,
+        templateType: templateTypeFilter,
+        gradeId: gradeIdFilter,
+        lessonId: lessonIdFilter,
+        difficulty: difficultyFilter,
+      });
+      setTemplates((current) => append ? [...current, ...data.items] : data.items);
+      setHasMore(data.pagination.hasMore);
+      setPage(data.pagination.page);
     } catch (error) {
       console.error("Failed to load templates:", error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
   useEffect(() => {
-    fetchTemplates();
+    const loadFilterMeta = async () => {
+      try {
+        const data = await testService.getTemplateFilters();
+        setFilterMeta(data);
+      } catch (error) {
+        console.error("Failed to load template filters:", error);
+      }
+    };
+
+    loadFilterMeta();
   }, []);
+
+  useEffect(() => {
+    setPage(1);
+    fetchTemplates(1, false);
+  }, [searchQuery, templateTypeFilter, gradeIdFilter, lessonIdFilter, difficultyFilter]);
 
   const handleEdit = (id: string) => {
     setEditTemplateId(id);
@@ -49,7 +90,7 @@ export default function QuestionsAdminPage() {
     if (confirm(t("deleteConfirm"))) {
       try {
         await testService.removeTemplate(id);
-        fetchTemplates();
+        fetchTemplates(1, false);
       } catch (error) {
         console.error("Failed to delete the template", error);
         alert(t("deleteError"));
@@ -62,36 +103,15 @@ export default function QuestionsAdminPage() {
     setTimeout(() => setEditTemplateId(null), 300);
   };
 
-  const templateTypeOptions = Array.from(
-    new Set(
-      templates
-        .map((template) => template.template_type)
-        .filter((value): value is string => Boolean(value))
-    )
-  ).sort((a, b) => a.localeCompare(b));
+  const templateTypeOptions = filterMeta.templateTypes;
 
-  const lessonOptions = Array.from(
-    new Map(
-      templates
-        .filter((template) => template.lesson_id || template.lesson?.id)
-        .map((template) => {
-          const lessonId = template.lesson_id || template.lesson?.id;
-          const lessonTitle = template.lesson
-            ? (locale === "vi" ? template.lesson.title_vi : template.lesson.title_en)
-            : lessonId;
-          const gradeId = template.lesson?.grade?.id ? String(template.lesson.grade.id) : "";
-
-          return [
-            lessonId,
-            {
-              id: lessonId,
-              title: lessonTitle || lessonId,
-              gradeId,
-            },
-          ];
-        })
-    ).values()
-  ).sort((a, b) => a.title.localeCompare(b.title));
+  const lessonOptions = filterMeta.lessons
+    .map((lesson) => ({
+      id: lesson.id,
+      title: locale === "vi" ? lesson.title_vi : lesson.title_en,
+      gradeId: lesson.grade_id,
+    }))
+    .sort((a, b) => a.title.localeCompare(b.title));
 
   const visibleLessonOptions = lessonOptions.filter((lesson) => (
     gradeIdFilter === "all" || lesson.gradeId === gradeIdFilter
@@ -105,32 +125,20 @@ export default function QuestionsAdminPage() {
     }
   }, [gradeIdFilter, lessonIdFilter, lessonOptions]);
 
-  const gradeOptions = Array.from(
-    new Map(
-      templates
-        .filter((template) => template.lesson?.grade?.id)
-        .map((template) => {
-          const grade = template.lesson.grade;
-          const gradeTitle = locale === "vi" ? grade.title_vi : grade.title_en;
-
-          return [
-            String(grade.id),
-            {
-              id: String(grade.id),
-              title: gradeTitle || grade.slug || String(grade.id),
-              slug: grade.slug || "",
-            },
-          ];
-        })
-    ).values()
-  ).sort((a, b) => {
+  const gradeOptions = filterMeta.grades
+    .map((grade) => ({
+      id: String(grade.id),
+      title: locale === "vi" ? grade.title_vi : grade.title_en,
+      slug: grade.slug || "",
+    }))
+    .sort((a, b) => {
     const gradeNumberA = Number(a.slug.match(/\d+/)?.[0] || Number.MAX_SAFE_INTEGER);
     const gradeNumberB = Number(b.slug.match(/\d+/)?.[0] || Number.MAX_SAFE_INTEGER);
     if (gradeNumberA !== gradeNumberB) return gradeNumberA - gradeNumberB;
     return a.title.localeCompare(b.title, locale);
   });
 
-  const difficultyOptions = ["easy", "medium", "hard"];
+  const difficultyOptions = filterMeta.difficulties;
 
   const visibleTemplates = [...templates]
     .filter((template) => {
@@ -227,7 +235,7 @@ export default function QuestionsAdminPage() {
             {t("subtitle")}
           </p>
         </div>
-        <Can I="manage" a="lesson">
+        <Can I="manage" a="test">
           <button
             onClick={() => setIsModalOpen(true)}
             className="flex items-center gap-2 rounded-2xl bg-sol-accent px-4 py-2.5 text-sm font-bold text-sol-bg shadow-lg shadow-sol-accent/20 transition-transform hover:scale-105 cursor-pointer md:px-6 md:py-3"
@@ -344,10 +352,22 @@ export default function QuestionsAdminPage() {
         ))}
       </div>
 
+      {hasMore && (
+        <div className="flex justify-center">
+          <button
+            onClick={() => fetchTemplates(page + 1, true)}
+            disabled={loadingMore}
+            className="rounded-2xl border border-sol-border/20 bg-sol-surface px-6 py-3 text-sm font-black text-sol-text transition hover:border-sol-accent/40 hover:text-sol-accent disabled:opacity-60"
+          >
+            {loadingMore ? t("loadingMore") : t("showMore")}
+          </button>
+        </div>
+      )}
+
       <CreateTemplateModal
         isOpen={isModalOpen}
         onClose={handleModalClose}
-        onSuccess={fetchTemplates}
+        onSuccess={() => fetchTemplates(1, false)}
         editTemplateId={editTemplateId}
       />
 

@@ -5,6 +5,12 @@ import { authenticate, authorize, selfOrAdmin } from '../middleware/auth';
 
 const router = Router();
 
+const parsePositiveInt = (value: unknown, fallback: number, max = 100) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 1) return fallback;
+  return Math.min(Math.floor(parsed), max);
+};
+
 const userSelect = {
   id: true,
   username: true,
@@ -260,24 +266,48 @@ router.get('/users', authenticate, authorize('manage', 'user'), async (req, res)
   try {
     const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
     const role = typeof req.query.role === 'string' ? req.query.role.trim() : '';
+    const page = parsePositiveInt(req.query.page, 1);
+    const pageSize = parsePositiveInt(req.query.pageSize, 10);
+    const where = {
+      ...(search
+        ? {
+            OR: [
+              { username: { contains: search, mode: 'insensitive' as const } },
+              { email: { contains: search, mode: 'insensitive' as const } }
+            ]
+          }
+        : {}),
+      ...(role ? { role: { name: role } } : {})
+    };
 
-    const users = await prisma.user.findMany({
-      where: {
-        ...(search
-          ? {
-              OR: [
-                { username: { contains: search, mode: 'insensitive' } },
-                { email: { contains: search, mode: 'insensitive' } }
-              ]
-            }
-          : {}),
-        ...(role ? { role: { name: role } } : {})
+    const [total, users, totalAdmins, totalStudents] = await Promise.all([
+      prisma.user.count({ where }),
+      prisma.user.findMany({
+        where,
+        orderBy: { created_at: 'desc' },
+        select: userSelect,
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      prisma.user.count({ where: { ...where, role: { name: 'admin' } } }),
+      prisma.user.count({ where: { ...where, role: { name: 'student' } } }),
+    ]);
+
+    res.json({
+      items: users.map(serializeUser),
+      summary: {
+        total,
+        admins: totalAdmins,
+        students: totalStudents,
       },
-      orderBy: { created_at: 'desc' },
-      select: userSelect
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / pageSize)),
+        hasMore: page * pageSize < total,
+      }
     });
-
-    res.json(users.map(serializeUser));
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to fetch users', details: error.message });
   }
@@ -548,11 +578,14 @@ router.delete('/users/:id', authenticate, authorize('manage', 'user'), async (re
 // Get Admin Statistics
 router.get('/stats', authenticate, authorize('manage', 'lesson'), async (req, res) => {
   try {
+    const recentActivityPage = parsePositiveInt(req.query.recentActivityPage, 1);
+    const recentActivityPageSize = parsePositiveInt(req.query.recentActivityPageSize, 10);
     const [
       userCount,
       lessonCount,
       attemptCount,
       topUsers,
+      recentActivityTotal,
       recentAttempts
     ] = await Promise.all([
       prisma.user.count(),
@@ -573,8 +606,10 @@ router.get('/stats', authenticate, authorize('manage', 'lesson'), async (req, re
           test_attempts: { _count: 'desc' }
         }
       }),
+      prisma.testAttempt.count(),
       prisma.testAttempt.findMany({
-        take: 10,
+        take: recentActivityPageSize,
+        skip: (recentActivityPage - 1) * recentActivityPageSize,
         orderBy: { started_at: 'desc' },
         include: {
           user: { select: { id: true, username: true, email: true } },
@@ -646,6 +681,13 @@ router.get('/stats', authenticate, authorize('manage', 'lesson'), async (req, re
         xp: u.student_stats?.total_xp || 0
       })),
       recentActivity: recentAttempts,
+      recentActivityPagination: {
+        page: recentActivityPage,
+        pageSize: recentActivityPageSize,
+        total: recentActivityTotal,
+        totalPages: Math.max(1, Math.ceil(recentActivityTotal / recentActivityPageSize)),
+        hasMore: recentActivityPage * recentActivityPageSize < recentActivityTotal,
+      },
       activityHistory
     });
   } catch (error: any) {

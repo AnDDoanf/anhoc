@@ -66,21 +66,57 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [summary, setSummary] = useState({ total: 0, admins: 0, students: 0 });
+
+  const loadUsers = useCallback(async (
+    nextPage = 1,
+    append = false,
+    searchValue = search,
+    roleValue = roleFilter
+  ) => {
+    if (append) setLoadingMore(true);
+    else setLoading(true);
+    setError(null);
+    try {
+      const data = await adminService.listUsers({
+        search: searchValue || undefined,
+        role: roleValue || undefined,
+        page: nextPage,
+        pageSize: 10,
+      });
+      setUsers((current) => (append ? [...current, ...data.items] : data.items));
+      if (data.summary) {
+        setSummary({
+          total: data.summary.total,
+          admins: data.summary.admins || 0,
+          students: data.summary.students || 0,
+        });
+      }
+      setPage(data.pagination.page);
+      setHasMore(data.pagination.hasMore);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, append ? t("errors.refresh") : t("errors.load")));
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }, [roleFilter, search, t]);
 
   const loadInitialData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [roleData, userData] = await Promise.all([
+      const [roleData] = await Promise.all([
         adminService.listRoles(),
-        adminService.listUsers(),
       ]);
       setRoles(roleData);
-      setUsers(userData);
     } catch (err: unknown) {
       setError(getErrorMessage(err, t("errors.load")));
     } finally {
@@ -91,6 +127,10 @@ export default function AdminUsersPage() {
   useEffect(() => {
     loadInitialData();
   }, [loadInitialData]);
+
+  useEffect(() => {
+    loadUsers(1, false, "", "");
+  }, [loadUsers]);
 
   const defaultRoleName = useMemo(() => {
     return roles.find((role) => role.name === "student")?.name || roles[0]?.name || "";
@@ -103,27 +143,18 @@ export default function AdminUsersPage() {
   }, [defaultRoleName, form.role_name]);
 
   const refreshUsers = async () => {
-    setError(null);
-    try {
-      const data = await adminService.listUsers({
-        search: search || undefined,
-        role: roleFilter || undefined,
-      });
-      setUsers(data);
-    } catch (err: unknown) {
-      setError(getErrorMessage(err, t("errors.refresh")));
-    }
+    await loadUsers(1, false, search, roleFilter);
   };
 
   const visibleUsers = users;
 
   const totals = useMemo(() => {
     return {
-      users: users.length,
-      admins: users.filter((item) => item.role.name === "admin").length,
-      students: users.filter((item) => item.role.name === "student").length,
+      users: summary.total,
+      admins: summary.admins,
+      students: summary.students,
     };
-  }, [users]);
+  }, [summary]);
 
   const resetForm = (clearMessages = true) => {
     setEditingUser(null);
@@ -164,17 +195,15 @@ export default function AdminUsersPage() {
 
     try {
       if (editingUser) {
-        const updatedUser = await adminService.updateUser(editingUser.id, payload);
-        setUsers((current) =>
-          current.map((item) => (item.id === updatedUser.id ? updatedUser : item))
-        );
+        await adminService.updateUser(editingUser.id, payload);
+        await loadUsers(1, false, search, roleFilter);
         setSuccess(t("messages.updated"));
       } else {
-        const createdUser = await adminService.createUser({
+        await adminService.createUser({
           ...payload,
           password: form.password,
         });
-        setUsers((current) => [createdUser, ...current]);
+        await loadUsers(1, false, search, roleFilter);
         setSuccess(t("messages.created"));
       }
       resetForm(false);
@@ -194,7 +223,7 @@ export default function AdminUsersPage() {
 
     try {
       await adminService.deleteUser(deleteTarget.id);
-      setUsers((current) => current.filter((item) => item.id !== deleteTarget.id));
+      await loadUsers(1, false, search, roleFilter);
       setSuccess(t("messages.deleted"));
       setDeleteTarget(null);
     } catch (err: unknown) {
@@ -464,6 +493,17 @@ export default function AdminUsersPage() {
                     </p>
                   </div>
                 )}
+              </div>
+            )}
+            {hasMore && !loading && (
+              <div className="border-t border-sol-border/10 p-4 flex justify-center">
+                <button
+                  onClick={() => loadUsers(page + 1, true, search, roleFilter)}
+                  disabled={loadingMore}
+                  className="rounded-lg border border-sol-border/30 bg-sol-bg px-5 py-3 text-sm font-black text-sol-text transition hover:border-sol-accent/40 hover:text-sol-accent disabled:opacity-60"
+                >
+                  {loadingMore ? t("loadingMore") : t("showMore")}
+                </button>
               </div>
             )}
           </section>

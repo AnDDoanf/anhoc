@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import express, { type Application, type Request, type Response, type NextFunction } from 'express';
+import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import cors from 'cors';
 import prisma from './lib/db.ts';
 
@@ -31,7 +31,7 @@ app.use(cors({
   },
   credentials: true,
 }));
-app.use(express.json()); 
+app.use(express.json());
 
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/lessons', lessonRoutes);
@@ -43,7 +43,7 @@ app.get('/api/v1/health', (req: Request, res: Response) => {
   res.json({ status: 'OK', message: 'Math App Backend is running' });
 });
 
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   console.error(err.stack);
   res.status(500).json({
     error: 'Something went wrong!',
@@ -53,19 +53,19 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 
 async function main() {
   try {
-    
     await prisma.$connect();
-    console.log('✅ Connected to PostgreSQL via Prisma');
+    console.log('Connected to PostgreSQL via Prisma');
 
-    // Auto-seed achievements on startup (idempotent)
-    await seedAchievements();
-    console.log('🏆 Achievements seeded');
+    if (String(process.env.AUTO_SEED_ACHIEVEMENTS || '').toLowerCase() === 'true') {
+      await seedAchievements();
+      console.log('Achievements seeded');
+    }
 
     app.listen(PORT, () => {
-      console.log(`🚀 Server is flying at http://localhost:${PORT}`);
+      console.log(`Server is running at http://localhost:${PORT}`);
     });
   } catch (error) {
-    console.error('❌ Failed to start server:', error);
+    console.error('Failed to start server:', error);
     process.exit(1);
   }
 }

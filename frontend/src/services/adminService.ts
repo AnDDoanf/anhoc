@@ -1,4 +1,5 @@
 import { api } from './api';
+import type { PaginationMeta } from './testService';
 
 export type AdminRole = {
   id: number;
@@ -157,9 +158,22 @@ export type AdminXpLog = {
   occurred_at: string;
 };
 
+export type PaginatedItems<T> = {
+  items: T[];
+  summary?: {
+    total: number;
+    admins?: number;
+    students?: number;
+  };
+  pagination: PaginationMeta;
+};
+
 export const adminService = {
-  getStats: async () => {
-    const response = await api.get('/admin/stats');
+  getStats: async (params?: {
+    recentActivityPage?: number;
+    recentActivityPageSize?: number;
+  }) => {
+    const response = await api.get('/admin/stats', { params });
     return response.data;
   },
 
@@ -188,7 +202,7 @@ export const adminService = {
     return response.data;
   },
 
-  listUsers: async (params?: { search?: string; role?: string }): Promise<AdminUser[]> => {
+  listUsers: async (params?: { search?: string; role?: string; page?: number; pageSize?: number }): Promise<PaginatedItems<AdminUser>> => {
     const response = await api.get('/admin/users', { params });
     return response.data;
   },

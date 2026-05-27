@@ -1,8 +1,7 @@
 import { Router } from 'express';
 import prisma from '../lib/db';
 import * as MathService from '../services/mathService';
-import { authenticate } from '../middleware/auth';
-import { checkAndAwardAchievements } from '../services/achievementService';
+import { authenticate, authorize } from '../middleware/auth';
 import { masteryService } from '../services/masteryService';
 import { levelService } from '../services/levelService';
 
@@ -102,6 +101,12 @@ const normalizeReportStatus = (value: unknown): string => {
   return ["open", "reviewing", "resolved", "dismissed"].includes(status) ? status : "open";
 };
 
+const parsePositiveInt = (value: unknown, fallback: number, max = 100) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 1) return fallback;
+  return Math.min(Math.floor(parsed), max);
+};
+
 const canAccessSubjectId = (subjectIds: number[] | null, subjectId?: number | null) => {
   return subjectIds === null || (typeof subjectId === "number" && subjectIds.includes(subjectId));
 };
@@ -141,8 +146,14 @@ const buildQuestionSnapshots = (attemptId: string, templates: any[], targetCount
   });
 };
 
+const canAccessAttempt = (req: any, ownerUserId?: string | null) => {
+  if (req.user?.role === 'admin') return true;
+  return !!ownerUserId && ownerUserId === req.user?.id;
+};
+
 router.get('/grade-tests', authenticate, async (req, res) => {
   try {
+    const userId = (req as any).user.id;
     const allowedSubjectIds = await getAllowedSubjectIds(req);
     const grades = await prisma.grade.findMany({
       where: {
@@ -175,61 +186,93 @@ router.get('/grade-tests', authenticate, async (req, res) => {
       orderBy: { id: "asc" }
     });
 
-    const gradeTests = await Promise.all(grades.map(async (grade) => {
-        const questionCount = grade.lessons.reduce((total, lesson) => total + lesson._count.templates, 0);
-        const attempts = await prisma.testAttempt.findMany({
-          where: {
-            user_id: (req as any).user.id,
-            is_practice: false,
-            snapshots: {
-              some: {
-                template: {
-                  lesson: {
-                    grade_id: grade.id
-                  }
+    const recentAttempts = await prisma.testAttempt.findMany({
+      where: {
+        user_id: userId,
+        is_practice: false,
+        snapshots: {
+          some: {
+            template: {
+              lesson: {
+                grade_id: { in: grades.map((grade) => grade.id) }
+              }
+            }
+          }
+        }
+      },
+      select: {
+        id: true,
+        total_score: true,
+        is_completed: true,
+        started_at: true,
+        completed_at: true,
+        _count: {
+          select: { snapshots: true }
+        },
+        snapshots: {
+          take: 1,
+          select: {
+            template: {
+              select: {
+                lesson: {
+                  select: { grade_id: true }
                 }
               }
             }
-          },
-          select: {
-            id: true,
-            total_score: true,
-            is_completed: true,
-            started_at: true,
-            completed_at: true,
-            _count: {
-              select: { snapshots: true }
-            }
-          },
-          orderBy: { started_at: "desc" },
-          take: 5
-        });
+          }
+        }
+      },
+      orderBy: { started_at: "desc" }
+    });
 
-        return {
-          id: `grade-${grade.id}-test`,
-          grade_id: grade.id,
-          grade_slug: grade.slug,
-          title_en: `${grade.title_en} Test`,
-          title_vi: `Bài kiểm tra ${grade.title_vi}`,
-          description_en: `A 50-question test from all available question templates in ${grade.title_en}.`,
-          description_vi: `Bài kiểm tra 50 câu từ tất cả mẫu câu hỏi hiện có trong ${grade.title_vi}.`,
-          questionCount: 50,
-          availableTemplateCount: questionCount,
-          lessonCount: grade.lessons.length,
-          attempts: attempts.map((attempt) => ({
-            id: attempt.id,
-            total_score: attempt.total_score === null ? null : Number(attempt.total_score),
-            is_completed: attempt.is_completed,
-            started_at: attempt.started_at,
-            completed_at: attempt.completed_at,
-            questionCount: attempt._count.snapshots
-          })),
-          difficulty: "Intermediate",
-          iconType: "medal",
-          grade,
-          subject: grade.subject
-        };
-      }));
+    const attemptsByGrade = new Map<number, {
+      id: string;
+      total_score: number | null;
+      is_completed: boolean | null;
+      started_at: Date;
+      completed_at: Date | null;
+      questionCount: number;
+    }[]>();
+
+    for (const attempt of recentAttempts) {
+      const gradeId = attempt.snapshots[0]?.template.lesson?.grade_id;
+      if (!gradeId) continue;
+
+      const gradeAttempts = attemptsByGrade.get(gradeId) ?? [];
+      if (gradeAttempts.length >= 5) continue;
+
+      gradeAttempts.push({
+        id: attempt.id,
+        total_score: attempt.total_score === null ? null : Number(attempt.total_score),
+        is_completed: attempt.is_completed,
+        started_at: attempt.started_at,
+        completed_at: attempt.completed_at,
+        questionCount: attempt._count.snapshots
+      });
+      attemptsByGrade.set(gradeId, gradeAttempts);
+    }
+
+    const gradeTests = grades.map((grade) => {
+      const questionCount = grade.lessons.reduce((total, lesson) => total + lesson._count.templates, 0);
+
+      return {
+        id: `grade-${grade.id}-test`,
+        grade_id: grade.id,
+        grade_slug: grade.slug,
+        title_en: `${grade.title_en} Test`,
+        title_vi: `Bài kiểm tra ${grade.title_vi}`,
+        description_en: `A 50-question test from all available question templates in ${grade.title_en}.`,
+        description_vi: `Bài kiểm tra 50 câu từ tất cả các mẫu câu hỏi hiện có trong ${grade.title_vi}.`,
+        questionCount: 50,
+        availableTemplateCount: questionCount,
+        lessonCount: grade.lessons.length,
+        attempts: attemptsByGrade.get(grade.id) ?? [],
+        difficulty: "Intermediate",
+        iconType: "medal",
+        grade,
+        subject: grade.subject
+      };
+    });
 
     res.json(gradeTests.filter((test) => test.availableTemplateCount > 0));
   } catch (error: any) {
@@ -335,19 +378,36 @@ router.get('/attempts/:id', authenticate, async (req, res) => {
     }
   });
   if (!attempt) return res.status(404).json({ error: "Attempt not found" });
+  if (!canAccessAttempt(req, attempt.user_id)) {
+    return res.status(403).json({ error: "You can only access your own attempts" });
+  }
   res.json(attempt);
 });
 
 // 3. Submit Answer for a Snapshot
-router.post('/submit-answer', async (req, res) => {
+router.post('/submit-answer', authenticate, async (req, res) => {
   const { snapshotId, studentAnswer } = req.body;
 
   const snapshot = await prisma.questionSnapshot.findUnique({
     where: { id: snapshotId },
-    include: { template: true }
+    include: {
+      template: true,
+      attempt: {
+        select: {
+          user_id: true,
+          is_completed: true
+        }
+      }
+    }
   });
 
   if (!snapshot || !snapshot.template) return res.status(404).send("Question not found");
+  if (!canAccessAttempt(req, snapshot.attempt?.user_id)) {
+    return res.status(403).json({ error: "You can only answer your own questions" });
+  }
+  if (snapshot.attempt?.is_completed) {
+    return res.status(400).json({ error: "Attempt already completed" });
+  }
 
   const primaryFormula = (snapshot.template.accepted_formulas?.[0]) || "0";
   const isCorrect = snapshot.template.template_type === "theoretical_question"
@@ -384,9 +444,15 @@ router.post('/attempts/:id/finish', authenticate, async (req, res) => {
     // Prevent double finish
     const existing = await prisma.testAttempt.findUnique({
       where: { id: attemptId },
-      select: { is_completed: true }
+      select: { is_completed: true, user_id: true }
     });
 
+    if (!existing) {
+      return res.status(404).json({ error: "Attempt not found" });
+    }
+    if (!canAccessAttempt(req, existing.user_id)) {
+      return res.status(403).json({ error: "You can only finish your own attempts" });
+    }
     if (existing?.is_completed) {
       return res.status(400).json({ error: "Attempt already completed" });
     }
@@ -495,15 +561,9 @@ router.post('/attempts/:id/finish', authenticate, async (req, res) => {
       console.error("Student Stats Service Error:", e);
     }
 
-    // Achievements
-    let newlyEarned: any[] = [];
-    if (attempt.user_id) {
-      newlyEarned = await checkAndAwardAchievements(attempt.user_id);
-    }
-
     res.json({
       ...attempt,
-      newlyEarned
+      newlyEarned: []
     });
 
   } catch (error) {
@@ -513,7 +573,7 @@ router.post('/attempts/:id/finish', authenticate, async (req, res) => {
 });
 
 // 4. Create Question Template (Admin)
-router.post('/templates', authenticate, async (req, res) => {
+router.post('/templates', authenticate, authorize('manage', 'test'), async (req, res) => {
   try {
     const requestedTemplates = Array.isArray(req.body)
       ? req.body
@@ -677,11 +737,118 @@ router.patch('/question-reports/:id', authenticate, async (req, res) => {
 });
 
 // Get all Question Templates (Admin)
-router.get('/templates', authenticate, async (req, res) => {
+router.get('/templates/filters', authenticate, async (req, res) => {
   try {
     const allowedSubjectIds = await getAllowedSubjectIds(req);
     const templates = await prisma.questionTemplate.findMany({
       where: templateSubjectWhere(allowedSubjectIds),
+      select: {
+        template_type: true,
+        difficulty: true,
+        lesson_id: true,
+        lesson: {
+          select: {
+            id: true,
+            title_en: true,
+            title_vi: true,
+            grade: {
+              select: {
+                id: true,
+                slug: true,
+                title_en: true,
+                title_vi: true,
+              }
+            }
+          }
+        }
+      }
+    });
+
+    const templateTypes = Array.from(
+      new Set(
+        templates
+          .map((template) => template.template_type)
+          .filter((value): value is string => Boolean(value))
+      )
+    ).sort((a, b) => a.localeCompare(b));
+
+    const grades = Array.from(
+      new Map(
+        templates
+          .filter((template) => template.lesson?.grade?.id)
+          .map((template) => [
+            String(template.lesson!.grade!.id),
+            {
+              id: String(template.lesson!.grade!.id),
+              slug: template.lesson!.grade!.slug || "",
+              title_en: template.lesson!.grade!.title_en,
+              title_vi: template.lesson!.grade!.title_vi,
+            }
+          ])
+      ).values()
+    ).sort((a, b) => a.title_en.localeCompare(b.title_en));
+
+    const lessons = Array.from(
+      new Map(
+        templates
+          .filter((template) => template.lesson?.id)
+          .map((template) => [
+            template.lesson!.id,
+            {
+              id: template.lesson!.id,
+              title_en: template.lesson!.title_en,
+              title_vi: template.lesson!.title_vi,
+              grade_id: template.lesson!.grade?.id ? String(template.lesson!.grade.id) : "",
+            }
+          ])
+      ).values()
+    ).sort((a, b) => a.title_en.localeCompare(b.title_en));
+
+    res.json({
+      templateTypes,
+      grades,
+      lessons,
+      difficulties: ["easy", "medium", "hard"],
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to fetch template filter metadata", details: error.message });
+  }
+});
+
+router.get('/templates', authenticate, async (req, res) => {
+  try {
+    const allowedSubjectIds = await getAllowedSubjectIds(req);
+    const page = parsePositiveInt(req.query.page, 1);
+    const pageSize = parsePositiveInt(req.query.pageSize, 10);
+    const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
+    const templateType = typeof req.query.templateType === 'string' ? req.query.templateType.trim() : '';
+    const rawDifficulty = typeof req.query.difficulty === 'string' ? req.query.difficulty.trim().toLowerCase() : '';
+    const difficulty = rawDifficulty && rawDifficulty !== 'all' ? normalizeDifficulty(rawDifficulty) : '';
+    const lessonId = typeof req.query.lessonId === 'string' ? req.query.lessonId.trim() : '';
+    const gradeId = Number(req.query.gradeId);
+    const where = {
+      ...templateSubjectWhere(allowedSubjectIds),
+      ...(templateType && templateType !== 'all' ? { template_type: templateType } : {}),
+      ...(difficulty && difficulty !== 'all' ? { difficulty } : {}),
+      ...(lessonId && lessonId !== 'all' ? { lesson_id: lessonId } : {}),
+      ...(Number.isInteger(gradeId) ? { lesson: { grade_id: gradeId } } : {}),
+      ...(search
+        ? {
+            OR: [
+              { template_type: { contains: search, mode: 'insensitive' as const } },
+              { body_template_en: { contains: search, mode: 'insensitive' as const } },
+              { body_template_vi: { contains: search, mode: 'insensitive' as const } },
+              { lesson_id: { contains: search, mode: 'insensitive' as const } },
+              { lesson: { title_en: { contains: search, mode: 'insensitive' as const } } },
+              { lesson: { title_vi: { contains: search, mode: 'insensitive' as const } } },
+            ]
+          }
+        : {}),
+    } as any;
+    const skip = (page - 1) * pageSize;
+    const total = await prisma.questionTemplate.count({ where });
+    const templates = await prisma.questionTemplate.findMany({
+      where,
       include: {
         lesson: {
           include: {
@@ -689,9 +856,20 @@ router.get('/templates', authenticate, async (req, res) => {
           }
         }
       },
-      orderBy: { created_at: 'desc' }
+      orderBy: { created_at: 'desc' },
+      skip,
+      take: pageSize,
     });
-    res.json(templates);
+    res.json({
+      items: templates,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / pageSize)),
+        hasMore: skip + templates.length < total,
+      }
+    });
   } catch (error: any) {
     res.status(500).json({ error: "Failed to fetch templates" });
   }
@@ -721,7 +899,7 @@ router.get('/templates/:id', authenticate, async (req, res) => {
 });
 
 // Update a Question Template
-router.put('/templates/:id', authenticate, async (req, res) => {
+router.put('/templates/:id', authenticate, authorize('manage', 'test'), async (req, res) => {
   try {
     const id = req.params.id as string;
     const {
@@ -760,7 +938,7 @@ router.put('/templates/:id', authenticate, async (req, res) => {
 });
 
 // Delete a Question Template
-router.delete('/templates/:id', authenticate, async (req, res) => {
+router.delete('/templates/:id', authenticate, authorize('manage', 'test'), async (req, res) => {
   try {
     const id = req.params.id as string;
     await prisma.questionTemplate.delete({ where: { id } });

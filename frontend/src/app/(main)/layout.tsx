@@ -13,7 +13,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         {/* Settingbar stays on top of the main content area */}
         <Settingbar />
         
-        <main className="min-w-0 flex-grow p-3 sm:p-4 md:p-8 pb-20">
+        <main className="min-w-0 flex-grow p-3 pt-15 pb-20 sm:p-4 sm:pt-4 md:p-8 md:pt-8">
           {children}
         </main>
         

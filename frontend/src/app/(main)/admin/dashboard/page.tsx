@@ -66,6 +66,13 @@ type DashboardStats = {
   };
   topUsers: TopUser[];
   recentActivity: RecentActivity[];
+  recentActivityPagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+    hasMore: boolean;
+  };
   activityHistory: ActivityPoint[];
 };
 
@@ -75,19 +82,35 @@ export default function AdminDashboard() {
   const { theme } = useTheme();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [recentActivityPage, setRecentActivityPage] = useState(1);
 
   useEffect(() => {
     fetchStats();
   }, []);
 
-  const fetchStats = async () => {
+  const fetchStats = async (page = 1, append = false) => {
+    if (append) setLoadingMore(true);
+    else setLoading(true);
     try {
-      const data = await adminService.getStats();
-      setStats(data);
+      const data = await adminService.getStats({
+        recentActivityPage: page,
+        recentActivityPageSize: 10,
+      });
+      setStats((current) => (
+        append && current
+          ? {
+              ...data,
+              recentActivity: [...current.recentActivity, ...data.recentActivity],
+            }
+          : data
+      ));
+      setRecentActivityPage(page);
     } catch (error) {
       console.error("Failed to fetch admin stats:", error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
@@ -342,6 +365,17 @@ export default function AdminDashboard() {
                 </tbody>
               </table>
             </div>
+            {stats?.recentActivityPagination?.hasMore && (
+              <div className="mt-4 flex justify-center">
+                <button
+                  onClick={() => fetchStats(recentActivityPage + 1, true)}
+                  disabled={loadingMore}
+                  className="rounded-2xl border border-sol-border/20 bg-sol-bg px-5 py-3 text-sm font-black text-sol-text transition hover:border-sol-accent/40 hover:text-sol-accent disabled:opacity-60"
+                >
+                  {loadingMore ? t("loadingMore") : t("showMore")}
+                </button>
+              </div>
+            )}
           </div>
         </section>
       </div>

@@ -12,6 +12,36 @@ export interface CreateTemplateDTO {
   accepted_formulas?: string[];
 }
 
+export interface PaginationMeta {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+  hasMore: boolean;
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  pagination: PaginationMeta;
+}
+
+export interface TemplateFilterMetadata {
+  templateTypes: string[];
+  grades: Array<{
+    id: string;
+    slug: string;
+    title_en: string;
+    title_vi: string;
+  }>;
+  lessons: Array<{
+    id: string;
+    title_en: string;
+    title_vi: string;
+    grade_id: string;
+  }>;
+  difficulties: string[];
+}
+
 export const testService = {
   createTemplate: async (data: CreateTemplateDTO) => {
     const response = await api.post('/tests/templates', data);
@@ -21,8 +51,20 @@ export const testService = {
     const response = await api.post('/tests/templates', { templates });
     return response.data;
   },
-  listTemplates: async () => {
-    const response = await api.get('/tests/templates');
+  listTemplates: async (params?: {
+    page?: number;
+    pageSize?: number;
+    search?: string;
+    templateType?: string;
+    gradeId?: string;
+    lessonId?: string;
+    difficulty?: string;
+  }): Promise<PaginatedResponse<any>> => {
+    const response = await api.get('/tests/templates', { params });
+    return response.data;
+  },
+  getTemplateFilters: async (): Promise<TemplateFilterMetadata> => {
+    const response = await api.get('/tests/templates/filters');
     return response.data;
   },
   getTemplate: async (id: string) => {

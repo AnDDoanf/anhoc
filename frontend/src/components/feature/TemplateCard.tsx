@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pencil, Trash2, PlayCircle } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
+import Can from "@/components/auth/Can";
 
 interface TemplateCardProps {
   tmpl: any;
@@ -29,12 +30,16 @@ export default function TemplateCard({ tmpl, onEdit, onDelete, onPreview }: Temp
              <PlayCircle size={20} strokeWidth={1.5} />
            </button>
          )}
-         <button onClick={(e) => { e.stopPropagation(); onEdit(tmpl.id); }} className="text-sol-muted hover:text-sol-accent transition-colors cursor-pointer" title="Edit Template">
-           <Pencil size={20} strokeWidth={1.5} />
-         </button>
-         <button onClick={(e) => { e.stopPropagation(); onDelete(tmpl.id); }} className="text-sol-muted hover:text-red-500 transition-colors cursor-pointer" title="Delete Template">
-           <Trash2 size={20} strokeWidth={1.5} />
-         </button>
+         <Can I="manage" a="test">
+           <button onClick={(e) => { e.stopPropagation(); onEdit(tmpl.id); }} className="text-sol-muted hover:text-sol-accent transition-colors cursor-pointer" title="Edit Template">
+             <Pencil size={20} strokeWidth={1.5} />
+           </button>
+         </Can>
+         <Can I="manage" a="test">
+           <button onClick={(e) => { e.stopPropagation(); onDelete(tmpl.id); }} className="text-sol-muted hover:text-red-500 transition-colors cursor-pointer" title="Delete Template">
+             <Trash2 size={20} strokeWidth={1.5} />
+           </button>
+         </Can>
       </div>
 
       <div className="flex-grow space-y-6 pt-2">

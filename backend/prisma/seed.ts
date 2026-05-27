@@ -131,22 +131,22 @@ async function main() {
 
   // 6. 🎓 Grades & Subjects
   console.log('  - Seeding Grades & Subjects...');
+  const math = await prisma.subject.upsert({
+    where: { slug: 'math' },
+    update: {},
+    create: { slug: 'math', title_en: 'Mathematics', title_vi: 'Toan hoc', color: '#3b82f6' },
+  });
+
   const grade1 = await prisma.grade.upsert({
     where: { slug: 'grade-1' },
     update: { subject_id: math.id },
-    create: { slug: 'grade-1', title_en: 'Grade 1', title_vi: 'Lớp 1', subject_id: math.id },
+    create: { slug: 'grade-1', title_en: 'Grade 1', title_vi: 'Lop 1', subject_id: math.id },
   });
 
   const grade6 = await prisma.grade.upsert({
     where: { slug: 'grade-6' },
     update: { subject_id: math.id },
-    create: { slug: 'grade-6', title_en: 'Grade 6', title_vi: 'Lớp 6', subject_id: math.id },
-  });
-
-  const math = await prisma.subject.upsert({
-    where: { slug: 'math' },
-    update: {},
-    create: { slug: 'math', title_en: 'Mathematics', title_vi: 'Toán học', color: '#3b82f6' },
+    create: { slug: 'grade-6', title_en: 'Grade 6', title_vi: 'Lop 6', subject_id: math.id },
   });
 
   for (const role of [adminRole, teacherRole, studentRole]) {

@@ -7,7 +7,6 @@ import FilterBar from "@/components/ui/FilterBar";
 import { Medal, BookOpen, Sparkles, Loader2, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { testService } from "@/services/testService";
-import { lessonService } from "@/services/lessonService";
 
 type GradeTest = {
   id: string;
@@ -48,7 +47,6 @@ export default function TestPage() {
   const t = useTranslations("Test");
   const locale = useLocale();
   const [tests, setTests] = useState<GradeTest[]>([]);
-  const [lessons, setLessons] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Filter States
@@ -60,12 +58,8 @@ export default function TestPage() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [testData, lessonData] = await Promise.all([
-          testService.listGradeTests(),
-          lessonService.getAvailablePractices() // Good for getting all lessons
-        ]);
+        const testData = await testService.listGradeTests();
         setTests(testData);
-        setLessons(lessonData);
       } catch (error) {
         console.error("Failed to load test page data:", error);
       } finally {
@@ -89,12 +83,21 @@ export default function TestPage() {
   }, [tests, locale]);
 
   const lessonOptions = useMemo(() => {
-    return lessons.map(l => ({
-      id: l.id,
-      title: locale === "vi" ? l.title_vi : l.title_en,
-      gradeId: String(l.grade?.id || "")
-    })).sort((a, b) => a.title.localeCompare(b.title));
-  }, [lessons, locale]);
+    return Array.from(
+      new Map(
+        tests.flatMap((test) =>
+          (test.grade?.lessons ?? []).map((lesson) => [
+            lesson.id,
+            {
+              id: lesson.id,
+              title: locale === "vi" ? lesson.title_vi : lesson.title_en,
+              gradeId: String(test.grade_id)
+            }
+          ] as const)
+        )
+      ).values()
+    ).sort((a, b) => a.title.localeCompare(b.title));
+  }, [tests, locale]);
 
   const visibleLessonOptions = useMemo(() => {
     return lessonOptions.filter(l => gradeIdFilter === "all" || l.gradeId === gradeIdFilter);

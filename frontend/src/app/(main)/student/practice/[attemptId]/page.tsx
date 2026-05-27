@@ -4,6 +4,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { testService } from "@/services/testService";
+import { achievementService } from "@/services/achievementService";
 import { Loader2, ArrowRight, ArrowLeft, Send, CheckCircle2, XCircle, Award, Flag } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
@@ -18,6 +19,7 @@ import {
   normalizeQuestionType,
 } from "@/utils/questionType";
 import ConfirmModal from "@/components/ui/ConfirmModal";
+import PracticeResultModal from "@/components/feature/PracticeResultModal";
 import * as LucideIcons from "lucide-react";
 
 
@@ -38,6 +40,8 @@ export default function PracticeRunnerPage() {
   const [submitting, setSubmitting] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
   const [newlyEarned, setNewlyEarned] = useState<any[]>([]);
+  const [checkingAchievements, setCheckingAchievements] = useState(false);
+  const [showResultModal, setShowResultModal] = useState(false);
   const [finishModalType, setFinishModalType] = useState<"complete" | "abandon" | null>(null);
   const [orderedItems, setOrderedItems] = useState<ChoiceOption[]>([]);
   const [reportModalOpen, setReportModalOpen] = useState(false);
@@ -189,25 +193,31 @@ export default function PracticeRunnerPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const hydrateAchievements = async () => {
+    setCheckingAchievements(true);
+    try {
+      const result = await achievementService.check();
+      setNewlyEarned(result.newlyEarned || []);
+      window.dispatchEvent(new Event("student-stats-updated"));
+    } catch (error) {
+      console.error("Failed to check achievements:", error);
+    } finally {
+      setCheckingAchievements(false);
+    }
+  };
+
   const confirmFinish = async () => {
     if (isSubmitting) return;
 
-    const actionType = finishModalType;
     setIsSubmitting(true);
     try {
       const data = await testService.finishAttempt(attemptId);
 
-
       setFinishModalType(null);
 
-
-      if (data.newlyEarned) {
-        setNewlyEarned(data.newlyEarned);
-      }
-
-
       setIsFinished(true);
-
+      setNewlyEarned([]);
+      setCheckingAchievements(true);
 
       setAttempt((prev: any) => ({
         ...prev,
@@ -216,19 +226,13 @@ export default function PracticeRunnerPage() {
       }));
 
       window.dispatchEvent(new Event("student-stats-updated"));
-
-      if (actionType === "abandon") {
-        handleReturnToLesson();
-      }
+      void hydrateAchievements();
 
     } catch (error: any) {
-
       if (error.response?.status === 400) {
         setIsFinished(true);
         setFinishModalType(null);
-        if (actionType === "abandon") {
-          handleReturnToLesson();
-        }
+        void hydrateAchievements();
       } else {
         console.error("Failed to finish:", error);
       }
@@ -328,53 +332,75 @@ export default function PracticeRunnerPage() {
 
   if (isFinished) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-12 space-y-12 animate-in fade-in zoom-in duration-700">
-        <div className="flex flex-col items-center text-center space-y-6 bg-sol-surface/30 p-12 rounded-[3rem] border border-sol-border/10">
-          <div className="w-24 h-24 rounded-full bg-sol-accent text-sol-bg flex items-center justify-center shadow-[0_0_50px_rgba(var(--sol-accent-rgb),0.5)]">
-            <Award size={48} />
-          </div>
-          <h1 className="text-4xl md:text-5xl font-black text-sol-text tracking-tight">{t("completeTitle")}</h1>
-          <p className="text-sol-muted text-lg max-w-md">
-            {t("scoreMessage", { score: attempt.total_score })}
-          </p>
-
-          {/* Newly Earned Achievements */}
-          {newlyEarned.length > 0 && (
-            <div className="w-full mt-12 space-y-6">
-              <div className="flex items-center gap-4 justify-center">
-                <div className="h-px w-12 bg-sol-accent/20" />
-                <span className="text-xs font-black text-sol-accent uppercase tracking-widest">{t("achievementsEarned")}</span>
-                <div className="h-px w-12 bg-sol-accent/20" />
-              </div>
-              <div className="flex flex-wrap justify-center gap-4">
-                {newlyEarned.map((ach: any) => {
-                  const Icon = (LucideIcons as any)[ach.icon || "Trophy"] || LucideIcons.Trophy;
-                  return (
-                    <div key={ach.slug} className="flex flex-col items-center gap-3 p-6 bg-sol-surface rounded-[2rem] border border-sol-accent/20 shadow-xl animate-in slide-in-from-bottom-4 duration-500 hover:scale-105 transition-transform">
-                      <div className="p-3 bg-sol-accent/10 text-sol-accent rounded-2xl">
-                        <Icon size={24} />
-                      </div>
-                      <div className="text-center">
-                        <div className="text-sm font-bold text-sol-text">
-                          {locale === "vi" ? ach.title_vi : ach.title_en}
-                        </div>
-                        <div className="text-[10px] font-black text-sol-accent mt-0.5">+{ach.xp_reward} XP</div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+      <>
+        <PracticeResultModal
+          isOpen={showResultModal}
+          onClose={() => setShowResultModal(false)}
+          attemptId={attemptId}
+        />
+        <div className="max-w-3xl mx-auto px-4 py-12 space-y-12 animate-in fade-in zoom-in duration-700">
+          <div className="flex flex-col items-center text-center space-y-6 bg-sol-surface/30 p-12 rounded-[3rem] border border-sol-border/10">
+            <div className="w-24 h-24 rounded-full bg-sol-accent text-sol-bg flex items-center justify-center shadow-[0_0_50px_rgba(var(--sol-accent-rgb),0.5)]">
+              <Award size={48} />
             </div>
-          )}
+            <h1 className="text-4xl md:text-5xl font-black text-sol-text tracking-tight">{t("completeTitle")}</h1>
+            <p className="text-sol-muted text-lg max-w-md">
+              {t("scoreMessage", { score: attempt.total_score })}
+            </p>
 
-          <button
-            onClick={handleReturnToLesson}
-            className="mt-8 px-12 py-4 bg-sol-accent text-sol-bg rounded-2xl font-bold hover:bg-sol-accent/90 transition-all shadow-lg hover:shadow-sol-accent/20 active:scale-95"
-          >
-            {t("returnToLesson")}
-          </button>
+            {checkingAchievements && (
+              <div className="flex items-center gap-3 rounded-2xl border border-sol-border/10 bg-sol-bg/60 px-5 py-3 text-sm font-bold text-sol-muted">
+                <Loader2 size={16} className="animate-spin text-sol-accent" />
+                <span>{t("analyzingResults")}</span>
+              </div>
+            )}
+
+            {/* Newly Earned Achievements */}
+            {newlyEarned.length > 0 && (
+              <div className="w-full mt-12 space-y-6">
+                <div className="flex items-center gap-4 justify-center">
+                  <div className="h-px w-12 bg-sol-accent/20" />
+                  <span className="text-xs font-black text-sol-accent uppercase tracking-widest">{t("achievementsEarned")}</span>
+                  <div className="h-px w-12 bg-sol-accent/20" />
+                </div>
+                <div className="flex flex-wrap justify-center gap-4">
+                  {newlyEarned.map((ach: any) => {
+                    const Icon = (LucideIcons as any)[ach.icon || "Trophy"] || LucideIcons.Trophy;
+                    return (
+                      <div key={ach.slug} className="flex flex-col items-center gap-3 p-6 bg-sol-surface rounded-[2rem] border border-sol-accent/20 shadow-xl animate-in slide-in-from-bottom-4 duration-500 hover:scale-105 transition-transform">
+                        <div className="p-3 bg-sol-accent/10 text-sol-accent rounded-2xl">
+                          <Icon size={24} />
+                        </div>
+                        <div className="text-center">
+                          <div className="text-sm font-bold text-sol-text">
+                            {locale === "vi" ? ach.title_vi : ach.title_en}
+                          </div>
+                          <div className="text-[10px] font-black text-sol-accent mt-0.5">+{ach.xp_reward} XP</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <button
+                onClick={() => setShowResultModal(true)}
+                className="px-12 py-4 rounded-2xl font-bold border border-sol-border/20 bg-sol-surface text-sol-text hover:border-sol-accent/30 hover:text-sol-accent transition-all shadow-sm active:scale-95"
+              >
+                {t("showResult")}
+              </button>
+              <button
+                onClick={handleReturnToLesson}
+                className="px-12 py-4 bg-sol-accent text-sol-bg rounded-2xl font-bold hover:bg-sol-accent/90 transition-all shadow-lg hover:shadow-sol-accent/20 active:scale-95"
+              >
+                {t("returnToLesson")}
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
