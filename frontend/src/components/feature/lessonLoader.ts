@@ -4,6 +4,7 @@ import remarkRehype from "remark-rehype";
 import rehypeKatex from "rehype-katex";
 import rehypeStringify from "rehype-stringify";
 import { cookies } from "next/headers";
+import { SERVER_API_BASE_URL } from "@/services/api";
 
 type LessonApiResponse = {
   title_en: string;
@@ -16,8 +17,7 @@ type LessonApiResponse = {
 
 export async function getLesson(lessonId: string, locale: string = "vi") {
   const token = (await cookies()).get("token")?.value;
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api/v1";
-  const response = await fetch(`${apiBaseUrl.replace(/\/$/, "")}/lessons/${encodeURIComponent(lessonId)}`, {
+  const response = await fetch(`${SERVER_API_BASE_URL}/lessons/${encodeURIComponent(lessonId)}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     cache: "no-store",
   });

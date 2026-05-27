@@ -4,7 +4,7 @@ The purpose of this application is to provide a **simple, engaging, and structur
 
 It aims to:
 
-* Help kids understand math concepts through **easy-to-follow theory lessons**
+* Help Vietnamese students from grade 1-9 understand math concepts through **easy-to-follow theory lessons**
 * Reinforce learning with **interactive practice exercises**
 * Evaluate progress through **tests and scoring**
 * Track improvement over time to build **confidence and consistency**
@@ -171,7 +171,19 @@ test_results (
 ## Frontend (.env)
 
 ```
-NEXT_PUBLIC_API_URL=https://your-backend.onrender.com
+# Browser API base.
+# Leave unset to use same-origin /api/v1 via Next rewrites.
+NEXT_PUBLIC_API_URL=
+
+# Server-side fetch base for Next.js loaders/components.
+# In local:    http://127.0.0.1:5001
+# In prod:     https://your-backend.url.com
+INTERNAL_API_URL=
+
+# Optional rewrite target for Next.js so frontend can call /api/v1 on the same origin.
+# In local:    http://127.0.0.1:5001
+# In prod:     https://your-backend.url.com
+BACKEND_URL=
 ```
 
 ## Backend (.env)
@@ -180,6 +192,8 @@ NEXT_PUBLIC_API_URL=https://your-backend.onrender.com
 SERVER_PORT=5001
 DATABASE_URL=your_neon_connection_string
 JWT_SECRET=your_secret_key
+CORS_ORIGINS=http://localhost:5000,https://your-backend.url.com
+AUTO_SEED_ACHIEVEMENTS=false
 ```
 
 ---
