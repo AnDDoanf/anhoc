@@ -1,0 +1,706 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{listings}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue
+}
+
+\lstdefinestyle{doccode}{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+  frame=single,
+  rulecolor=\color{black!20}
+}
+
+\newcommand{\docpath}[1]{\texttt{#1}}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+\title{Anhoc Technical Design}
+\date{}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Purpose}
+
+This document describes the current technical design of the Anhoc project based on the implemented code in \docpath{frontend/} and \docpath{backend/}.
+
+It covers:
+\begin{itemize}[leftmargin=1.5em]
+  \item Architecture design
+  \item Functional design
+  \item Data model overview
+  \item REST API specification
+  \item Main sequence flows
+\end{itemize}
+
+\section{System Overview}
+
+Anhoc is a math learning platform with:
+\begin{itemize}[leftmargin=1.5em]
+  \item Student learning content by subject and grade
+  \item Practice sessions generated from question templates
+  \item Grade-level test sessions
+  \item Progress tracking through mastery, XP, levels, and achievements
+  \item Admin functions for lessons, question templates, users, roles, and access control
+\end{itemize}
+
+\section{Architecture Design}
+
+\subsection{Logical Architecture}
+
+The runtime flow is:
+\begin{enumerate}[leftmargin=1.5em]
+  \item User Browser sends requests to the Next.js frontend.
+  \item The frontend calls the Express backend through REST endpoints under \docpath{/api/v1}.
+  \item The backend uses Prisma ORM to access PostgreSQL.
+  \item The backend also invokes the Math Generation Service, Mastery Service, Level Service, and Achievement Service.
+\end{enumerate}
+
+\subsection{Deployment View}
+
+The deployment arrangement is:
+\begin{enumerate}[leftmargin=1.5em]
+  \item Vercel hosts the frontend runtime.
+  \item Render hosts the Node.js API.
+  \item Neon PostgreSQL provides the database.
+\end{enumerate}
+
+\subsection{Backend Structure}
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \docpath{backend/server.ts}
+  \begin{itemize}[leftmargin=2em]
+    \item Bootstraps Express
+    \item Configures CORS and JSON middleware
+    \item Mounts versioned APIs under \docpath{/api/v1}
+    \item Seeds achievements on startup
+  \end{itemize}
+  \item \docpath{backend/routes/}
+  \begin{itemize}[leftmargin=2em]
+    \item \docpath{auth.ts}: login, register, profile, password, activity
+    \item \docpath{lessons.ts}: lessons, grades, subjects, practice start, study tracking
+    \item \docpath{tests.ts}: attempts, answer submission, template management, grade tests, question reports
+    \item \docpath{admin.ts}: users, roles, access control, dashboard statistics
+    \item \docpath{achievements.ts}: achievement catalog and award checks
+  \end{itemize}
+  \item \docpath{backend/middleware/auth.ts}
+  \begin{itemize}[leftmargin=2em]
+    \item JWT authentication
+    \item Permission-based authorization
+    \item Self-or-admin access checks
+  \end{itemize}
+  \item \docpath{backend/services/}
+  \begin{itemize}[leftmargin=2em]
+    \item \docpath{mathService.ts}: variable generation, answer evaluation, template rendering
+    \item \docpath{masteryService.ts}: lesson mastery and study-time updates
+    \item \docpath{levelService.ts}: XP accumulation and level calculation
+    \item \docpath{achievementService.ts}: seed and award achievements
+  \end{itemize}
+\end{itemize}
+
+\subsection{Frontend Structure}
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \docpath{frontend/src/app/}: App Router pages for auth, student, and admin areas
+  \item \docpath{frontend/src/services/}: Axios-based API clients
+  \item \docpath{frontend/src/redux/}: Auth and permission state
+  \item \docpath{frontend/src/components/}: Student and admin UI components
+\end{itemize}
+
+\subsection{Security Model}
+
+\begin{itemize}[leftmargin=1.5em]
+  \item Authentication uses JWT in \docpath{Authorization: Bearer <token>}
+  \item Frontend stores the token in \docpath{localStorage} and a browser cookie for route middleware or proxy handling
+  \item Authorization is based on role name in JWT, grouped permissions per resource, and subject-level restrictions via \docpath{role\_subject\_permissions}
+\end{itemize}
+
+\subsection{Core Architectural Decisions}
+
+\begin{itemize}[leftmargin=1.5em]
+  \item REST API rather than server actions or GraphQL
+  \item Prisma as the data access layer
+  \item Question instances are materialized as \docpath{question\_snapshots}
+  \item Practice and test completion triggers secondary progression services:
+  \begin{itemize}[leftmargin=2em]
+    \item mastery update
+    \item XP grant
+    \item student stats update
+    \item achievement evaluation
+  \end{itemize}
+\end{itemize}
+
+\section{Functional Design}
+
+\subsection{Authentication and Identity}
+
+Capabilities:
+\begin{itemize}[leftmargin=1.5em]
+  \item Register a new user
+  \item Login and receive JWT
+  \item Read current profile
+  \item Change password
+  \item View 7-day XP activity
+\end{itemize}
+
+Business behavior:
+\begin{itemize}[leftmargin=1.5em]
+  \item Registration creates both \docpath{users} and \docpath{student\_stats}
+  \item Login expands role permissions into a grouped structure such as:
+\end{itemize}
+
+\begin{lstlisting}[style=doccode]
+lesson -> [read, manage]
+user   -> [manage]
+\end{lstlisting}
+
+\subsection{Learning Content Management}
+
+Capabilities:
+\begin{itemize}[leftmargin=1.5em]
+  \item Manage subjects
+  \item Manage grades
+  \item Create, update, delete lessons
+  \item List lessons with grade and subject metadata
+\end{itemize}
+
+Business behavior:
+\begin{itemize}[leftmargin=1.5em]
+  \item Lessons belong to one grade and one subject
+  \item Non-admin access can be restricted to specific subjects
+  \item Lesson content is bilingual with \docpath{title\_en}, \docpath{title\_vi}, \docpath{content\_markdown\_en}, and \docpath{content\_markdown\_vi}
+\end{itemize}
+
+\subsection{Practice Engine}
+
+Capabilities:
+\begin{itemize}[leftmargin=1.5em]
+  \item List lessons with available practice
+  \item Start lesson-based practice
+  \item Answer generated questions
+  \item Finish attempt and compute score
+  \item View attempt detail and practice history
+\end{itemize}
+
+Business behavior:
+\begin{itemize}[leftmargin=1.5em]
+  \item Practice sessions are stored as \docpath{test\_attempts} with \docpath{is\_practice = true}
+  \item Each session creates multiple \docpath{question\_snapshots}
+  \item Snapshot data stores template reference, generated variables, accepted right answers, student answer, correctness, and points
+  \item At finish:
+  \begin{itemize}[leftmargin=2em]
+    \item unanswered snapshots are marked incorrect
+    \item score is calculated as \docpath{(correct / total) * 100}
+    \item lesson mastery is updated for lesson-based practice
+    \item XP is awarded as \docpath{correct\_answers * 2}
+    \item achievements are re-evaluated
+  \end{itemize}
+\end{itemize}
+
+\subsection{Grade Test Engine}
+
+Capabilities:
+\begin{itemize}[leftmargin=1.5em]
+  \item Discover grade tests derived from available lesson templates
+  \item Start a 50-question grade test
+  \item Submit answers
+  \item Finish and score the test
+\end{itemize}
+
+Business behavior:
+\begin{itemize}[leftmargin=1.5em]
+  \item Grade tests are assembled dynamically from all templates under lessons in the selected grade
+  \item Grade test attempts use \docpath{is\_practice = false} and \docpath{lesson\_id = null}
+  \item The API returns attempts with fully expanded snapshot and lesson metadata
+\end{itemize}
+
+\subsection{Question Template Management}
+
+Capabilities:
+\begin{itemize}[leftmargin=1.5em]
+  \item Create one or many templates
+  \item Read, update, delete templates
+  \item Report problematic generated questions
+  \item Review and resolve reports
+\end{itemize}
+
+Business behavior:
+\begin{itemize}[leftmargin=1.5em]
+  \item Templates support bilingual prompt and explanation content
+  \item Difficulty is normalized to \docpath{easy | medium | hard}
+  \item Theoretical questions must have exactly 1 correct answer and exactly 3 false answers in \docpath{logic\_config.false\_answers}
+  \item Dynamic math questions support variable ranges, choices, derived expressions, constraints, and multiple accepted formulas
+\end{itemize}
+
+\subsection{Progression and Gamification}
+
+Capabilities:
+\begin{itemize}[leftmargin=1.5em]
+  \item Track lesson study time
+  \item Track lesson mastery
+  \item Award XP and levels
+  \item Award achievements
+  \item Show achievement catalog and earned state
+\end{itemize}
+
+Business behavior:
+\begin{itemize}[leftmargin=1.5em]
+  \item Mastery status becomes \docpath{not\_started}, \docpath{in\_progress}, or \docpath{completed} when score is at least 80
+  \item XP is stored in \docpath{xp\_logs}
+  \item Level is recalculated from cumulative XP
+  \item Achievements are seeded on startup and checked after completion flows
+\end{itemize}
+
+\subsection{Administration}
+
+Capabilities:
+\begin{itemize}[leftmargin=1.5em]
+  \item List users and roles
+  \item Create, update, delete users
+  \item Assign role to a user
+  \item Manage role permissions and subject permissions
+  \item View user performance insights
+  \item View dashboard statistics
+\end{itemize}
+
+Business behavior:
+\begin{itemize}[leftmargin=1.5em]
+  \item Access control is split into action or resource permissions and subject-level access
+  \item Admin dashboard aggregates users, lessons, attempts, average score, top users, recent activity, and 14-day history
+\end{itemize}
+
+\section{Data Model Overview}
+
+\subsection{Main Entities}
+
+\begin{longtable}{L{0.28\textwidth}L{0.62\textwidth}}
+\toprule
+\textbf{Entity} & \textbf{Purpose} \\
+\midrule
+\endhead
+\docpath{users} & Application users \\
+\docpath{roles} & Named roles such as admin or student \\
+\docpath{actions}, \docpath{resources}, \docpath{role\_permissions} & Dynamic RBAC \\
+\docpath{subjects}, \docpath{grades}, \docpath{lessons} & Learning content hierarchy \\
+\docpath{question\_templates} & Reusable question definitions \\
+\docpath{test\_attempts} & Practice or test session header \\
+\docpath{question\_snapshots} & Materialized generated questions per attempt \\
+\docpath{user\_lesson\_mastery} & User progress per lesson \\
+\docpath{student\_stats} & Aggregated XP, level, score, activity \\
+\docpath{achievements}, \docpath{user\_achievements} & Gamification rewards \\
+\docpath{xp\_logs} & XP history \\
+\docpath{question\_template\_reports} & Problem report workflow \\
+\docpath{audit\_logs}, \docpath{activity\_evidence} & Traceability and user evidence \\
+\bottomrule
+\end{longtable}
+
+\subsection{Content Hierarchy}
+
+The main relationships are:
+\begin{itemize}[leftmargin=1.5em]
+  \item \docpath{SUBJECT} contains \docpath{GRADE}
+  \item \docpath{SUBJECT} groups \docpath{LESSON}
+  \item \docpath{GRADE} contains \docpath{LESSON}
+  \item \docpath{LESSON} has \docpath{QUESTION\_TEMPLATE}
+  \item \docpath{USER} performs \docpath{TEST\_ATTEMPT}
+  \item \docpath{TEST\_ATTEMPT} contains \docpath{QUESTION\_SNAPSHOT}
+  \item \docpath{USER} tracks \docpath{USER\_LESSON\_MASTERY}
+  \item \docpath{LESSON} is referenced by \docpath{USER\_LESSON\_MASTERY}
+\end{itemize}
+
+\subsection{Important Persistence Rules}
+
+\begin{itemize}[leftmargin=1.5em]
+  \item A generated practice or test question is not computed on every render; it is persisted as a snapshot
+  \item Lesson-based practice attempts retain \docpath{lesson\_id}
+  \item Grade tests intentionally do not bind the attempt to one lesson
+  \item Student progress is a combination of raw attempts, derived mastery, cumulative XP or level, and achievements
+\end{itemize}
+
+\section{API Specification}
+
+Base URL:
+\begin{lstlisting}[style=doccode]
+/api/v1
+\end{lstlisting}
+
+Authentication:
+\begin{itemize}[leftmargin=1.5em]
+  \item Protected endpoints require \docpath{Authorization: Bearer <token>}
+\end{itemize}
+
+Response conventions:
+\begin{itemize}[leftmargin=1.5em]
+  \item Success returns JSON payloads
+  \item Validation or authorization errors generally return \docpath{400}, \docpath{401}, \docpath{403}, \docpath{404}, or \docpath{409}
+  \item Unhandled failures return \docpath{500}
+\end{itemize}
+
+\subsection{Health}
+
+\begin{longtable}{L{0.12\textwidth}L{0.25\textwidth}L{0.12\textwidth}L{0.41\textwidth}}
+\toprule
+\textbf{Method} & \textbf{Path} & \textbf{Auth} & \textbf{Description} \\
+\midrule
+\endhead
+\docpath{GET} & \docpath{/health} & No & API health check \\
+\bottomrule
+\end{longtable}
+
+\subsection{Auth API}
+
+\begin{longtable}{L{0.12\textwidth}L{0.31\textwidth}L{0.12\textwidth}L{0.35\textwidth}}
+\toprule
+\textbf{Method} & \textbf{Path} & \textbf{Auth} & \textbf{Description} \\
+\midrule
+\endhead
+\docpath{POST} & \docpath{/auth/register} & No & Register user \\
+\docpath{POST} & \docpath{/auth/login} & No & Login and return token \\
+\docpath{GET} & \docpath{/auth/permissions/:userId} & No & Get grouped permissions by user \\
+\docpath{GET} & \docpath{/auth/profile} & Yes & Get current user profile \\
+\docpath{PATCH} & \docpath{/auth/password} & Yes & Change current user password \\
+\docpath{GET} & \docpath{/auth/activity} & Yes & Get 7-day XP activity \\
+\bottomrule
+\end{longtable}
+
+Example login request:
+\begin{lstlisting}[style=doccode]
+{
+  "email": "student@example.com",
+  "password": "secret123"
+}
+\end{lstlisting}
+
+Example login response:
+\begin{lstlisting}[style=doccode]
+{
+  "token": "jwt-token",
+  "user": {
+    "id": "uuid",
+    "username": "student1",
+    "role": "student",
+    "permissions": {
+      "lesson": ["read"],
+      "test": ["read"]
+    }
+  }
+}
+\end{lstlisting}
+
+\subsection{Lessons API}
+
+\begin{longtable}{L{0.12\textwidth}L{0.31\textwidth}L{0.12\textwidth}L{0.35\textwidth}}
+\toprule
+\textbf{Method} & \textbf{Path} & \textbf{Auth} & \textbf{Description} \\
+\midrule
+\endhead
+\docpath{POST} & \docpath{/lessons} & Yes & Create lesson \\
+\docpath{GET} & \docpath{/lessons} & Yes & List lessons \\
+\docpath{GET} & \docpath{/lessons/grades} & Yes & List grades \\
+\docpath{POST} & \docpath{/lessons/grades} & Yes & Create grade \\
+\docpath{GET} & \docpath{/lessons/subjects} & Yes & List subjects \\
+\docpath{POST} & \docpath{/lessons/subjects} & Yes & Create subject \\
+\docpath{GET} & \docpath{/lessons/practice-available} & Yes & List lessons with templates \\
+\docpath{POST} & \docpath{/lessons/:id/practice} & Yes & Start lesson practice \\
+\docpath{GET} & \docpath{/lessons/:id} & Yes & Get lesson detail \\
+\docpath{PUT} & \docpath{/lessons/:id} & Yes & Update lesson \\
+\docpath{GET} & \docpath{/lessons/mastery/all} & Yes & Get current user mastery \\
+\docpath{POST} & \docpath{/lessons/:id/study-time} & Yes & Track study time \\
+\docpath{DELETE} & \docpath{/lessons/:id} & Yes & Delete lesson \\
+\bottomrule
+\end{longtable}
+
+Practice start request:
+\begin{lstlisting}[style=doccode]
+{
+  "difficulty": "easy"
+}
+\end{lstlisting}
+
+Practice start response shape:
+\begin{lstlisting}[style=doccode]
+{
+  "id": "attempt-uuid",
+  "user_id": "user-uuid",
+  "lesson_id": "lesson-uuid",
+  "is_practice": true,
+  "snapshots": [
+    {
+      "id": "snapshot-uuid",
+      "generated_variables": {
+        "a": 5,
+        "b": 9
+      },
+      "right_answers": ["14"],
+      "template": {
+        "id": "template-uuid",
+        "template_type": "arithmetic",
+        "body_template_vi": "..."
+      }
+    }
+  ]
+}
+\end{lstlisting}
+
+\subsection{Tests API}
+
+\begin{longtable}{L{0.12\textwidth}L{0.33\textwidth}L{0.12\textwidth}L{0.33\textwidth}}
+\toprule
+\textbf{Method} & \textbf{Path} & \textbf{Auth} & \textbf{Description} \\
+\midrule
+\endhead
+\docpath{GET} & \docpath{/tests/grade-tests} & Yes & List grade tests \\
+\docpath{POST} & \docpath{/tests/grade-tests/:gradeId/start} & Yes & Start grade test \\
+\docpath{GET} & \docpath{/tests/attempts/:id} & Yes & Get attempt detail \\
+\docpath{POST} & \docpath{/tests/submit-answer} & Yes & Submit answer for snapshot \\
+\docpath{POST} & \docpath{/tests/attempts/:id/finish} & Yes & Finish attempt \\
+\docpath{POST} & \docpath{/tests/templates} & Yes & Create one or many templates \\
+\docpath{GET} & \docpath{/tests/templates} & Yes & List templates \\
+\docpath{GET} & \docpath{/tests/templates/:id} & Yes & Get template detail \\
+\docpath{PUT} & \docpath{/tests/templates/:id} & Yes & Update template \\
+\docpath{DELETE} & \docpath{/tests/templates/:id} & Yes & Delete template \\
+\docpath{POST} & \docpath{/tests/question-reports} & Yes & Report a question \\
+\docpath{GET} & \docpath{/tests/question-reports} & Yes & List reports \\
+\docpath{PATCH} & \docpath{/tests/question-reports/:id} & Yes & Update report status \\
+\docpath{GET} & \docpath{/tests/my-practice-history} & Yes & List practice history \\
+\bottomrule
+\end{longtable}
+
+Submit answer request:
+\begin{lstlisting}[style=doccode]
+{
+  "snapshotId": "snapshot-uuid",
+  "studentAnswer": "42"
+}
+\end{lstlisting}
+
+Submit answer response:
+\begin{lstlisting}[style=doccode]
+{
+  "isCorrect": true,
+  "rightAnswers": ["42"],
+  "explanation": "..."
+}
+\end{lstlisting}
+
+Finish attempt response:
+\begin{lstlisting}[style=doccode]
+{
+  "user_id": "user-uuid",
+  "lesson_id": "lesson-uuid",
+  "started_at": "2026-05-27T06:00:00.000Z",
+  "total_score": 90,
+  "newlyEarned": [
+    {
+      "slug": "first-step",
+      "title_en": "First Step",
+      "title_vi": "Buoc Dau Tien",
+      "icon": "Footprints",
+      "xp_reward": 50
+    }
+  ]
+}
+\end{lstlisting}
+
+Question template payload:
+\begin{lstlisting}[style=doccode]
+{
+  "lesson_id": "lesson-uuid",
+  "template_type": "arithmetic",
+  "difficulty": "medium",
+  "body_template_en": "What is $a$ + $b$?",
+  "body_template_vi": "$a$ + $b$ bang bao nhieu?",
+  "explanation_template_en": "Add the two numbers.",
+  "explanation_template_vi": "Cong hai so.",
+  "logic_config": {
+    "variables": {
+      "a": { "min": 1, "max": 10 },
+      "b": { "min": 1, "max": 10 }
+    }
+  },
+  "accepted_formulas": ["a+b"]
+}
+\end{lstlisting}
+
+\subsection{Achievements API}
+
+\begin{longtable}{L{0.12\textwidth}L{0.25\textwidth}L{0.12\textwidth}L{0.41\textwidth}}
+\toprule
+\textbf{Method} & \textbf{Path} & \textbf{Auth} & \textbf{Description} \\
+\midrule
+\endhead
+\docpath{POST} & \docpath{/achievements/seed} & Yes & Seed achievement definitions \\
+\docpath{GET} & \docpath{/achievements} & Yes & List all achievements with earned state \\
+\docpath{GET} & \docpath{/achievements/my} & Yes & List earned achievements \\
+\docpath{POST} & \docpath{/achievements/check} & Yes & Trigger re-evaluation \\
+\bottomrule
+\end{longtable}
+
+\subsection{Admin API}
+
+\begin{longtable}{L{0.12\textwidth}L{0.30\textwidth}L{0.12\textwidth}L{0.36\textwidth}}
+\toprule
+\textbf{Method} & \textbf{Path} & \textbf{Auth} & \textbf{Description} \\
+\midrule
+\endhead
+\docpath{GET} & \docpath{/admin/roles} & Yes & List basic roles \\
+\docpath{GET} & \docpath{/admin/access-control} & Yes & List roles, actions, resources, subjects, and users \\
+\docpath{POST} & \docpath{/admin/roles} & Yes & Create role \\
+\docpath{PUT} & \docpath{/admin/roles/:id} & Yes & Update role \\
+\docpath{PATCH} & \docpath{/admin/users/:id/role} & Yes & Assign role to user \\
+\docpath{GET} & \docpath{/admin/users} & Yes & List users \\
+\docpath{GET} & \docpath{/admin/users/:id/insights} & Yes & User insights \\
+\docpath{POST} & \docpath{/admin/users} & Yes & Create user \\
+\docpath{PATCH} & \docpath{/admin/users/:id} & Yes & Update user \\
+\docpath{DELETE} & \docpath{/admin/users/:id} & Yes & Delete user \\
+\docpath{GET} & \docpath{/admin/stats} & Yes & Dashboard statistics \\
+\bottomrule
+\end{longtable}
+
+Role payload:
+\begin{lstlisting}[style=doccode]
+{
+  "name": "teacher",
+  "permissions": [
+    { "action_id": 1, "resource_id": 2 },
+    { "action_id": 2, "resource_id": 2 }
+  ],
+  "subject_ids": [1, 2]
+}
+\end{lstlisting}
+
+\section{Sequence Flows}
+
+\subsection{Login Flow}
+
+\begin{enumerate}[leftmargin=1.5em]
+  \item User submits email and password in the frontend.
+  \item Frontend calls \docpath{POST /api/v1/auth/login}.
+  \item Auth API finds the user by email together with role permissions.
+  \item PostgreSQL returns the user record.
+  \item Auth API validates the password with bcrypt.
+  \item Auth API builds grouped permissions.
+  \item Auth API signs the JWT.
+  \item Frontend receives the token and user payload.
+  \item Frontend saves the token in \docpath{localStorage} and a cookie.
+\end{enumerate}
+
+\subsection{Lesson Practice Flow}
+
+\begin{enumerate}[leftmargin=1.5em]
+  \item Student starts practice for a lesson.
+  \item Frontend calls \docpath{POST /api/v1/lessons/:id/practice}.
+  \item Lessons API validates the lesson and subject access.
+  \item Lessons API loads question templates.
+  \item For each selected template, the backend generates variables and evaluates accepted formulas through the Math Service.
+  \item Backend creates a \docpath{test\_attempt}.
+  \item Backend bulk-creates \docpath{question\_snapshots}.
+  \item Backend returns the attempt and snapshot payload to the frontend.
+\end{enumerate}
+
+\subsection{Answer Submission Flow}
+
+\begin{enumerate}[leftmargin=1.5em]
+  \item Student submits an answer.
+  \item Frontend calls \docpath{POST /api/v1/tests/submit-answer}.
+  \item Tests API loads the \docpath{question\_snapshot} and template.
+  \item For theoretical questions, the backend compares normalized text answers.
+  \item For calculated questions, the backend calls the Math Service with \docpath{checkAnswer(formula, vars, answer)}.
+  \item Backend updates the snapshot answer and result.
+  \item Backend returns correctness, right answers, and explanation.
+\end{enumerate}
+
+\subsection{Finish Practice or Test Flow}
+
+\begin{enumerate}[leftmargin=1.5em]
+  \item Student finishes an attempt.
+  \item Frontend calls \docpath{POST /api/v1/tests/attempts/:id/finish}.
+  \item Tests API marks unanswered snapshots incorrect.
+  \item Backend counts total and correct answers.
+  \item Backend updates the \docpath{test\_attempt} score and completion state.
+  \item For lesson-based practice, the backend calls the Mastery Service to upsert \docpath{user\_lesson\_mastery}.
+  \item Backend calls the Level Service with \docpath{addXp(correct * 2, practice\_completion)}.
+  \item Level Service inserts an \docpath{xp\_log} and updates \docpath{student\_stats}.
+  \item Backend recomputes aggregate student stats.
+  \item Backend calls the Achievement Service to evaluate and award achievements.
+  \item Achievement Service may call the Level Service again to add XP for earned achievements.
+  \item Backend returns score and newly earned achievements.
+\end{enumerate}
+
+\subsection{Admin Role Management Flow}
+
+\begin{enumerate}[leftmargin=1.5em]
+  \item Admin saves a role definition.
+  \item Frontend calls \docpath{PUT /api/v1/admin/roles/:id}.
+  \item Admin API updates the role name.
+  \item Admin API deletes old role permissions.
+  \item Admin API deletes old role subject permissions.
+  \item Admin API inserts new role permissions.
+  \item Admin API inserts new subject permissions.
+  \item PostgreSQL returns the fresh role with relations.
+  \item Backend returns the updated role payload.
+\end{enumerate}
+
+\section{Non-Functional Notes}
+
+\subsection{Observed Design Strengths}
+
+\begin{itemize}[leftmargin=1.5em]
+  \item Clear frontend and backend separation
+  \item Snapshot-based question persistence avoids re-generation drift
+  \item Dynamic RBAC supports future role expansion
+  \item Subject-level permissions provide scoped content access
+  \item Progression pipeline is modularized into services
+\end{itemize}
+
+\subsection{Current Technical Constraints}
+
+\begin{itemize}[leftmargin=1.5em]
+  \item The frontend Prisma copy should mirror \docpath{backend/prisma/schema.prisma}; if both are kept, backend remains the canonical source of truth
+  \item Template management permissions are enforced server-side with \docpath{manage:test}; frontend controls should remain aligned with that rule
+  \item Achievement seeding is now opt-in through \docpath{AUTO\_SEED\_ACHIEVEMENTS=true} or the protected seed endpoint, so operational environments need an explicit seeding step
+\end{itemize}
+
+\section{Recommended Documentation Source of Truth}
+
+For future maintenance, use these files as the implementation source of truth:
+\begin{itemize}[leftmargin=1.5em]
+  \item Backend API bootstrap: \docpath{backend/server.ts}
+  \item Backend schema: \docpath{backend/prisma/schema.prisma}
+  \item Authorization rules: \docpath{backend/middleware/auth.ts}
+  \item Functional routes:
+  \begin{itemize}[leftmargin=2em]
+    \item \docpath{backend/routes/auth.ts}
+    \item \docpath{backend/routes/lessons.ts}
+    \item \docpath{backend/routes/tests.ts}
+    \item \docpath{backend/routes/admin.ts}
+    \item \docpath{backend/routes/achievements.ts}
+  \end{itemize}
+  \item Frontend API clients:
+  \begin{itemize}[leftmargin=2em]
+    \item \docpath{frontend/src/services/auth.ts}
+    \item \docpath{frontend/src/services/lessonService.ts}
+    \item \docpath{frontend/src/services/testService.ts}
+    \item \docpath{frontend/src/services/adminService.ts}
+    \item \docpath{frontend/src/services/achievementService.ts}
+  \end{itemize}
+\end{itemize}
+
+\end{document}
