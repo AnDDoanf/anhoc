@@ -1,13 +1,14 @@
 import 'dotenv/config';
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import cors from 'cors';
-import prisma from './lib/db.ts';
+import prisma, { describeDatabaseTarget } from './lib/db.ts';
 
 import authRoutes from './routes/auth.ts';
 import lessonRoutes from './routes/lessons.ts';
 import testRoutes from './routes/tests.ts';
 import adminRoutes from './routes/admin.ts';
 import achievementRoutes from './routes/achievements.ts';
+import gameRoutes from './routes/games.ts';
 import { seedAchievements } from './services/achievementService.ts';
 
 const app: Application = express();
@@ -38,6 +39,7 @@ app.use('/api/v1/lessons', lessonRoutes);
 app.use('/api/v1/tests', testRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/achievements', achievementRoutes);
+app.use('/api/v1/games', gameRoutes);
 
 app.get('/api/v1/health', (req: Request, res: Response) => {
   res.json({ status: 'OK', message: 'Math App Backend is running' });
@@ -54,7 +56,9 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 async function main() {
   try {
     await prisma.$connect();
-    console.log('Connected to PostgreSQL via Prisma');
+    const dbTarget = describeDatabaseTarget();
+    console.log(`Connected to PostgreSQL via Prisma (${dbTarget.via})`);
+    console.log(`Database target: host=${dbTarget.host} db=${dbTarget.database}`);
 
     if (String(process.env.AUTO_SEED_ACHIEVEMENTS || '').toLowerCase() === 'true') {
       await seedAchievements();

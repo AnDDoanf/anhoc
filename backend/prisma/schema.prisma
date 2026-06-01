@@ -34,6 +34,10 @@ model User {
   question_reports  QuestionTemplateReport[]
   following         UserFollow[]    @relation("UserFollowing")
   followers         UserFollow[]    @relation("UserFollowers")
+  
+  // Relations to gaming
+  game_challenges   GameChallenge[]
+  game_attempts     GameAttempt[]
 
   @@map("users")
 }
@@ -90,6 +94,9 @@ model Grade {
   subject_id Int?
   subject   Subject? @relation(fields: [subject_id], references: [id], onDelete: SetNull)
   lessons   Lesson[]
+  
+  // Relations to gaming
+  game_challenges GameChallenge[]
 
   @@map("grades")
 }
@@ -140,6 +147,9 @@ model Lesson {
   sessions           LearningSession[]
   mastery_records    UserLessonMastery[]
   practice_attempts  TestAttempt[]
+  
+  // Relations to gaming
+  game_challenges    GameChallenge[]
 
   @@map("lessons")
 }
@@ -376,4 +386,43 @@ model AuditLog {
   user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@map("audit_logs")
+}
+
+// --- GAMING SECTIONS ---
+
+model GameChallenge {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code        String        @unique @db.VarChar(10) // E.g., short shareable code
+  game_type   String        @db.VarChar(50)         // "speed", "climb", "match"
+  grade_id    Int?
+  lesson_id   String?       @db.Uuid
+  created_by  String        @db.Uuid
+  is_active   Boolean       @default(true)
+  created_at  DateTime      @default(now()) @db.Timestamptz
+  config      Json          @default("{}")          // Hold challenge questions / seed configs
+  
+  creator     User          @relation(fields: [created_by], references: [id], onDelete: Cascade)
+  lesson      Lesson?       @relation(fields: [lesson_id], references: [id], onDelete: SetNull)
+  grade       Grade?        @relation(fields: [grade_id], references: [id], onDelete: SetNull)
+  attempts    GameAttempt[]
+
+  @@index([created_by, is_active])
+  @@map("game_challenges")
+}
+
+model GameAttempt {
+  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  challenge_id String        @db.Uuid
+  user_id      String?       @db.Uuid
+  guest_name   String?       @db.VarChar(100)
+  guest_token  String?       @db.VarChar(100)
+  score        Int           // Points or floor reached
+  time_spent   Int           // Seconds
+  completed_at DateTime      @default(now()) @db.Timestamptz
+  
+  challenge    GameChallenge @relation(fields: [challenge_id], references: [id], onDelete: Cascade)
+  user         User?         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([challenge_id, guest_token])
+  @@map("game_attempts")
 }
