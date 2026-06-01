@@ -234,7 +234,8 @@ function GamePlayroomContent() {
         locale === "vi"
           ? q.body_template_vi || q.body_template_en
           : q.body_template_en || q.body_template_vi;
-      const displayFormula = bodyTemplate.replace(/\$|\$\{([^}]+)\}\$/g, "").trim();
+      const formatted = formatTemplate(bodyTemplate, q.generated_variables);
+      const displayFormula = formatted.replace(/\$/g, "").trim();
       const val = parseFloat(q.right_answers[0]);
       return {
         id: idx * 2,
@@ -394,6 +395,8 @@ function GamePlayroomContent() {
     if (challenge.game_type === 'climb') {
       finalScore = currentQuestionIndex; // Floors advanced represents score in tower climb
     }
+
+    setCurrentScore(finalScore);
 
     try {
       const data = await gameService.submitAttempt({
@@ -597,9 +600,9 @@ function GamePlayroomContent() {
                           key={card.id}
                           onClick={() => handleCardClick(card.id)}
                           disabled={card.matched || card.flipped}
-                          className={`h-24 sm:h-28 rounded-2xl border flex items-center justify-center text-center p-3 transition-all duration-300 transform font-black select-none
+                          className={`h-28 sm:h-32 rounded-2xl border flex items-center justify-center text-center p-2 transition-all duration-300 transform font-black select-none
                             ${card.matched 
-                              ? 'bg-sol-green/10 border-sol-green/30 text-sol-green scale-95 opacity-60 shadow-inner' 
+                              ? 'bg-sol-green/10 border-sol-green/30 text-sol-green scale-95 opacity-60 shadow-inner rotate-y-180' 
                               : card.flipped
                                 ? 'bg-sol-accent/10 border-sol-accent text-sol-accent rotate-y-180 scale-102 shadow-md shadow-sol-accent/5'
                                 : 'bg-sol-bg border-sol-border/30 hover:border-sol-accent/30 hover:scale-102 cursor-pointer'
@@ -607,7 +610,16 @@ function GamePlayroomContent() {
                           `}
                         >
                           {card.flipped || card.matched ? (
-                            <span className="text-xs sm:text-sm tracking-tight break-all font-black">
+                            <span 
+                              className={`tracking-tight font-black rotate-y-180 max-h-full overflow-y-auto scrollbar-hidden break-words w-full px-1
+                                ${card.content.length > 120
+                                  ? 'text-[10px] sm:text-[11px] leading-tight'
+                                  : card.content.length > 60
+                                    ? 'text-[11px] sm:text-xs leading-snug'
+                                    : 'text-xs sm:text-sm leading-normal'
+                                }
+                              `}
+                            >
                               {card.content}
                             </span>
                           ) : (

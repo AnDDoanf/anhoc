@@ -402,7 +402,8 @@ router.post('/attempts', optionalAuthenticate, async (req, res) => {
       logReason = 'tower_climb_game';
     } else if (challenge.game_type === 'match') {
       // Formula Match: time-dependent reward, max 100 XP, min 20 XP on successful match
-      xpEarned = Math.max(20, Math.min(100, Math.floor((300 - time_spent) * 0.5)));
+      // If score is 0 (quitted early / incomplete), no XP is awarded
+      xpEarned = Number(score) === 0 ? 0 : Math.max(20, Math.min(100, Math.floor((300 - time_spent) * 0.5)));
       logReason = 'formula_match_game';
     }
 
