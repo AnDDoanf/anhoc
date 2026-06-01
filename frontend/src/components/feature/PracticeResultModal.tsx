@@ -8,7 +8,7 @@ import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
-import { formatTemplate, evaluateFormula } from "@/utils/mathService";
+import { formatTemplate } from "@/utils/mathService";
 import { format } from "date-fns";
 import { vi, enUS } from "date-fns/locale";
 

@@ -12,9 +12,7 @@ import {
   Trophy, 
   Users, 
   Zap, 
-  TrendingUp, 
   BarChart3,
-  ChevronRight,
   Clock
 } from "lucide-react";
 import { format } from "date-fns";
@@ -26,8 +24,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  LineChart,
-  Line,
   Legend
 } from "recharts";
 

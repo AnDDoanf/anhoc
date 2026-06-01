@@ -36,12 +36,11 @@ export default function SpaceShooterGame({
   const [flightState, setFlightState] = useState<'idle' | 'firing' | 'warping' | 'crashing' | 're-entering'>('idle');
   const [explodedBoxIdx, setExplodedBoxIdx] = useState<number | null>(null);
   const [laser, setLaser] = useState<{ targetIndex: number; isCorrect: boolean } | null>(null);
-  const [flightTime, setFlightTime] = useState<number>(0);
-  
   // High-performance refs to prevent forced reflows and excessive rendering overhead
   const cursorRef = useRef<{ x: number; y: number } | null>(null);
   const arenaRectRef = useRef<DOMRect | null>(null);
   const arenaRef = useRef<HTMLDivElement>(null);
+  const flightTimeRef = useRef(0);
 
   const questionType = normalizeQuestionType(question?.template_type);
   const currentQuestionBodyTemplate =
@@ -120,35 +119,32 @@ export default function SpaceShooterGame({
     if (flightState !== 'idle') return;
 
     const interval = setInterval(() => {
-      setFlightTime((prev) => {
-        const nextTime = prev + 1;
-        
-        // Calculate organic zero-gravity drift coordinates
-        const driftX = Math.sin(nextTime * 0.04) * 12;
-        const driftY = Math.cos(nextTime * 0.03) * 5;
-        const driftRotate = Math.sin(nextTime * 0.04) * 8;
-        
-        const nextX = 50 + driftX;
-        const nextY = 76 + driftY;
+      flightTimeRef.current += 1;
+      const nextTime = flightTimeRef.current;
 
-        let nextRotate = driftRotate;
+      // Calculate organic zero-gravity drift coordinates
+      const driftX = Math.sin(nextTime * 0.04) * 12;
+      const driftY = Math.cos(nextTime * 0.03) * 5;
+      const driftRotate = Math.sin(nextTime * 0.04) * 8;
 
-        // If the user's cursor is anywhere on screen, lock heading angle directly to the cursor
-        const currentCursor = cursorRef.current;
-        if (currentCursor !== null) {
-          const dx = currentCursor.x - nextX;
-          const dy = currentCursor.y - nextY;
-          nextRotate = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
-        }
+      const nextX = 50 + driftX;
+      const nextY = 76 + driftY;
 
-        setRocketPos((prevPos) => ({
-          x: prevPos.x + (nextX - prevPos.x) * 0.08,
-          y: prevPos.y + (nextY - prevPos.y) * 0.08,
-          rotate: prevPos.rotate + (nextRotate - prevPos.rotate) * 0.12
-        }));
+      let nextRotate = driftRotate;
 
-        return nextTime;
-      });
+      // If the user's cursor is anywhere on screen, lock heading angle directly to the cursor
+      const currentCursor = cursorRef.current;
+      if (currentCursor !== null) {
+        const dx = currentCursor.x - nextX;
+        const dy = currentCursor.y - nextY;
+        nextRotate = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
+      }
+
+      setRocketPos((prevPos) => ({
+        x: prevPos.x + (nextX - prevPos.x) * 0.08,
+        y: prevPos.y + (nextY - prevPos.y) * 0.08,
+        rotate: prevPos.rotate + (nextRotate - prevPos.rotate) * 0.12
+      }));
     }, 25);
 
     return () => clearInterval(interval);

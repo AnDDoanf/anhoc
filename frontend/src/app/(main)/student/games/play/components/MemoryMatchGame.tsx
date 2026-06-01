@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale } from "next-intl";
 import { Gamepad2 } from "lucide-react";
 import { GameChallenge } from "@/services/gameService";
 import { formatTemplate } from "@/utils/mathService";
@@ -19,7 +19,6 @@ export default function MemoryMatchGame({
   onEndGame,
   onMove,
 }: MemoryMatchGameProps) {
-  const t = useTranslations("Games");
   const locale = useLocale();
 
   const [cards, setCards] = useState<Array<{

@@ -41,7 +41,6 @@ export default function UserHomePage() {
   const [myGames, setMyGames] = useState<PersonalGameLists | null>(null);
   const [createdPage, setCreatedPage] = useState(1);
   const [participatedPage, setParticipatedPage] = useState(1);
-  const [loading, setLoading] = useState(true);
   const [archivingChallengeId, setArchivingChallengeId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -58,7 +57,7 @@ export default function UserHomePage() {
       } catch (err) {
         console.error("Failed to fetch dashboard data:", err);
       } finally {
-        setLoading(false);
+        // no-op
       }
     };
     fetchData();

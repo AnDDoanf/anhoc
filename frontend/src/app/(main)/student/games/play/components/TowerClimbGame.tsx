@@ -23,10 +23,11 @@ export default function TowerClimbGame({
   questionIndex,
   choiceOptions,
   onSubmitAnswer,
-  feedback,
+  feedback: _feedback,
 }: TowerClimbGameProps) {
   const t = useTranslations("Games");
   const locale = useLocale();
+  void _feedback;
 
   const [answerInput, setAnswerInput] = useState("");
   const [orderedItems, setOrderedItems] = useState<ChoiceOption[]>([]);

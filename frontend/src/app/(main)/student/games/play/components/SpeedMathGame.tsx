@@ -23,10 +23,11 @@ export default function SpeedMathGame({
   questionIndex,
   choiceOptions,
   onSubmitAnswer,
-  feedback,
+  feedback: _feedback,
 }: SpeedMathGameProps) {
   const t = useTranslations("Games");
   const locale = useLocale();
+  void _feedback;
 
   const [answerInput, setAnswerInput] = useState("");
   const [orderedItems, setOrderedItems] = useState<ChoiceOption[]>([]);

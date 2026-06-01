@@ -2,7 +2,7 @@
 
 import { useTranslations, useLocale } from "next-intl";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { testService } from "@/services/testService";
 import { achievementService } from "@/services/achievementService";
 import { Loader2, ArrowRight, ArrowLeft, Send, CheckCircle2, XCircle, Award, Flag } from "lucide-react";
@@ -49,11 +49,7 @@ export default function PracticeRunnerPage() {
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [reportedSnapshotIds, setReportedSnapshotIds] = useState<string[]>([]);
 
-  useEffect(() => {
-    fetchAttempt();
-  }, [attemptId]);
-
-  const fetchAttempt = async () => {
+  const fetchAttempt = useCallback(async () => {
     try {
       const data = await testService.getAttempt(attemptId);
       setAttempt(data);
@@ -73,18 +69,22 @@ export default function PracticeRunnerPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [attemptId]);
+
+  useEffect(() => {
+    fetchAttempt();
+  }, [fetchAttempt]);
 
   const currentSnapshot = attempt?.snapshots[currentIndex];
   const questionType = normalizeQuestionType(currentSnapshot?.template?.template_type);
   const choiceOptions = useMemo(() => {
     if (!currentSnapshot?.template) return [];
     return getChoiceOptions(currentSnapshot.template, currentSnapshot.generated_variables, locale);
-  }, [currentSnapshot?.id, locale]);
+  }, [currentSnapshot?.template, currentSnapshot?.generated_variables, locale]);
   const orderingItems = useMemo(() => {
     if (!currentSnapshot?.template) return [];
     return getOrderingItems(currentSnapshot.template, currentSnapshot.generated_variables, locale);
-  }, [currentSnapshot?.id, locale]);
+  }, [currentSnapshot?.template, currentSnapshot?.generated_variables, locale]);
   const availableOrderingItems = orderingItems.filter(
     (item) => !orderedItems.some((ordered) => ordered.value === item.value)
   );
@@ -116,7 +116,7 @@ export default function PracticeRunnerPage() {
 
   const isAlreadyAnswered = currentSnapshot?.student_answer !== null;
 
-  const handleSubmit = async (e?: React.FormEvent | React.KeyboardEvent | KeyboardEvent, answerOverride?: string) => {
+  const handleSubmit = useCallback(async (e?: React.FormEvent | React.KeyboardEvent | KeyboardEvent, answerOverride?: string) => {
     if (e) e.preventDefault();
     const answer = answerOverride ?? answerInput;
     if (!answer || isAlreadyAnswered || submitting) return;
@@ -141,7 +141,7 @@ export default function PracticeRunnerPage() {
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [answerInput, currentIndex, currentSnapshot?.id, isAlreadyAnswered, submitting]);
 
   const handleSkip = async () => {
     if (isAlreadyAnswered || submitting) return;
@@ -168,7 +168,7 @@ export default function PracticeRunnerPage() {
     }
   };
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (currentIndex < attempt.snapshots.length - 1) {
       setCurrentIndex(currentIndex + 1);
       setAnswerInput("");
@@ -177,7 +177,7 @@ export default function PracticeRunnerPage() {
     } else {
       setFinishModalType("complete");
     }
-  };
+  }, [attempt, currentIndex]);
 
   const handleFinish = () => {
     setFinishModalType("abandon");
@@ -309,7 +309,7 @@ export default function PracticeRunnerPage() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isAlreadyAnswered, currentIndex, attempt, answerInput, submitting]);
+  }, [answerInput, handleNext, handleSubmit, isAlreadyAnswered, submitting]);
 
   if (loading) {
     return (

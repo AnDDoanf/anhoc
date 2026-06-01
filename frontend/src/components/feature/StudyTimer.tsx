@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { lessonService } from "@/services/lessonService";
 
 interface StudyTimerProps {
@@ -10,6 +10,16 @@ interface StudyTimerProps {
 export default function StudyTimer({ lessonId }: StudyTimerProps) {
   const secondsRef = useRef(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const syncTime = useCallback(async () => {
+    if (secondsRef.current > 0) {
+      try {
+        await lessonService.trackStudyTime(lessonId, secondsRef.current);
+        secondsRef.current = 0;
+      } catch (err) {
+        console.error("Failed to sync study time:", err);
+      }
+    }
+  }, [lessonId]);
 
   useEffect(() => {
     // Increment local timer every second
@@ -27,18 +37,7 @@ export default function StudyTimer({ lessonId }: StudyTimerProps) {
       clearInterval(syncInterval);
       syncTime(); // Final sync on unmount
     };
-  }, [lessonId]);
-
-  const syncTime = async () => {
-    if (secondsRef.current > 0) {
-      try {
-        await lessonService.trackStudyTime(lessonId, secondsRef.current);
-        secondsRef.current = 0; // Reset after successful sync
-      } catch (err) {
-        console.error("Failed to sync study time:", err);
-      }
-    }
-  };
+  }, [lessonId, syncTime]);
 
   // This component doesn't render anything visible
   return null;

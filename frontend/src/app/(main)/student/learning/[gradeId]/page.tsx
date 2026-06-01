@@ -14,7 +14,6 @@ export default function GradePathPage() {
 
   const t = useTranslations("Path");
   const commonT = useTranslations("Common");
-  const sidebarT = useTranslations("Sidebar");
   const locale = useLocale();
 
   const [loading, setLoading] = useState(true);

@@ -3,7 +3,7 @@
 import { Achievement, achievementService, ThemeUnlock } from "@/services/achievementService";
 import { Loader2, Trophy } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import AchievementCard from "./AchievementCard";
 import Hero from "@/components/ui/Hero";
 import { APP_THEME_EVENT, applyStoredTheme, getStoredAppTheme, StoredAppTheme } from "@/lib/appTheme";
@@ -19,23 +19,7 @@ export default function AchievementGallery() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [activeThemeSlug, setActiveThemeSlug] = useState<string>(() => getStoredAppTheme()?.slug || "default");
 
-  useEffect(() => {
-    setPage(1);
-    fetchAchievements(1, false, filter);
-  }, [filter]);
-
-  useEffect(() => {
-    const syncTheme = (event?: Event) => {
-      const customEvent = event as CustomEvent<{ theme?: StoredAppTheme | null }> | undefined;
-      setActiveThemeSlug(customEvent?.detail?.theme?.slug || getStoredAppTheme()?.slug || "default");
-    };
-
-    syncTheme();
-    window.addEventListener(APP_THEME_EVENT, syncTheme as EventListener);
-    return () => window.removeEventListener(APP_THEME_EVENT, syncTheme as EventListener);
-  }, []);
-
-  const fetchAchievements = async (nextPage = 1, append = false, category = filter) => {
+  const fetchAchievements = useCallback(async (nextPage = 1, append = false, category = filter) => {
     if (append) setLoadingMore(true);
     else setLoading(true);
     try {
@@ -54,7 +38,23 @@ export default function AchievementGallery() {
       setLoading(false);
       setLoadingMore(false);
     }
-  };
+  }, [filter]);
+
+  useEffect(() => {
+    setPage(1);
+    fetchAchievements(1, false, filter);
+  }, [fetchAchievements, filter]);
+
+  useEffect(() => {
+    const syncTheme = (event?: Event) => {
+      const customEvent = event as CustomEvent<{ theme?: StoredAppTheme | null }> | undefined;
+      setActiveThemeSlug(customEvent?.detail?.theme?.slug || getStoredAppTheme()?.slug || "default");
+    };
+
+    syncTheme();
+    window.addEventListener(APP_THEME_EVENT, syncTheme as EventListener);
+    return () => window.removeEventListener(APP_THEME_EVENT, syncTheme as EventListener);
+  }, []);
 
   const categories = ["all", "progress", "performance", "streak", "time", "speed", "social", "recovery", "special"];
   const earnedCount = summary.earned;

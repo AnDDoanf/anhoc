@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useRef, Suspense } from "react";
+import { useEffect, useMemo, useState, useRef, Suspense, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { gameService, GameChallenge } from "@/services/gameService";
@@ -9,9 +9,7 @@ import {
   normalizeQuestionType,
 } from "@/utils/questionType";
 import { 
-  Gamepad2, 
   Zap, 
-  BrainCircuit, 
   Heart, 
   Flame, 
   Trophy, 
@@ -219,6 +217,43 @@ function GamePlayroomContent() {
     }
   }, [challenge?.game_type, currentQuestionIndex]);
 
+  const handleEndGame = useCallback(async (finalScoreOverride?: number) => {
+    clearInterval(gameTimerRef.current);
+    setGameState('finished');
+    setSubmitting(true);
+
+    if (!challenge) return;
+
+    let finalScore = finalScoreOverride !== undefined ? finalScoreOverride : currentScore;
+    if (challenge.game_type === 'climb') {
+      finalScore = currentQuestionIndex; // Floors advanced represents score in tower climb
+    }
+
+    setCurrentScore(finalScore);
+
+    try {
+      const data = await gameService.submitAttempt({
+        challenge_id: challenge.id,
+        score: finalScore,
+        time_spent: timeSpent,
+        guest_name: guestProfile?.name,
+        guest_token: guestProfile?.token
+      });
+      setAttemptResult(data);
+      if (isGuestMode && typeof window !== "undefined") {
+        localStorage.setItem(guestStorageKey, JSON.stringify({
+          ...(guestProfile || {}),
+          completed: true
+        }));
+      }
+    } catch (err) {
+      console.error("Failed to submit game attempt:", err);
+      setError((err as any)?.response?.data?.error || t("errors.submitAttempt"));
+    } finally {
+      setSubmitting(false);
+    }
+  }, [challenge, currentQuestionIndex, currentScore, guestProfile, guestStorageKey, isGuestMode, t, timeSpent]);
+
   // Core gameplay clock timer
   useEffect(() => {
     if (gameState === 'playing' && challenge) {
@@ -261,7 +296,7 @@ function GamePlayroomContent() {
       }, 1000);
     }
     return () => clearInterval(gameTimerRef.current);
-  }, [gameState, challenge]);
+  }, [gameState, challenge, handleEndGame]);
 
   // Answer submission handler for Speed Math, Tower Climb, Space Shooter, Balance, Bubbles
   const handleGameAnswer = (submittedAnswer: string) => {
@@ -336,44 +371,6 @@ function GamePlayroomContent() {
     setStreak(0);
     const nextIndex = (currentQuestionIndex + 1) % challenge.config.questions.length;
     setCurrentQuestionIndex(nextIndex);
-  };
-
-  // End gameplay, submit attempt, and award XP
-  const handleEndGame = async (finalScoreOverride?: number) => {
-    clearInterval(gameTimerRef.current);
-    setGameState('finished');
-    setSubmitting(true);
-
-    if (!challenge) return;
-
-    let finalScore = finalScoreOverride !== undefined ? finalScoreOverride : currentScore;
-    if (challenge.game_type === 'climb') {
-      finalScore = currentQuestionIndex; // Floors advanced represents score in tower climb
-    }
-
-    setCurrentScore(finalScore);
-
-    try {
-      const data = await gameService.submitAttempt({
-        challenge_id: challenge.id,
-        score: finalScore,
-        time_spent: timeSpent,
-        guest_name: guestProfile?.name,
-        guest_token: guestProfile?.token
-      });
-      setAttemptResult(data);
-      if (isGuestMode && typeof window !== "undefined") {
-        localStorage.setItem(guestStorageKey, JSON.stringify({
-          ...(guestProfile || {}),
-          completed: true
-        }));
-      }
-    } catch (err) {
-      console.error("Failed to submit game attempt:", err);
-      setError((err as any)?.response?.data?.error || t("errors.submitAttempt"));
-    } finally {
-      setSubmitting(false);
-    }
   };
 
   const copyLink = () => {

@@ -16,6 +16,7 @@ interface TableOfContentsProps {
 }
 
 export default function TableOfContents({ toc }: TableOfContentsProps) {
+  const t = useTranslations("Common");
   const [activeId, setActiveId] = useState<string>("");
 
   useEffect(() => {
@@ -57,8 +58,6 @@ export default function TableOfContents({ toc }: TableOfContentsProps) {
   };
 
   if (toc.length === 0) return null;
-
-  const t = useTranslations("Common");
 
   return (
     <div className="flex flex-col h-full">

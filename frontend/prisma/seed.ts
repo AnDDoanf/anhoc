@@ -175,6 +175,8 @@ async function main() {
     update: { subject_id: math.id },
     create: { slug: 'grade-6', title_en: 'Grade 6', title_vi: 'Lop 6', subject_id: math.id },
   });
+  void teacher;
+  void grade6;
 
   for (const role of [adminRole, teacherRole, studentRole]) {
     await prisma.roleSubjectPermission.upsert({

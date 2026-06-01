@@ -62,7 +62,7 @@ export default function BubblePopperGame({
       popped: false
     }));
     setBubbles(spawned);
-  }, [questionIndex, choiceOptions]);
+  }, [questionIndex, optionsToRender]);
 
   // Main high-frame float physics loop
   useEffect(() => {

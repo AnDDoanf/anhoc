@@ -16,7 +16,7 @@ import {
 import "katex/dist/katex.min.css";
 import { CheckCircle2, RefreshCw, Send, XCircle } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeKatex from "rehype-katex";
 import remarkMath from "remark-math";
@@ -46,7 +46,7 @@ export default function QuestionPlayer({ template }: QuestionPlayerProps) {
     return (template.accepted_formulas || []).slice(1);
   };
 
-  const generateSnapshot = () => {
+  const generateSnapshot = useCallback(() => {
     const generated = questionType === "theoretical_question" ? {} : generateVars(template.logic_config);
     setVars(generated);
     setCurrentTextEn(formatTemplate(template.body_template_en, generated));
@@ -70,11 +70,11 @@ export default function QuestionPlayer({ template }: QuestionPlayerProps) {
     setOrderedItems([]);
     setAnswerInput("");
     setStatus("idle");
-  };
+  }, [locale, questionType, template]);
 
   useEffect(() => {
     if (template) generateSnapshot();
-  }, [template]);
+  }, [generateSnapshot, template]);
 
   const handleSubmitAnswer = (answer: string) => {
     if (!answer) return;

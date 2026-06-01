@@ -33,7 +33,7 @@ export default function GamesHubPage() {
   const [leaderboard, setLeaderboard] = useState<any>({ speed: [], climb: [], match: [] });
   const [myGames, setMyGames] = useState<PersonalGameLists | null>(null);
   const [createdPage, setCreatedPage] = useState(1);
-  const [participatedPage, setParticipatedPage] = useState(1);
+  const participatedPage = 1;
   const [selectedGame, setSelectedGame] = useState<string>("speed");
   
   // Selected context (lesson OR grade)

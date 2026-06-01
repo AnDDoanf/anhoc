@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { Database, PlusCircle, Loader2, Code2, Search } from "lucide-react";
 import CreateTemplateModal from "@/components/feature/CreateTemplateModal";
@@ -39,7 +39,7 @@ export default function QuestionsAdminPage() {
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
 
-  const fetchTemplates = async (nextPage = 1, append = false) => {
+  const fetchTemplates = useCallback(async (nextPage = 1, append = false) => {
     if (append) setLoadingMore(true);
     else setLoading(true);
     try {
@@ -61,7 +61,7 @@ export default function QuestionsAdminPage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  };
+  }, [difficultyFilter, gradeIdFilter, lessonIdFilter, searchQuery, templateTypeFilter]);
 
   useEffect(() => {
     const loadFilterMeta = async () => {
@@ -79,7 +79,7 @@ export default function QuestionsAdminPage() {
   useEffect(() => {
     setPage(1);
     fetchTemplates(1, false);
-  }, [searchQuery, templateTypeFilter, gradeIdFilter, lessonIdFilter, difficultyFilter]);
+  }, [difficultyFilter, fetchTemplates, gradeIdFilter, lessonIdFilter, searchQuery, templateTypeFilter]);
 
   const handleEdit = (id: string) => {
     setEditTemplateId(id);

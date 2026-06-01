@@ -33,7 +33,7 @@ export default function SettingsPage() {
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-    } catch (err) {
+    } catch {
       setMessage({ type: "error", text: t("passwordError") });
     } finally {
       setLoading(false);

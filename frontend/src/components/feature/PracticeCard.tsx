@@ -3,9 +3,7 @@
 
 import { useTranslations, useLocale } from "next-intl";
 import {
-  ArrowRight,
   BarChart2,
-  Target,
   Calculator,
   Brain,
   Shapes,

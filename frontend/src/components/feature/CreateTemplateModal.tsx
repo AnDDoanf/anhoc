@@ -162,7 +162,7 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [bulkTemplates, setBulkTemplates] = useState<CreateTemplateDTO[]>([]);
   const [activeTemplateIndex, setActiveTemplateIndex] = useState(0);
-  const [currentDraftStarted, setCurrentDraftStarted] = useState(false);
+  const [, setCurrentDraftStarted] = useState(false);
 
   // Simple fields
   const [lessonId, setLessonId] = useState("");
