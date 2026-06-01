@@ -717,6 +717,8 @@
     "createChallenge": "Create Duel Challenge",
     "inviteTitle": "You Have Been Challenged!",
     "inviteSubtitle": "Accept the duel, face identical questions, and top the leaderboard.",
+    "ownChallengeTitle": "Your Duel Challenge!",
+    "ownChallengeSubtitle": "Share this link or code to invite friends and compete on the leaderboard.",
     "acceptChallenge": "Accept Challenge",
     "activeChallenges": "Your active challenges",
     "leaderboard": "Leaderboard",

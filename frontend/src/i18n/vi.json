@@ -717,6 +717,8 @@
     "createChallenge": "Tạo thử thách đối kháng",
     "inviteTitle": "Bạn đã nhận được lời khiêu chiến!",
     "inviteSubtitle": "Chấp nhận cuộc đấu, giải các câu hỏi tương tự và dẫn đầu bảng xếp hạng.",
+    "ownChallengeTitle": "Thử thách của bạn!",
+    "ownChallengeSubtitle": "Chia sẻ liên kết hoặc mã này để mời bạn bè tham gia và tranh tài trên bảng xếp hạng.",
     "acceptChallenge": "Chấp nhận thử thách",
     "activeChallenges": "Các thử thách của bạn",
     "leaderboard": "Bảng xếp hạng",

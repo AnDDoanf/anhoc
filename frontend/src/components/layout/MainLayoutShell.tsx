@@ -5,16 +5,29 @@ import Footer from "@/components/layout/Footer";
 import Settingbar from "@/components/layout/Settingbar";
 import ScrollToTop from "@/components/ui/ScrollToTop";
 import { usePathname, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function MainLayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  const [isMounted, setIsMounted] = useState(false);
+  const [hasToken, setHasToken] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+    setHasToken(!!localStorage.getItem("token"));
+  }, []);
+
   const isSharedChallengeRoute = pathname.startsWith("/student/games/challenge/");
   const isSharedPlayRoute = pathname === "/student/games/play";
-  const hasToken = typeof window !== "undefined" && !!localStorage.getItem("token");
-  const isGuestPlay = isSharedPlayRoute && (searchParams.get("guest") === "1" || !hasToken);
-  const useMinimalGameLayout = isSharedChallengeRoute || isGuestPlay;
+  const isGuestPlay = isSharedPlayRoute && (searchParams.get("guest") === "1" || (isMounted ? !hasToken : true));
+  
+  // During SSR/initial mount, use minimal layout for shared routes to match server rendering.
+  // After mount, use minimal layout only if user is NOT logged in.
+  const useMinimalGameLayout = isMounted 
+    ? (!hasToken && (isSharedChallengeRoute || isGuestPlay))
+    : (isSharedChallengeRoute || isSharedPlayRoute);
 
   if (useMinimalGameLayout) {
     return (

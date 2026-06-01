@@ -26,6 +26,7 @@ export default function ChallengeInvitePage({ params }: PageProps) {
   const tc = useTranslations("Common");
 
   const [challenge, setChallenge] = useState<GameChallenge | null>(null);
+  const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [guestName, setGuestName] = useState("");
@@ -48,7 +49,8 @@ export default function ChallengeInvitePage({ params }: PageProps) {
       const token = localStorage.getItem("token");
       if (token) {
         try {
-          await authService.getProfile();
+          const userProfile = await authService.getProfile();
+          setProfile(userProfile);
           setIsAuthed(true);
         } catch {
           clearClientAuth();
@@ -104,6 +106,7 @@ export default function ChallengeInvitePage({ params }: PageProps) {
 
   const creatorBest = getCreatorBestAttempt();
   const isArchived = challenge?.is_active === false;
+  const isOwner = Boolean(profile && challenge && profile.id === challenge.created_by);
 
   const acceptHref = isAuthed
     ? `/student/games/play?challenge=${challenge?.code || code}`
@@ -173,10 +176,10 @@ export default function ChallengeInvitePage({ params }: PageProps) {
 
                 <div className="space-y-2">
                   <h1 className="text-3xl font-black text-sol-text tracking-tight">
-                    {t("inviteTitle")}
+                    {isOwner ? t("ownChallengeTitle") : t("inviteTitle")}
                   </h1>
                   <p className="text-sol-muted font-bold leading-relaxed text-sm">
-                    {t("inviteSubtitle")}
+                    {isOwner ? t("ownChallengeSubtitle") : t("inviteSubtitle")}
                   </p>
                 </div>
 
