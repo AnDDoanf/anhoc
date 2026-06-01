@@ -2,14 +2,14 @@
 
 import { useTranslations, useLocale } from "next-intl";
 import Link from "next/link";
-import LearningCard from "@/components/feature/LearningCard";
 import Can from "@/components/auth/Can";
-import { GraduationCap, Library, Globe, ArrowUpRight, PlusCircle, Layers, BookMarked, ChevronRight } from "lucide-react";
+import { GraduationCap, Library, Globe, ArrowUpRight, PlusCircle, Layers, BookMarked, ChevronRight, BookOpen, PlayCircle, Loader2, Pencil, Trash2 } from "lucide-react";
 import CreateLessonModal from "@/components/feature/CreateLessonModal";
 import Hero from "@/components/ui/Hero";
 import { useState, useEffect, useCallback } from "react";
 import { Lesson, LessonMastery, Subject, lessonService } from "@/services/lessonService";
 import { isAxiosError } from "axios";
+import { useRouter } from "next/navigation";
 
 type LessonGradeGroup = {
   grade: string;
@@ -33,14 +33,17 @@ const getApiErrorMessage = (error: unknown, fallback: string) => {
 
 export default function LearningDashboard() {
   const t = useTranslations("Learning");
+  const practiceT = useTranslations("Practice");
   const commonT = useTranslations("Common");
   const locale = useLocale();
+  const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [metaModal, setMetaModal] = useState<"subject" | "grade" | null>(null);
   const [editLessonId, setEditLessonId] = useState<string | null>(null);
   const [lessonGroups, setLessonGroups] = useState<LessonSubjectGroup[]>([]);
   const [masteryData, setMasteryData] = useState<Record<string, LessonMastery>>({});
   const [expandedGrades, setExpandedGrades] = useState<Record<string, boolean>>({});
+  const [startingPracticeId, setStartingPracticeId] = useState<string | null>(null);
 
   const fetchDisplayData = useCallback(async () => {
     try {
@@ -125,6 +128,19 @@ export default function LearningDashboard() {
     setExpandedGrades((current) => ({ ...current, [gradeKey]: !current[gradeKey] }));
   };
 
+  const handleStartPractice = async (lessonId: string) => {
+    setStartingPracticeId(lessonId);
+    try {
+      const attempt = await lessonService.startPractice(lessonId);
+      router.push(`/student/practice/${attempt.id}`);
+    } catch (error) {
+      console.error("Failed to start practice:", error);
+      alert(getApiErrorMessage(error, "Failed to start practice session."));
+    } finally {
+      setStartingPracticeId(null);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-7xl space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Educational Hero Header */}
@@ -155,7 +171,7 @@ export default function LearningDashboard() {
               <Globe size={16} className="md:h-[18px] md:w-[18px]" />
               <span>{commonT("curriculumYear")}</span>
             </div>
-            <div className="flex items-center gap-2 rounded-2xl border border-sol-border/10 bg-sol-surface px-4 py-2 text-sm font-bold text-sol-text md:px-5 md:py-2.5">
+            <div className="flex items-center gap-2 rounded-2xl border border-sol-border/20 bg-sol-surface/90 px-4 py-2 text-sm font-bold text-sol-text md:px-5 md:py-2.5">
               <Library size={16} className="text-sol-accent md:h-[18px] md:w-[18px]" />
               <span>{commonT("tracks", { count: 12 })}</span>
             </div>
@@ -193,7 +209,7 @@ export default function LearningDashboard() {
       <div className="space-y-12 md:space-y-24">
         {lessonGroups.map((subject) => (
           <section key={subject.subject} className="group/section space-y-8 md:space-y-12">
-            <div className="flex flex-col gap-3 border-b border-sol-border/5 pb-4 sm:flex-row sm:items-end sm:justify-between md:pb-6">
+              <div className="flex flex-col gap-3 border-b border-sol-border/15 pb-4 sm:flex-row sm:items-end sm:justify-between md:pb-6">
               <div className="space-y-2">
                 <h2 className="text-2xl font-black uppercase tracking-tight text-sol-text transition-colors group-hover/section:text-sol-accent md:text-3xl">
                   {subject.label}
@@ -205,56 +221,140 @@ export default function LearningDashboard() {
             </div>
 
             {subject.grades.map((group) => (
-              <div key={`${subject.subject}-${group.grade}`} className="space-y-5">
-                <button
-                  type="button"
-                  onClick={() => toggleGrade(subject.subject, group.grade)}
-                  aria-expanded={Boolean(expandedGrades[getGradeKey(subject.subject, group.grade)])}
-                  className="flex w-full flex-col gap-3 rounded-3xl border border-sol-border/10 bg-sol-surface/30 p-5 text-left transition-all hover:border-sol-accent/30 hover:bg-sol-surface sm:flex-row sm:items-center sm:justify-between md:p-6"
-                >
-                  <div>
-                    <h3 className="text-xl font-black uppercase tracking-tight text-sol-text">{group.label}</h3>
-                    <p className="text-sol-muted text-sm font-medium">
-                      {t("lessonCount", { count: group.lessons.length })}
-                    </p>
-                  </div>
-                  <ChevronRight
-                    size={22}
-                    className={`text-sol-accent transition-transform ${expandedGrades[getGradeKey(subject.subject, group.grade)] ? "rotate-90" : ""}`}
-                  />
-                </button>
-
-                {expandedGrades[getGradeKey(subject.subject, group.grade)] && (
-                  <div className="">
-                    <div className="flex justify-end">
-                      <Link
-                        href={`/student/learning/${group.grade}`}
-                        prefetch={false}
-                        className="flex items-center gap-2 text-sol-accent font-bold text-sm hover:underline hover:opacity-80 transition-all group/link"
-                      >
-                        {t("viewPath")} <ArrowUpRight size={16} className="group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />
-                      </Link>
+              <div
+                key={`${subject.subject}-${group.grade}`}
+                className="rounded-3xl border border-sol-border/25 bg-sol-surface/85 p-5 shadow-sm transition-all hover:border-sol-accent/40 hover:bg-sol-surface md:p-6"
+              >
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => toggleGrade(subject.subject, group.grade)}
+                    aria-expanded={Boolean(expandedGrades[getGradeKey(subject.subject, group.grade)])}
+                    className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left"
+                  >
+                    <div>
+                      <h3 className="text-xl font-black uppercase tracking-tight text-sol-text">{group.label}</h3>
+                      <p className="text-sm font-bold text-sol-text/75">
+                        {t("lessonCount", { count: group.lessons.length })}
+                      </p>
                     </div>
+                    <ChevronRight
+                      size={22}
+                      className={`shrink-0 text-sol-accent transition-transform ${expandedGrades[getGradeKey(subject.subject, group.grade)] ? "rotate-90" : ""}`}
+                    />
+                  </button>
+                  <Link
+                    href={`/student/learning/${group.grade}`}
+                    prefetch={false}
+                    className="group/link inline-flex shrink-0 items-center gap-2 rounded-2xl border border-sol-accent/35 bg-sol-accent/12 px-4 py-2.5 text-sm font-black text-sol-accent transition-all hover:bg-sol-accent hover:text-sol-bg"
+                  >
+                    {t("viewPath")} <ArrowUpRight size={16} className="group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />
+                  </Link>
+                </div>
 
-                    <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-10">
+                <div
+                  className={`grid transition-all duration-300 ease-out ${
+                    expandedGrades[getGradeKey(subject.subject, group.grade)]
+                      ? "mt-5 grid-rows-[1fr] border-t border-sol-border/20 pt-5 opacity-100"
+                      : "grid-rows-[0fr] opacity-0"
+                  }`}
+                >
+                  <div className="min-h-0 overflow-hidden">
+                    <div className="scrollbar-theme -mx-1 overflow-x-auto pb-2">
+                      <div className="flex min-w-full gap-4 px-1">
                       {group.lessons.map((lesson, idx) => {
                         const title = locale === "vi" ? lesson.title_vi : lesson.title_en;
+                        const mastery = masteryData[lesson.id];
                         return (
-                          <LearningCard
+                          <article
                             key={lesson.id}
-                            lessonId={lesson.id}
-                            gradeId={group.grade}
-                            title={title}
-                            index={idx + 1}
-                            mastery={masteryData[lesson.id]}
-                            onEdit={handleEdit}
-                            onDelete={handleDelete}
-                          />
+                            className="flex w-80 shrink-0 snap-start flex-col rounded-[2rem] border border-sol-border/20 bg-sol-bg/90 p-5 shadow-md transition-all hover:border-sol-accent/35 hover:shadow-xl"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="space-y-2">
+                                <div className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-sol-accent/30 bg-sol-accent/12 text-sm font-black text-sol-accent">
+                                  {idx + 1}
+                                </div>
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-sol-text/60">
+                                  {t("section", { n: idx + 1 })}
+                                </p>
+                              </div>
+
+                              <Can I="manage" a="lesson">
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => handleEdit(lesson.id)}
+                                    className="rounded-xl p-2 text-sol-text/55 transition-colors hover:bg-sol-accent/10 hover:text-sol-accent"
+                                    title="Edit Lesson"
+                                  >
+                                    <Pencil size={16} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDelete(lesson.id)}
+                                    className="rounded-xl p-2 text-sol-text/55 transition-colors hover:bg-red-500/10 hover:text-red-500"
+                                    title="Delete Lesson"
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                </div>
+                              </Can>
+                            </div>
+
+                            <div className="mt-5 flex-1 space-y-4">
+                              <h4 className="text-lg font-black leading-tight text-sol-text md:text-xl">
+                                {title}
+                              </h4>
+
+                              {mastery && (
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
+                                    <span className={mastery.completion_status === "completed" ? "text-green-500" : "text-sol-accent"}>
+                                      {mastery.completion_status.replace("_", " ")}
+                                    </span>
+                                    <span className="text-sol-text/65">{Number(mastery.mastery_score).toFixed(0)}%</span>
+                                  </div>
+                                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-sol-border/25">
+                                    <div
+                                      className={`h-full transition-all duration-700 ${mastery.completion_status === "completed" ? "bg-green-500" : "bg-sol-accent"}`}
+                                      style={{ width: `${mastery.mastery_score}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="mt-6 flex gap-3">
+                              <Link
+                                href={`/student/learning/${group.grade}/${lesson.id}`}
+                                prefetch={false}
+                                className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-sol-border/25 bg-sol-surface px-4 py-3 text-sm font-black text-sol-text transition-all hover:border-sol-accent/35 hover:text-sol-accent"
+                              >
+                                <BookOpen size={16} />
+                                <span>{t("viewLesson")}</span>
+                              </Link>
+                              <button
+                                type="button"
+                                onClick={() => handleStartPractice(lesson.id)}
+                                disabled={startingPracticeId === lesson.id}
+                                className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-sol-accent px-4 py-3 text-sm font-black text-sol-bg transition-all hover:bg-sol-accent/90 disabled:opacity-60"
+                              >
+                                {startingPracticeId === lesson.id ? <Loader2 size={16} className="animate-spin" /> : <PlayCircle size={16} />}
+                                <span>
+                                  {startingPracticeId === lesson.id
+                                    ? practiceT("starting")
+                                    : mastery?.completion_status === "completed"
+                                      ? practiceT("reviewBtn")
+                                      : practiceT("startBtn")}
+                                </span>
+                              </button>
+                            </div>
+                          </article>
                         );
                       })}
+                      </div>
                     </div>
                   </div>
-                )}
+                </div>
               </div>
             ))}
           </section>
@@ -262,7 +362,7 @@ export default function LearningDashboard() {
       </div>
 
       {/* Progress Footer */}
-      <section className="space-y-3 rounded-[2rem] border border-sol-border/5 bg-sol-surface/30 p-6 text-center md:space-y-4 md:rounded-[3rem] md:p-12">
+      <section className="space-y-3 rounded-[2rem] border border-sol-border/20 bg-sol-surface/85 p-6 text-center shadow-sm md:space-y-4 md:rounded-[3rem] md:p-12">
         <h3 className="text-xl font-bold text-sol-text md:text-2xl">{t("readyChallengeTitle")}</h3>
         <p className="text-sol-muted max-w-lg mx-auto">
           {t("readyChallengeSubtitle")}

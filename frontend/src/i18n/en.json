@@ -83,6 +83,7 @@
     "title": "Master Your Skills",
     "subtitle": "Select a lesson to start practicing and boost your knowledge.",
     "startBtn": "Start Practice",
+    "reviewBtn": "Review",
     "startPractice": "Start Practice Session",
     "starting": "Starting...",
     "stats": "{count} exercises",

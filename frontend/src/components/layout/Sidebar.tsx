@@ -16,38 +16,22 @@ import {
   X,
   ChartArea
 } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import Can from "@/components/auth/Can";
 import Image from 'next/image';
 import logo from '../../../public/anhoc.svg';
-import { Lesson, lessonService } from "@/services/lessonService";
 import { authService } from "@/services/auth";
-
-type SidebarLessonGroup = {
-  grade: string;
-  label: string;
-  lessons: Lesson[];
-};
-
-type SidebarSubjectGroup = {
-  subject: string;
-  label: string;
-  grades: SidebarLessonGroup[];
-};
 
 export default function Sidebar() {
   const pathname = usePathname();
   const t = useTranslations("Sidebar");
-  const locale = useLocale();
 
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [lessonGroups, setLessonGroups] = useState<SidebarSubjectGroup[]>([]);
-  const [expandedGrades, setExpandedGrades] = useState<Record<string, boolean>>({});
   const [userLevel, setUserLevel] = useState<number | null>(null);
 
   useEffect(() => {
@@ -98,62 +82,11 @@ export default function Sidebar() {
     handleResize();
     window.addEventListener("resize", handleResize);
     window.addEventListener("student-stats-updated", handleStudentStatsUpdated);
-    const fetchLessons = async () => {
-      try {
-        const lessons = await lessonService.list();
-        const groups = lessons.reduce<Record<string, Omit<SidebarSubjectGroup, "grades"> & { grades: Record<string, SidebarLessonGroup> }>>((acc, lesson) => {
-          const subjectKey = String(lesson.subject?.id || "other");
-          const subjectLabel = locale === "vi" ? lesson.subject?.title_vi : lesson.subject?.title_en;
-          const gradeSlug = lesson.grade?.slug || "other";
-          const gradeLabel = locale === "vi" ? lesson.grade?.title_vi : lesson.grade?.title_en;
-          if (!acc[subjectKey]) {
-            acc[subjectKey] = {
-              subject: subjectKey,
-              label: subjectLabel || lesson.subject?.slug || "Other",
-              grades: {},
-            };
-          }
-          if (!acc[subjectKey].grades[gradeSlug]) {
-            acc[subjectKey].grades[gradeSlug] = { grade: gradeSlug, label: gradeLabel || gradeSlug, lessons: [] };
-          }
-          acc[subjectKey].grades[gradeSlug].lessons.push(lesson);
-          return acc;
-        }, {});
-        const getGradeNumber = (grade: string) => {
-          const match = grade.match(/\d+/);
-          return match ? parseInt(match[0], 10) : 999;
-        };
-        const sortedGroups = Object.values(groups).map((subject) => {
-          return {
-            ...subject,
-            grades: Object.values(subject.grades).sort((a, b) => getGradeNumber(a.grade) - getGradeNumber(b.grade)),
-          };
-        }).sort((a, b) => a.label.localeCompare(b.label));
-
-        setLessonGroups(sortedGroups);
-      } catch (err) {
-        console.error("Failed to load sidebar lessons:", err);
-      }
-    };
-    fetchLessons();
-    const handleLessonMetaUpdated = () => {
-      fetchLessons();
-    };
-    window.addEventListener("lesson-meta-updated", handleLessonMetaUpdated);
-
     return () => {
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("student-stats-updated", handleStudentStatsUpdated);
-      window.removeEventListener("lesson-meta-updated", handleLessonMetaUpdated);
     };
-  }, [locale]);
-
-  const getGradeKey = (subject: string, grade: string) => `${subject}:${grade}`;
-
-  const toggleGrade = (subject: string, grade: string) => {
-    const gradeKey = getGradeKey(subject, grade);
-    setExpandedGrades((current) => ({ ...current, [gradeKey]: !current[gradeKey] }));
-  };
+  }, []);
 
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
@@ -335,74 +268,6 @@ export default function Sidebar() {
                   isCollapsed={isCollapsed}
                 />
               </Can>
-            </div>
-
-            {/* Lesson Groups */}
-            <div className={`space-y-6 transition-all duration-500 overflow-hidden ${isCollapsed ? "opacity-0 pointer-events-none w-0" : "opacity-100 w-auto"}`}>
-              {lessonGroups.map((subject) => (
-                <div key={subject.subject} className="space-y-2">
-                  <div className="px-3 text-[10px] font-bold text-sol-muted uppercase tracking-[0.15em] whitespace-nowrap">
-                    <span className="truncate">{subject.label}</span>
-                  </div>
-
-                  <div className="space-y-4">
-                    {subject.grades.map((group) => (
-                      <div key={`${subject.subject}-${group.grade}`} className="space-y-1">
-                        <button
-                          type="button"
-                          onClick={() => toggleGrade(subject.subject, group.grade)}
-                          aria-expanded={Boolean(expandedGrades[getGradeKey(subject.subject, group.grade)])}
-                          className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-1.5 text-left text-xs font-black text-sol-text hover:bg-sol-bg hover:text-sol-accent transition-colors"
-                        >
-                          <span className="truncate">{group.label}</span>
-                          <ChevronRight
-                            size={13}
-                            className={`shrink-0 transition-transform ${expandedGrades[getGradeKey(subject.subject, group.grade)] ? "rotate-90" : ""}`}
-                          />
-                        </button>
-
-                        {expandedGrades[getGradeKey(subject.subject, group.grade)] && (
-                          <div className="space-y-1 pl-2">
-                            <Link
-                              prefetch={false}
-                              href={`/student/learning/${group.grade}`}
-                              className="block truncate px-3 py-1 text-[11px] font-bold text-sol-muted hover:text-sol-accent"
-                            >
-                              {t("learning")}
-                            </Link>
-
-                            {group.lessons.map((lesson) => {
-                              const href = `/student/learning/${group.grade}/${lesson.id}`;
-                              const isActive = pathname === href;
-                              const displayTitle = locale === "vi" ? lesson.title_vi : lesson.title_en;
-
-                              return (
-                                <Link
-                                  prefetch={false}
-                                  key={`${group.grade}-${lesson.id}`}
-                                  href={href}
-                                  className={`group flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all whitespace-nowrap
-                                  ${isActive
-                                      ? "bg-sol-accent text-sol-bg font-bold shadow-sm"
-                                      : "text-sol-text hover:bg-sol-bg hover:text-sol-accent"
-                                    }
-                                `}
-                                >
-                                  <span className="truncate">{displayTitle}</span>
-                                  <ChevronRight
-                                    size={14}
-                                    className={`transition-transform flex-shrink-0 ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-50 group-hover:translate-x-1"}`}
-                                  />
-                                </Link>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         </aside>

@@ -82,7 +82,8 @@
   "Practice": {
     "title": "Rèn luyện Kỹ năng",
     "subtitle": "Chọn một bài học để bắt đầu luyện tập và nâng cao kiến thức của bạn.",
-    "startBtn": "Bắt đầu Luyện tập",
+    "startBtn": "Luyện tập",
+    "reviewBtn": "Ôn tập",
     "startPractice": "Bắt đầu Phiên Luyện tập",
     "starting": "Đang bắt đầu...",
     "stats": "{count} bài tập",
@@ -160,7 +161,7 @@
     "backToGrade": "Quay lại Lớp",
     "title": "Trung tâm Học tập",
     "subtitle": "Khám phá các bài học và làm chủ những kiến thức mới ngay hôm nay.",
-    "viewLesson": "Bắt đầu Học",
+    "viewLesson": "Học",
     "viewPath": "Xem Lộ trình",
     "curriculum": "Chương trình học",
     "lessonCount": "{count} phần",
