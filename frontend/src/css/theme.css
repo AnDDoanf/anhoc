@@ -232,4 +232,32 @@
   .animate-border-warning {
     animation: redPulseBorder 1s infinite ease-in-out;
   }
+
+  /* Game target drift and floating */
+  @keyframes floatWobble {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-12px) rotate(4deg); }
+  }
+  .animate-float-target {
+    animation: floatWobble 4s infinite ease-in-out;
+  }
+
+  @keyframes laserFire {
+    0% { transform: scaleY(0); opacity: 1; }
+    50% { transform: scaleY(1); opacity: 1; }
+    100% { transform: scaleY(1); opacity: 0; }
+  }
+  .animate-laser-fire {
+    animation: laserFire 0.3s ease-out forwards;
+  }
+
+  @keyframes scaleShake {
+    0%, 100% { margin-left: 0px; margin-top: 0px; }
+    25% { margin-left: -3px; margin-top: -1.5px; }
+    50% { margin-left: 3px; margin-top: 1.5px; }
+    75% { margin-left: -1.5px; margin-top: 3px; }
+  }
+  .animate-scale-shake {
+    animation: scaleShake 0.12s infinite;
+  }
 }

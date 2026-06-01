@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, use } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { gameService, GameChallenge } from "@/services/gameService";
 import { authService } from "@/services/auth";
 import { 
@@ -24,6 +24,7 @@ export default function ChallengeInvitePage({ params }: PageProps) {
   const code = resolvedParams.code.toUpperCase();
   const t = useTranslations("Games");
   const tc = useTranslations("Common");
+  const locale = useLocale();
 
   const [challenge, setChallenge] = useState<GameChallenge | null>(null);
   const [profile, setProfile] = useState<any>(null);
@@ -82,18 +83,21 @@ export default function ChallengeInvitePage({ params }: PageProps) {
         setChallenge(data);
       } catch (err: any) {
         console.error("Failed to load challenge invite:", err);
-        setError(err.response?.data?.error || "Failed to load challenge invitation");
+        setError(err.response?.data?.error || t("errors.loadInvite"));
       } finally {
         setLoading(false);
       }
     };
     fetchChallenge();
-  }, [code]);
+  }, [code, t]);
 
   const getGameLabel = (type: string) => {
     if (type === 'speed') return t("speedTitle");
     if (type === 'climb') return t("climbTitle");
-    return t("matchTitle");
+    if (type === 'match') return t("matchTitle");
+    if (type === 'shooter') return t("shooterTitle");
+    if (type === 'balance') return t("balanceTitle");
+    return t("bubblesTitle");
   };
 
   const getCreatorBestAttempt = () => {
@@ -107,6 +111,10 @@ export default function ChallengeInvitePage({ params }: PageProps) {
   const creatorBest = getCreatorBestAttempt();
   const isArchived = challenge?.is_active === false;
   const isOwner = Boolean(profile && challenge && profile.id === challenge.created_by);
+  const challengeContextTitle =
+    locale === "vi"
+      ? challenge?.lesson?.title_vi || challenge?.grade?.title_vi || challenge?.lesson?.title_en || challenge?.grade?.title_en
+      : challenge?.lesson?.title_en || challenge?.grade?.title_en || challenge?.lesson?.title_vi || challenge?.grade?.title_vi;
 
   const acceptHref = isAuthed
     ? `/student/games/play?challenge=${challenge?.code || code}`
@@ -152,8 +160,8 @@ export default function ChallengeInvitePage({ params }: PageProps) {
           </div>
         ) : error || !challenge ? (
           <div className="bg-sol-surface border border-sol-red/20 rounded-[2rem] p-8 text-center space-y-4">
-            <h3 className="text-xl font-black text-sol-text">Error Loading Duel</h3>
-            <p className="text-sol-muted font-bold text-sm">{error || "This challenge code is invalid or has expired."}</p>
+            <h3 className="text-xl font-black text-sol-text">{t("errors.loadInviteTitle")}</h3>
+            <p className="text-sol-muted font-bold text-sm">{error || t("errors.invalidInvite")}</p>
             <Link 
               href={isAuthed ? "/student/games" : "/"}
               className="inline-block px-5 py-2.5 bg-sol-accent text-sol-bg text-xs font-black uppercase rounded-xl hover:opacity-90 transition-all"
@@ -192,7 +200,7 @@ export default function ChallengeInvitePage({ params }: PageProps) {
                   <div className="bg-sol-bg/50 border border-sol-border/30 rounded-2xl p-4">
                     <p className="text-[10px] font-black uppercase text-sol-muted tracking-wider">{t("target")}</p>
                     <p className="text-sm font-black text-sol-text mt-1">
-                      {challenge.lesson?.title_en || challenge.grade?.title_en}
+                      {challengeContextTitle}
                     </p>
                   </div>
                 </div>
@@ -205,7 +213,7 @@ export default function ChallengeInvitePage({ params }: PageProps) {
                         <User size={20} />
                       </div>
                       <div>
-                        <p className="text-[10px] font-black uppercase text-sol-muted tracking-wider">Challenger</p>
+                        <p className="text-[10px] font-black uppercase text-sol-muted tracking-wider">{t("creator")}</p>
                         <p className="text-sm font-black text-sol-text leading-tight mt-0.5">{challenge.creator.username}</p>
                       </div>
                     </div>
@@ -226,20 +234,20 @@ export default function ChallengeInvitePage({ params }: PageProps) {
               <div className="pt-8 space-y-4">
                 {isArchived && (
                   <div className="rounded-2xl border border-sol-orange/20 bg-sol-orange/10 px-4 py-3 text-sm font-bold text-sol-orange">
-                    This game has been archived. You can still view the leaderboard, but new plays are disabled.
+                    {t("archivedChallengeNotice")}
                   </div>
                 )}
                 {isAuthed ? (
                   isArchived ? (
                     <div className="w-full py-4 bg-sol-border/20 text-sol-muted font-black uppercase tracking-wider rounded-2xl flex items-center justify-center gap-2">
-                      Challenge Closed
+                      {t("challengeClosed")}
                     </div>
                   ) : (
                     <Link
                       href={acceptHref}
                       className="w-full py-4 bg-sol-accent text-sol-bg font-black uppercase tracking-wider rounded-2xl hover:opacity-90 active:scale-95 shadow-lg shadow-sol-accent/15 flex items-center justify-center gap-2 transition-all"
                     >
-                      {t("acceptChallenge")}
+                      {isOwner ? t("ownChallengeAction") : t("acceptChallenge")}
                       <Play size={14} fill="currentColor" />
                     </Link>
                   )
@@ -270,7 +278,7 @@ export default function ChallengeInvitePage({ params }: PageProps) {
                       onClick={handleGuestAccept}
                       className="w-full py-4 bg-sol-accent text-sol-bg font-black uppercase tracking-wider rounded-2xl hover:opacity-90 active:scale-95 shadow-lg shadow-sol-accent/15 flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:scale-100"
                     >
-                      {t("acceptChallenge")}
+                      {isOwner ? t("ownChallengeAction") : t("acceptChallenge")}
                       <Play size={14} fill="currentColor" />
                     </button>
                   </>
