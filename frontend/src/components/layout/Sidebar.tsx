@@ -14,7 +14,8 @@ import {
   ShieldCheck,
   Menu,
   X,
-  ChartArea
+  ChartArea,
+  Gamepad2
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
@@ -233,6 +234,13 @@ export default function Sidebar() {
                 href="/student/practice"
                 label={t("practice")}
                 icon={<PencilLine size={18} />}
+                pathname={pathname}
+                isCollapsed={isCollapsed}
+              />
+              <NavItem
+                href="/student/games"
+                label={t("games")}
+                icon={<Gamepad2 size={18} />}
                 pathname={pathname}
                 isCollapsed={isCollapsed}
               />

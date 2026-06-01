@@ -14,6 +14,23 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
   }
 };
 
+export const optionalAuthenticate = (req: Request, res: Response, next: NextFunction) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) {
+    next();
+    return;
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!);
+    (req as any).user = decoded;
+  } catch {
+    (req as any).user = undefined;
+  }
+
+  next();
+};
+
 export const authorize = (action: string, resource: string) => {
   return (req: Request, res: Response, next: NextFunction) => {
     const user = (req as any).user;

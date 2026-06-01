@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { authService } from "@/services/auth";
+import { gameService, type PersonalGameLists } from "@/services/gameService";
 import ProtectedRoute from "@/components/guard/ProtectedRoute";
 import { useTranslations } from "next-intl";
 import { 
@@ -14,7 +15,9 @@ import {
   TrendingUp, 
   Clock,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  Gamepad2,
+  Archive
 } from "lucide-react";
 import {
   AreaChart,
@@ -34,17 +37,21 @@ export default function UserHomePage() {
   const dt = useTranslations("Dashboard");
   const [profile, setProfile] = useState<any>(null);
   const [activity, setActivity] = useState<any[]>([]);
+  const [myGames, setMyGames] = useState<PersonalGameLists | null>(null);
   const [loading, setLoading] = useState(true);
+  const [archivingChallengeId, setArchivingChallengeId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [profileData, activityData] = await Promise.all([
+        const [profileData, activityData, gameData] = await Promise.all([
           authService.getProfile(),
-          authService.getActivity()
+          authService.getActivity(),
+          gameService.getMine()
         ]);
         setProfile(profileData);
         setActivity(activityData);
+        setMyGames(gameData);
       } catch (err) {
         console.error("Failed to fetch dashboard data:", err);
       } finally {
@@ -53,6 +60,34 @@ export default function UserHomePage() {
     };
     fetchData();
   }, []);
+
+  const refreshGames = async () => {
+    const gameData = await gameService.getMine();
+    setMyGames(gameData);
+  };
+
+  const archiveChallenge = async (challengeId: string) => {
+    if (archivingChallengeId) return;
+    setArchivingChallengeId(challengeId);
+    try {
+      await gameService.archiveChallenge(challengeId);
+      await refreshGames();
+    } catch (err) {
+      console.error("Failed to archive challenge:", err);
+    } finally {
+      setArchivingChallengeId(null);
+    }
+  };
+
+  const getGameLabel = (type: string) => {
+    if (type === "speed") return dt("gameTypes.speed");
+    if (type === "climb") return dt("gameTypes.climb");
+    return dt("gameTypes.match");
+  };
+
+  const getContextLabel = (item: { lesson?: { title_en: string; title_vi: string } | null; grade?: { title_en: string; title_vi: string } | null; }) => {
+    return item.lesson?.title_en || item.grade?.title_en || dt("unknownGameContext");
+  };
 
   const stats = [
     {
@@ -262,6 +297,111 @@ export default function UserHomePage() {
                   <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
                 </Link>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="bg-sol-surface border border-sol-border/30 rounded-[2.5rem] p-8 shadow-xl space-y-6">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-black text-sol-text tracking-tight flex items-center gap-2">
+                  <Gamepad2 className="text-sol-accent" size={24} />
+                  {dt("createdGames")}
+                </h2>
+                <p className="text-sol-muted font-medium">
+                  {dt("createdGamesMeta", { current: myGames?.activeCreatedCount || 0, max: myGames?.activeLimit || 3 })}
+                </p>
+              </div>
+              <Link
+                href="/student/games"
+                className="px-4 py-2 rounded-xl bg-sol-bg border border-sol-border/20 text-xs font-black uppercase text-sol-text hover:border-sol-accent hover:text-sol-accent transition-all"
+              >
+                {dt("openGamesHub")}
+              </Link>
+            </div>
+
+            <div className="space-y-4">
+              {!myGames?.created?.length ? (
+                <div className="rounded-3xl border border-dashed border-sol-border/30 bg-sol-bg/40 p-6 text-sm font-bold text-sol-muted">
+                  {dt("noCreatedGames")}
+                </div>
+              ) : myGames.created.map((game) => (
+                <div key={game.id} className="rounded-3xl border border-sol-border/20 bg-sol-bg/40 p-5 space-y-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg font-black text-sol-text">{game.code}</span>
+                        <span className={`rounded-full px-2 py-1 text-[10px] font-black uppercase ${game.is_active ? "bg-sol-green/10 text-sol-green" : "bg-sol-border/20 text-sol-muted"}`}>
+                          {game.is_active ? dt("activeGame") : dt("archivedGame")}
+                        </span>
+                      </div>
+                      <p className="text-sm font-bold text-sol-text">{getGameLabel(game.game_type)}</p>
+                      <p className="text-xs font-bold text-sol-muted">{getContextLabel(game)}</p>
+                    </div>
+
+                    {game.is_active && (
+                      <button
+                        type="button"
+                        disabled={archivingChallengeId === game.id}
+                        onClick={() => archiveChallenge(game.id)}
+                        className="inline-flex items-center gap-2 rounded-xl border border-sol-border/20 bg-sol-surface px-3 py-2 text-xs font-black uppercase text-sol-muted hover:border-sol-orange hover:text-sol-orange transition-all disabled:opacity-50"
+                      >
+                        <Archive size={14} />
+                        {dt("archiveGame")}
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap gap-4 text-xs font-bold text-sol-muted">
+                    <span>{dt("attemptCount", { count: game.attempt_count })}</span>
+                    {game.best_attempt && <span>{dt("bestScore", { score: game.best_attempt.score })}</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-sol-surface border border-sol-border/30 rounded-[2.5rem] p-8 shadow-xl space-y-6">
+            <div>
+              <h2 className="text-2xl font-black text-sol-text tracking-tight flex items-center gap-2">
+                <Trophy className="text-sol-orange" size={24} />
+                {dt("participatedGames")}
+              </h2>
+              <p className="text-sol-muted font-medium">{dt("participatedGamesDesc")}</p>
+            </div>
+
+            <div className="space-y-4">
+              {!myGames?.participated?.length ? (
+                <div className="rounded-3xl border border-dashed border-sol-border/30 bg-sol-bg/40 p-6 text-sm font-bold text-sol-muted">
+                  {dt("noParticipatedGames")}
+                </div>
+              ) : myGames.participated.map((entry) => (
+                <Link
+                  key={entry.challenge_id}
+                  href={`/student/games/challenge/${entry.challenge.code}`}
+                  className="block rounded-3xl border border-sol-border/20 bg-sol-bg/40 p-5 space-y-2 hover:border-sol-accent/30 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg font-black text-sol-text">{entry.challenge.code}</span>
+                        <span className={`rounded-full px-2 py-1 text-[10px] font-black uppercase ${entry.challenge.is_active ? "bg-sol-accent/10 text-sol-accent" : "bg-sol-border/20 text-sol-muted"}`}>
+                          {entry.challenge.is_active ? dt("joinableGame") : dt("archivedGame")}
+                        </span>
+                      </div>
+                      <p className="text-sm font-bold text-sol-text">{getGameLabel(entry.challenge.game_type)}</p>
+                      <p className="text-xs font-bold text-sol-muted">
+                        {dt("createdBy", { username: entry.challenge.creator.username })} · {getContextLabel(entry.challenge)}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-black text-sol-accent">{dt("bestScore", { score: entry.score })}</p>
+                      <p className="text-xs font-bold text-sol-muted">{dt("timeSpentSeconds", { seconds: entry.time_spent })}</p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
             </div>
           </div>
         </div>

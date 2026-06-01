@@ -16,6 +16,14 @@ export default function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
+  const isPublicSharedGameRoute =
+    pathname.startsWith("/student/games/challenge/") ||
+    pathname === "/student/games/play";
+
+  if (isPublicSharedGameRoute) {
+    return NextResponse.next();
+  }
+
   // 3. If NOT logged in and hitting a protected route, go to login
   if (!token && pathname !== "/login") {
     return NextResponse.redirect(new URL("/login", request.url));
