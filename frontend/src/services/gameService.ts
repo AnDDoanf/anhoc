@@ -1,9 +1,17 @@
 import { api } from './api';
 
+export interface PaginationMeta {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+  hasMore: boolean;
+}
+
 export interface GameChallenge {
   id: string;
   code: string;
-  game_type: 'speed' | 'climb' | 'match';
+  game_type: 'speed' | 'climb' | 'match' | 'shooter' | 'balance' | 'bubbles';
   is_active?: boolean;
   grade_id?: number | null;
   lesson_id?: string | null;
@@ -42,7 +50,7 @@ export interface PersonalGameLists {
   created: Array<{
     id: string;
     code: string;
-    game_type: "speed" | "climb" | "match";
+    game_type: "speed" | "climb" | "match" | "shooter" | "balance" | "bubbles";
     is_active: boolean;
     created_at: string;
     lesson?: { title_en: string; title_vi: string } | null;
@@ -63,7 +71,7 @@ export interface PersonalGameLists {
     challenge: {
       id: string;
       code: string;
-      game_type: "speed" | "climb" | "match";
+      game_type: "speed" | "climb" | "match" | "shooter" | "balance" | "bubbles";
       is_active: boolean;
       created_at: string;
       creator: { username: string };
@@ -71,6 +79,8 @@ export interface PersonalGameLists {
       grade?: { title_en: string; title_vi: string } | null;
     };
   }>;
+  createdPagination: PaginationMeta;
+  participatedPagination: PaginationMeta;
 }
 
 export const gameService = {
@@ -149,8 +159,12 @@ export const gameService = {
     const response = await api.get('/games/global-leaderboard');
     return response.data;
   },
-  getMine: async (): Promise<PersonalGameLists> => {
-    const response = await api.get('/games/mine');
+  getMine: async (params?: {
+    createdPage?: number;
+    participatedPage?: number;
+    pageSize?: number;
+  }): Promise<PersonalGameLists> => {
+    const response = await api.get('/games/mine', { params });
     return response.data;
   },
   archiveChallenge: async (challengeId: string): Promise<{ success: boolean; alreadyArchived?: boolean }> => {

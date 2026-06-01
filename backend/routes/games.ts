@@ -6,6 +6,31 @@ import { levelService } from '../services/levelService';
 
 const router = Router();
 const ACTIVE_CHALLENGE_LIMIT = 3;
+const DEFAULT_GAMES_PAGE_SIZE = 5;
+
+const parsePositiveInt = (value: unknown, fallback: number, max = 100) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 1) return fallback;
+  return Math.min(Math.floor(parsed), max);
+};
+
+const GAME_SNAPSHOT_TARGETS: Record<string, number> = {
+  speed: 24,
+  climb: 18,
+  match: 6,
+  shooter: 20,
+  balance: 16,
+  bubbles: 20
+};
+
+const GAME_COMPATIBLE_TEMPLATE_TYPES: Record<string, string[] | null> = {
+  speed: null,
+  climb: null,
+  match: null,
+  shooter: ['multiple_choices', 'theoretical_question', 'true_false'],
+  balance: ['multiple_choices', 'theoretical_question', 'true_false'],
+  bubbles: ['multiple_choices', 'theoretical_question', 'true_false']
+};
 
 // Helper: Generate unique 8-character game code
 async function generateUniqueGameCode(): Promise<string> {
@@ -138,16 +163,19 @@ router.post('/challenges', authenticate, async (req, res) => {
       });
     }
 
-    if (templates.length === 0) {
+    const compatibleTypes = GAME_COMPATIBLE_TEMPLATE_TYPES[game_type] ?? null;
+    const compatibleTemplates = compatibleTypes
+      ? templates.filter((template) => compatibleTypes.includes(template.template_type))
+      : templates;
+
+    if (compatibleTemplates.length === 0) {
       return res.status(404).json({ error: 'No question templates found in the selected content area' });
     }
 
-    // Shuffle and pick up to 15 templates
-    const shuffledTemplates = templates.sort(() => 0.5 - Math.random());
-    const selectedTemplates = shuffledTemplates.slice(0, Math.min(15, templates.length));
-
-    // 2. Generate deterministic question config
-    const questions = selectedTemplates.map((template) => {
+    const snapshotTarget = GAME_SNAPSHOT_TARGETS[game_type] ?? 15;
+    const shuffledTemplates = [...compatibleTemplates].sort(() => 0.5 - Math.random());
+    const questions = Array.from({ length: snapshotTarget }, (_, index) => {
+      const template = shuffledTemplates[index % shuffledTemplates.length];
       const isTheoretical = template.template_type === 'theoretical_question';
       const vars = isTheoretical ? {} : MathService.generateVars(template.logic_config);
       
@@ -196,9 +224,12 @@ router.post('/challenges', authenticate, async (req, res) => {
 
 router.get('/mine', authenticate, async (req, res) => {
   const userId = (req as any).user.id as string;
+  const createdPage = parsePositiveInt(req.query.createdPage, 1);
+  const participatedPage = parsePositiveInt(req.query.participatedPage, 1);
+  const pageSize = parsePositiveInt(req.query.pageSize, DEFAULT_GAMES_PAGE_SIZE, 50);
 
   try {
-    const [createdChallenges, attempts] = await Promise.all([
+    const [allCreatedChallenges, attempts] = await Promise.all([
       prisma.gameChallenge.findMany({
         where: { created_by: userId },
         orderBy: { created_at: 'desc' },
@@ -257,10 +288,16 @@ router.get('/mine', authenticate, async (req, res) => {
       });
     }
 
+    const createdStart = (createdPage - 1) * pageSize;
+    const participatedItems = Array.from(participatedByChallenge.values());
+    const participatedStart = (participatedPage - 1) * pageSize;
+    const createdItems = allCreatedChallenges.slice(createdStart, createdStart + pageSize);
+    const paginatedParticipated = participatedItems.slice(participatedStart, participatedStart + pageSize);
+
     res.json({
       activeLimit: ACTIVE_CHALLENGE_LIMIT,
-      activeCreatedCount: createdChallenges.filter((challenge) => challenge.is_active).length,
-      created: createdChallenges.map((challenge) => ({
+      activeCreatedCount: allCreatedChallenges.filter((challenge) => challenge.is_active).length,
+      created: createdItems.map((challenge) => ({
         id: challenge.id,
         code: challenge.code,
         game_type: challenge.game_type,
@@ -271,7 +308,21 @@ router.get('/mine', authenticate, async (req, res) => {
         attempt_count: challenge._count.attempts,
         best_attempt: challenge.attempts[0] || null
       })),
-      participated: Array.from(participatedByChallenge.values())
+      createdPagination: {
+        page: createdPage,
+        pageSize,
+        total: allCreatedChallenges.length,
+        totalPages: Math.max(1, Math.ceil(allCreatedChallenges.length / pageSize)),
+        hasMore: createdStart + createdItems.length < allCreatedChallenges.length
+      },
+      participated: paginatedParticipated,
+      participatedPagination: {
+        page: participatedPage,
+        pageSize,
+        total: participatedItems.length,
+        totalPages: Math.max(1, Math.ceil(participatedItems.length / pageSize)),
+        hasMore: participatedStart + paginatedParticipated.length < participatedItems.length
+      }
     });
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to fetch personal game lists', details: error.message });
@@ -405,6 +456,18 @@ router.post('/attempts', optionalAuthenticate, async (req, res) => {
       // If score is 0 (quitted early / incomplete), no XP is awarded
       xpEarned = Number(score) === 0 ? 0 : Math.max(20, Math.min(100, Math.floor((300 - time_spent) * 0.5)));
       logReason = 'formula_match_game';
+    } else if (challenge.game_type === 'shooter') {
+      // Space Shooter: 4 XP per correct asteroid destroyed, max 100 XP
+      xpEarned = Math.min(100, score * 4);
+      logReason = 'math_shooter_game';
+    } else if (challenge.game_type === 'balance') {
+      // Balance Scale: 8 XP per perfect balance, max 100 XP
+      xpEarned = Math.min(100, score * 8);
+      logReason = 'balance_scale_game';
+    } else if (challenge.game_type === 'bubbles') {
+      // Bubble Popper: 5 XP per target popped, max 100 XP
+      xpEarned = Math.min(100, score * 5);
+      logReason = 'bubble_popper_game';
     }
 
     // Save GameAttempt

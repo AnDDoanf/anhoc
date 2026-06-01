@@ -35,9 +35,12 @@ export default function UserHomePage() {
   const { theme } = useTheme();
   const t = useTranslations("Common");
   const dt = useTranslations("Dashboard");
+  const DEFAULT_PAGE_SIZE = 5;
   const [profile, setProfile] = useState<any>(null);
   const [activity, setActivity] = useState<any[]>([]);
   const [myGames, setMyGames] = useState<PersonalGameLists | null>(null);
+  const [createdPage, setCreatedPage] = useState(1);
+  const [participatedPage, setParticipatedPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [archivingChallengeId, setArchivingChallengeId] = useState<string | null>(null);
 
@@ -47,7 +50,7 @@ export default function UserHomePage() {
         const [profileData, activityData, gameData] = await Promise.all([
           authService.getProfile(),
           authService.getActivity(),
-          gameService.getMine()
+          gameService.getMine({ createdPage, participatedPage, pageSize: DEFAULT_PAGE_SIZE })
         ]);
         setProfile(profileData);
         setActivity(activityData);
@@ -59,10 +62,10 @@ export default function UserHomePage() {
       }
     };
     fetchData();
-  }, []);
+  }, [createdPage, participatedPage]);
 
   const refreshGames = async () => {
-    const gameData = await gameService.getMine();
+    const gameData = await gameService.getMine({ createdPage, participatedPage, pageSize: DEFAULT_PAGE_SIZE });
     setMyGames(gameData);
   };
 
@@ -360,6 +363,30 @@ export default function UserHomePage() {
                 </div>
               ))}
             </div>
+
+            {myGames && myGames.createdPagination.totalPages > 1 && (
+              <div className="flex items-center justify-between gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setCreatedPage((prev) => Math.max(1, prev - 1))}
+                  disabled={myGames.createdPagination.page <= 1}
+                  className="px-4 py-2 rounded-xl bg-sol-bg border border-sol-border/20 text-xs font-black uppercase text-sol-text hover:border-sol-accent hover:text-sol-accent transition-all disabled:opacity-50"
+                >
+                  ←
+                </button>
+                <p className="text-xs font-black uppercase tracking-wider text-sol-muted">
+                  {dt("pageIndicator", { page: myGames.createdPagination.page, totalPages: myGames.createdPagination.totalPages })}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setCreatedPage((prev) => Math.min(myGames.createdPagination.totalPages, prev + 1))}
+                  disabled={!myGames.createdPagination.hasMore}
+                  className="px-4 py-2 rounded-xl bg-sol-bg border border-sol-border/20 text-xs font-black uppercase text-sol-text hover:border-sol-accent hover:text-sol-accent transition-all disabled:opacity-50"
+                >
+                  →
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="bg-sol-surface border border-sol-border/30 rounded-[2.5rem] p-8 shadow-xl space-y-6">
@@ -403,6 +430,30 @@ export default function UserHomePage() {
                 </Link>
               ))}
             </div>
+
+            {myGames && myGames.participatedPagination.totalPages > 1 && (
+              <div className="flex items-center justify-between gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setParticipatedPage((prev) => Math.max(1, prev - 1))}
+                  disabled={myGames.participatedPagination.page <= 1}
+                  className="px-4 py-2 rounded-xl bg-sol-bg border border-sol-border/20 text-xs font-black uppercase text-sol-text hover:border-sol-accent hover:text-sol-accent transition-all disabled:opacity-50"
+                >
+                  ←
+                </button>
+                <p className="text-xs font-black uppercase tracking-wider text-sol-muted">
+                  {dt("pageIndicator", { page: myGames.participatedPagination.page, totalPages: myGames.participatedPagination.totalPages })}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setParticipatedPage((prev) => Math.min(myGames.participatedPagination.totalPages, prev + 1))}
+                  disabled={!myGames.participatedPagination.hasMore}
+                  className="px-4 py-2 rounded-xl bg-sol-bg border border-sol-border/20 text-xs font-black uppercase text-sol-text hover:border-sol-accent hover:text-sol-accent transition-all disabled:opacity-50"
+                >
+                  →
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

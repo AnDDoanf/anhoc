@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { gameService, GameChallenge, PersonalGameLists } from "@/services/gameService";
 import ProtectedRoute from "@/components/guard/ProtectedRoute";
 import { 
@@ -16,17 +16,24 @@ import {
   ChevronRight, 
   Play,
   Archive,
-  Clock
+  Clock,
+  Rocket,
+  Scale,
+  CircleDot
 } from "lucide-react";
 import Link from "next/link";
 
 export default function GamesHubPage() {
   const t = useTranslations("Games");
   const tc = useTranslations("Common");
+  const locale = useLocale();
+  const DEFAULT_PAGE_SIZE = 5;
 
   const [available, setAvailable] = useState<any>({ grades: [], lessons: [] });
   const [leaderboard, setLeaderboard] = useState<any>({ speed: [], climb: [], match: [] });
   const [myGames, setMyGames] = useState<PersonalGameLists | null>(null);
+  const [createdPage, setCreatedPage] = useState(1);
+  const [participatedPage, setParticipatedPage] = useState(1);
   const [selectedGame, setSelectedGame] = useState<string>("speed");
   
   // Selected context (lesson OR grade)
@@ -48,7 +55,7 @@ export default function GamesHubPage() {
         const [availData, leadData, mineData] = await Promise.all([
           gameService.getAvailable(),
           gameService.getGlobalLeaderboard(),
-          gameService.getMine()
+          gameService.getMine({ createdPage, participatedPage, pageSize: DEFAULT_PAGE_SIZE })
         ]);
         setAvailable(availData);
         setLeaderboard(leadData);
@@ -67,10 +74,10 @@ export default function GamesHubPage() {
       }
     };
     fetchData();
-  }, []);
+  }, [createdPage, participatedPage]);
 
   const refreshMine = async () => {
-    const mineData = await gameService.getMine();
+    const mineData = await gameService.getMine({ createdPage, participatedPage, pageSize: DEFAULT_PAGE_SIZE });
     setMyGames(mineData);
   };
 
@@ -119,11 +126,16 @@ export default function GamesHubPage() {
   const getGameLabel = (type: string) => {
     if (type === 'speed') return t("speedTitle");
     if (type === 'climb') return t("climbTitle");
-    return t("matchTitle");
+    if (type === 'match') return t("matchTitle");
+    if (type === 'shooter') return t("shooterTitle");
+    if (type === 'balance') return t("balanceTitle");
+    return t("bubblesTitle");
   };
 
   const getContextLabel = (item: { lesson?: { title_en: string; title_vi: string } | null; grade?: { title_en: string; title_vi: string } | null; }) => {
-    return item.lesson?.title_en || item.grade?.title_en || "Global";
+    return locale === "vi"
+      ? item.lesson?.title_vi || item.grade?.title_vi || item.lesson?.title_en || item.grade?.title_en || t("globalContext")
+      : item.lesson?.title_en || item.grade?.title_en || item.lesson?.title_vi || item.grade?.title_vi || t("globalContext");
   };
 
   const handleArchiveChallenge = async (challengeId: string) => {
@@ -179,7 +191,7 @@ export default function GamesHubPage() {
             <div className="lg:col-span-2 space-y-8">
               
               {/* Game Selection Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[
                   {
                     id: "speed",
@@ -201,6 +213,27 @@ export default function GamesHubPage() {
                     desc: t("matchDesc"),
                     icon: <BrainCircuit size={24} className="text-sol-orange" />,
                     color: "group-hover:border-sol-orange/50"
+                  },
+                  {
+                    id: "shooter",
+                    title: t("shooterTitle"),
+                    desc: t("shooterDesc"),
+                    icon: <Rocket size={24} className="text-sol-red" />,
+                    color: "group-hover:border-sol-red/50"
+                  },
+                  {
+                    id: "balance",
+                    title: t("balanceTitle"),
+                    desc: t("balanceDesc"),
+                    icon: <Scale size={24} className="text-sol-cyan" />,
+                    color: "group-hover:border-sol-cyan/50"
+                  },
+                  {
+                    id: "bubbles",
+                    title: t("bubblesTitle"),
+                    desc: t("bubblesDesc"),
+                    icon: <CircleDot size={24} className="text-sol-yellow" />,
+                    color: "group-hover:border-sol-yellow/50"
                   }
                 ].map((game) => (
                   <button
@@ -259,14 +292,14 @@ export default function GamesHubPage() {
                       }}
                       className="w-full bg-sol-bg border border-sol-border/30 rounded-2xl p-4 text-sol-text font-bold text-sm focus:outline-none focus:border-sol-accent transition-colors cursor-pointer"
                     >
-                      <optgroup label="Grades / Lớp">
+                      <optgroup label={t("gradesGroupLabel")}>
                         {available.grades?.map((g: any) => (
                           <option key={`grade-${g.id}`} value={`grade-${g.id}`}>
                             {g.title_en} / {g.title_vi}
                           </option>
                         ))}
                       </optgroup>
-                      <optgroup label="Lessons / Bài học">
+                      <optgroup label={t("lessonsGroupLabel")}>
                         {available.lessons?.map((l: any) => (
                           <option key={`lesson-${l.id}`} value={`lesson-${l.id}`}>
                             {l.title_en} / {l.title_vi}
@@ -300,10 +333,10 @@ export default function GamesHubPage() {
                   <div className="mt-6 p-6 bg-sol-bg border border-sol-accent/20 rounded-3xl space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                       <div>
-                        <p className="text-xs font-black uppercase text-sol-accent tracking-widest">Challenge Generated</p>
+                        <p className="text-xs font-black uppercase text-sol-accent tracking-widest">{t("challengeGenerated")}</p>
                         <h4 className="text-2xl font-black text-sol-text tracking-tight mt-1">{createdChallenge.code}</h4>
                         <p className="text-xs text-sol-muted font-bold mt-1">
-                          {getGameLabel(createdChallenge.game_type)} ({createdChallenge.lesson?.title_en || createdChallenge.grade?.title_en})
+                          {getGameLabel(createdChallenge.game_type)} ({getContextLabel(createdChallenge)})
                         </p>
                       </div>
 
@@ -360,7 +393,7 @@ export default function GamesHubPage() {
                           <div className="flex items-center gap-2">
                             <span className="text-lg font-black text-sol-text">{game.code}</span>
                             <span className={`rounded-full px-2 py-1 text-[10px] font-black uppercase ${game.is_active ? "bg-sol-green/10 text-sol-green" : "bg-sol-border/20 text-sol-muted"}`}>
-                              {game.is_active ? "Active" : "Archived"}
+                              {game.is_active ? t("activeStatus") : t("archivedStatus")}
                             </span>
                           </div>
                           <p className="text-sm font-black text-sol-text">{getGameLabel(game.game_type)}</p>
@@ -372,7 +405,7 @@ export default function GamesHubPage() {
                             href={`/student/games/challenge/${game.code}`}
                             className="px-4 py-2 rounded-xl bg-sol-surface border border-sol-border/20 text-xs font-black uppercase text-sol-text hover:border-sol-accent hover:text-sol-accent transition-all"
                           >
-                            View
+                            {t("viewChallenge")}
                           </Link>
                           {game.is_active && (
                             <button
@@ -383,7 +416,7 @@ export default function GamesHubPage() {
                             >
                               <span className="inline-flex items-center gap-2">
                                 <Archive size={12} />
-                                Archive
+                                {t("archiveAction")}
                               </span>
                             </button>
                           )}
@@ -391,10 +424,10 @@ export default function GamesHubPage() {
                       </div>
 
                       <div className="flex flex-wrap gap-4 text-xs font-bold text-sol-muted">
-                        <span>{game.attempt_count} attempts</span>
+                        <span>{t("attemptsSummary", { count: game.attempt_count })}</span>
                         {game.best_attempt && (
                           <>
-                            <span>Best {game.best_attempt.score}</span>
+                            <span>{t("bestSummary", { score: game.best_attempt.score })}</span>
                             <span className="inline-flex items-center gap-1">
                               <Clock size={12} />
                               {game.best_attempt.time_spent}s
@@ -405,6 +438,30 @@ export default function GamesHubPage() {
                     </div>
                   ))}
                 </div>
+
+                {myGames && myGames.createdPagination.totalPages > 1 && (
+                  <div className="flex items-center justify-between gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setCreatedPage((prev) => Math.max(1, prev - 1))}
+                      disabled={myGames.createdPagination.page <= 1}
+                      className="px-4 py-2 rounded-xl bg-sol-bg border border-sol-border/20 text-xs font-black uppercase text-sol-text hover:border-sol-accent hover:text-sol-accent transition-all disabled:opacity-50"
+                    >
+                      ←
+                    </button>
+                    <p className="text-xs font-black uppercase tracking-wider text-sol-muted">
+                      {t("pageIndicator", { page: myGames.createdPagination.page, totalPages: myGames.createdPagination.totalPages })}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setCreatedPage((prev) => Math.min(myGames.createdPagination.totalPages, prev + 1))}
+                      disabled={!myGames.createdPagination.hasMore}
+                      className="px-4 py-2 rounded-xl bg-sol-bg border border-sol-border/20 text-xs font-black uppercase text-sol-text hover:border-sol-accent hover:text-sol-accent transition-all disabled:opacity-50"
+                    >
+                      →
+                    </button>
+                  </div>
+                )}
               </div>
 
             </div>
