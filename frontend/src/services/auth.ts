@@ -10,11 +10,38 @@ export interface LoginResponse {
     id: string;
     email: string;
     username?: string;
+    country?: string | null;
     role: string;
     // Updated to match the grouped object structure we created earlier
     permissions: Record<string, string[]>;
   };
   token: string; // Made required since login usually requires a token
+}
+
+export interface ActivityPoint {
+  date: string;
+  xp: number;
+}
+
+export interface NearbyLearner {
+  id: string;
+  username: string;
+  country?: string | null;
+  level: number;
+  total_xp: number;
+  average_score: number;
+  last_active?: string | null;
+  recommendation_score: number;
+  is_following: boolean;
+}
+
+export interface SocializingData {
+  summary: {
+    followers: number;
+    following: number;
+  };
+  recommendedUser: NearbyLearner | null;
+  nearbyLearners: NearbyLearner[];
 }
 
 export const authService = {
@@ -73,8 +100,23 @@ export const authService = {
     return response.data;
   },
 
-  getActivity: async () => {
+  getActivity: async (): Promise<ActivityPoint[]> => {
     const response = await api.get("/auth/activity");
+    return response.data;
+  },
+
+  getSocializing: async (): Promise<SocializingData> => {
+    const response = await api.get("/auth/socializing");
+    return response.data;
+  },
+
+  followUser: async (targetUserId: string) => {
+    const response = await api.post(`/auth/follow/${targetUserId}`);
+    return response.data;
+  },
+
+  unfollowUser: async (targetUserId: string) => {
+    const response = await api.delete(`/auth/follow/${targetUserId}`);
     return response.data;
   }
 };

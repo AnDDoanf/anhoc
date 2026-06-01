@@ -10,6 +10,7 @@ export type AdminUser = {
   id: string;
   username: string;
   email: string;
+  country?: string | null;
   role: AdminRole;
   created_at: string;
   stats?: {
@@ -25,6 +26,7 @@ export type AdminUser = {
 export type AdminUserPayload = {
   username: string;
   email: string;
+  country?: string;
   password?: string;
   role_name: string;
 };

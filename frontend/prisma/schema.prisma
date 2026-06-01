@@ -15,6 +15,7 @@ model User {
   id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   username      String        @unique @db.VarChar(50)
   email         String        @unique @db.VarChar(255)
+  country       String?       @db.VarChar(100)
   password_hash String
   role_id       Int
   role          Role          @relation(fields: [role_id], references: [id])
@@ -31,6 +32,8 @@ model User {
   evidence          ActivityEvidence[]
   audit_logs        AuditLog[]
   question_reports  QuestionTemplateReport[]
+  following         UserFollow[]    @relation("UserFollowing")
+  followers         UserFollow[]    @relation("UserFollowers")
 
   @@map("users")
 }
@@ -318,6 +321,19 @@ model UserAchievement {
 
   @@id([user_id, achievement_id])
   @@map("user_achievements")
+}
+
+model UserFollow {
+  follower_id  String   @db.Uuid
+  following_id String   @db.Uuid
+  created_at   DateTime @default(now()) @db.Timestamptz
+
+  follower  User @relation("UserFollowing", fields: [follower_id], references: [id], onDelete: Cascade)
+  following User @relation("UserFollowers", fields: [following_id], references: [id], onDelete: Cascade)
+
+  @@id([follower_id, following_id])
+  @@index([following_id])
+  @@map("user_follows")
 }
 
 model StudentStats {

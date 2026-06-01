@@ -15,6 +15,7 @@ const userSelect = {
   id: true,
   username: true,
   email: true,
+  country: true,
   created_at: true,
   role: {
     select: {
@@ -42,6 +43,7 @@ const serializeUser = (user: any) => ({
   id: user.id,
   username: user.username,
   email: user.email,
+  country: user.country,
   role: user.role,
   created_at: user.created_at,
   stats: user.student_stats,
@@ -120,6 +122,7 @@ const parseUserPayload = (body: any, requirePassword = true) => {
   const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
   const password = typeof body.password === 'string' ? body.password : '';
   const roleName = typeof body.role_name === 'string' ? body.role_name.trim() : '';
+  const country = typeof body.country === 'string' ? body.country.trim() : '';
 
   if (!username) return { error: 'Username is required' };
   if (!email || !email.includes('@')) return { error: 'A valid email is required' };
@@ -131,7 +134,7 @@ const parseUserPayload = (body: any, requirePassword = true) => {
   }
   if (!roleName) return { error: 'Role is required' };
 
-  return { username, email, password, roleName };
+  return { username, email, password, roleName, country };
 };
 
 router.get('/roles', authenticate, authorize('manage', 'user'), async (req, res) => {
@@ -480,6 +483,7 @@ router.post('/users', authenticate, authorize('manage', 'user'), async (req, res
       data: {
         username: payload.username,
         email: payload.email,
+        country: payload.country || null,
         password_hash: passwordHash,
         role_id: roleRecord.id,
         student_stats: {
@@ -518,6 +522,7 @@ router.patch('/users/:id', authenticate, selfOrAdmin('id'), async (req, res) => 
     const data: any = {
       username: payload.username,
       email: payload.email,
+      country: payload.country || null,
     };
 
     // Only update role if user is admin

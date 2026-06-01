@@ -33,6 +33,7 @@ const formatPermissions = (permissions: any[]) => {
 router.post('/register', async (req: Request, res: Response) => {
   try {
     const { username, email, password, role_name = 'student' } = req.body;
+    const country = typeof req.body.country === 'string' ? req.body.country.trim() : '';
 
     const existingUser = await prisma.user.findFirst({
       where: { OR: [{ email }, { username }] }
@@ -54,6 +55,7 @@ router.post('/register', async (req: Request, res: Response) => {
       data: {
         username,
         email,
+        country: country || null,
         password_hash: passwordHash,
         role_id: roleRecord.id,
       }
@@ -112,7 +114,9 @@ router.post('/login', async (req: Request, res: Response) => {
       token,
       user: {
         id: user.id,
+        email: user.email,
         username: user.username,
+        country: user.country,
         role: user.role.name,
         permissions
       }
@@ -250,4 +254,179 @@ router.get('/activity', authenticate, async (req: Request, res: Response) => {
   }
 });
 
-export default router;
+// --- 7. Get Nearby Learners ---
+router.get('/socializing', authenticate, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.id as string;
+
+    const currentUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        country: true,
+        role: { select: { name: true } },
+        student_stats: {
+          select: {
+            level: true,
+            total_xp: true,
+            average_score: true,
+            last_active: true
+          }
+        }
+      }
+    });
+
+    if (!currentUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const currentLevel = currentUser.student_stats?.level || 1;
+    const currentScore = Number(currentUser.student_stats?.average_score || 0);
+    const candidateMinLevel = Math.max(1, currentLevel - 3);
+    const candidateMaxLevel = currentLevel + 3;
+
+    const [followingRows, followerCount, followingCount, candidates] = await Promise.all([
+      prisma.userFollow.findMany({
+        where: { follower_id: userId },
+        select: { following_id: true }
+      }),
+      prisma.userFollow.count({ where: { following_id: userId } }),
+      prisma.userFollow.count({ where: { follower_id: userId } }),
+      prisma.user.findMany({
+        where: {
+          id: { not: userId },
+          ...(currentUser.role?.name === 'student' ? { role: { name: 'student' } } : {}),
+          student_stats: {
+            is: {
+              level: {
+                gte: candidateMinLevel,
+                lte: candidateMaxLevel
+              }
+            }
+          }
+        },
+        take: 40,
+        select: {
+          id: true,
+          username: true,
+          country: true,
+          student_stats: {
+            select: {
+              level: true,
+              total_xp: true,
+              average_score: true,
+              last_active: true
+            }
+          }
+        },
+        orderBy: { username: 'asc' }
+      })
+    ]);
+
+    const followingIds = new Set(followingRows.map((row) => row.following_id));
+    const scoredCandidates = candidates
+      .map((candidate) => {
+        const level = candidate.student_stats?.level || 1;
+        const avgScore = Number(candidate.student_stats?.average_score || 0);
+        const totalXp = candidate.student_stats?.total_xp || 0;
+        const lastActiveTime = candidate.student_stats?.last_active ? new Date(candidate.student_stats.last_active).getTime() : 0;
+        const now = Date.now();
+        const daysSinceActive = lastActiveTime > 0 ? Math.max(0, Math.floor((now - lastActiveTime) / (1000 * 60 * 60 * 24))) : 30;
+        const sameCountry = Boolean(currentUser.country && candidate.country && currentUser.country.toLowerCase() === candidate.country.toLowerCase());
+
+        let recommendationScore = 0;
+        recommendationScore += sameCountry ? 40 : 0;
+        recommendationScore += Math.max(0, 25 - Math.abs(level - currentLevel) * 8);
+        recommendationScore += Math.max(0, 20 - Math.abs(avgScore - currentScore) / 3);
+        recommendationScore += Math.max(0, 15 - daysSinceActive * 3);
+        recommendationScore += Math.min(10, Math.floor(totalXp / 250));
+
+        return {
+          id: candidate.id,
+          username: candidate.username,
+          country: candidate.country,
+          level,
+          total_xp: totalXp,
+          average_score: avgScore,
+          last_active: candidate.student_stats?.last_active || null,
+          recommendation_score: Math.round(recommendationScore),
+          is_following: followingIds.has(candidate.id)
+        };
+      })
+      .sort((a, b) => b.recommendation_score - a.recommendation_score || b.total_xp - a.total_xp || a.username.localeCompare(b.username));
+
+    const recommendedUser = scoredCandidates.find((candidate) => !candidate.is_following) || null;
+    const nearbyLearners = scoredCandidates
+      .filter((candidate) => candidate.id !== recommendedUser?.id)
+      .slice(0, 6);
+
+    res.json({
+      summary: {
+        followers: followerCount,
+        following: followingCount
+      },
+      recommendedUser,
+      nearbyLearners
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch socializing data" });
+  }
+});
+
+router.post('/follow/:targetUserId', authenticate, async (req: Request, res: Response) => {
+  try {
+    const followerId = (req as any).user.id as string;
+    const targetUserId = req.params.targetUserId as string;
+
+    if (!targetUserId || targetUserId === followerId) {
+      return res.status(400).json({ error: "Invalid follow target" });
+    }
+
+    const target = await prisma.user.findUnique({
+      where: { id: targetUserId },
+      select: { id: true }
+    });
+
+    if (!target) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    await prisma.userFollow.upsert({
+      where: {
+        follower_id_following_id: {
+          follower_id: followerId,
+          following_id: targetUserId
+        }
+      },
+      update: {},
+      create: {
+        follower_id: followerId,
+        following_id: targetUserId
+      }
+    });
+
+    res.status(201).json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to follow user" });
+  }
+});
+
+router.delete('/follow/:targetUserId', authenticate, async (req: Request, res: Response) => {
+  try {
+    const followerId = (req as any).user.id as string;
+    const targetUserId = req.params.targetUserId as string;
+
+    await prisma.userFollow.deleteMany({
+      where: {
+        follower_id: followerId,
+        following_id: targetUserId
+      }
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to unfollow user" });
+  }
+});
+
+export default router;

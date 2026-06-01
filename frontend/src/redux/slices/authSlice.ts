@@ -4,6 +4,7 @@ type User = {
   id: string;
   email: string;
   username?: string;
+  country?: string | null;
   role: string;
   permissions?: Record<string, string[]>;
 };

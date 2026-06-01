@@ -102,6 +102,7 @@ async function main() {
     create: {
       username: 'admin',
       email: 'admin@dev.com',
+      country: 'Vietnam',
       password_hash: hashedPassword,
       role_id: adminRole.id,
     },
@@ -113,6 +114,7 @@ async function main() {
     create: {
       username: 'teacher1',
       email: 'teacher@dev.com',
+      country: 'Vietnam',
       password_hash: hashedPassword,
       role_id: teacherRole.id,
     },
@@ -124,6 +126,31 @@ async function main() {
     create: {
       username: 'student1',
       email: 'student@dev.com',
+      country: 'Vietnam',
+      password_hash: hashedPassword,
+      role_id: studentRole.id,
+    },
+  });
+
+  const studentTwo = await prisma.user.upsert({
+    where: { email: 'student2@dev.com' },
+    update: {},
+    create: {
+      username: 'student2',
+      email: 'student2@dev.com',
+      country: 'Vietnam',
+      password_hash: hashedPassword,
+      role_id: studentRole.id,
+    },
+  });
+
+  const studentThree = await prisma.user.upsert({
+    where: { email: 'student3@dev.com' },
+    update: {},
+    create: {
+      username: 'student3',
+      email: 'student3@dev.com',
+      country: 'Singapore',
       password_hash: hashedPassword,
       role_id: studentRole.id,
     },
@@ -378,6 +405,30 @@ async function main() {
       lessons_completed: 0,
       total_xp: 0,
       average_score: 0,
+    },
+  });
+
+  await prisma.studentStats.upsert({
+    where: { user_id: studentTwo.id },
+    update: {},
+    create: {
+      user_id: studentTwo.id,
+      lessons_completed: 3,
+      total_xp: 220,
+      level: 2,
+      average_score: 76,
+    },
+  });
+
+  await prisma.studentStats.upsert({
+    where: { user_id: studentThree.id },
+    update: {},
+    create: {
+      user_id: studentThree.id,
+      lessons_completed: 4,
+      total_xp: 320,
+      level: 2,
+      average_score: 82,
     },
   });
 

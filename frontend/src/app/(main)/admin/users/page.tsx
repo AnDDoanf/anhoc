@@ -30,6 +30,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 type FormState = {
   username: string;
   email: string;
+  country: string;
   password: string;
   role_name: string;
 };
@@ -45,9 +46,34 @@ type ApiError = {
 const initialForm: FormState = {
   username: "",
   email: "",
+  country: "",
   password: "",
   role_name: "",
 };
+
+const COUNTRY_OPTIONS = [
+  "Argentina",
+  "Australia",
+  "Brazil",
+  "Cambodia",
+  "Canada",
+  "China",
+  "France",
+  "Germany",
+  "India",
+  "Indonesia",
+  "Japan",
+  "Laos",
+  "Malaysia",
+  "Myanmar",
+  "Philippines",
+  "Singapore",
+  "South Korea",
+  "Thailand",
+  "United Kingdom",
+  "United States",
+  "Vietnam",
+];
 
 const getErrorMessage = (err: unknown, fallback: string) => {
   return (err as ApiError)?.response?.data?.error || fallback;
@@ -65,6 +91,8 @@ export default function AdminUsersPage() {
   const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
+  const [countryQuery, setCountryQuery] = useState("");
+  const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -156,9 +184,17 @@ export default function AdminUsersPage() {
     };
   }, [summary]);
 
+  const filteredCountries = useMemo(() => {
+    const query = countryQuery.trim().toLowerCase();
+    if (!query) return COUNTRY_OPTIONS;
+    return COUNTRY_OPTIONS.filter((country) => country.toLowerCase().includes(query));
+  }, [countryQuery]);
+
   const resetForm = (clearMessages = true) => {
     setEditingUser(null);
     setForm({ ...initialForm, role_name: defaultRoleName });
+    setCountryQuery("");
+    setCountryDropdownOpen(false);
     if (clearMessages) {
       setError(null);
       setSuccess(null);
@@ -170,9 +206,12 @@ export default function AdminUsersPage() {
     setForm({
       username: user.username,
       email: user.email,
+      country: user.country || "",
       password: "",
       role_name: user.role.name,
     });
+    setCountryQuery(user.country || "");
+    setCountryDropdownOpen(false);
     setError(null);
     setSuccess(null);
   };
@@ -186,6 +225,7 @@ export default function AdminUsersPage() {
     const payload: AdminUserPayload = {
       username: form.username.trim(),
       email: form.email.trim(),
+      country: form.country.trim(),
       role_name: form.role_name,
     };
 
@@ -241,6 +281,20 @@ export default function AdminUsersPage() {
     };
 
     return roleLabels[roleName] || roleName;
+  };
+
+  useEffect(() => {
+    if (!editingUser && !form.country) {
+      setCountryQuery("");
+      return;
+    }
+    setCountryQuery(form.country);
+  }, [editingUser, form.country]);
+
+  const selectCountry = (country: string) => {
+    setForm((current) => ({ ...current, country }));
+    setCountryQuery(country);
+    setCountryDropdownOpen(false);
   };
 
   return (
@@ -321,6 +375,57 @@ export default function AdminUsersPage() {
                 placeholder={t("form.emailPlaceholder")}
                 required
               />
+              <label className="block">
+                <span className="mb-2 block text-xs font-black uppercase tracking-widest text-sol-muted">
+                  {t("form.country")}
+                </span>
+                <div className="relative">
+                  <input
+                    value={countryQuery}
+                    onFocus={() => setCountryDropdownOpen(true)}
+                    onBlur={() => window.setTimeout(() => setCountryDropdownOpen(false), 120)}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      setCountryQuery(value);
+                      setForm((current) => ({ ...current, country: value }));
+                      setCountryDropdownOpen(true);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" && filteredCountries.length > 0) {
+                        event.preventDefault();
+                        selectCountry(filteredCountries[0]);
+                      }
+                    }}
+                    placeholder={t("form.countryPlaceholder")}
+                    className="w-full rounded-lg border border-sol-border/30 bg-sol-bg px-3 py-3 font-bold text-sol-text outline-none transition placeholder:text-sol-muted/60 focus:border-sol-accent"
+                  />
+                  {countryDropdownOpen && (
+                    <div className="absolute z-20 mt-2 max-h-56 w-full overflow-auto rounded-lg border border-sol-border/20 bg-sol-surface p-1 shadow-xl">
+                      {filteredCountries.length > 0 ? (
+                        filteredCountries.map((country) => (
+                          <button
+                            key={country}
+                            type="button"
+                            onMouseDown={(event) => event.preventDefault()}
+                            onClick={() => selectCountry(country)}
+                            className={`block w-full rounded-md px-3 py-2 text-left text-sm font-bold transition ${
+                              form.country === country
+                                ? "bg-sol-accent/10 text-sol-accent"
+                                : "text-sol-text hover:bg-sol-bg hover:text-sol-accent"
+                            }`}
+                          >
+                            {country}
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-3 py-2 text-sm font-bold text-sol-muted">
+                          {t("form.countryNoMatch")}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </label>
               <Field
                 label={editingUser ? t("form.newPassword") : t("form.password")}
                 type="password"
@@ -440,6 +545,11 @@ export default function AdminUsersPage() {
                           <td className="px-5 py-4">
                             <div className="font-black text-sol-text">{item.username}</div>
                             <div className="text-sm font-bold text-sol-muted">{item.email}</div>
+                            {item.country && (
+                              <div className="mt-1 text-xs font-bold uppercase tracking-wider text-sol-text/55">
+                                {item.country}
+                              </div>
+                            )}
                           </td>
                           <td className="px-5 py-4">
                             <PillBadge label={formatRole(item.role.name)} compact />
