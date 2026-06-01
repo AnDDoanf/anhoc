@@ -1,0 +1,112 @@
+\documentclass[12pt,a4paper]{report}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{listings}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue,
+  pdftitle={Design and Implementation of Anhoc},
+  pdfauthor={OpenAI Codex}
+}
+
+\graphicspath{{../../}}
+\renewcommand{\baselinestretch}{1.15}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.6em}
+
+\newcommand{\code}[1]{\texttt{#1}}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+
+\lstdefinestyle{thesiscode}{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+  frame=single,
+  rulecolor=\color{black!20}
+}
+
+\begin{document}
+
+\hypersetup{pageanchor=false}
+\begin{titlepage}
+\centering
+{\Large Thesis Report\par}
+\vspace{1.5cm}
+{\huge \textbf{Design and Implementation of Anhoc}\par}
+\vspace{0.5cm}
+{\Large A Web-Based Mathematics Learning Platform for Structured Practice and Progress Tracking\par}
+\vspace{2cm}
+{\large Prepared from the implemented Anhoc project repository\par}
+\vfill
+\begin{tabular}{ll}
+Project Name: & Anhoc \\
+Frontend Stack: & Next.js, React, TypeScript \\
+Backend Stack: & Node.js, Express, Prisma \\
+Database: & PostgreSQL \\
+Deployment Target: & Vercel, Render, Neon
+\end{tabular}
+\vfill
+{\large \today\par}
+\end{titlepage}
+\hypersetup{pageanchor=true}
+
+\pagenumbering{roman}
+
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+Anhoc is a web-based mathematics learning platform designed to provide structured theory content, automatically generated practice exercises, grade-level tests, and progression tracking for students. The system also includes administration capabilities for lesson management, question template authoring, role-based access control, and achievement configuration. This thesis documents the design and implementation of Anhoc based on the current codebase in the repository.
+
+The project follows a client-server architecture in which a Next.js frontend communicates with a Node.js and Express backend through REST endpoints. Prisma is used as the data access layer, while PostgreSQL stores application data such as users, lessons, question templates, attempts, mastery records, achievements, and audit evidence. A notable implementation decision is the use of persisted question snapshots, which allows each generated exercise to remain stable after creation and supports reproducible scoring, review, and reporting.
+
+This thesis presents the problem context, functional and non-functional requirements, system architecture, data model, implementation details, and an evaluation of the current solution. It also discusses limitations and future improvements needed to move the platform from a capable academic software project to a more mature production learning system.
+
+\tableofcontents
+\listoffigures
+\listoftables
+
+\clearpage
+\pagenumbering{arabic}
+
+\input{chapters/introduction}
+\input{chapters/requirements}
+\input{chapters/design}
+\input{chapters/implementation}
+\input{chapters/evaluation}
+\input{chapters/conclusion}
+\input{chapters/appendix}
+
+\begin{thebibliography}{9}
+\bibitem{anhoc-readme}
+Anhoc project repository README, accessed from the local repository at \code{README.md}.
+
+\bibitem{backend-server}
+Anhoc backend bootstrap implementation, \code{backend/server.ts}.
+
+\bibitem{backend-schema}
+Anhoc database schema and Prisma models, \code{backend/prisma/schema.prisma}.
+
+\bibitem{backend-auth}
+Anhoc authentication and authorization middleware, \code{backend/middleware/auth.ts}.
+
+\bibitem{backend-math}
+Anhoc math generation and answer evaluation service, \code{backend/services/mathService.ts}.
+
+\bibitem{technical-design}
+Anhoc technical design document, \code{docs/TDD/technical-design.md}.
+\end{thebibliography}
+
+\end{document}

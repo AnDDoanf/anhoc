@@ -1,0 +1,49 @@
+\chapter{Introduction}
+
+\section{Background}
+
+Digital learning systems are increasingly expected to do more than present static content. In mathematics education, students need repeated practice, immediate feedback, structured progression, and content that can be adapted to multiple grades and topics. A conventional content website can display lessons, but it does not by itself provide reusable question generation, mastery tracking, or administrative control over subject-specific learning material.
+
+The Anhoc project addresses this gap by combining theory lessons, generated practice, formal test sessions, and gamified progression in a single web application. The project targets school-level mathematics learning and is organized around subjects, grades, and lessons. The implemented system allows a student to read theory content, start practice from lesson templates, submit answers, complete tests, and monitor progress through XP, levels, and achievements. At the same time, an administrator can manage lessons, question templates, user accounts, roles, and access permissions.
+
+\section{Problem Statement}
+
+The main engineering problem solved by Anhoc is the design of a learning platform that satisfies four requirements at the same time:
+\begin{itemize}
+  \item it must support reusable content across grades and subjects;
+  \item it must generate exercises dynamically rather than storing every question instance manually;
+  \item it must keep each attempt stable enough to be scored, reviewed, and audited later;
+  \item it must provide operational control for administrators without hard-coding every permission into the user interface.
+\end{itemize}
+
+Many simple practice applications solve only one part of this problem. They either store fixed question banks, do not track long-term student progression, or rely on coarse user roles that become difficult to extend. Anhoc introduces a more structured approach by combining generated questions with persisted snapshots, dynamic role-based access control, and a progression subsystem.
+
+\section{Objectives}
+
+This thesis has the following objectives:
+\begin{itemize}
+  \item document the implemented Anhoc system in a thesis-style format;
+  \item explain the architecture and data model used by the project;
+  \item describe how the platform generates and evaluates mathematical exercises;
+  \item analyze how authentication, authorization, and administration are handled;
+  \item evaluate the strengths, limitations, and next steps of the current implementation.
+\end{itemize}
+
+\section{Scope}
+
+The scope of this thesis is limited to the code and documentation available in the repository. It focuses on the currently implemented frontend, backend, database schema, and operational flows. The thesis does not claim to measure learning outcomes through classroom experimentation, because no such experimental dataset is included in the repository. Evaluation is therefore based on software capabilities, system structure, and scenario-level validation.
+
+\section{Contributions of the Project}
+
+The implemented project contributes several concrete software ideas:
+\begin{itemize}
+  \item a bilingual lesson structure for educational content in English and Vietnamese;
+  \item a question-template model that supports variables, derived expressions, constraints, and multiple accepted formulas;
+  \item persisted question snapshots that separate reusable templates from concrete attempt data;
+  \item a progression model combining mastery, XP logs, levels, and achievements;
+  \item a dynamic access-control model that separates actions, resources, and subject restrictions.
+\end{itemize}
+
+\section{Thesis Structure}
+
+The remainder of this thesis is organized as follows. Chapter 2 presents the requirements and analysis of the project domain. Chapter 3 describes the system design, architecture, security model, and data model. Chapter 4 explains implementation details across the frontend, backend, and database layers. Chapter 5 evaluates the current solution through representative scenarios, strengths, and limitations. Chapter 6 concludes the thesis and outlines future work.

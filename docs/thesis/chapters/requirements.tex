@@ -1,0 +1,94 @@
+\chapter{Requirements Analysis}
+
+\section{Stakeholders and User Roles}
+
+The primary stakeholders in Anhoc are students, administrators, and maintainers of the platform.
+
+\begin{itemize}
+  \item Students consume learning content, complete exercises, take tests, and monitor progress.
+  \item Administrators maintain educational content, templates, users, roles, and reports.
+  \item Maintainers operate the deployment, database, and system configuration.
+\end{itemize}
+
+The codebase also distinguishes between global roles and subject-specific permissions. This is important because a role may have permission to manage some resources without necessarily having access to all subjects.
+
+\section{Functional Requirements}
+
+Table \ref{tab:functional-requirements} summarizes the main functional requirements derived from the implementation.
+
+\begin{table}[H]
+\centering
+\caption{Core functional requirements}
+\label{tab:functional-requirements}
+\begin{tabularx}{\textwidth}{L{0.18\textwidth}Y}
+\toprule
+\textbf{Area} & \textbf{Requirement} \\
+\midrule
+Authentication & The system shall allow user registration, login, profile retrieval, password change, and activity retrieval. \\
+Lessons & The system shall support subject and grade organization, lesson listing, lesson detail retrieval, and lesson authoring by authorized users. \\
+Practice & The system shall generate lesson-based practice attempts from reusable templates and store concrete snapshot records for each generated question. \\
+Testing & The system shall create grade-level test attempts, support answer submission, and compute final scores on completion. \\
+Templates & The system shall support creation, update, deletion, preview, reporting, and review of question templates. \\
+Progression & The system shall track study time, mastery status, XP, levels, and achievements. \\
+Administration & The system shall provide user, role, permission, subject-access, and dashboard management endpoints. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Non-Functional Requirements}
+
+The repository implies the following non-functional requirements:
+
+\begin{itemize}
+  \item \textbf{Modularity:} frontend, backend, persistence, and progression logic should remain separable.
+  \item \textbf{Consistency:} generated questions must remain stable after creation so that grading and reporting are reproducible.
+  \item \textbf{Security:} protected endpoints require JWT-based authentication and permission checks.
+  \item \textbf{Extensibility:} roles, actions, resources, and subject restrictions should be data-driven rather than hard-coded.
+  \item \textbf{Deployability:} the architecture should run in a common cloud arrangement using Vercel, Render, and Neon.
+\end{itemize}
+
+\section{Learning Content Requirements}
+
+Educational content in Anhoc is organized around a hierarchy of subjects, grades, and lessons. Lessons contain bilingual titles and markdown-based content bodies. This leads to several domain requirements:
+
+\begin{itemize}
+  \item one lesson belongs to one grade and one subject;
+  \item lesson content should be readable in more than one language;
+  \item practice content should be attached to lessons through question templates rather than embedded into the lesson body itself;
+  \item progress should be measurable at the lesson level.
+\end{itemize}
+
+\section{Assessment Requirements}
+
+Assessment in the project has two modes:
+\begin{itemize}
+  \item lesson-based practice for targeted repetition;
+  \item grade-level tests for broader assessment across available lesson templates.
+\end{itemize}
+
+The assessment subsystem must support question generation, answer submission, correctness evaluation, score calculation, and post-completion progression updates. The implementation also needs to distinguish between theoretical questions and computed math questions because the grading strategy differs between those two cases.
+
+\section{Administrative Requirements}
+
+Administrative functionality in Anhoc goes beyond simple content editing. The platform must manage:
+\begin{itemize}
+  \item users and their assigned roles;
+  \item permissions by action and resource;
+  \item subject-level restrictions per role;
+  \item dashboard statistics and user insights;
+  \item reports submitted for problematic generated questions.
+\end{itemize}
+
+This requirement set justifies the presence of a dynamic RBAC model instead of a fixed boolean admin flag.
+
+\section{Operational Assumptions}
+
+The codebase assumes a web-first deployment model:
+\begin{itemize}
+  \item the frontend is delivered as a Next.js application;
+  \item the backend exposes REST endpoints under \code{/api/v1};
+  \item PostgreSQL is the source of truth for transactional and analytical learning data;
+  \item environment variables define API URLs, CORS origins, JWT secret material, and achievement seeding behavior.
+\end{itemize}
+
+These assumptions shape the rest of the architecture described in the next chapter.

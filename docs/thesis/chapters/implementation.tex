@@ -1,0 +1,135 @@
+\chapter{Implementation}
+
+\section{Frontend Implementation}
+
+The frontend is implemented with Next.js and TypeScript. The app-router structure separates student and administrative workflows into route segments, while service modules in \code{frontend/src/services} centralize communication with the backend.
+
+Important frontend concerns include:
+\begin{itemize}
+  \item authentication bootstrap and persistence;
+  \item protected routes and permission checks;
+  \item lesson and practice page composition;
+  \item test flows with answer submission and result presentation;
+  \item admin screens for users, roles, reports, and dashboards.
+\end{itemize}
+
+The component structure indicates a feature-oriented approach rather than a single monolithic page design. Examples include \code{QuestionPlayer.tsx}, \code{PracticeResultModal.tsx}, \code{AchievementGallery.tsx}, and \code{CreateTemplateModal.tsx}.
+
+\section{Backend API Implementation}
+
+The backend exposes versioned REST endpoints. Table \ref{tab:api-areas} groups the major API areas.
+
+\begin{table}[H]
+\centering
+\caption{Main API groups}
+\label{tab:api-areas}
+\begin{tabularx}{\textwidth}{L{0.22\textwidth}Y}
+\toprule
+\textbf{API Group} & \textbf{Purpose} \\
+\midrule
+\code{/api/v1/auth} & Registration, login, profile retrieval, password change, and activity endpoints. \\
+\code{/api/v1/lessons} & Lesson, grade, subject, mastery, practice initiation, and study-time endpoints. \\
+\code{/api/v1/tests} & Grade tests, attempt detail, answer submission, finish flow, template management, and report workflow. \\
+\code{/api/v1/admin} & Users, roles, access control, insights, and dashboard statistics. \\
+\code{/api/v1/achievements} & Achievement seeding, listing, earned-state retrieval, and re-checking. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The API design is pragmatic. It is expressive enough for the frontend and explicit enough for debugging, while remaining simple to secure and deploy.
+
+\section{Question Generation and Grading}
+
+The file \code{backend/services/mathService.ts} contains a central part of the project: logic-driven variable generation and answer evaluation. The implementation supports several rule types:
+\begin{itemize}
+  \item fixed numeric values;
+  \item arrays of possible values;
+  \item numeric ranges with optional step and precision;
+  \item random choices from configured lists;
+  \item derived expressions evaluated from previously generated variables;
+  \item constraints that must hold before a question is accepted.
+\end{itemize}
+
+The generation flow can be summarized as:
+\begin{enumerate}
+  \item parse the stored \code{logic\_config};
+  \item generate variables from configured rules;
+  \item apply derived expressions;
+  \item verify constraints;
+  \item repeat until a valid assignment is found or a maximum number of attempts is reached.
+\end{enumerate}
+
+Answer checking supports multiple cases:
+\begin{itemize}
+  \item numeric answers, compared with a small tolerance;
+  \item boolean answers, normalized from common textual forms;
+  \item text or structured answers, normalized for comparison;
+  \item multiple accepted formulas for the same question.
+\end{itemize}
+
+This is a stronger implementation than a naive string-equality checker because it tolerates common input variance while still grounding correctness in mathematically evaluated formulas.
+
+\section{Attempt Lifecycle}
+
+The implemented attempt lifecycle is one of the most important interactions in the system.
+
+\subsection*{Practice Start}
+
+When a student starts practice for a lesson:
+\begin{enumerate}
+  \item the backend validates lesson existence and subject access;
+  \item it loads lesson templates;
+  \item it generates variables and right answers for selected templates;
+  \item it creates a \code{test\_attempt} record;
+  \item it bulk-inserts \code{question\_snapshots};
+  \item it returns a stable attempt payload to the frontend.
+\end{enumerate}
+
+\subsection*{Answer Submission}
+
+When a student submits an answer:
+\begin{enumerate}
+  \item the backend loads the snapshot and template;
+  \item it evaluates the answer using either text comparison or formula-based checking;
+  \item it updates the stored snapshot with answer and correctness state;
+  \item it returns correctness information and explanation content.
+\end{enumerate}
+
+\subsection*{Attempt Completion}
+
+When an attempt is finished:
+\begin{enumerate}
+  \item unanswered snapshots are marked incorrect;
+  \item correct answers are counted and the final score is computed;
+  \item lesson mastery is updated when the attempt is linked to a lesson;
+  \item XP is awarded and logged;
+  \item aggregate student statistics are recalculated;
+  \item achievements are re-evaluated and may award additional XP.
+\end{enumerate}
+
+This completion pipeline shows that the project treats scoring as part of a broader progression workflow rather than as an isolated calculation.
+
+\section{Administrative Implementation}
+
+The administrative subsystem includes user and role management, subject permission management, dashboard statistics, and question report review. The route design suggests that administrators can change both coarse and fine-grained access behavior without redeploying the application.
+
+This is reinforced by the underlying data model:
+\begin{itemize}
+  \item \code{roles} store named roles;
+  \item \code{actions} and \code{resources} define the authorization vocabulary;
+  \item \code{role\_permissions} map actions to resources per role;
+  \item \code{role\_subject\_permissions} restrict which subjects a role can manage.
+\end{itemize}
+
+This structure scales better than a hard-coded permission matrix embedded directly in frontend components.
+
+\section{Configuration and Deployment}
+
+The repository defines environment variables for both frontend and backend execution. Examples include:
+\begin{itemize}
+  \item API base URLs and rewrite targets for the frontend;
+  \item \code{DATABASE\_URL}, \code{JWT\_SECRET}, and \code{CORS\_ORIGINS} for the backend;
+  \item \code{AUTO\_SEED\_ACHIEVEMENTS} to control whether achievement definitions are seeded automatically.
+\end{itemize}
+
+The backend startup process explicitly checks the achievement seeding flag before inserting seed data. This is a sound operational choice because it prevents accidental reseeding in every environment.

@@ -1,0 +1,58 @@
+\appendix
+\chapter{Appendix}
+
+\section{Build and Run Notes}
+
+The repository documents separate frontend and backend setup processes. A representative local workflow is shown below.
+
+\begin{lstlisting}[style=thesiscode]
+cd backend
+npm install
+npm run prisma:migrate
+npm run dev
+\end{lstlisting}
+
+\begin{lstlisting}[style=thesiscode]
+cd frontend
+npm install
+npm run dev
+\end{lstlisting}
+
+\section{Selected Environment Variables}
+
+\begin{table}[H]
+\centering
+\caption{Representative environment variables}
+\begin{tabularx}{\textwidth}{L{0.34\textwidth}Y}
+\toprule
+\textbf{Variable} & \textbf{Purpose} \\
+\midrule
+\code{NEXT\_PUBLIC\_API\_URL} & Browser-visible API base URL for the frontend. \\
+\code{INTERNAL\_API\_URL} & Server-side fetch base used by the frontend runtime. \\
+\code{BACKEND\_URL} & Optional rewrite target for same-origin frontend calls. \\
+\code{SERVER\_PORT} & Backend listening port. \\
+\code{DATABASE\_URL} & PostgreSQL connection string for Prisma. \\
+\code{JWT\_SECRET} & Secret used to verify and sign JWT tokens. \\
+\code{CORS\_ORIGINS} & Allowed origins for cross-origin backend requests. \\
+\code{AUTO\_SEED\_ACHIEVEMENTS} & Controls automatic achievement seeding on startup. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Selected REST Endpoints}
+
+\begin{table}[H]
+\centering
+\caption{Example endpoints from the implemented API}
+\begin{tabularx}{\textwidth}{L{0.18\textwidth}L{0.34\textwidth}Y}
+\toprule
+\textbf{Method} & \textbf{Path} & \textbf{Purpose} \\
+\midrule
+\code{POST} & \code{/api/v1/auth/login} & Authenticate a user and return token plus permission payload. \\
+\code{POST} & \code{/api/v1/lessons/:id/practice} & Start a lesson-based practice attempt. \\
+\code{POST} & \code{/api/v1/tests/submit-answer} & Submit an answer for a generated question snapshot. \\
+\code{POST} & \code{/api/v1/tests/attempts/:id/finish} & Complete an attempt and trigger progression updates. \\
+\code{GET} & \code{/api/v1/admin/access-control} & Retrieve data needed for role and permission administration. \\
+\bottomrule
+\end{tabularx}
+\end{table}

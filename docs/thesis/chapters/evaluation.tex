@@ -1,0 +1,71 @@
+\chapter{Evaluation and Discussion}
+
+\section{Method of Evaluation}
+
+This thesis evaluates Anhoc through implementation analysis and scenario-based validation rather than controlled educational experiments. The repository does not include classroom outcome data, benchmark reports, or a formal automated test suite that would support statistical claims. It would be incorrect to invent such evidence. Instead, the evaluation focuses on whether the implemented design addresses the stated software goals.
+
+\section{Representative User Scenarios}
+
+\subsection*{Scenario 1: Student Login and Study Access}
+
+The system supports a full login flow in which credentials are submitted from the frontend, verified by the backend, and returned as a JWT with grouped permissions. This meets the requirement for authenticated access to protected student and admin workflows.
+
+\subsection*{Scenario 2: Lesson-Based Practice}
+
+The platform can start practice sessions from lesson templates, generate concrete question instances, and return a stable attempt payload. Because snapshots are persisted, a student can answer the exact generated questions rather than a regenerated variant. This directly satisfies the consistency requirement discussed earlier.
+
+\subsection*{Scenario 3: Assessment and Progression}
+
+The finish-attempt flow does more than assign a score. It updates lesson mastery, adds XP, recalculates student statistics, and checks achievements. This makes the system better aligned with long-term learning engagement than a basic quiz engine.
+
+\subsection*{Scenario 4: Administrative Control}
+
+The platform exposes dedicated endpoints for roles, users, access control, reports, and dashboard statistics. That breadth indicates the system was designed as a manageable platform rather than a single-user prototype.
+
+\section{Observed Strengths}
+
+Several strengths are visible in the current implementation:
+\begin{itemize}
+  \item \textbf{Clear layering.} Frontend, backend, services, and database concerns are separated cleanly.
+  \item \textbf{Snapshot persistence.} The snapshot model is the strongest architectural decision in the project and improves grading stability, traceability, and debugging.
+  \item \textbf{Flexible authorization.} Dynamic RBAC plus subject-level permissions provides useful operational flexibility.
+  \item \textbf{Educational progression.} Mastery, XP, levels, and achievements create a richer student model than raw scores alone.
+  \item \textbf{Template expressiveness.} Variable ranges, derived expressions, constraints, and accepted formulas make the question system meaningfully reusable.
+\end{itemize}
+
+\section{Current Limitations}
+
+The project also has clear limitations that should be acknowledged directly.
+
+\begin{itemize}
+  \item \textbf{No formal experimental validation.} The repository does not provide evidence of student learning impact.
+  \item \textbf{Limited compile-time guarantees across dynamic JSON logic.} Template logic is flexible, but JSON-configured expressions can still fail at runtime.
+  \item \textbf{Potential duplication of schema ownership.} The repository contains Prisma schema material in both frontend and backend directories, which creates a risk of divergence if not managed carefully.
+  \item \textbf{Operational maturity is still emerging.} There is little evidence in the repository of broad automated testing, observability, or release-hardening practices.
+  \item \textbf{Reporting and analytics can be expanded.} The current design supports insights and statistics, but a deeper learning analytics layer is not yet visible.
+\end{itemize}
+
+\section{Risks and Tradeoffs}
+
+The design choices in Anhoc involve reasonable tradeoffs:
+\begin{itemize}
+  \item Persisting snapshots increases storage cost, but the gain in auditability and reproducibility is worth it.
+  \item Dynamic permissions improve flexibility, but they also require careful synchronization between backend enforcement and frontend affordances.
+  \item Formula-driven generation increases content reusability, but malformed expressions can be harder to validate than fixed question banks.
+\end{itemize}
+
+\section{Future Improvements}
+
+Several next steps would materially improve the project:
+\begin{itemize}
+  \item add automated tests for route behavior, template validation, and progression logic;
+  \item build a stronger authoring validation layer for \code{logic\_config} and accepted formulas;
+  \item add richer analytics for question difficulty, error patterns, and lesson effectiveness;
+  \item improve observability through structured logs, metrics, and failure dashboards;
+  \item define a single canonical Prisma schema source and remove duplication risk;
+  \item conduct user studies or classroom pilots to validate educational effectiveness.
+\end{itemize}
+
+\section{Discussion}
+
+Taken as a software engineering project, Anhoc is already beyond a simple tutorial application. It contains meaningful domain modeling, a non-trivial assessment engine, a flexible authorization model, and a progression subsystem tied to learning behavior. Its strongest academic value lies in how it combines educational workflows with practical backend architecture decisions. The platform would benefit from deeper validation and more operational hardening, but the core design is coherent and defensible.

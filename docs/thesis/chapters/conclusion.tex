@@ -1,0 +1,7 @@
+\chapter{Conclusion}
+
+This thesis documented the design and implementation of Anhoc, a web-based mathematics learning platform that combines bilingual lesson content, generated practice exercises, grade-level assessments, progression tracking, and administrative control. The implemented system uses a modern web stack with a Next.js frontend, an Express backend, Prisma as the persistence layer, and PostgreSQL as the database.
+
+The project demonstrates several sound software engineering decisions. Most importantly, it separates reusable question templates from persisted question snapshots, enabling reproducible grading and better issue reporting. It also uses a dynamic access-control model and a modular progression pipeline for mastery, XP, and achievements. These choices make the system more extensible than a minimal educational CRUD application.
+
+At the same time, the current implementation remains an evolving platform rather than a finished production learning system. It still needs broader automated testing, stronger validation of author-authored template logic, clearer schema ownership, and empirical studies of educational effectiveness. Even with these limitations, the project is a solid foundation for future academic work and practical product development in mathematics learning software.
