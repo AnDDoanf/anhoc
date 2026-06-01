@@ -86,7 +86,7 @@ function GamePlayroomContent() {
   const [towerLives, setTowerLives] = useState(3);
   
   // Card Memory Match
-  const [cards, setCards] = useState<Array<{ id: number; content: string; type: 'formula' | 'value'; matched: boolean; flipped: boolean; val: number }>>([]);
+  const [cards, setCards] = useState<Array<{ id: number; content: string; type: 'formula' | 'value'; matched: boolean; flipped: boolean; val: string }>>([]);
   const [selectedCards, setSelectedCards] = useState<number[]>([]);
   const [matchMoves, setMatchMoves] = useState(0);
 
@@ -236,7 +236,7 @@ function GamePlayroomContent() {
           : q.body_template_en || q.body_template_vi;
       const formatted = formatTemplate(bodyTemplate, q.generated_variables);
       const displayFormula = formatted.replace(/\$/g, "").trim();
-      const val = parseFloat(q.right_answers[0]);
+      const val = q.right_answers[0];
       return {
         id: idx * 2,
         content: displayFormula,
@@ -248,7 +248,7 @@ function GamePlayroomContent() {
     });
     
     const valueCards = list.map((q, idx) => {
-      const val = parseFloat(q.right_answers[0]);
+      const val = q.right_answers[0];
       return {
         id: idx * 2 + 1,
         content: q.right_answers[0],
@@ -491,7 +491,7 @@ function GamePlayroomContent() {
                   </h2>
                 </div>
                 
-                <div className="w-32 h-32 rounded-full border-8 border-sol-accent/20 flex items-center justify-center animate-bounce">
+                <div className="w-32 h-32 rounded-full border-8 border-sol-accent/25 flex items-center justify-center animate-pulse-glow bg-sol-accent/5">
                   <span className="text-6xl font-black text-sol-accent">{countdown}</span>
                 </div>
               </div>
@@ -516,14 +516,14 @@ function GamePlayroomContent() {
                     ) : challenge.game_type === 'climb' ? (
                       <>
                         <Heart className="text-sol-red fill-sol-red animate-pulse" size={24} />
-                        <div>
+                        <div key={towerLives} className={towerLives < 3 ? "animate-shake-heart" : ""}>
                           <p className="text-[10px] font-black uppercase text-sol-muted tracking-wider">{t("hearts")}</p>
                           <div className="flex gap-0.5 mt-0.5">
                             {Array.from({ length: 3 }).map((_, i) => (
                               <Heart 
                                 key={i} 
                                 size={14} 
-                                className={i < towerLives ? 'text-sol-red fill-sol-red' : 'text-sol-border/50'} 
+                                className={`transition-all duration-500 ${i < towerLives ? 'text-sol-red fill-sol-red scale-100' : 'text-sol-border/30 scale-75 rotate-12'}`} 
                               />
                             ))}
                           </div>
@@ -543,7 +543,7 @@ function GamePlayroomContent() {
                   {/* Middle HUD: Streak multiplier */}
                   <div className="bg-sol-surface border border-sol-border/30 rounded-2xl p-4 flex items-center justify-center text-center">
                     {streak > 1 ? (
-                      <div className="flex items-center gap-1.5 text-sol-orange animate-bounce">
+                      <div className="flex items-center gap-1.5 text-sol-orange animate-bounce animate-flame-pulse">
                         <Flame size={18} className="fill-sol-orange" />
                         <span className="text-sm font-black uppercase tracking-wider">{t("streakLabel", { count: streak })}</span>
                       </div>
@@ -571,12 +571,39 @@ function GamePlayroomContent() {
                 </div>
 
                 {/* Specific Game Engine Card */}
-                <div className="bg-sol-surface border border-sol-border/30 rounded-[2.5rem] p-8 shadow-xl min-h-[300px] relative overflow-hidden flex flex-col justify-between">
+                <div className={`bg-sol-surface border rounded-[2.5rem] p-8 shadow-xl min-h-[300px] relative overflow-hidden flex flex-col justify-between transition-all duration-300
+                  ${(challenge.game_type === 'speed' && speedTimer <= 15) 
+                    ? 'border-sol-red/60 animate-border-warning' 
+                    : 'border-sol-border/30'
+                  }
+                `}>
                   <div className="absolute top-0 right-0 w-80 h-80 bg-sol-accent/5 rounded-full blur-3xl pointer-events-none" />
+                  
+                  {/* Wrapping Border Time Progress Bar (Speed Math only) */}
+                  {challenge.game_type === 'speed' && (
+                    <svg className="absolute inset-0 w-full h-full pointer-events-none rounded-[2.5rem] z-20" style={{ overflow: 'visible' }}>
+                      <rect
+                        x="0"
+                        y="0"
+                        width="100%"
+                        height="100%"
+                        rx="2.5rem"
+                        fill="none"
+                        stroke={speedTimer <= 15 ? '#dc322f' : 'var(--accent, #268bd2)'}
+                        strokeWidth="4"
+                        pathLength="100"
+                        strokeDasharray="100"
+                        strokeDashoffset={100 - Math.min(100, (speedTimer / 60) * 100)}
+                        className={`transition-all duration-1000 ease-out ${
+                          speedTimer <= 15 ? 'animate-pulse drop-shadow-[0_0_8px_#dc322f]' : ''
+                        }`}
+                      />
+                    </svg>
+                  )}
                   
                   {/* Feedback overlay on check */}
                   {feedback && (
-                    <div className="absolute inset-0 bg-sol-surface/85 z-20 flex flex-col items-center justify-center animate-in fade-in duration-300">
+                    <div className="absolute inset-0 bg-sol-surface/85 z-25 flex flex-col items-center justify-center animate-in fade-in duration-300">
                       {feedback.isCorrect ? (
                         <div className="flex flex-col items-center space-y-2 text-sol-green animate-bounce">
                           <CheckCircle2 size={64} />
@@ -591,6 +618,16 @@ function GamePlayroomContent() {
                     </div>
                   )}
 
+                  {/* Floating Floor Splash Overlay (Endless Tower only) */}
+                  {challenge.game_type === 'climb' && (
+                    <div 
+                      key={currentQuestionIndex} 
+                      className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 select-none text-4xl sm:text-5xl font-black text-sol-orange tracking-widest animate-float-up-splash"
+                    >
+                      {t("floorShort", { n: currentQuestionIndex + 1 })}
+                    </div>
+                  )}
+
                   {/* Engine mounting */}
                   {challenge.game_type === 'match' ? (
                     /* ------------------ FORMULA CARD MATCH ------------------ */
@@ -602,7 +639,7 @@ function GamePlayroomContent() {
                           disabled={card.matched || card.flipped}
                           className={`h-28 sm:h-32 rounded-2xl border flex items-center justify-center text-center p-2 transition-all duration-300 transform font-black select-none
                             ${card.matched 
-                              ? 'bg-sol-green/10 border-sol-green/30 text-sol-green scale-95 opacity-60 shadow-inner rotate-y-180' 
+                              ? 'bg-sol-green/10 border-sol-green/30 text-sol-green scale-95 opacity-60 shadow-inner rotate-y-180 animate-pop-success' 
                               : card.flipped
                                 ? 'bg-sol-accent/10 border-sol-accent text-sol-accent rotate-y-180 scale-102 shadow-md shadow-sol-accent/5'
                                 : 'bg-sol-bg border-sol-border/30 hover:border-sol-accent/30 hover:scale-102 cursor-pointer'
@@ -632,7 +669,7 @@ function GamePlayroomContent() {
                     /* ------------------ SPEED MATH & TOWER CLIMB ------------------ */
                     <div className="space-y-8 py-4 z-10 flex flex-col justify-between h-full flex-1">
                       {/* Question Presentation */}
-                      <div className="text-center space-y-3 py-6">
+                      <div key={currentQuestionIndex} className="text-center space-y-3 py-6 animate-slide-in">
                         <p className="text-xs font-black uppercase text-sol-accent tracking-widest">
                           {challenge.game_type === 'climb' ? t("towerClimbFloor", { n: currentQuestionIndex + 1 }) : t("solveNow")}
                         </p>

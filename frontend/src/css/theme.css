@@ -164,4 +164,72 @@
     color: var(--pill-badge-text);
     box-shadow: inset 0 1px 0 var(--pill-badge-highlight);
   }
+
+  /* Custom Interactive Game Animations */
+  @keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 15px rgba(38, 139, 210, 0.2); }
+    50% { box-shadow: 0 0 35px rgba(38, 139, 210, 0.6); }
+  }
+  .animate-pulse-glow {
+    animation: pulseGlow 2s infinite ease-in-out;
+  }
+
+  @keyframes popInSuccess {
+    0% { transform: scale(0.9) rotateY(180deg); }
+    50% { transform: scale(1.1) rotateY(180deg); filter: brightness(1.2); }
+    100% { transform: scale(0.95) rotateY(180deg); }
+  }
+  .animate-pop-success {
+    animation: popInSuccess 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  @keyframes slideInFromRight {
+    0% { opacity: 0; transform: translateX(24px); }
+    100% { opacity: 1; transform: translateX(0); }
+  }
+  .animate-slide-in {
+    animation: slideInFromRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes shakeHeart {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-6px) rotate(-3deg); }
+    40%, 80% { transform: translateX(6px) rotate(3deg); }
+  }
+  .animate-shake-heart {
+    animation: shakeHeart 0.5s ease-in-out;
+  }
+
+  @keyframes flamePulse {
+    0%, 100% { filter: drop-shadow(0 0 4px var(--sol-orange)) brightness(1); }
+    50% { filter: drop-shadow(0 0 14px var(--sol-orange)) brightness(1.35); }
+  }
+  .animate-flame-pulse {
+    animation: flamePulse 1.4s infinite ease-in-out;
+  }
+
+  @keyframes floatUpSplash {
+    0% { opacity: 0; transform: translate(-50%, -30%) scale(0.85); }
+    15% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
+    30% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -70%) scale(0.92); }
+  }
+  .animate-float-up-splash {
+    animation: floatUpSplash 1.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  }
+
+  @keyframes redPulseBorder {
+    0%, 100% { 
+      border-color: rgba(220, 50, 47, 0.3); 
+      box-shadow: 0 0 8px rgba(220, 50, 47, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.05); 
+    }
+    50% { 
+      border-color: rgba(220, 50, 47, 0.85); 
+      box-shadow: 0 0 20px rgba(220, 50, 47, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.05); 
+    }
+  }
+  .animate-border-warning {
+    animation: redPulseBorder 1s infinite ease-in-out;
+  }
 }
