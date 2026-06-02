@@ -1,0 +1,33 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Local Environment Variables
+.env
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+
+# Pipenv / Poetry / PDM logs or lock overrides if needed
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local databases
+*.db
+*.sqlite
+
+# IDEs
+.vscode/
+.idea/

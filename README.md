@@ -197,7 +197,7 @@ BACKEND_URL=
 ```
 SERVER_PORT=5001
 DATABASE_URL=your_neon_connection_string
-JWT_SECRET=your_secret_key
+JWT_SECRET=generate_at_least_32_bytes_and_use_the_same_value_for_backend_and_chatbot
 CORS_ORIGINS=http://localhost:5000,https://your-backend.url.com
 AUTO_SEED_ACHIEVEMENTS=false
 ```

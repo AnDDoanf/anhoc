@@ -16,3 +16,29 @@ services:
         sync: false
       - key: CORS_ORIGINS
         sync: false
+
+  - type: web
+    name: anhoc-chatbot
+    runtime: python
+    plan: free
+    rootDir: chatbot
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: OLLAMA_BASE_URL
+        sync: false
+      - key: OLLAMA_MODEL
+        sync: false
+      - key: OLLAMA_TIMEOUT_SECONDS
+        value: 0
+      - key: OLLAMA_NUM_CTX
+        value: 1024
