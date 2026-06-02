@@ -16,34 +16,28 @@ export const useAuth = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const persistSession = (response: Awaited<ReturnType<typeof authService.login>>) => {
+    localStorage.setItem("user", JSON.stringify(response.user));
+    if (response.token) {
+      localStorage.setItem("token", response.token);
+    }
+
+    dispatch(setCredentials({
+      user: response.user,
+      token: response.token || "",
+    }));
+
+    if (response.user.permissions) {
+      dispatch(setPermissions(response.user.permissions));
+    }
+  };
+
   const login = async (credentials: LoginRequest) => {
     setLoading(true);
     setError(null);
     try {
       const response = await authService.login(credentials);
-      
-      /**
-       * 1. PERSISTENCE: Save to localStorage so the Provider.tsx 
-       * can find it on page refresh.
-       */
-      localStorage.setItem("user", JSON.stringify(response.user));
-      if (response.token) {
-        localStorage.setItem("token", response.token);
-      }
-
-      /**
-       * 2. REDUX UPDATE: Update both Auth and Permission slices.
-       * We use 'setCredentials' now because it handles the token + user.
-       */
-      dispatch(setCredentials({ 
-        user: response.user, 
-        token: response.token || "" 
-      }));
-
-      if (response.user.permissions) {
-        dispatch(setPermissions(response.user.permissions));
-      }
-
+      persistSession(response);
       return response;
     } catch (err: unknown) {
       const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || "Login failed";
@@ -52,6 +46,10 @@ export const useAuth = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const updateSession = (response: Awaited<ReturnType<typeof authService.setSubjectPreference>>) => {
+    persistSession(response);
   };
 
   const logout = () => {
@@ -77,6 +75,7 @@ export const useAuth = () => {
     loading,
     error,
     login,
+    updateSession,
     logout,
   };
 };

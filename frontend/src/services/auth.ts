@@ -5,6 +5,13 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  username?: string;
+  country?: string;
+}
+
 export interface LoginResponse {
   user: {
     id: string;
@@ -12,10 +19,12 @@ export interface LoginResponse {
     username?: string;
     country?: string | null;
     role: string;
-    // Updated to match the grouped object structure we created earlier
+    account_status?: string;
+    preferred_subject_id?: number | null;
+    requires_subject_selection?: boolean;
     permissions: Record<string, string[]>;
   };
-  token: string; // Made required since login usually requires a token
+  token: string;
 }
 
 export interface ActivityPoint {
@@ -45,12 +54,17 @@ export interface SocializingData {
 }
 
 export const authService = {
+  register: async (payload: RegisterRequest) => {
+    const response = await api.post("/auth/register", payload);
+    return response.data;
+  },
+
+  activate: async (token: string) => {
+    const response = await api.post("/auth/activate", { token });
+    return response.data;
+  },
+
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
-    /** * IMPORTANT: If your baseURL is "http://localhost:5000/api/v1", 
-     * use "/auth/login". 
-     * If your baseURL is just "http://localhost:5000", 
-     * use "/api/v1/auth/login".
-     */
     const response = await api.post<LoginResponse>("/auth/login", credentials);
 
     const { token } = response.data;
@@ -97,6 +111,11 @@ export const authService = {
 
   updatePassword: async (data: any) => {
     const response = await api.patch("/auth/password", data);
+    return response.data;
+  },
+
+  setSubjectPreference: async (subjectId: number): Promise<LoginResponse & { message: string }> => {
+    const response = await api.patch("/auth/subject-preference", { subject_id: subjectId });
     return response.data;
   },
 

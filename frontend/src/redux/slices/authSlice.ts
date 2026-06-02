@@ -6,6 +6,9 @@ type User = {
   username?: string;
   country?: string | null;
   role: string;
+  account_status?: string;
+  preferred_subject_id?: number | null;
+  requires_subject_selection?: boolean;
   permissions?: Record<string, string[]>;
 };
 

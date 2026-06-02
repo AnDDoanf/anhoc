@@ -1,43 +1,48 @@
 "use client";
 
-import { useAuth } from "@/hooks/useAuth";
-import { zodResolver } from "@hookform/resolvers/zod";
+import Image from "next/image";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import Image from "next/image";
-import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
+import { authService } from "@/services/auth";
 
-export default function LoginPage() {
-  const t = useTranslations("Login");
-  const { login, error: authError } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
+export default function SignupPage() {
+  const t = useTranslations("Signup");
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const loginSchema = z.object({
+  const schema = z.object({
     email: z.string().email(t("errors.invalid_email")),
     password: z.string().min(6, t("errors.password_too_short")),
   });
 
-  type LoginFormData = z.infer<typeof loginSchema>;
+  type FormValues = z.infer<typeof schema>;
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
+  } = useForm<FormValues>({
+    resolver: zodResolver(schema),
   });
 
-  const onSubmit = async (data: LoginFormData) => {
+  const onSubmit = async (values: FormValues) => {
     setIsLoading(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
     try {
-      const response = await login(data);
-      window.location.href = response.user.requires_subject_selection ? "/onboarding/subject" : "/";
-    } catch (error) {
-      console.error(error);
+      const response = await authService.register(values);
+      setSuccessMessage(response.message || t("success"));
+    } catch (error: unknown) {
+      const message = (error as { response?: { data?: { error?: string } } })?.response?.data?.error || t("fallbackError");
+      setErrorMessage(message);
     } finally {
       setIsLoading(false);
     }
@@ -49,14 +54,21 @@ export default function LoginPage() {
         <div className="rounded-xl border border-sol-border/30 bg-sol-surface p-10 shadow-sm">
           <div className="mb-4 flex flex-col items-center">
             <div className="mb-2">
-              <Image src="/anhoc.svg" alt="Anhoc Logo" width={640} height={320} className="h-48 w-auto" priority />
+              <Image src="/anhoc.svg" alt="Anhoc Logo" width={640} height={320} className="h-40 w-auto" priority />
             </div>
             <h2 className="text-center text-3xl font-black tracking-tight text-sol-text">{t("title")}</h2>
+            <p className="mt-2 text-center text-sm text-sol-muted">{t("subtitle")}</p>
           </div>
 
-          {authError && (
+          {successMessage && (
+            <div className="mb-6 rounded-lg border border-sol-green/20 bg-sol-green/10 p-3 text-sm text-sol-green">
+              {successMessage}
+            </div>
+          )}
+
+          {errorMessage && (
             <div className="mb-6 rounded-lg border border-sol-red/20 bg-sol-red/10 p-3 text-sm text-sol-red">
-              {authError}
+              {errorMessage}
             </div>
           )}
 
@@ -71,7 +83,7 @@ export default function LoginPage() {
               {errors.email && <p className="mt-1 text-xs text-sol-orange">{errors.email.message}</p>}
             </div>
 
-            <div className="group/pass relative">
+            <div className="relative">
               <input
                 {...register("password")}
                 type={showPassword ? "text" : "password"}
@@ -88,27 +100,19 @@ export default function LoginPage() {
               {errors.password && <p className="mt-1 text-xs text-sol-orange">{errors.password.message}</p>}
             </div>
 
-            <div className="flex items-center justify-between text-sm">
-              <label className="flex cursor-pointer items-center gap-2 text-sol-text">
-                <input type="checkbox" className="rounded border-sol-border bg-sol-bg text-sol-accent focus:ring-sol-accent" />
-                <span>{t("remember_me")}</span>
-              </label>
-              <span className="font-semibold text-sol-muted">{t("activation_hint")}</span>
-            </div>
-
             <button
               type="submit"
               disabled={isLoading}
               className="w-full rounded-lg bg-sol-accent py-3 font-bold text-sol-bg transition-all hover:opacity-90 active:scale-[0.99] disabled:opacity-50"
             >
-              {isLoading ? t("signing_in") : t("sign_in")}
+              {isLoading ? t("submitting") : t("submit")}
             </button>
           </form>
 
           <p className="mt-8 text-center text-sm text-sol-muted">
-            {t("no_account")}{" "}
-            <Link href="/signup" className="font-bold text-sol-accent hover:underline">
-              {t("sign_up")}
+            {t("hasAccount")}{" "}
+            <Link href="/login" className="font-bold text-sol-accent hover:underline">
+              {t("signIn")}
             </Link>
           </p>
         </div>
