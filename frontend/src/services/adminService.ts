@@ -11,6 +11,7 @@ export type AdminUser = {
   username: string;
   email: string;
   country?: string | null;
+  account_status?: string;
   role: AdminRole;
   created_at: string;
   stats?: {
@@ -47,6 +48,7 @@ export type AdminSubject = {
   title_en: string;
   title_vi: string;
   color?: string | null;
+  is_classified?: boolean;
 };
 
 export type AdminAccessRole = {
@@ -77,6 +79,25 @@ export type AccessControlData = {
   resources: AdminResource[];
   subjects: AdminSubject[];
   users: AdminAccessUser[];
+};
+
+export type SubjectAccessRequest = {
+  id: number;
+  status: "pending" | "approved" | "rejected";
+  requested_at: string;
+  reviewed_at?: string | null;
+  user: {
+    id: string;
+    username: string;
+    email: string;
+    role: AdminRole;
+  };
+  subject: AdminSubject;
+  reviewer?: {
+    id: string;
+    username: string;
+    email: string;
+  } | null;
 };
 
 export type RolePayload = {
@@ -186,6 +207,16 @@ export const adminService = {
 
   getAccessControl: async (): Promise<AccessControlData> => {
     const response = await api.get('/admin/access-control');
+    return response.data;
+  },
+
+  listSubjectAccessRequests: async (status = 'pending'): Promise<SubjectAccessRequest[]> => {
+    const response = await api.get('/admin/subject-access-requests', { params: { status } });
+    return response.data;
+  },
+
+  updateSubjectAccessRequest: async (id: number, status: "approved" | "rejected"): Promise<SubjectAccessRequest> => {
+    const response = await api.patch(`/admin/subject-access-requests/${id}`, { status });
     return response.data;
   },
 

@@ -15,6 +15,7 @@ export interface CreateSubjectDTO {
   title_vi: string;
   slug?: string;
   color?: string;
+  is_classified?: boolean;
 }
 
 export interface CreateGradeDTO {
@@ -30,6 +31,10 @@ export interface Subject {
   title_en: string;
   title_vi: string;
   color?: string | null;
+  is_classified?: boolean;
+  role_visible?: boolean;
+  has_access?: boolean;
+  request_status?: "pending" | "approved" | "rejected" | null;
 }
 
 export interface Grade {
@@ -104,8 +109,23 @@ export const lessonService = {
     return response.data;
   },
 
+  getSubjectCatalog: async (): Promise<Subject[]> => {
+    const response = await api.get('/lessons/subjects/catalog');
+    return response.data;
+  },
+
   createSubject: async (data: CreateSubjectDTO) => {
     const response = await api.post('/lessons/subjects', data);
+    return response.data;
+  },
+
+  updateSubject: async (id: number, data: Partial<CreateSubjectDTO>) => {
+    const response = await api.patch(`/lessons/subjects/${id}`, data);
+    return response.data;
+  },
+
+  requestSubjectAccess: async (subjectId: number) => {
+    const response = await api.post(`/lessons/subjects/${subjectId}/request-access`);
     return response.data;
   },
 

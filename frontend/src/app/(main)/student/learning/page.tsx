@@ -3,7 +3,7 @@
 import { useTranslations, useLocale } from "next-intl";
 import Link from "next/link";
 import Can from "@/components/auth/Can";
-import { GraduationCap, Library, Globe, ArrowUpRight, PlusCircle, Layers, BookMarked, ChevronRight, BookOpen, PlayCircle, Loader2, Pencil, Trash2, Flame, Users, Sparkles, TrendingUp } from "lucide-react";
+import { GraduationCap, Library, Globe, ArrowUpRight, PlusCircle, Layers, BookMarked, ChevronRight, BookOpen, PlayCircle, Loader2, Pencil, Trash2, Flame, Users, Sparkles, TrendingUp, ShieldAlert } from "lucide-react";
 import CreateLessonModal from "@/components/feature/CreateLessonModal";
 import Hero from "@/components/ui/Hero";
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -43,7 +43,7 @@ export default function LearningDashboard() {
   const router = useRouter();
   const { theme } = useTheme();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [metaModal, setMetaModal] = useState<"subject" | "grade" | null>(null);
+  const [metaModal, setMetaModal] = useState<"subject" | "grade" | "subjectAccess" | null>(null);
   const [editLessonId, setEditLessonId] = useState<string | null>(null);
   const [lessonGroups, setLessonGroups] = useState<LessonSubjectGroup[]>([]);
   const [masteryData, setMasteryData] = useState<Record<string, LessonMastery>>({});
@@ -54,14 +54,17 @@ export default function LearningDashboard() {
   const [recommendedUser, setRecommendedUser] = useState<NearbyLearner | null>(null);
   const [socialSummary, setSocialSummary] = useState({ followers: 0, following: 0 });
   const [followLoadingId, setFollowLoadingId] = useState<string | null>(null);
+  const [lockedSubjects, setLockedSubjects] = useState<Subject[]>([]);
+  const [requestingSubjectId, setRequestingSubjectId] = useState<number | null>(null);
 
   const fetchDisplayData = useCallback(async () => {
     try {
-      const [lessons, mastery, activityData, socializingData] = await Promise.all([
+      const [lessons, mastery, activityData, socializingData, subjectCatalog] = await Promise.all([
         lessonService.list(),
         lessonService.getMasteryAll(),
         authService.getActivity(),
-        authService.getSocializing()
+        authService.getSocializing(),
+        lessonService.getSubjectCatalog()
       ]);
 
       // Map mastery by lesson_id for easy lookup
@@ -101,6 +104,7 @@ export default function LearningDashboard() {
       setNearbyLearners(socializingData.nearbyLearners);
       setRecommendedUser(socializingData.recommendedUser);
       setSocialSummary(socializingData.summary);
+      setLockedSubjects(subjectCatalog.filter((subject) => subject.is_classified && subject.role_visible && !subject.has_access));
     } catch (err) {
       console.error("Failed to load dashboard lessons:", err);
     }
@@ -187,6 +191,19 @@ export default function LearningDashboard() {
     }
   };
 
+  const handleRequestSubjectAccess = async (subjectId: number) => {
+    setRequestingSubjectId(subjectId);
+    try {
+      await lessonService.requestSubjectAccess(subjectId);
+      await fetchDisplayData();
+    } catch (error) {
+      console.error("Failed to request subject access:", error);
+      alert(getApiErrorMessage(error, t("classifiedRequestError")));
+    } finally {
+      setRequestingSubjectId(null);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-7xl space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Educational Hero Header */}
@@ -194,7 +211,7 @@ export default function LearningDashboard() {
         iconPosition="bottom-right"
         icon={<GraduationCap size={160} className="text-sol-accent md:h-[300px] md:w-[300px]" />}
         className="md:rounded-[3rem]"
-        containerClassName="relative z-10 flex w-full flex-col items-start gap-4 lg:max-w-4xl lg:flex-row lg:justify-between"
+        containerClassName="relative z-10 flex w-full flex-col items-start gap-5 lg:max-w-4xl"
       >
         <div className="space-y-5 md:space-y-8">
           <div className="space-y-3 md:space-y-5">
@@ -223,36 +240,87 @@ export default function LearningDashboard() {
             </div>
           </div>
         </div>
-
-        <Can I="manage" a="lesson">
-          <div className="flex flex-wrap gap-2 shrink-0">
-            <button
-              onClick={() => setMetaModal("subject")}
-              className="flex items-center gap-2 rounded-2xl border border-sol-border/20 bg-sol-surface px-4 py-2.5 text-sm font-bold text-sol-text transition-transform hover:scale-105 hover:text-sol-accent cursor-pointer md:px-5 md:py-3"
-            >
-              <BookMarked size={18} className="md:h-5 md:w-5" />
-              <span>{t("newSubject")}</span>
-            </button>
-            <button
-              onClick={() => setMetaModal("grade")}
-              className="flex items-center gap-2 rounded-2xl border border-sol-border/20 bg-sol-surface px-4 py-2.5 text-sm font-bold text-sol-text transition-transform hover:scale-105 hover:text-sol-accent cursor-pointer md:px-5 md:py-3"
-            >
-              <Layers size={18} className="md:h-5 md:w-5" />
-              <span>{t("newGrade")}</span>
-            </button>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-2 rounded-2xl bg-sol-accent px-4 py-2.5 text-sm font-bold text-sol-bg shadow-lg shadow-sol-accent/20 transition-transform hover:scale-105 cursor-pointer md:px-6 md:py-3"
-            >
-              <PlusCircle size={18} className="md:h-5 md:w-5" />
-              <span>{t("newLesson")}</span>
-            </button>
-          </div>
-        </Can>
       </Hero>
+
+      <Can I="manage" a="lesson">
+        <div className="flex flex-wrap items-center gap-2 md:gap-3">
+          <button
+            onClick={() => setMetaModal("subject")}
+            className="flex items-center gap-2 rounded-2xl border border-sol-border/20 bg-sol-surface px-4 py-2.5 text-sm font-bold text-sol-text transition-transform hover:scale-105 hover:text-sol-accent cursor-pointer md:px-5 md:py-3"
+          >
+            <BookMarked size={18} className="md:h-5 md:w-5" />
+            <span>{t("newSubject")}</span>
+          </button>
+          <button
+            onClick={() => setMetaModal("subjectAccess")}
+            className="flex items-center gap-2 rounded-2xl border border-sol-border/20 bg-sol-surface px-4 py-2.5 text-sm font-bold text-sol-text transition-transform hover:scale-105 hover:text-sol-accent cursor-pointer md:px-5 md:py-3"
+          >
+            <ShieldAlert size={18} className="md:h-5 md:w-5" />
+            <span>{t("manageSubjectAccess")}</span>
+          </button>
+          <button
+            onClick={() => setMetaModal("grade")}
+            className="flex items-center gap-2 rounded-2xl border border-sol-border/20 bg-sol-surface px-4 py-2.5 text-sm font-bold text-sol-text transition-transform hover:scale-105 hover:text-sol-accent cursor-pointer md:px-5 md:py-3"
+          >
+            <Layers size={18} className="md:h-5 md:w-5" />
+            <span>{t("newGrade")}</span>
+          </button>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-2 rounded-2xl bg-sol-accent px-4 py-2.5 text-sm font-bold text-sol-bg shadow-lg shadow-sol-accent/20 transition-transform hover:scale-105 cursor-pointer md:px-6 md:py-3"
+          >
+            <PlusCircle size={18} className="md:h-5 md:w-5" />
+            <span>{t("newLesson")}</span>
+          </button>
+        </div>
+      </Can>
 
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start">
         <div className="space-y-12 md:space-y-24">
+          {lockedSubjects.length > 0 && (
+            <section className="rounded-[2rem] border border-sol-orange/20 bg-sol-surface/90 p-6 shadow-sm">
+              <div className="flex items-center gap-3 text-sol-orange">
+                <ShieldAlert size={20} />
+                <div>
+                  <h2 className="text-lg font-black uppercase tracking-tight text-sol-text">{t("classifiedSubjectsTitle")}</h2>
+                  <p className="text-sm font-bold text-sol-text/65">{t("classifiedSubjectsSubtitle")}</p>
+                </div>
+              </div>
+
+              <div className="mt-5 grid gap-4 md:grid-cols-2">
+                {lockedSubjects.map((subject) => {
+                  const subjectLabel = locale === "vi" ? subject.title_vi : subject.title_en;
+                  const isPending = subject.request_status === "pending";
+                  const isRejected = subject.request_status === "rejected";
+
+                  return (
+                    <div key={subject.id} className="rounded-[1.6rem] border border-sol-border/20 bg-sol-bg/80 p-4">
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sol-orange">{t("classifiedBadge")}</p>
+                      <h3 className="mt-2 text-xl font-black text-sol-text">{subjectLabel}</h3>
+                      <p className="mt-1 text-sm font-medium text-sol-text/65">{subject.slug}</p>
+                      <div className="mt-4">
+                        <button
+                          type="button"
+                          onClick={() => handleRequestSubjectAccess(subject.id)}
+                          disabled={isPending || requestingSubjectId === subject.id}
+                          className="rounded-2xl bg-sol-accent px-4 py-3 text-sm font-black text-sol-bg disabled:opacity-60"
+                        >
+                          {requestingSubjectId === subject.id
+                            ? t("classifiedRequestSending")
+                            : isPending
+                              ? t("classifiedRequestPending")
+                              : isRejected
+                                ? t("classifiedRequestRetry")
+                                : t("classifiedRequestAction")}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
           {lessonGroups.map((subject) => (
             <section key={subject.subject} className="group/section space-y-8 md:space-y-12">
               <div className="flex flex-col gap-3 border-b border-sol-border/15 pb-4 sm:flex-row sm:items-end sm:justify-between md:pb-6">
@@ -610,6 +678,11 @@ export default function LearningDashboard() {
         onClose={() => setMetaModal(null)}
         onSuccess={handleCreateSuccess}
       />
+      <ManageSubjectAccessModal
+        isOpen={metaModal === "subjectAccess"}
+        onClose={() => setMetaModal(null)}
+        onSuccess={handleCreateSuccess}
+      />
       <CreateGradeModal
         isOpen={metaModal === "grade"}
         onClose={() => setMetaModal(null)}
@@ -619,9 +692,97 @@ export default function LearningDashboard() {
   );
 }
 
+function ManageSubjectAccessModal({ isOpen, onClose, onSuccess }: { isOpen: boolean; onClose: () => void; onSuccess: () => void }) {
+  const t = useTranslations("Learning.metaModal");
+  const locale = useLocale();
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [savingId, setSavingId] = useState<number | null>(null);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const loadSubjects = useCallback(async () => {
+    setLoading(true);
+    setErrorMessage("");
+    try {
+      const items = await lessonService.getSubjectCatalog();
+      setSubjects(items);
+    } catch (error) {
+      setErrorMessage(getApiErrorMessage(error, t("loadSubjectsError")));
+    } finally {
+      setLoading(false);
+    }
+  }, [t]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    void loadSubjects();
+  }, [isOpen, loadSubjects]);
+
+  if (!isOpen) return null;
+
+  const toggleClassified = async (subject: Subject) => {
+    setSavingId(subject.id);
+    setErrorMessage("");
+    try {
+      await lessonService.updateSubject(subject.id, {
+        is_classified: !subject.is_classified,
+      });
+      await loadSubjects();
+      onSuccess();
+    } catch (error) {
+      setErrorMessage(getApiErrorMessage(error, t("saveError")));
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  return (
+    <MetaModal title={t("subjectAccessTitle")} onClose={onClose}>
+      <div className="space-y-4">
+        <p className="text-sm font-medium leading-6 text-sol-muted">{t("subjectAccessHint")}</p>
+        {errorMessage && <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm font-bold text-red-500">{errorMessage}</p>}
+        <div className="max-h-[26rem] space-y-3 overflow-y-auto pr-1">
+          {loading ? (
+            <div className="rounded-lg border border-sol-border/20 bg-sol-bg px-4 py-4 text-sm font-bold text-sol-muted">{t("loadingSubjects")}</div>
+          ) : subjects.map((subject) => {
+            const label = locale === "vi" ? subject.title_vi : subject.title_en;
+            return (
+              <div key={subject.id} className="rounded-xl border border-sol-border/20 bg-sol-bg/80 px-4 py-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-lg font-black text-sol-text">{label}</p>
+                    <p className="text-xs font-black uppercase tracking-widest text-sol-muted">{subject.slug}</p>
+                  </div>
+                  <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${subject.is_classified ? "bg-sol-orange/15 text-sol-orange" : "bg-sol-green/15 text-sol-green"}`}>
+                    {subject.is_classified ? t("classifiedState") : t("openState")}
+                  </span>
+                </div>
+                <div className="mt-4">
+                  <button
+                    type="button"
+                    disabled={savingId === subject.id}
+                    onClick={() => toggleClassified(subject)}
+                    className="rounded-lg bg-sol-accent px-4 py-2 text-sm font-black text-sol-bg disabled:opacity-60"
+                  >
+                    {savingId === subject.id
+                      ? t("saving")
+                      : subject.is_classified
+                        ? t("makeOpen")
+                        : t("makeClassified")}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </MetaModal>
+  );
+}
+
 function CreateSubjectModal({ isOpen, onClose, onSuccess }: { isOpen: boolean; onClose: () => void; onSuccess: () => void }) {
   const t = useTranslations("Learning.metaModal");
-  const [form, setForm] = useState({ title_en: "", title_vi: "", slug: "", color: "#268bd2" });
+  const [form, setForm] = useState({ title_en: "", title_vi: "", slug: "", color: "#268bd2", is_classified: false });
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -635,7 +796,7 @@ function CreateSubjectModal({ isOpen, onClose, onSuccess }: { isOpen: boolean; o
       await lessonService.createSubject(form);
       onSuccess();
       onClose();
-      setForm({ title_en: "", title_vi: "", slug: "", color: "#268bd2" });
+      setForm({ title_en: "", title_vi: "", slug: "", color: "#268bd2", is_classified: false });
     } catch (error) {
       setErrorMessage(getApiErrorMessage(error, t("saveError")));
     } finally {
@@ -650,6 +811,15 @@ function CreateSubjectModal({ isOpen, onClose, onSuccess }: { isOpen: boolean; o
         <MetaField label={t("titleVi")} value={form.title_vi} onChange={(value) => setForm({ ...form, title_vi: value })} required />
         <MetaField label={t("slug")} value={form.slug} onChange={(value) => setForm({ ...form, slug: value })} />
         <MetaField label={t("color")} type="color" value={form.color} onChange={(value) => setForm({ ...form, color: value })} />
+        <label className="flex items-center gap-3 rounded-lg border border-sol-border/20 bg-sol-bg px-3 py-3 font-bold text-sol-text">
+          <input
+            type="checkbox"
+            checked={form.is_classified}
+            onChange={(event) => setForm({ ...form, is_classified: event.target.checked })}
+            className="h-4 w-4 accent-sol-accent"
+          />
+          <span>{t("classified")}</span>
+        </label>
         {errorMessage && <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm font-bold text-red-500">{errorMessage}</p>}
         <button disabled={loading} className="w-full rounded-lg bg-sol-accent px-4 py-3 font-black text-sol-bg">
           {loading ? t("saving") : t("createSubject")}

@@ -4,6 +4,7 @@ import * as MathService from '../services/mathService';
 import { authenticate, authorize } from '../middleware/auth';
 import { masteryService } from '../services/masteryService';
 import { levelService } from '../services/levelService';
+import { createNotification, NotificationType, notifyAdmins } from '../services/notificationService.ts';
 
 const router = Router();
 
@@ -673,6 +674,19 @@ router.post('/question-reports', authenticate, async (req, res) => {
       }
     });
 
+    await notifyAdmins({
+      actorId: userId,
+      type: NotificationType.QuestionReportCreated,
+      entityType: 'question_report',
+      entityId: report.id,
+      payload: {
+        report_id: report.id,
+        lesson_id: snapshot.template.lesson_id || snapshot.attempt?.lesson_id || null,
+        snapshot_id: snapshot.id,
+        template_id: snapshot.template_id,
+      }
+    });
+
     res.status(201).json(report);
   } catch (error: any) {
     console.error("Failed to report question:", error);
@@ -727,8 +741,29 @@ router.patch('/question-reports/:id', authenticate, async (req, res) => {
       data: {
         status,
         updated_at: new Date()
+      },
+      include: {
+        reporter: {
+          select: {
+            id: true
+          }
+        }
       }
     });
+
+    if (report.reporter?.id) {
+      await createNotification({
+        recipientId: report.reporter.id,
+        actorId: (req as any).user?.id || null,
+        type: NotificationType.QuestionReportUpdated,
+        entityType: 'question_report',
+        entityId: report.id,
+        payload: {
+          report_id: report.id,
+          status,
+        }
+      });
+    }
 
     res.json(report);
   } catch (error: any) {

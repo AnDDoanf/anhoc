@@ -17,6 +17,14 @@ model User {
   email         String        @unique @db.VarChar(255)
   country       String?       @db.VarChar(100)
   password_hash String
+  account_status String       @default("active") @db.VarChar(20)
+  email_verification_token String? @unique @db.VarChar(255)
+  email_verification_sent_at DateTime? @db.Timestamptz
+  email_verified_at DateTime? @db.Timestamptz
+  first_login_at DateTime? @db.Timestamptz
+  inactive_cleanup_at DateTime? @db.Timestamptz
+  preferred_subject_id Int?
+  preferred_subject Subject? @relation(fields: [preferred_subject_id], references: [id], onDelete: SetNull)
   role_id       Int
   role          Role          @relation(fields: [role_id], references: [id])
   created_at    DateTime      @default(now()) @db.Timestamptz
@@ -34,6 +42,10 @@ model User {
   question_reports  QuestionTemplateReport[]
   following         UserFollow[]    @relation("UserFollowing")
   followers         UserFollow[]    @relation("UserFollowers")
+  subject_access_requests UserSubjectAccessRequest[] @relation("UserSubjectAccessRequests")
+  reviewed_subject_access_requests UserSubjectAccessRequest[] @relation("UserSubjectAccessReviews")
+  notifications_received Notification[] @relation("UserNotifications")
+  notifications_sent Notification[] @relation("ActorNotifications")
 
   @@map("users")
 }
@@ -100,11 +112,32 @@ model Subject {
   title_en  String   @db.VarChar(100)
   title_vi  String   @db.VarChar(100)
   color     String?  @db.VarChar(20)
+  is_classified Boolean @default(false)
   grades    Grade[]
   lessons   Lesson[]
   role_permissions RoleSubjectPermission[]
+  preferred_by_users User[]
+  access_requests UserSubjectAccessRequest[]
 
   @@map("subjects")
+}
+
+model UserSubjectAccessRequest {
+  id           Int      @id @default(autoincrement())
+  user_id      String   @db.Uuid
+  subject_id   Int
+  status       String   @default("pending") @db.VarChar(20)
+  requested_at DateTime @default(now()) @db.Timestamptz
+  reviewed_at  DateTime? @db.Timestamptz
+  reviewed_by  String?  @db.Uuid
+
+  user     User    @relation("UserSubjectAccessRequests", fields: [user_id], references: [id], onDelete: Cascade)
+  subject  Subject @relation(fields: [subject_id], references: [id], onDelete: Cascade)
+  reviewer User?   @relation("UserSubjectAccessReviews", fields: [reviewed_by], references: [id], onDelete: SetNull)
+
+  @@unique([user_id, subject_id])
+  @@index([status, requested_at])
+  @@map("user_subject_access_requests")
 }
 
 model RoleSubjectPermission {
@@ -334,6 +367,25 @@ model UserFollow {
   @@id([follower_id, following_id])
   @@index([following_id])
   @@map("user_follows")
+}
+
+model Notification {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  recipient_id String   @db.Uuid
+  actor_id     String?  @db.Uuid
+  type         String   @db.VarChar(60)
+  entity_type  String?  @db.VarChar(60)
+  entity_id    String?  @db.VarChar(120)
+  payload      Json     @default("{}")
+  read_at      DateTime? @db.Timestamptz
+  created_at   DateTime @default(now()) @db.Timestamptz
+
+  recipient User  @relation("UserNotifications", fields: [recipient_id], references: [id], onDelete: Cascade)
+  actor     User? @relation("ActorNotifications", fields: [actor_id], references: [id], onDelete: SetNull)
+
+  @@index([recipient_id, read_at, created_at])
+  @@index([type, created_at])
+  @@map("notifications")
 }
 
 model StudentStats {

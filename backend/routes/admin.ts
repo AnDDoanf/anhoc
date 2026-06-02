@@ -2,6 +2,7 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import prisma from '../lib/db';
 import { authenticate, authorize, selfOrAdmin } from '../middleware/auth';
+import { createNotification, NotificationType } from '../services/notificationService.ts';
 
 const router = Router();
 
@@ -16,6 +17,7 @@ const userSelect = {
   username: true,
   email: true,
   country: true,
+  account_status: true,
   created_at: true,
   role: {
     select: {
@@ -44,6 +46,7 @@ const serializeUser = (user: any) => ({
   username: user.username,
   email: user.email,
   country: user.country,
+  account_status: user.account_status,
   role: user.role,
   created_at: user.created_at,
   stats: user.student_stats,
@@ -313,6 +316,109 @@ router.get('/users', authenticate, authorize('manage', 'user'), async (req, res)
     });
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to fetch users', details: error.message });
+  }
+});
+
+router.get('/subject-access-requests', authenticate, authorize('manage', 'user'), async (req, res) => {
+  try {
+    const status = typeof req.query.status === 'string' ? req.query.status.trim().toLowerCase() : 'pending';
+    const where = status === 'all' ? {} : { status };
+
+    const requests = await prisma.userSubjectAccessRequest.findMany({
+      where,
+      orderBy: [
+        { requested_at: 'desc' },
+        { id: 'desc' }
+      ],
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            role: { select: { id: true, name: true } }
+          }
+        },
+        subject: true,
+        reviewer: {
+          select: {
+            id: true,
+            username: true,
+            email: true
+          }
+        }
+      }
+    });
+
+    res.json(requests);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to fetch subject access requests', details: error.message });
+  }
+});
+
+router.patch('/subject-access-requests/:id', authenticate, authorize('manage', 'user'), async (req, res) => {
+  try {
+    const requestId = Number(req.params.id);
+    const status = typeof req.body.status === 'string' ? req.body.status.trim().toLowerCase() : '';
+    const reviewerId = (req as any).user?.id as string;
+
+    if (!Number.isInteger(requestId)) {
+      return res.status(400).json({ error: 'Invalid request id' });
+    }
+
+    if (!['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ error: 'Status must be approved or rejected' });
+    }
+
+    const request = await prisma.userSubjectAccessRequest.update({
+      where: { id: requestId },
+      data: {
+        status,
+        reviewed_at: new Date(),
+        reviewed_by: reviewerId
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            role: { select: { id: true, name: true } }
+          }
+        },
+        subject: true,
+        reviewer: {
+          select: {
+            id: true,
+            username: true,
+            email: true
+          }
+        }
+      }
+    });
+
+    await createNotification({
+      recipientId: request.user.id,
+      actorId: reviewerId,
+      type: status === 'approved' ? NotificationType.SubjectAccessApproved : NotificationType.SubjectAccessRejected,
+      entityType: 'subject_access_request',
+      entityId: String(request.id),
+      payload: {
+        request_id: request.id,
+        subject_id: request.subject.id,
+        subject_slug: request.subject.slug,
+        subject_title_en: request.subject.title_en,
+        subject_title_vi: request.subject.title_vi,
+        status,
+      }
+    });
+
+    res.json(request);
+  } catch (error: any) {
+    if (error?.code === 'P2025') {
+      return res.status(404).json({ error: 'Request not found' });
+    }
+    res.status(500).json({ error: 'Failed to update subject access request', details: error.message });
   }
 });
 

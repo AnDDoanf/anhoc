@@ -3,6 +3,7 @@ import prisma from '../lib/db';
 import { authenticate, authorize } from '../middleware/auth';
 import * as MathService from '../services/mathService';
 import { masteryService } from '../services/masteryService';
+import { createNotification, NotificationType, notifyAdmins } from '../services/notificationService.ts';
 
 const router = Router();
 
@@ -17,6 +18,40 @@ const getAllowedSubjectIds = async (req: any): Promise<number[] | null> => {
 
   const user = await prisma.user.findUnique({
     where: { id: req.user?.id },
+    select: {
+      role: {
+        select: {
+          subject_permissions: {
+            select: {
+              subject_id: true,
+              subject: {
+                select: {
+                  is_classified: true
+                }
+              }
+            }
+          }
+        },
+      },
+      subject_access_requests: {
+        where: { status: "approved" },
+        select: { subject_id: true }
+      }
+    }
+  });
+
+  if (!user) return [];
+
+  const approvedSubjectIds = new Set(user.subject_access_requests.map((request) => request.subject_id));
+
+  return user.role.subject_permissions
+    .filter((permission) => !permission.subject.is_classified || approvedSubjectIds.has(permission.subject_id))
+    .map((permission) => permission.subject_id);
+};
+
+const getRoleVisibleSubjectIds = async (userId: string): Promise<number[]> => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
     select: {
       role: {
         select: {
@@ -181,6 +216,51 @@ router.get('/subjects', authenticate, async (req, res) => {
   res.json(subjects);
 });
 
+router.get('/subjects/catalog', authenticate, async (req, res) => {
+  try {
+    const authUser = (req as any).user;
+    if (authUser?.role === "admin") {
+      const subjects = await prisma.subject.findMany({
+        orderBy: { id: 'asc' }
+      });
+      return res.json(subjects.map((subject) => ({
+        ...subject,
+        role_visible: true,
+        has_access: true,
+        request_status: subject.is_classified ? "approved" : null
+      })));
+    }
+
+    const userId = authUser.id as string;
+    const [roleVisibleSubjectIds, accessRequests, subjects] = await Promise.all([
+      getRoleVisibleSubjectIds(userId),
+      prisma.userSubjectAccessRequest.findMany({
+        where: { user_id: userId },
+        select: { subject_id: true, status: true }
+      }),
+      prisma.subject.findMany({ orderBy: { id: 'asc' } })
+    ]);
+
+    const roleVisibleSet = new Set(roleVisibleSubjectIds);
+    const requestMap = new Map(accessRequests.map((request) => [request.subject_id, request.status]));
+
+    res.json(subjects.map((subject) => {
+      const requestStatus = requestMap.get(subject.id) || null;
+      const roleVisible = roleVisibleSet.has(subject.id);
+      const hasAccess = roleVisible && (!subject.is_classified || requestStatus === "approved");
+
+      return {
+        ...subject,
+        role_visible: roleVisible,
+        has_access: hasAccess,
+        request_status: subject.is_classified ? requestStatus : null
+      };
+    }));
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch subject catalog" });
+  }
+});
+
 router.post('/subjects', authenticate, authorize('manage', 'lesson'), async (req, res) => {
   if (!requireAdminRole(req, res)) return;
 
@@ -189,6 +269,7 @@ router.post('/subjects', authenticate, authorize('manage', 'lesson'), async (req
     const titleVi = String(req.body.title_vi || "").trim();
     const requestedSlug = String(req.body.slug || "").trim();
     const color = typeof req.body.color === "string" ? req.body.color.trim() : undefined;
+    const isClassified = Boolean(req.body.is_classified);
 
     if (!titleEn || !titleVi) {
       return res.status(400).json({ error: "title_en and title_vi are required" });
@@ -199,7 +280,8 @@ router.post('/subjects', authenticate, authorize('manage', 'lesson'), async (req
         slug: requestedSlug || slugify(titleEn),
         title_en: titleEn,
         title_vi: titleVi,
-        color
+        color,
+        is_classified: isClassified
       }
     });
 
@@ -209,6 +291,123 @@ router.post('/subjects', authenticate, authorize('manage', 'lesson'), async (req
       return res.status(409).json({ error: "Subject slug already exists" });
     }
     res.status(500).json({ error: "Failed to create subject", details: error.message });
+  }
+});
+
+router.patch('/subjects/:id', authenticate, authorize('manage', 'lesson'), async (req, res) => {
+  if (!requireAdminRole(req, res)) return;
+
+  try {
+    const subjectId = Number(req.params.id);
+    const titleEn = typeof req.body.title_en === "string" ? req.body.title_en.trim() : undefined;
+    const titleVi = typeof req.body.title_vi === "string" ? req.body.title_vi.trim() : undefined;
+    const requestedSlug = typeof req.body.slug === "string" ? req.body.slug.trim() : undefined;
+    const color = typeof req.body.color === "string" ? req.body.color.trim() : undefined;
+    const isClassified = typeof req.body.is_classified === "boolean" ? req.body.is_classified : undefined;
+
+    if (!Number.isInteger(subjectId)) {
+      return res.status(400).json({ error: "Invalid subject id" });
+    }
+
+    const subject = await prisma.subject.update({
+      where: { id: subjectId },
+      data: {
+        ...(titleEn ? { title_en: titleEn } : {}),
+        ...(titleVi ? { title_vi: titleVi } : {}),
+        ...(requestedSlug ? { slug: slugify(requestedSlug) } : {}),
+        ...(color !== undefined ? { color } : {}),
+        ...(isClassified !== undefined ? { is_classified: isClassified } : {}),
+      }
+    });
+
+    res.json(subject);
+  } catch (error: any) {
+    if (error?.code === "P2025") {
+      return res.status(404).json({ error: "Subject not found" });
+    }
+    if (error?.code === "P2002") {
+      return res.status(409).json({ error: "Subject slug already exists" });
+    }
+    res.status(500).json({ error: "Failed to update subject", details: error.message });
+  }
+});
+
+router.post('/subjects/:id/request-access', authenticate, async (req, res) => {
+  try {
+    const subjectId = Number(req.params.id);
+    const userId = (req as any).user.id as string;
+
+    if (!Number.isInteger(subjectId)) {
+      return res.status(400).json({ error: "Invalid subject id" });
+    }
+
+    const [subject, roleVisibleSubjectIds] = await Promise.all([
+      prisma.subject.findUnique({
+        where: { id: subjectId },
+        select: { id: true, is_classified: true }
+      }),
+      getRoleVisibleSubjectIds(userId)
+    ]);
+
+    if (!subject) {
+      return res.status(404).json({ error: "Subject not found" });
+    }
+
+    if (!subject.is_classified) {
+      return res.status(400).json({ error: "This subject does not require approval" });
+    }
+
+    if (!roleVisibleSubjectIds.includes(subjectId)) {
+      return res.status(403).json({ error: "Your role does not allow this subject" });
+    }
+
+    const subjectDetails = await prisma.subject.findUnique({
+      where: { id: subjectId },
+      select: {
+        id: true,
+        slug: true,
+        title_en: true,
+        title_vi: true
+      }
+    });
+
+    const request = await prisma.userSubjectAccessRequest.upsert({
+      where: {
+        user_id_subject_id: {
+          user_id: userId,
+          subject_id: subjectId
+        }
+      },
+      update: {
+        status: "pending",
+        requested_at: new Date(),
+        reviewed_at: null,
+        reviewed_by: null,
+      },
+      create: {
+        user_id: userId,
+        subject_id: subjectId,
+        status: "pending"
+      }
+    });
+
+    await notifyAdmins({
+      actorId: userId,
+      type: NotificationType.SubjectAccessRequested,
+      entityType: 'subject_access_request',
+      entityId: String(request.id),
+      payload: {
+        request_id: request.id,
+        subject_id: subjectId,
+        subject_slug: subjectDetails?.slug || null,
+        subject_title_en: subjectDetails?.title_en || null,
+        subject_title_vi: subjectDetails?.title_vi || null,
+      }
+    });
+
+    res.status(201).json(request);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to request subject access" });
   }
 });
 

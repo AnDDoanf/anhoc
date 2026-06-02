@@ -98,61 +98,91 @@ async function main() {
   // 5. 🧑 Users
   const admin = await prisma.user.upsert({
     where: { email: 'admin@dev.com' },
-    update: {},
+    update: {
+      account_status: 'active',
+      email_verified_at: new Date(),
+      inactive_cleanup_at: null,
+    },
     create: {
       username: 'admin',
       email: 'admin@dev.com',
       country: 'Vietnam',
       password_hash: hashedPassword,
       role_id: adminRole.id,
+      account_status: 'active',
+      email_verified_at: new Date(),
     },
   });
 
   const teacher = await prisma.user.upsert({
     where: { email: 'teacher@dev.com' },
-    update: {},
+    update: {
+      account_status: 'active',
+      email_verified_at: new Date(),
+      inactive_cleanup_at: null,
+    },
     create: {
       username: 'teacher1',
       email: 'teacher@dev.com',
       country: 'Vietnam',
       password_hash: hashedPassword,
       role_id: teacherRole.id,
+      account_status: 'active',
+      email_verified_at: new Date(),
     },
   });
 
   const student = await prisma.user.upsert({
     where: { email: 'student@dev.com' },
-    update: {},
+    update: {
+      account_status: 'active',
+      email_verified_at: new Date(),
+      inactive_cleanup_at: null,
+    },
     create: {
       username: 'student1',
       email: 'student@dev.com',
       country: 'Vietnam',
       password_hash: hashedPassword,
       role_id: studentRole.id,
+      account_status: 'active',
+      email_verified_at: new Date(),
     },
   });
 
   const studentTwo = await prisma.user.upsert({
     where: { email: 'student2@dev.com' },
-    update: {},
+    update: {
+      account_status: 'active',
+      email_verified_at: new Date(),
+      inactive_cleanup_at: null,
+    },
     create: {
       username: 'student2',
       email: 'student2@dev.com',
       country: 'Vietnam',
       password_hash: hashedPassword,
       role_id: studentRole.id,
+      account_status: 'active',
+      email_verified_at: new Date(),
     },
   });
 
   const studentThree = await prisma.user.upsert({
     where: { email: 'student3@dev.com' },
-    update: {},
+    update: {
+      account_status: 'active',
+      email_verified_at: new Date(),
+      inactive_cleanup_at: null,
+    },
     create: {
       username: 'student3',
       email: 'student3@dev.com',
       country: 'Singapore',
       password_hash: hashedPassword,
       role_id: studentRole.id,
+      account_status: 'active',
+      email_verified_at: new Date(),
     },
   });
 
@@ -183,6 +213,15 @@ async function main() {
       create: { role_id: role.id, subject_id: math.id },
     });
   }
+
+  await prisma.user.updateMany({
+    where: {
+      email: { in: ['admin@dev.com', 'teacher@dev.com', 'student@dev.com', 'student2@dev.com', 'student3@dev.com'] },
+    },
+    data: {
+      preferred_subject_id: math.id,
+    },
+  });
 
   // 7. 📚 Lesson (Refactored)
   console.log('  - Seeding Lessons...');
