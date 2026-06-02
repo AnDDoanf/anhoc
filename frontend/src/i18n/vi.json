@@ -28,7 +28,78 @@
     "xp": "XP",
     "lessonsCompleted": "Bài học hoàn thành",
     "averageScore": "Điểm trung bình",
-    "xpEarned": "XP đạt được"
+    "xpEarned": "XP đạt được",
+    "tagline": "Trợ lý Toán AI"
+  },
+  "Chatbot": {
+    "title": "Gia sư Toán Anhoc",
+    "tagline": "Trợ lý Toán AI",
+    "open": "Mở chatbot",
+    "close": "Đóng chatbot",
+    "clear": "Xóa",
+    "clearLogs": "Xóa nhật ký",
+    "confirmClearHistory": "Xóa lịch sử chatbot?",
+    "tabs": {
+      "chat": "Trò chuyện",
+      "thought": "Suy luận",
+      "context": "Hồ sơ"
+    },
+    "engineLabel": "Mô hình:",
+    "providerTypes": {
+      "system": "Hệ thống",
+      "byok": "BYOK"
+    },
+    "emptyGreeting": "Xin chào {username}! Hãy hỏi mình bất kỳ bài toán nào nhé.",
+    "dailyLimit": "Giới hạn ngày: {count} câu hỏi",
+    "attachedImageAlt": "Ảnh đính kèm",
+    "thinking": "Anhoc đang suy nghĩ...",
+    "thoughtTitle": "AI đã giải như thế nào (CoT)",
+    "thoughtEmpty": "Hãy hỏi gia sư một câu để xem các bước suy luận toán học tại đây.",
+    "contextTitle": "Cá nhân hóa gia sư",
+    "ragPersonaTitle": "Nhân dạng RAG đang dùng",
+    "ragPersonaDescription": "Gia sư sẽ dùng hướng dẫn toán học phù hợp với hồ sơ của bạn để cấu trúc câu trả lời và điều chỉnh cách diễn đạt.",
+    "reasoningTitle": "Kỹ thuật suy luận",
+    "byokTitle": "Động cơ BYOK tùy chọn",
+    "byokDescription": "Nhập API key hoặc URL riêng của bạn để dùng mô hình tùy chọn. Các khóa này chỉ được lưu trong local storage của trình duyệt và không bao giờ được lưu trên máy chủ.",
+    "fields": {
+      "geminiApiKey": "Gemini API Key",
+      "openAiApiKey": "OpenAI API Key",
+      "claudeApiKey": "Khóa Anthropic Claude",
+      "ollamaUrl": "URL Ollama cục bộ"
+    },
+    "stats": {
+      "xpPoints": "Điểm XP",
+      "level": "Cấp độ",
+      "dailyUses": "Lượt dùng hôm nay",
+      "remainingUses": "Còn {count} lượt"
+    },
+    "reasoning": {
+      "step_by_step": {
+        "label": "Từng bước",
+        "description": "Chia bài toán thành các bước giải theo thứ tự."
+      },
+      "plan_solve_check": {
+        "label": "Lập kế hoạch - Giải - Kiểm tra",
+        "description": "Lập kế hoạch, giải bài, rồi kiểm tra lại kết quả."
+      },
+      "socratic": {
+        "label": "Gợi mở Socratic",
+        "description": "Dẫn dắt bằng câu hỏi ngắn trước khi đưa ra đáp án."
+      },
+      "worked_example": {
+        "label": "Ví dụ mẫu",
+        "description": "Trình bày một lời giải mẫu để bạn tái sử dụng."
+      }
+    },
+    "inputPlaceholder": "Hỏi một bài toán...",
+    "attachImage": "Đính kèm ảnh",
+    "removeAttachment": "Gỡ ảnh đính kèm",
+    "send": "Gửi",
+    "errors": {
+      "fetchFailed": "Không thể lấy câu trả lời",
+      "streamUnavailable": "Luồng trả lời của gia sư không khả dụng",
+      "serverError": "Lỗi máy chủ gia sư"
+    }
   },
   "Home": {
     "tagline": "Ứng dụng học tập gamified",

@@ -4,6 +4,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import Footer from "@/components/layout/Footer";
 import Settingbar from "@/components/layout/Settingbar";
 import ScrollToTop from "@/components/ui/ScrollToTop";
+import ChatbotWidget from "@/components/feature/ChatbotWidget";
 import { RootState } from "@/redux/store";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -54,6 +55,7 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
           {children}
         </main>
         <ScrollToTop />
+        <ChatbotWidget />
       </div>
     );
   }
@@ -71,6 +73,7 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
 
         <Footer />
         <ScrollToTop />
+        <ChatbotWidget />
       </div>
     </div>
   );

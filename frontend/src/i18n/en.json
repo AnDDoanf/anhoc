@@ -28,7 +28,78 @@
     "xp": "XP",
     "lessonsCompleted": "Lessons Completed",
     "averageScore": "Avg Score",
-    "xpEarned": "XP Earned"
+    "xpEarned": "XP Earned",
+    "tagline": "AI Math Tutor"
+  },
+  "Chatbot": {
+    "title": "Anhoc Math Tutor",
+    "tagline": "AI Math Tutor",
+    "open": "Open chatbot",
+    "close": "Close chatbot",
+    "clear": "Clear",
+    "clearLogs": "Clear logs",
+    "confirmClearHistory": "Clear chatbot history?",
+    "tabs": {
+      "chat": "Chat",
+      "thought": "Thoughts",
+      "context": "Profile"
+    },
+    "engineLabel": "Engine:",
+    "providerTypes": {
+      "system": "System",
+      "byok": "BYOK"
+    },
+    "emptyGreeting": "Hello {username}! Ask me any math question.",
+    "dailyLimit": "Daily Limit: {count} Questions",
+    "attachedImageAlt": "Attached image",
+    "thinking": "Anhoc is thinking...",
+    "thoughtTitle": "How the AI solved it (CoT)",
+    "thoughtEmpty": "Ask the tutor a question to view its step-by-step mathematical reasoning here.",
+    "contextTitle": "Tutor Personalization",
+    "ragPersonaTitle": "Active RAG Persona",
+    "ragPersonaDescription": "The tutor pulls mathematical guidelines matching your profile to structure questions and customize terms.",
+    "reasoningTitle": "Reasoning Technique",
+    "byokTitle": "BYOK Custom Engines",
+    "byokDescription": "Enter your own API keys or URLs below to use custom models. Your keys stay in your browser local storage and are never saved on our server.",
+    "fields": {
+      "geminiApiKey": "Gemini API Key",
+      "openAiApiKey": "OpenAI API Key",
+      "claudeApiKey": "Anthropic Claude Key",
+      "ollamaUrl": "Local Ollama URL"
+    },
+    "stats": {
+      "xpPoints": "XP Points",
+      "level": "Level",
+      "dailyUses": "Daily Uses",
+      "remainingUses": "{count} left"
+    },
+    "reasoning": {
+      "step_by_step": {
+        "label": "Step-by-step",
+        "description": "Break the problem into ordered math steps."
+      },
+      "plan_solve_check": {
+        "label": "Plan-Solve-Check",
+        "description": "Plan first, solve, then verify the answer."
+      },
+      "socratic": {
+        "label": "Socratic",
+        "description": "Guide with short questions before the answer."
+      },
+      "worked_example": {
+        "label": "Worked Example",
+        "description": "Show a reusable model solution."
+      }
+    },
+    "inputPlaceholder": "Ask a math problem...",
+    "attachImage": "Attach image",
+    "removeAttachment": "Remove attachment",
+    "send": "Send",
+    "errors": {
+      "fetchFailed": "Failed to fetch response",
+      "streamUnavailable": "Tutor response stream is unavailable",
+      "serverError": "Tutor server error"
+    }
   },
   "Home": {
     "tagline": "Gamified Education App",
