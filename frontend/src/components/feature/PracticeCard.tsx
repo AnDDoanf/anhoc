@@ -37,13 +37,13 @@ export default function PracticeCard({ lesson }: PracticeCardProps) {
   const exerciseCount = lesson._count?.templates || 0;
 
   return (
-    <div className="group relative bg-sol-surface/30 rounded-3xl p-6 border border-sol-border/10 shadow-sm hover:shadow-2xl hover:bg-sol-surface/50 transition-all duration-500 hover:-translate-y-1 overflow-hidden flex flex-col h-full">
+    <div className="group relative bg-sol-surface rounded-3xl p-6 border border-sol-border/30 shadow-sm hover:shadow-2xl hover:bg-sol-surface transition-all duration-500 hover:-translate-y-1 overflow-hidden flex flex-col h-full">
       {/* Decorative Gradient Glow */}
       <div className="absolute -top-24 -right-24 w-48 h-48 bg-sol-accent/5 rounded-full blur-3xl group-hover:bg-sol-accent/10 transition-colors" />
 
       <div className="relative z-10 space-y-4 flex-grow">
         <div className="flex justify-between items-start">
-          <div className={`p-3 rounded-2xl bg-sol-surface border border-sol-border/10 text-sol-accent shadow-sm group-hover:scale-110 transition-transform duration-500`}>
+          <div className={`p-3 rounded-2xl bg-sol-surface border border-sol-border/30 text-sol-accent shadow-sm group-hover:scale-110 transition-transform duration-500`}>
             {getIcon(lesson.id)}
           </div>
         </div>
@@ -58,7 +58,7 @@ export default function PracticeCard({ lesson }: PracticeCardProps) {
         </div>
 
         <div className="flex items-center gap-4 py-2">
-          <div className="flex items-center gap-1.5 text-xs text-sol-muted bg-sol-bg/40 px-3 py-1.5 rounded-xl border border-sol-border/5">
+          <div className="flex items-center gap-1.5 text-xs text-sol-muted bg-sol-bg px-3 py-1.5 rounded-xl border border-sol-border/20">
             <BarChart2 size={14} className="text-sol-accent" />
             <span>{t("stats", { count: exerciseCount })}</span>
           </div>

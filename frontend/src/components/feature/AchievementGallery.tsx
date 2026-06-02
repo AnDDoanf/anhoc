@@ -102,7 +102,7 @@ export default function AchievementGallery() {
         </div>
 
         {/* Stats Card - Optimized for impact */}
-        <div className="flex items-center gap-8 bg-sol-bg/40 backdrop-blur-2xl border border-sol-border/10 p-8 md:p-12 rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
+        <div className="flex items-center gap-8 bg-sol-bg border border-sol-border/30 p-8 md:p-12 rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
            <div className="absolute inset-0 bg-sol-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
            <div className="relative z-10 flex items-center gap-10">
               <div className="text-center">
@@ -127,7 +127,7 @@ export default function AchievementGallery() {
             className={`flex-1 shrink-0 flex items-center justify-center rounded-full px-4 h-11 text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-all duration-300 border-2 min-w-[100px] sm:min-w-0
               ${filter === cat
                 ? "bg-sol-accent text-sol-bg border-sol-accent shadow-[0_0_20px_rgba(var(--sol-accent-rgb),0.3)]"
-                : "bg-sol-surface/30 text-sol-muted border-transparent hover:border-sol-border/10 hover:text-sol-text"
+                : "bg-sol-surface text-sol-muted border-sol-border/20 hover:border-sol-border/30 hover:text-sol-text"
               }
             `}
           >

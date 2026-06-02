@@ -30,9 +30,8 @@ export default async function LessonPage({ params }: Props) {
       <TableOfContents toc={lesson.toc} />
       <LessonPracticeButton lessonId={lessonId} />
 
-      {/* Decorative Tip */}
       <div className="mt-12 group/tip">
-        <div className="p-6 rounded-[2rem] bg-sol-accent/5 border border-sol-accent/10 transition-all hover:bg-sol-accent/10">
+        <div className="p-6 rounded-[2rem] bg-sol-accent/10 border border-sol-accent/20 transition-all hover:bg-sol-accent/20">
           <div className="flex items-center gap-2 text-sol-accent font-black text-xs uppercase tracking-widest mb-3">
             <GraduationCap size={16} />
             <span>{t("proTip")}</span>
@@ -65,7 +64,11 @@ export default async function LessonPage({ params }: Props) {
         </nav>
 
         {/* Main Header Block */}
-        <header className="bg-sol-surface/30 p-4 md:p-8 rounded-[2rem] md:rounded-[3rem] border border-sol-border/5 shadow-2xl relative overflow-hidden group">
+        <header className="bg-sol-surface p-4 md:p-8 rounded-[2rem] md:rounded-[3rem] border border-sol-border/30 shadow-2xl relative overflow-hidden group">
+          {/* Premium Pulsing Gradient Glows aligned with student/games */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-sol-accent/15 rounded-full -mr-32 -mt-32 blur-3xl animate-pulse pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-sol-orange/5 rounded-full -ml-32 -mb-32 blur-3xl pointer-events-none" />
+
           <div className="absolute top-0 right-0 p-12 opacity-5 group-hover:opacity-10 transition-opacity">
             <GraduationCap size={200} className="text-sol-accent -rotate-12" />
           </div>
@@ -90,7 +93,7 @@ export default async function LessonPage({ params }: Props) {
             {sections.map((sectionHtml, idx) => (
               <article
                 key={idx}
-                className="bg-sol-surface/20 p-4 md:p-8 rounded-[2rem] md:rounded-[3rem] border border-sol-border/5 shadow-sm hover:shadow-2xl hover:bg-sol-surface/30 transition-all duration-500 relative group overflow-hidden"
+                className="bg-sol-surface p-4 md:p-8 rounded-[2rem] md:rounded-[3rem] border border-sol-border/20 shadow-sm hover:shadow-2xl hover:bg-sol-surface/80 transition-all duration-500 relative group overflow-hidden"
               >
                 <div className="absolute -top-6 -right-6 w-32 h-32 bg-sol-accent/5 rounded-full flex items-center justify-center -rotate-12 group-hover:rotate-0 transition-transform duration-700">
                   <span className="text-4xl font-black text-sol-accent/10">{idx + 1}</span>
@@ -105,7 +108,7 @@ export default async function LessonPage({ params }: Props) {
                     [&_ol]:list-decimal [&_ol]:pl-6 md:[_ol]:pl-10 [&_ol]:mb-8 md:[_ol]:mb-10 [&_ol]:space-y-3 md:[_ol]:space-y-4 [&_ol]:text-sol-text/70
                     [&_li]:text-base md:[&_li]:text-lg [&_li]:leading-relaxed md:[&_li]:leading-[2]
                     [&_.katex-display]:text-center [&_.katex-display]:my-10 md:[_.katex-display]:my-16 [&_.katex-display]:w-full [&_.katex-display]:overflow-x-auto [&_.katex-display]:overflow-y-hidden [&_.katex-display]:py-4
-                    [&>pre]:bg-sol-bg/40 [&>pre]:p-6 md:[&>pre]:p-10 [&>pre]:rounded-2xl md:[&>pre]:rounded-[2rem] [&>pre]:border [&>pre]:border-sol-border/10 [&>pre]:my-8 md:[&>pre]:my-12 [&>pre]:shadow-2xl
+                    [&>pre]:bg-sol-bg [&>pre]:p-6 md:[&>pre]:p-10 [&>pre]:rounded-2xl md:[&>pre]:rounded-[2rem] [&>pre]:border [&>pre]:border-sol-border/20 [&>pre]:my-8 md:[&>pre]:my-12 [&>pre]:shadow-2xl
                     [&>blockquote]:border-l-4 md:[&>blockquote]:border-l-[6px] [&>blockquote]:border-sol-accent [&>blockquote]:pl-6 md:[&>blockquote]:pl-10 [&>blockquote]:italic [&>blockquote]:my-8 md:[&>blockquote]:my-12 [&>blockquote]:text-sol-muted [&>blockquote]:bg-sol-accent/5 [&>blockquote]:p-6 md:[&>blockquote]:py-10 md:[&>blockquote]:pr-10 [&>blockquote]:rounded-r-2xl md:[&>blockquote]:rounded-r-[2.5rem]"
                   dangerouslySetInnerHTML={{ __html: sectionHtml }}
                 />

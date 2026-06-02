@@ -278,7 +278,7 @@ export default function LearningDashboard() {
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start">
         <div className="space-y-12 md:space-y-24">
           {lockedSubjects.length > 0 && (
-            <section className="rounded-[2rem] border border-sol-orange/20 bg-sol-surface/90 p-6 shadow-sm">
+            <section className="rounded-[2rem] border border-sol-orange/30 bg-sol-surface p-6 shadow-sm">
               <div className="flex items-center gap-3 text-sol-orange">
                 <ShieldAlert size={20} />
                 <div>
@@ -294,7 +294,7 @@ export default function LearningDashboard() {
                   const isRejected = subject.request_status === "rejected";
 
                   return (
-                    <div key={subject.id} className="rounded-[1.6rem] border border-sol-border/20 bg-sol-bg/80 p-4">
+                    <div key={subject.id} className="rounded-[1.6rem] border border-sol-border/30 bg-sol-bg p-4">
                       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sol-orange">{t("classifiedBadge")}</p>
                       <h3 className="mt-2 text-xl font-black text-sol-text">{subjectLabel}</h3>
                       <p className="mt-1 text-sm font-medium text-sol-text/65">{subject.slug}</p>
@@ -323,7 +323,7 @@ export default function LearningDashboard() {
 
           {lessonGroups.map((subject) => (
             <section key={subject.subject} className="group/section space-y-8 md:space-y-12">
-              <div className="flex flex-col gap-3 border-b border-sol-border/15 pb-4 sm:flex-row sm:items-end sm:justify-between md:pb-6">
+              <div className="flex flex-col gap-3 border-b border-sol-border/30 pb-4 sm:flex-row sm:items-end sm:justify-between md:pb-6">
                 <div className="space-y-2">
                   <h2 className="text-2xl font-black uppercase tracking-tight text-sol-text transition-colors group-hover/section:text-sol-accent md:text-3xl">
                     {subject.label}
@@ -337,7 +337,7 @@ export default function LearningDashboard() {
               {subject.grades.map((group) => (
                 <div
                   key={`${subject.subject}-${group.grade}`}
-                  className="rounded-3xl border border-sol-border/25 bg-sol-surface/85 p-5 shadow-sm transition-all hover:border-sol-accent/40 hover:bg-sol-surface md:p-6"
+                  className="rounded-3xl border border-sol-border/30 bg-sol-surface p-5 shadow-sm transition-all hover:border-sol-accent/40 hover:bg-sol-surface md:p-6"
                 >
                   <div className="flex items-center gap-3">
                     <button
@@ -382,7 +382,7 @@ export default function LearningDashboard() {
                           return (
                             <article
                               key={lesson.id}
-                              className="flex w-80 shrink-0 snap-start flex-col rounded-[2rem] border border-sol-border/20 bg-sol-bg/90 p-5 shadow-md transition-all hover:border-sol-accent/35 hover:shadow-xl"
+                              className="flex w-80 shrink-0 snap-start flex-col rounded-[2rem] border border-sol-border/30 bg-sol-bg p-5 shadow-md transition-all hover:border-sol-accent/35 hover:shadow-xl"
                             >
                               <div className="flex items-start justify-between gap-3">
                                 <div className="space-y-2">
@@ -476,8 +476,8 @@ export default function LearningDashboard() {
         </div>
 
         <aside className="space-y-6 xl:sticky xl:top-24 xl:self-start">
-          <section className="overflow-hidden rounded-[2rem] border border-sol-border/20 bg-sol-surface/90 shadow-sm">
-            <div className="border-b border-sol-border/15 p-5">
+          <section className="overflow-hidden rounded-[2rem] border border-sol-border/30 bg-sol-surface shadow-sm">
+            <div className="border-b border-sol-border/30 p-5">
               <div className="flex items-center gap-2 text-sol-accent">
                 <Flame size={18} />
                 <span className="text-xs font-black uppercase tracking-[0.2em]">{dashboardT("dailyStreak")}</span>
@@ -554,13 +554,13 @@ export default function LearningDashboard() {
             </div>
           </section>
 
-          <section className="rounded-[2rem] border border-sol-border/20 bg-sol-surface/90 p-5 shadow-sm">
+          <section className="rounded-[2rem] border border-sol-border/30 bg-sol-surface p-5 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-sol-accent">
                 <Users size={18} />
                 <span className="text-xs font-black uppercase tracking-[0.2em]">{t("socializingTitle")}</span>
               </div>
-              <div className="rounded-full border border-sol-border/15 bg-sol-bg/80 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-sol-text/55">
+              <div className="rounded-full border border-sol-border/30 bg-sol-bg px-3 py-1 text-[10px] font-black uppercase tracking-widest text-sol-text/55">
                 {t("nearbyCount", { count: nearbyLearners.length })}
               </div>
             </div>
@@ -570,18 +570,18 @@ export default function LearningDashboard() {
             </p>
 
             <div className="mt-5 grid grid-cols-2 gap-3">
-              <div className="rounded-[1.5rem] border border-sol-border/15 bg-sol-bg/75 p-3">
+              <div className="rounded-[1.5rem] border border-sol-border/30 bg-sol-bg p-3">
                 <p className="text-[10px] font-black uppercase tracking-widest text-sol-text/55">{t("followersLabel")}</p>
                 <p className="mt-1 text-2xl font-black text-sol-text">{socialSummary.followers}</p>
               </div>
-              <div className="rounded-[1.5rem] border border-sol-border/15 bg-sol-bg/75 p-3">
+              <div className="rounded-[1.5rem] border border-sol-border/30 bg-sol-bg p-3">
                 <p className="text-[10px] font-black uppercase tracking-widest text-sol-text/55">{t("followingLabel")}</p>
                 <p className="mt-1 text-2xl font-black text-sol-text">{socialSummary.following}</p>
               </div>
             </div>
 
             {recommendedUser && (
-              <div className="mt-5 rounded-[1.5rem] border border-sol-accent/20 bg-sol-accent/8 p-4">
+              <div className="mt-5 rounded-[1.5rem] border border-sol-accent/30 bg-sol-accent/10 p-4">
                 <div className="flex items-center gap-2 text-sol-accent">
                   <Sparkles size={16} />
                   <span className="text-[10px] font-black uppercase tracking-[0.2em]">{t("recommendedUserTitle")}</span>
@@ -613,7 +613,7 @@ export default function LearningDashboard() {
               {nearbyLearners.map((learner) => (
                 <div
                   key={learner.id}
-                  className="rounded-[1.5rem] border border-sol-border/15 bg-sol-bg/75 p-3"
+                  className="rounded-[1.5rem] border border-sol-border/30 bg-sol-bg p-3"
                 >
                   <div className="flex items-center gap-3">
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sol-accent/12 text-sm font-black text-sol-accent">
@@ -640,7 +640,7 @@ export default function LearningDashboard() {
                     disabled={followLoadingId === learner.id}
                     className={`mt-3 w-full rounded-2xl px-4 py-2.5 text-sm font-black transition-all ${
                       learner.is_following
-                        ? "border border-sol-border/20 bg-sol-surface text-sol-text hover:border-sol-accent/30 hover:text-sol-accent"
+                        ? "border border-sol-border/30 bg-sol-surface text-sol-text hover:border-sol-accent/30 hover:text-sol-accent"
                         : "bg-sol-accent text-sol-bg hover:bg-sol-accent/90"
                     } disabled:opacity-60`}
                   >
@@ -650,7 +650,7 @@ export default function LearningDashboard() {
               ))}
 
               {nearbyLearners.length === 0 && (
-                <div className="rounded-[1.5rem] border border-sol-border/15 bg-sol-bg/70 p-4 text-sm font-medium text-sol-text/60">
+                <div className="rounded-[1.5rem] border border-sol-border/30 bg-sol-bg p-4 text-sm font-medium text-sol-text/60">
                   {t("noNearbyLearners")}
                 </div>
               )}
@@ -660,7 +660,7 @@ export default function LearningDashboard() {
       </div>
 
       {/* Progress Footer */}
-      <section className="space-y-3 rounded-[2rem] border border-sol-border/20 bg-sol-surface/85 p-6 text-center shadow-sm md:space-y-4 md:rounded-[3rem] md:p-12">
+      <section className="space-y-3 rounded-[2rem] border border-sol-border/30 bg-sol-surface p-6 text-center shadow-sm md:space-y-4 md:rounded-[3rem] md:p-12">
         <h3 className="text-xl font-bold text-sol-text md:text-2xl">{t("readyChallengeTitle")}</h3>
         <p className="text-sol-muted max-w-lg mx-auto">
           {t("readyChallengeSubtitle")}

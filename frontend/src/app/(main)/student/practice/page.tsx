@@ -163,7 +163,7 @@ export default function PracticePage() {
       {/* Hero Header */}
       <Hero 
         icon={<Trophy size={120} className="text-sol-accent md:h-48 md:w-48 animate-pulse" />}
-        className="md:rounded-[3rem] overflow-hidden border-b border-sol-accent/5"
+        className="md:rounded-[3rem] overflow-hidden border-b border-sol-accent/20"
         containerClassName="relative z-10 flex w-full flex-col items-center gap-8 lg:flex-row lg:justify-between"
       >
         <div className="space-y-4 md:space-y-8 text-center lg:text-left">
@@ -249,7 +249,7 @@ export default function PracticePage() {
           {Object.entries(groupedData).map(([gradeId, group]) => (
             <section key={gradeId} className="space-y-5 md:space-y-8">
               <div className="flex items-center gap-3 md:gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-sol-border/10 bg-sol-surface/50 text-sol-accent shadow-sm md:h-12 md:w-12 md:rounded-2xl">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-sol-border/30 bg-sol-surface text-sol-accent shadow-sm md:h-12 md:w-12 md:rounded-2xl">
                   <BookOpen size={20} className="md:h-6 md:w-6" />
                 </div>
                 <div>
@@ -271,7 +271,7 @@ export default function PracticePage() {
 
         {/* Sidebar: Practice History */}
         <aside className="xl:sticky xl:top-24 xl:col-span-1 xl:self-start">
-          <div className="flex max-h-[calc(100vh-10rem)] flex-col space-y-5 overflow-hidden rounded-[1.5rem] border border-sol-border/20 bg-sol-surface/50 p-4 shadow-sm backdrop-blur-md md:rounded-[2rem] md:p-6 md:space-y-8">
+          <div className="flex max-h-[calc(100vh-10rem)] flex-col space-y-5 overflow-hidden rounded-[1.5rem] border border-sol-border/30 bg-sol-surface p-4 shadow-sm backdrop-blur-md md:rounded-[2rem] md:p-6 md:space-y-8">
             <div className="flex items-center gap-3">
               <HistoryIcon size={18} className="text-sol-accent md:h-5 md:w-5" />
               <h3 className="text-base font-bold uppercase tracking-tight text-sol-text md:text-lg">{t("recentActivity")}</h3>
@@ -279,7 +279,7 @@ export default function PracticePage() {
 
             <div className="custom-scrollbar flex-grow space-y-3 overflow-y-auto pr-1 md:space-y-4 md:pr-2">
               {history.length === 0 ? (
-                <div className="rounded-2xl border border-sol-border/5 bg-sol-bg/20 p-4 text-center md:p-6">
+                <div className="rounded-2xl border border-sol-border/20 bg-sol-bg p-4 text-center md:p-6">
                   <p className="text-xs text-sol-muted italic">{t("noHistory")}</p>
                 </div>
               ) : (
@@ -287,10 +287,10 @@ export default function PracticePage() {
                   <button
                     key={attempt.id}
                     onClick={() => setSelectedAttemptId(attempt.id)}
-                    className="group block w-full rounded-2xl border border-sol-border/10 bg-sol-surface p-3 text-left shadow-sm transition-all active:scale-95 hover:border-sol-accent/30 md:p-4"
+                    className="group block w-full rounded-2xl border border-sol-border/20 bg-sol-bg p-3 text-left shadow-sm transition-all active:scale-95 hover:border-sol-accent/30 md:p-4"
                   >
                     <div className="mb-2 flex items-start justify-between gap-2">
-                      <span className="text-[9px] uppercase font-bold text-sol-muted bg-sol-bg px-2 py-1 rounded-md border border-sol-border/5">
+                      <span className="text-[9px] uppercase font-bold text-sol-muted bg-sol-surface px-2 py-1 rounded-md border border-sol-border/20">
                         {(locale === "vi" ? attempt.lesson?.grade?.title_vi : attempt.lesson?.grade?.title_en) || "Practice"}
                       </span>
                       <span className="text-[9px] text-sol-muted whitespace-nowrap">
@@ -314,7 +314,7 @@ export default function PracticePage() {
 
             {/* Decorative Tips */}
             <div className="border-t border-sol-border/10 pt-4 md:pt-6">
-              <div className="flex flex-col gap-2 rounded-xl border border-sol-accent/10 bg-sol-accent/5 p-3 md:p-4">
+              <div className="flex flex-col gap-2 rounded-xl border border-sol-accent/20 bg-sol-accent/10 p-3 md:p-4">
                 <div className="mb-1 flex items-center gap-2">
                   <Brain size={14} className="text-sol-accent" />
                   <h4 className="text-[10px] font-bold text-sol-accent uppercase tracking-wider">{t("tipTitle")}</h4>
@@ -329,7 +329,7 @@ export default function PracticePage() {
       </div>
 
       {/* Footer Info */}
-      <footer className="rounded-[2rem] border border-sol-accent/10 bg-sol-accent/5 p-6 text-center md:rounded-[2.5rem] md:p-12">
+      <footer className="rounded-[2rem] border border-sol-accent/20 bg-sol-accent/10 p-6 text-center md:rounded-[2.5rem] md:p-12">
         <p className="text-sol-muted italic">
           {t("footerQuote")}
         </p>

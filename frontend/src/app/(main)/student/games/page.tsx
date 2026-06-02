@@ -158,7 +158,7 @@ export default function GamesHubPage() {
 
   return (
     <ProtectedRoute requiredRole="student">
-      <div className="space-y-10 animate-in fade-in duration-700">
+      <div className="mx-auto max-w-7xl space-y-10 animate-in fade-in duration-700">
         
         {/* Banner Section */}
         <div className="relative overflow-hidden rounded-[2.5rem] bg-sol-surface border border-sol-border/30 p-8 md:p-12 shadow-2xl">

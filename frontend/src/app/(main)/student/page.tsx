@@ -120,7 +120,7 @@ export default function UserHomePage() {
 
   return (
     <ProtectedRoute requiredRole="student">
-      <div className="space-y-8 animate-in fade-in duration-700">
+      <div className="mx-auto max-w-7xl space-y-8 animate-in fade-in duration-700">
         {/* Hero Section */}
         <div className="relative overflow-hidden rounded-[2.5rem] bg-sol-surface border border-sol-border/30 p-8 md:p-12 shadow-2xl shadow-sol-accent/5">
           <div className="absolute top-0 right-0 w-96 h-96 bg-sol-accent/10 rounded-full -mr-32 -mt-32 blur-3xl animate-pulse" />

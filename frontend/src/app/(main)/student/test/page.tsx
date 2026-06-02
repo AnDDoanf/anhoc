@@ -168,7 +168,7 @@ export default function TestPage() {
     <div className="mx-auto max-w-7xl space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <Hero 
         icon={<Medal size={120} className="text-sol-accent md:h-48 md:w-48 animate-bounce-slow" />}
-        className="md:rounded-[3rem] overflow-hidden border-b border-sol-accent/5"
+        className="md:rounded-[3rem] overflow-hidden border-b border-sol-accent/20"
         containerClassName="relative z-10 flex w-full flex-col items-center gap-8 lg:flex-row lg:justify-between"
       >
         <div className="space-y-4 md:space-y-8 text-center lg:text-left">
@@ -250,7 +250,7 @@ export default function TestPage() {
         {Object.entries(groupedData).map(([gradeId, gradeTests]) => (
           <section key={gradeId} className="space-y-5 md:space-y-8">
             <div className="flex items-center gap-3 md:gap-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-sol-border/10 bg-sol-surface/50 text-sol-accent shadow-sm md:h-12 md:w-12 md:rounded-2xl">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-sol-border/30 bg-sol-surface text-sol-accent shadow-sm md:h-12 md:w-12 md:rounded-2xl">
                 <BookOpen size={20} className="md:h-6 md:w-6" />
               </div>
               <div>
@@ -270,14 +270,14 @@ export default function TestPage() {
         ))}
 
         {tests.length === 0 && (
-          <div className="rounded-[2rem] border border-sol-border/10 bg-sol-surface/30 p-10 text-center">
+          <div className="rounded-[2rem] border border-sol-border/30 bg-sol-surface p-10 text-center">
             <h2 className="text-xl font-black text-sol-text">{t("emptyTitle")}</h2>
             <p className="mt-2 font-bold text-sol-muted">{t("emptySubtitle")}</p>
           </div>
         )}
       </div>
 
-      <footer className="footer-gradient rounded-[2rem] border border-sol-border/10 bg-sol-accent/5 p-6 text-center md:rounded-[2.5rem] md:p-12">
+      <footer className="footer-gradient rounded-[2rem] border border-sol-border/30 bg-sol-accent/10 p-6 text-center md:rounded-[2.5rem] md:p-12">
         <p className="text-sol-muted italic">
           {t("footerQuote")}
         </p>

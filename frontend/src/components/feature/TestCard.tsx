@@ -82,13 +82,13 @@ export default function TestCard({ test }: TestCardProps) {
   };
 
   return (
-    <div className="group relative bg-sol-surface/30 rounded-3xl p-6 border border-sol-border/10 shadow-sm hover:shadow-2xl hover:bg-sol-surface/50 transition-all duration-500 hover:-translate-y-1 overflow-hidden">
+    <div className="group relative bg-sol-surface rounded-3xl p-6 border border-sol-border/30 shadow-sm hover:shadow-2xl hover:bg-sol-surface/80 transition-all duration-500 hover:-translate-y-1 overflow-hidden">
       {/* Decorative Gradient Glow */}
       <div className="absolute -top-24 -right-24 w-48 h-48 bg-sol-accent/5 rounded-full blur-3xl group-hover:bg-sol-accent/10 transition-colors" />
 
       <div className="relative z-10 space-y-4">
         <div className="flex justify-between items-start">
-          <div className={`p-3 rounded-2xl bg-sol-surface border border-sol-border/10 text-sol-accent shadow-sm group-hover:scale-110 transition-transform duration-500`}>
+          <div className={`p-3 rounded-2xl bg-sol-bg border border-sol-border/30 text-sol-accent shadow-sm group-hover:scale-110 transition-transform duration-500`}>
             {getIcon(test.iconType)}
           </div>
           <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${difficultyColor[test.difficulty]}`}>
@@ -106,7 +106,7 @@ export default function TestCard({ test }: TestCardProps) {
         </div>
 
         <div className="flex items-center gap-4 py-2">
-          <div className="flex items-center gap-1.5 text-xs text-sol-muted bg-sol-bg/40 px-3 py-1.5 rounded-xl border border-sol-border/5">
+          <div className="flex items-center gap-1.5 text-xs text-sol-muted bg-sol-bg px-3 py-1.5 rounded-xl border border-sol-border/20">
             <HelpCircle size={14} className="text-sol-accent" />
             <span>{t("stats", { count: test.questionCount })}</span>
           </div>
@@ -126,14 +126,14 @@ export default function TestCard({ test }: TestCardProps) {
           )}
         </button>
 
-        <div className="border-t border-sol-border/10 pt-4">
+        <div className="border-t border-sol-border/20 pt-4">
           <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-sol-muted">
             <History size={13} className="text-sol-accent" />
             {t("attemptLog")}
           </div>
 
           {attempts.length === 0 ? (
-            <p className="rounded-2xl border border-sol-border/10 bg-sol-bg/30 px-3 py-3 text-xs font-bold text-sol-muted">
+            <p className="rounded-2xl border border-sol-border/20 bg-sol-bg px-3 py-3 text-xs font-bold text-sol-muted">
               {t("noAttempts")}
             </p>
           ) : (
@@ -143,7 +143,7 @@ export default function TestCard({ test }: TestCardProps) {
                   key={attempt.id}
                   type="button"
                   onClick={() => router.push(`/student/practice/${attempt.id}`)}
-                  className="flex w-full items-center justify-between gap-3 rounded-2xl border border-sol-border/10 bg-sol-bg/30 px-3 py-3 text-left transition-colors hover:border-sol-accent/30 hover:bg-sol-surface"
+                  className="flex w-full items-center justify-between gap-3 rounded-2xl border border-sol-border/20 bg-sol-bg px-3 py-3 text-left transition-colors hover:border-sol-accent/30 hover:bg-sol-surface/50"
                 >
                   <div className="min-w-0">
                     <div className="truncate text-xs font-black text-sol-text">

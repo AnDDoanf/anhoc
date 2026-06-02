@@ -79,7 +79,11 @@ export default function GradePathPage() {
           <span>{commonT("backToHub")}</span>
         </Link>
 
-        <header className="relative p-10 md:p-16 rounded-[3rem] bg-sol-surface/30 border border-sol-border/5 overflow-hidden group">
+        <header className="relative p-10 md:p-16 rounded-[3rem] bg-sol-surface border border-sol-border/30 shadow-2xl overflow-hidden group">
+          {/* Premium Pulsing Gradient Glows aligned with student/games */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-sol-accent/15 rounded-full -mr-32 -mt-32 blur-3xl animate-pulse pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-sol-orange/5 rounded-full -ml-32 -mb-32 blur-3xl pointer-events-none" />
+
           <div className="absolute top-0 right-0 p-10 opacity-10 group-hover:scale-110 transition-transform duration-1000 rotate-6">
             <Trophy size={140} className="text-sol-accent" />
           </div>
@@ -98,7 +102,7 @@ export default function GradePathPage() {
             </p>
           </div>
 
-          <div className="flex gap-6 mt-8 relative z-10 border-t border-sol-border/5 pt-8">
+          <div className="flex gap-6 mt-8 relative z-10 border-t border-sol-border/20 pt-8">
             <div className="flex items-center gap-2 text-xs font-bold text-sol-muted uppercase tracking-widest">
               <Layers size={14} className="text-sol-accent" />
               <span>{t("modules", { count: gradeGroup.lessons.length })}</span>

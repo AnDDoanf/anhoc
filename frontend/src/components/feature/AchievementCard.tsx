@@ -77,8 +77,8 @@ export default function AchievementCard({
   return (
     <div className={`group relative overflow-hidden rounded-[2rem] border transition-all duration-700
       ${achievement.earned 
-        ? "bg-sol-surface/40 border-sol-accent/20 shadow-2xl hover:shadow-sol-accent/20 hover:-translate-y-2 backdrop-blur-xl" 
-        : "bg-sol-surface/10 border-sol-border/5 grayscale-[0.8] opacity-60 hover:opacity-80"
+        ? "bg-sol-surface border-sol-accent/30 shadow-2xl hover:shadow-sol-accent/20 hover:-translate-y-2" 
+        : "bg-sol-surface/30 border-sol-border/20 grayscale-[0.8] opacity-60 hover:opacity-80"
       }
     `}>
       {/* Decorative Glow Background */}
@@ -90,8 +90,8 @@ export default function AchievementCard({
         <div className="flex justify-between items-start mb-8">
           <div className={`relative flex items-center justify-center h-14 w-14 rounded-2xl shadow-inner transition-all duration-700 group-hover:rotate-[360deg] group-hover:scale-110 sm:h-16 sm:w-16
             ${achievement.earned 
-              ? "bg-sol-accent/10 border border-sol-accent/20 text-sol-accent" 
-              : "bg-sol-bg/50 border border-sol-border/10 text-sol-muted"
+              ? "bg-sol-accent/10 border border-sol-accent/30 text-sol-accent" 
+              : "bg-sol-bg border border-sol-border/20 text-sol-muted"
             }
           `}>
             <div className={`absolute inset-0 rounded-2xl blur-lg transition-opacity duration-700 ${achievement.earned ? "bg-sol-accent/20 opacity-0 group-hover:opacity-100" : "bg-transparent"}`} />
@@ -117,31 +117,31 @@ export default function AchievementCard({
              {description}
            </p>
            {achievement.theme && (
-             <div className="rounded-2xl border border-sol-border/10 bg-sol-bg/30 p-3">
-               <div className="flex items-center gap-3">
-                 <span
-                   className="h-4 w-4 rounded-full border border-white/40 shadow-sm"
-                   style={{ backgroundColor: achievement.theme.preview_color || "var(--accent)" }}
-                 />
-                 <div className="min-w-0">
-                   <div className="text-[10px] font-black uppercase tracking-[0.2em] text-sol-muted">
-                     {t("themeUnlock")}
-                   </div>
-                   <div className="truncate text-sm font-black text-sol-text">
-                     {themeTitle}
-                   </div>
-                 </div>
-               </div>
-             </div>
-           )}
+              <div className="rounded-2xl border border-sol-border/20 bg-sol-bg p-3">
+                <div className="flex items-center gap-3">
+                  <span
+                    className="h-4 w-4 rounded-full border border-white/40 shadow-sm"
+                    style={{ backgroundColor: achievement.theme.preview_color || "var(--accent)" }}
+                  />
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-black uppercase tracking-[0.2em] text-sol-muted">
+                      {t("themeUnlock")}
+                    </div>
+                    <div className="truncate text-sm font-black text-sol-text">
+                      {themeTitle}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
         </div>
 
-        <div className="mt-8 pt-6 border-t border-sol-border/5">
+        <div className="mt-8 pt-6 border-t border-sol-border/20">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.15em] transition-all
               ${achievement.earned 
-                ? "bg-sol-accent/10 text-sol-accent border border-sol-accent/10" 
-                : "bg-sol-border/5 text-sol-muted border border-sol-border/5"
+                ? "bg-sol-accent/10 text-sol-accent border border-sol-accent/20" 
+                : "bg-sol-bg text-sol-muted border border-sol-border/20"
               }
             `}>
               {t(`categories.${achievement.category}`)}
