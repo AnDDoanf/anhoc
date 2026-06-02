@@ -65,7 +65,7 @@ export const useAuth = () => {
     dispatch(clearPermissions());
     
     // Redirect
-    router.push("/login");
+    router.push("/");
   };
 
   return {
