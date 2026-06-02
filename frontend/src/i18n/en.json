@@ -30,6 +30,70 @@
     "averageScore": "Avg Score",
     "xpEarned": "XP Earned"
   },
+  "Home": {
+    "tagline": "Gamified Education App",
+    "heroBadge": "XP, challenges, progress, and play",
+    "headline": "Learn, practice, and compete.",
+    "subheadline": "A gamified math app with lessons, generated practice, XP, rankings, and shareable mini-games.",
+    "signIn": "Sign In",
+    "openWorkspace": "Open Workspace",
+    "explore": "Explore Quests",
+    "viewGames": "View Games",
+    "whyTitle": "Why It Works",
+    "platformTitle": "Game Loop",
+    "platformHeadline": "A learning system designed around progression and replay",
+    "deliveryTitle": "Progression Design",
+    "deliveryText": "Students move from lessons to practice to challenges while earning XP, unlocking achievements, and seeing visible progress. Administrators manage the content and rules behind that loop.",
+    "footer": "Built to make learning active, visible, and worth returning to.",
+    "publicHome": "Public home for the learning platform.",
+    "stats": {
+      "curriculum": "curriculum base",
+      "gameModes": "game modes",
+      "progress": "visible progression"
+    },
+    "tracks": {
+      "learning": {
+        "title": "Learn",
+        "description": "Students start with structured lessons and a clear path by grade and subject."
+      },
+      "practice": {
+        "title": "Practice",
+        "description": "Generated questions, answer checking, and reviewable attempts keep repetition meaningful."
+      },
+      "games": {
+        "title": "Compete",
+        "description": "Mini-games, shared challenges, and leaderboards turn review into competition."
+      }
+    },
+    "highlights": {
+      "adaptive": {
+        "title": "Replayable content",
+        "description": "Template-driven question generation keeps practice fresh instead of fixed and repetitive."
+      },
+      "progress": {
+        "title": "Progress players can feel",
+        "description": "XP, achievements, mastery, and history make improvement visible at every step."
+      },
+      "social": {
+        "title": "Challenge friends",
+        "description": "Students can share game links, join challenges, and compare results on live leaderboards."
+      },
+      "system": {
+        "title": "Content with control",
+        "description": "Admins manage lessons, templates, reports, roles, and game content from one workspace."
+      }
+    },
+    "roles": {
+      "students": {
+        "title": "For students",
+        "description": "Study, earn XP, unlock progress, and turn review into a challenge worth replaying."
+      },
+      "admins": {
+        "title": "For admins",
+        "description": "Control the curriculum, question templates, reports, and gameplay systems behind the experience."
+      }
+    }
+  },
   "Difficulty": {
     "Beginner": "Beginner",
     "Intermediate": "Intermediate",

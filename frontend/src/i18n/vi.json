@@ -30,6 +30,70 @@
     "averageScore": "Điểm trung bình",
     "xpEarned": "XP đạt được"
   },
+  "Home": {
+    "tagline": "Ứng dụng học tập gamified",
+    "heroBadge": "XP, thử thách, tiến độ và trò chơi",
+    "headline": "Học, luyện tập và thi đấu.",
+    "subheadline": "Ứng dụng toán gamified với bài học, luyện tập sinh tự động, XP, bảng xếp hạng và mini-game chia sẻ.",
+    "signIn": "Đăng nhập",
+    "openWorkspace": "Mở không gian làm việc",
+    "explore": "Khám phá hành trình",
+    "viewGames": "Xem trò chơi",
+    "whyTitle": "Vì sao hiệu quả",
+    "platformTitle": "Vòng lặp trò chơi",
+    "platformHeadline": "Hệ thống học tập được thiết kế quanh tiến độ và khả năng chơi lại",
+    "deliveryTitle": "Thiết kế tiến trình",
+    "deliveryText": "Học sinh đi từ bài học sang luyện tập rồi đến thử thách trong khi tích lũy XP, mở khóa thành tích và nhìn thấy tiến độ rõ ràng. Quản trị viên quản lý nội dung và luật phía sau vòng lặp đó.",
+    "footer": "Được xây dựng để việc học trở nên sống động, dõi theo được và đáng quay lại.",
+    "publicHome": "Trang chủ công khai của nền tảng học tập.",
+    "stats": {
+      "curriculum": "nền chương trình",
+      "gameModes": "chế độ trò chơi",
+      "progress": "tiến trình hiển thị"
+    },
+    "tracks": {
+      "learning": {
+        "title": "Học",
+        "description": "Học sinh bắt đầu từ bài học có cấu trúc rõ ràng theo khối và môn học."
+      },
+      "practice": {
+        "title": "Luyện",
+        "description": "Câu hỏi sinh tự động, kiểm tra đáp án và lịch sử làm bài giúp việc lặp lại có ý nghĩa."
+      },
+      "games": {
+        "title": "Thi đấu",
+        "description": "Mini-game, thử thách chia sẻ và bảng xếp hạng biến việc ôn tập thành cạnh tranh."
+      }
+    },
+    "highlights": {
+      "adaptive": {
+        "title": "Nội dung chơi lại được",
+        "description": "Câu hỏi theo mẫu giúp luyện tập luôn mới thay vì lặp lại máy móc."
+      },
+      "progress": {
+        "title": "Tiến bộ nhìn thấy được",
+        "description": "XP, thành tích, mastery và lịch sử giúp người học cảm nhận rõ sự tiến bộ."
+      },
+      "social": {
+        "title": "Thách đấu bạn bè",
+        "description": "Học sinh có thể chia sẻ liên kết trò chơi, tham gia thử thách và so kè trên bảng xếp hạng."
+      },
+      "system": {
+        "title": "Nội dung có kiểm soát",
+        "description": "Quản trị viên quản lý bài học, mẫu câu hỏi, báo cáo, vai trò và nội dung trò chơi tại một nơi."
+      }
+    },
+    "roles": {
+      "students": {
+        "title": "Dành cho học sinh",
+        "description": "Học, kiếm XP, mở khóa tiến độ và biến việc ôn tập thành một thử thách đáng chơi lại."
+      },
+      "admins": {
+        "title": "Dành cho quản trị",
+        "description": "Kiểm soát chương trình, mẫu câu hỏi, báo cáo, người dùng và các hệ thống gameplay đứng sau trải nghiệm."
+      }
+    }
+  },
   "Difficulty": {
     "Beginner": "Cơ bản",
     "Intermediate": "Trung bình",
