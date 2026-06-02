@@ -36,6 +36,7 @@
     "headline": "Learn, practice, and compete.",
     "subheadline": "A gamified math app with lessons, generated practice, XP, rankings, and shareable mini-games.",
     "signIn": "Sign In",
+    "signUp": "Sign Up",
     "openWorkspace": "Open Workspace",
     "explore": "Explore Quests",
     "viewGames": "View Games",
@@ -104,6 +105,7 @@
     "email_placeholder": "Email address",
     "password_placeholder": "Password",
     "remember_me": "Remember for 30 days",
+    "activation_hint": "Use the email link first",
     "forgot_password": "Forgot password",
     "sign_in": "Sign in",
     "signing_in": "Signing in...",
@@ -114,10 +116,47 @@
       "password_too_short": "Password must be at least 6 characters"
     }
   },
+  "Signup": {
+    "title": "Create your account",
+    "subtitle": "Use your email first. We will send an activation link before your first login.",
+    "email_placeholder": "Email address",
+    "password_placeholder": "Create a password",
+    "submit": "Create account",
+    "submitting": "Creating account...",
+    "success": "Registration successful. Check your email to activate the account.",
+    "fallbackError": "Registration failed",
+    "hasAccount": "Already have an account?",
+    "signIn": "Sign in",
+    "errors": {
+      "invalid_email": "Invalid email address",
+      "password_too_short": "Password must be at least 6 characters"
+    }
+  },
+  "Activate": {
+    "title": "Activate account",
+    "loading": "Activating your account...",
+    "missingToken": "The activation token is missing.",
+    "success": "Email verified. You can now sign in.",
+    "failed": "Activation failed.",
+    "backToLogin": "Back to login"
+  },
+  "Onboarding": {
+    "badge": "First login setup",
+    "title": "Choose a subject to start with",
+    "subtitle": "Your account is active. Pick the subject you want to study before entering the workspace.",
+    "loading": "Loading subjects...",
+    "submit": "Continue",
+    "saving": "Saving...",
+    "loadError": "Failed to load subjects.",
+    "saveError": "Failed to save your subject."
+  },
   "Settings": {
     "appearance": "Appearance",
     "accountSettings": "Account Settings",
     "signOut": "Sign Out",
+    "signUp": "Sign Up",
+    "guestRole": "Guest",
+    "guestName": "guest",
     "userSettings": "User Settings",
     "modifyPassword": "Modify Password",
     "currentPassword": "Current Password",
@@ -127,7 +166,36 @@
     "updating": "Updating...",
     "passwordMismatch": "New passwords do not match",
     "passwordSuccess": "Password updated successfully",
-    "passwordError": "Failed to update password. Check your current password."
+    "passwordError": "Failed to update password. Check your current password.",
+    "notifications": {
+      "title": "Notifications",
+      "subtitle": "{count} unread",
+      "markAllRead": "Mark all read",
+      "loading": "Loading notifications...",
+      "empty": "No notifications yet.",
+      "systemActor": "System",
+      "genericSubject": "this subject",
+      "statusApproved": "approved",
+      "statusRejected": "rejected",
+      "statusReviewing": "reviewing",
+      "statusResolved": "resolved",
+      "defaultTitle": "Update",
+      "defaultBody": "A new update is available.",
+      "items": {
+        "subjectAccessRequestedTitle": "Access request",
+        "subjectAccessRequestedBody": "{actor} requested access to {subject}.",
+        "subjectAccessApprovedTitle": "Access approved",
+        "subjectAccessApprovedBody": "Your access to {subject} was approved.",
+        "subjectAccessRejectedTitle": "Access rejected",
+        "subjectAccessRejectedBody": "Your access request for {subject} was rejected.",
+        "questionReportCreatedTitle": "New report",
+        "questionReportCreatedBody": "{actor} submitted a new question report.",
+        "questionReportUpdatedTitle": "Report updated",
+        "questionReportUpdatedBody": "Your question report was marked {status}.",
+        "newFollowerTitle": "New follower",
+        "newFollowerBody": "{actor} started following you."
+      }
+    }
   },
   "Sidebar": {
     "learning": "Learning",
@@ -249,17 +317,35 @@
     "lessonOverview": "Lesson Overview",
     "readyChallengeTitle": "Ready for the next challenge?",
     "readyChallengeSubtitle": "Every lesson you complete brings you closer to mastering the curriculum. Your progress is synced across all devices.",
+    "classifiedSubjectsTitle": "Classified Subjects",
+    "classifiedSubjectsSubtitle": "These subjects require admin approval before you can open their lessons.",
+    "classifiedBadge": "Approval required",
+    "classifiedRequestAction": "Request Access",
+    "classifiedRequestPending": "Request Pending",
+    "classifiedRequestRetry": "Request Again",
+    "classifiedRequestSending": "Sending...",
+    "classifiedRequestError": "Could not request access to this subject.",
     "newLesson": "New Lesson",
     "newSubject": "New Subject",
+    "manageSubjectAccess": "Manage Subject Access",
     "newGrade": "New Grade",
     "tracks": "{count} grades",
     "metaModal": {
       "subjectTitle": "Create Subject",
+      "subjectAccessTitle": "Manage Subject Accessibility",
       "gradeTitle": "Create Grade",
       "titleEn": "Title (EN)",
       "titleVi": "Title (VI)",
       "slug": "Slug",
       "color": "Color",
+      "classified": "Require admin approval",
+      "subjectAccessHint": "Switch existing subjects between open access and admin-approved access.",
+      "loadingSubjects": "Loading subjects...",
+      "loadSubjectsError": "Could not load subjects.",
+      "classifiedState": "Classified",
+      "openState": "Open",
+      "makeClassified": "Require Approval",
+      "makeOpen": "Open Access",
       "subject": "Subject",
       "saving": "Saving...",
       "createSubject": "Create Subject",
@@ -583,13 +669,22 @@
       "created": "Account created.",
       "updated": "Account updated.",
       "deleted": "Account deleted.",
-      "cannotDeleteSelf": "You cannot delete your own account"
+      "cannotDeleteSelf": "You cannot delete your own account",
+      "approvedSubjectAccess": "Subject access approved.",
+      "rejectedSubjectAccess": "Subject access rejected."
     },
     "errors": {
       "load": "Could not load user accounts.",
       "refresh": "Could not refresh user accounts.",
       "save": "Could not save this account.",
-      "delete": "Could not delete this account."
+      "delete": "Could not delete this account.",
+      "subjectAccess": "Could not update subject access."
+    },
+    "subjectAccess": {
+      "title": "Classified Subject Requests",
+      "subtitle": "Approve or reject learner requests for classified subjects.",
+      "approve": "Approve",
+      "reject": "Reject"
     },
     "empty": {
       "title": "No accounts found.",

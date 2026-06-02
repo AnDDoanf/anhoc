@@ -12,7 +12,7 @@ export default function proxy(request: NextRequest) {
   }
 
   // 2. If logged in and hitting login, go to root
-  if (pathname === "/login" && token) {
+  if ((pathname === "/login" || pathname === "/signup" || pathname === "/activate") && token) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
@@ -25,7 +25,9 @@ export default function proxy(request: NextRequest) {
   }
 
   // 3. If NOT logged in and hitting a protected route, go to login
-  if (!token && pathname !== "/login") {
+  const isPublicAuthRoute = pathname === "/login" || pathname === "/signup" || pathname === "/activate";
+
+  if (!token && !isPublicAuthRoute) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 

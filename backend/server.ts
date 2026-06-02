@@ -9,7 +9,9 @@ import testRoutes from './routes/tests.ts';
 import adminRoutes from './routes/admin.ts';
 import achievementRoutes from './routes/achievements.ts';
 import gameRoutes from './routes/games.ts';
+import notificationRoutes from './routes/notifications.ts';
 import { seedAchievements } from './services/achievementService.ts';
+import { scheduleInactiveAccountCleanup } from './services/accountLifecycleService.ts';
 
 const app: Application = express();
 
@@ -40,6 +42,7 @@ app.use('/api/v1/tests', testRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/achievements', achievementRoutes);
 app.use('/api/v1/games', gameRoutes);
+app.use('/api/v1/notifications', notificationRoutes);
 
 app.get('/api/v1/health', (req: Request, res: Response) => {
   res.json({ status: 'OK', message: 'Math App Backend is running' });
@@ -59,6 +62,7 @@ async function main() {
     const dbTarget = describeDatabaseTarget();
     console.log(`Connected to PostgreSQL via Prisma (${dbTarget.via})`);
     console.log(`Database target: host=${dbTarget.host} db=${dbTarget.database}`);
+    scheduleInactiveAccountCleanup();
 
     if (String(process.env.AUTO_SEED_ACHIEVEMENTS || '').toLowerCase() === 'true') {
       await seedAchievements();

@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import {
   adminService,
   type AdminRole,
+  type SubjectAccessRequest,
   type AdminUser,
   type AdminUserPayload,
 } from "@/services/adminService";
@@ -102,6 +103,8 @@ export default function AdminUsersPage() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [summary, setSummary] = useState({ total: 0, admins: 0, students: 0 });
+  const [subjectAccessRequests, setSubjectAccessRequests] = useState<SubjectAccessRequest[]>([]);
+  const [reviewingRequestId, setReviewingRequestId] = useState<number | null>(null);
 
   const loadUsers = useCallback(async (
     nextPage = 1,
@@ -141,10 +144,12 @@ export default function AdminUsersPage() {
     setLoading(true);
     setError(null);
     try {
-      const [roleData] = await Promise.all([
+      const [roleData, accessRequests] = await Promise.all([
         adminService.listRoles(),
+        adminService.listSubjectAccessRequests("pending"),
       ]);
       setRoles(roleData);
+      setSubjectAccessRequests(accessRequests);
     } catch (err: unknown) {
       setError(getErrorMessage(err, t("errors.load")));
     } finally {
@@ -172,6 +177,22 @@ export default function AdminUsersPage() {
 
   const refreshUsers = async () => {
     await loadUsers(1, false, search, roleFilter);
+  };
+
+  const reviewSubjectAccess = async (requestId: number, status: "approved" | "rejected") => {
+    setReviewingRequestId(requestId);
+    setError(null);
+    setSuccess(null);
+    try {
+      await adminService.updateSubjectAccessRequest(requestId, status);
+      const accessRequests = await adminService.listSubjectAccessRequests("pending");
+      setSubjectAccessRequests(accessRequests);
+      setSuccess(status === "approved" ? t("messages.approvedSubjectAccess") : t("messages.rejectedSubjectAccess"));
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, t("errors.subjectAccess")));
+    } finally {
+      setReviewingRequestId(null);
+    }
   };
 
   const visibleUsers = users;
@@ -324,6 +345,49 @@ export default function AdminUsersPage() {
           <Metric label={t("metrics.admins")} value={totals.admins} icon={<Shield size={20} />} />
           <Metric label={t("metrics.students")} value={totals.students} icon={<UserPlus size={20} />} />
         </section>
+
+        {subjectAccessRequests.length > 0 && (
+          <section id="subject-access-requests" className="rounded-lg border border-sol-border/20 bg-sol-surface shadow-sm">
+            <div className="border-b border-sol-border/10 p-5">
+              <h2 className="text-xl font-black text-sol-text">{t("subjectAccess.title")}</h2>
+              <p className="mt-1 text-sm font-bold text-sol-muted">{t("subjectAccess.subtitle")}</p>
+            </div>
+            <div className="divide-y divide-sol-border/10">
+              {subjectAccessRequests.map((request) => {
+                const subjectLabel = locale === "vi" ? request.subject.title_vi : request.subject.title_en;
+                return (
+                  <div key={request.id} className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <div className="font-black text-sol-text">{request.user.username}</div>
+                      <div className="text-sm font-bold text-sol-muted">{request.user.email}</div>
+                      <div className="mt-2 text-xs font-black uppercase tracking-widest text-sol-accent">
+                        {subjectLabel} · {request.user.role.name}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        disabled={reviewingRequestId === request.id}
+                        onClick={() => reviewSubjectAccess(request.id, "approved")}
+                        className="rounded-lg bg-sol-accent px-4 py-2 text-sm font-black text-sol-bg disabled:opacity-60"
+                      >
+                        {t("subjectAccess.approve")}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={reviewingRequestId === request.id}
+                        onClick={() => reviewSubjectAccess(request.id, "rejected")}
+                        className="rounded-lg border border-red-500/20 px-4 py-2 text-sm font-black text-red-500 disabled:opacity-60"
+                      >
+                        {t("subjectAccess.reject")}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         {(error || success) && (
           <div

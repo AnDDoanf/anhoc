@@ -92,7 +92,8 @@
         "title": "Dành cho quản trị",
         "description": "Kiểm soát chương trình, mẫu câu hỏi, báo cáo, người dùng và các hệ thống gameplay đứng sau trải nghiệm."
       }
-    }
+    },
+    "signUp": "Đăng ký"
   },
   "Difficulty": {
     "Beginner": "Cơ bản",
@@ -112,7 +113,8 @@
     "errors": {
       "invalid_email": "Địa chỉ email không hợp lệ",
       "password_too_short": "Mật khẩu phải có ít nhất 6 ký tự"
-    }
+    },
+    "activation_hint": "Hãy mở email kích hoạt trước"
   },
   "Settings": {
     "appearance": "Giao diện",
@@ -127,7 +129,39 @@
     "updating": "Đang cập nhật...",
     "passwordMismatch": "Mật khẩu mới không khớp",
     "passwordSuccess": "Đổi mật khẩu thành công",
-    "passwordError": "Đổi mật khẩu thất bại. Vui lòng kiểm tra mật khẩu hiện tại."
+    "passwordError": "Đổi mật khẩu thất bại. Vui lòng kiểm tra mật khẩu hiện tại.",
+    "notifications": {
+      "title": "Thông báo",
+      "subtitle": "{count} chưa đọc",
+      "markAllRead": "Đánh dấu đã đọc",
+      "loading": "Đang tải thông báo...",
+      "empty": "Chưa có thông báo nào.",
+      "systemActor": "Hệ thống",
+      "genericSubject": "môn học này",
+      "statusApproved": "đã duyệt",
+      "statusRejected": "bị từ chối",
+      "statusReviewing": "đang xem xét",
+      "statusResolved": "đã xử lý",
+      "defaultTitle": "Cập nhật",
+      "defaultBody": "Có một cập nhật mới.",
+      "items": {
+        "subjectAccessRequestedTitle": "Yêu cầu truy cập",
+        "subjectAccessRequestedBody": "{actor} đã yêu cầu truy cập {subject}.",
+        "subjectAccessApprovedTitle": "Quyền truy cập được duyệt",
+        "subjectAccessApprovedBody": "Quyền truy cập của bạn vào {subject} đã được duyệt.",
+        "subjectAccessRejectedTitle": "Quyền truy cập bị từ chối",
+        "subjectAccessRejectedBody": "Yêu cầu truy cập {subject} của bạn đã bị từ chối.",
+        "questionReportCreatedTitle": "Báo cáo mới",
+        "questionReportCreatedBody": "{actor} đã gửi một báo cáo câu hỏi mới.",
+        "questionReportUpdatedTitle": "Báo cáo đã cập nhật",
+        "questionReportUpdatedBody": "Báo cáo câu hỏi của bạn đã được đánh dấu là {status}.",
+        "newFollowerTitle": "Người theo dõi mới",
+        "newFollowerBody": "{actor} đã bắt đầu theo dõi bạn."
+      }
+    },
+    "signUp": "Đăng ký",
+    "guestRole": "Khách",
+    "guestName": "guest"
   },
   "Sidebar": {
     "learning": "Học tập",
@@ -264,7 +298,16 @@
       "saving": "Đang lưu...",
       "createSubject": "Tạo môn học",
       "createGrade": "Tạo lớp",
-      "saveError": "Không thể lưu. Vui lòng kiểm tra thông tin và thử lại."
+      "saveError": "Không thể lưu. Vui lòng kiểm tra thông tin và thử lại.",
+      "subjectAccessTitle": "Quản lý quyền truy cập môn học",
+      "classified": "Yêu cầu admin phê duyệt",
+      "subjectAccessHint": "Chuyển môn học hiện có giữa truy cập mở và cần phê duyệt.",
+      "loadingSubjects": "Đang tải môn học...",
+      "loadSubjectsError": "Không thể tải danh sách môn học.",
+      "classifiedState": "Cần phê duyệt",
+      "openState": "Truy cập mở",
+      "makeClassified": "Đặt cần phê duyệt",
+      "makeOpen": "Đặt truy cập mở"
     },
     "modal": {
       "createTitle": "Tạo bài học mới",
@@ -288,7 +331,16 @@
       "saveChanges": "Lưu thay đổi",
       "createLesson": "Tạo bài học",
       "saveError": "Lưu bài học thất bại. Hãy kiểm tra console."
-    }
+    },
+    "classifiedSubjectsTitle": "Môn học phân loại",
+    "classifiedSubjectsSubtitle": "Các môn học này cần quản trị viên phê duyệt trước khi bạn có thể mở bài học.",
+    "classifiedBadge": "Cần phê duyệt",
+    "classifiedRequestAction": "Yêu cầu truy cập",
+    "classifiedRequestPending": "Đang chờ duyệt",
+    "classifiedRequestRetry": "Yêu cầu lại",
+    "classifiedRequestSending": "Đang gửi...",
+    "classifiedRequestError": "Không thể gửi yêu cầu truy cập môn học này.",
+    "manageSubjectAccess": "Quản lý quyền truy cập môn học"
   },
   "Path": {
     "title": "Lộ trình Học tập",
@@ -583,13 +635,16 @@
       "created": "Đã tạo tài khoản.",
       "updated": "Đã cập nhật tài khoản.",
       "deleted": "Đã xoá tài khoản.",
-      "cannotDeleteSelf": "Bạn không thể xoá tài khoản đang dùng"
+      "cannotDeleteSelf": "Bạn không thể xoá tài khoản đang dùng",
+      "approvedSubjectAccess": "Đã phê duyệt quyền truy cập môn học.",
+      "rejectedSubjectAccess": "Đã từ chối quyền truy cập môn học."
     },
     "errors": {
       "load": "Không thể tải tài khoản.",
       "refresh": "Không thể làm mới tài khoản.",
       "save": "Không thể lưu tài khoản này.",
-      "delete": "Không thể xoá tài khoản này."
+      "delete": "Không thể xoá tài khoản này.",
+      "subjectAccess": "Không thể cập nhật quyền truy cập môn học."
     },
     "empty": {
       "title": "Không tìm thấy tài khoản.",
@@ -600,6 +655,12 @@
       "message": "Xoá {username}? Hoạt động học tập của tài khoản này cũng sẽ bị xoá.",
       "fallbackUser": "tài khoản này",
       "deleting": "Đang xoá..."
+    },
+    "subjectAccess": {
+      "title": "Yêu cầu truy cập môn học phân loại",
+      "subtitle": "Phê duyệt hoặc từ chối các yêu cầu truy cập môn học phân loại.",
+      "approve": "Phê duyệt",
+      "reject": "Từ chối"
     }
   },
   "AdminRoles": {
@@ -890,5 +951,39 @@
       "launchTitle": "Không thể mở trò chơi",
       "missingConfiguration": "Thiếu cấu hình trò chơi."
     }
+  },
+  "Signup": {
+    "title": "Tạo tài khoản",
+    "subtitle": "Dùng email của bạn trước. Hệ thống sẽ gửi liên kết kích hoạt trước lần đăng nhập đầu tiên.",
+    "email_placeholder": "Địa chỉ Email",
+    "password_placeholder": "Tạo mật khẩu",
+    "submit": "Tạo tài khoản",
+    "submitting": "Đang tạo tài khoản...",
+    "success": "Đăng ký thành công. Hãy kiểm tra email để kích hoạt tài khoản.",
+    "fallbackError": "Đăng ký thất bại",
+    "hasAccount": "Đã có tài khoản?",
+    "signIn": "Đăng nhập",
+    "errors": {
+      "invalid_email": "Địa chỉ email không hợp lệ",
+      "password_too_short": "Mật khẩu phải có ít nhất 6 ký tự"
+    }
+  },
+  "Activate": {
+    "title": "Kích hoạt tài khoản",
+    "loading": "Đang kích hoạt tài khoản...",
+    "missingToken": "Thiếu mã kích hoạt.",
+    "success": "Email đã được xác thực. Bạn có thể đăng nhập ngay.",
+    "failed": "Kích hoạt thất bại.",
+    "backToLogin": "Quay lại đăng nhập"
+  },
+  "Onboarding": {
+    "badge": "Thiết lập lần đăng nhập đầu",
+    "title": "Chọn môn học để bắt đầu",
+    "subtitle": "Tài khoản của bạn đã được kích hoạt. Hãy chọn môn học muốn học trước khi vào không gian làm việc.",
+    "loading": "Đang tải môn học...",
+    "submit": "Tiếp tục",
+    "saving": "Đang lưu...",
+    "loadError": "Không thể tải danh sách môn học.",
+    "saveError": "Không thể lưu môn học đã chọn."
   }
 }
