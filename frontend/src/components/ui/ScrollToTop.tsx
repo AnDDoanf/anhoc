@@ -3,33 +3,39 @@
 import { useEffect, useState } from "react";
 import { ArrowUp } from "lucide-react";
 
-export default function ScrollToTop() {
+type ScrollToTopProps = {
+  containerId?: string;
+};
+
+export default function ScrollToTop({ containerId }: ScrollToTopProps) {
   const [isVisible, setIsVisible] = useState(false);
 
-  // Show button when page is scrolled down
-  const toggleVisibility = () => {
-    if (window.scrollY > 300) {
-      setIsVisible(true);
-    } else {
-      setIsVisible(false);
-    }
-  };
-
-  // Set the top coordinate to 0
-  // make scrolling smooth
   const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
+    const container = containerId ? document.getElementById(containerId) : null;
+    if (container) {
+      container.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   useEffect(() => {
-    window.addEventListener("scroll", toggleVisibility);
-    return () => {
-      window.removeEventListener("scroll", toggleVisibility);
+    const container = containerId ? document.getElementById(containerId) : null;
+    const target: Window | HTMLElement = container || window;
+
+    const toggleVisibility = () => {
+      const scrollTop = container ? container.scrollTop : window.scrollY;
+      setIsVisible(scrollTop > 300);
     };
-  }, []);
+
+    target.addEventListener("scroll", toggleVisibility);
+    toggleVisibility();
+
+    return () => {
+      target.removeEventListener("scroll", toggleVisibility);
+    };
+  }, [containerId]);
 
   return (
     <div className="fixed bottom-6 right-6 z-[60]">

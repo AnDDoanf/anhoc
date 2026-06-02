@@ -17,6 +17,8 @@ import {
   Users,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import SettingBar from "@/components/layout/Settingbar";
+import ScrollToTop from "@/components/ui/ScrollToTop";
 
 type RoleTarget = {
   href: string;
@@ -40,8 +42,8 @@ export default function RootPage() {
     return { href: "/student", label: t("openWorkspace") };
   }, [t, user?.role]);
 
-  const primaryHref = isAuthenticated ? roleTarget.href : "/login";
-  const primaryLabel = isAuthenticated ? roleTarget.label : t("signIn");
+  const primaryHref = isAuthenticated ? roleTarget.href : "/signup";
+  const primaryLabel = isAuthenticated ? roleTarget.label : t("signUp");
 
   const heroBadges = [
     { icon: <Flame size={14} className="text-sol-orange" />, label: "7 Day Streak" },
@@ -110,8 +112,10 @@ export default function RootPage() {
   ];
 
   return (
-    <main className="h-screen snap-y snap-mandatory overflow-y-auto scroll-smooth bg-sol-bg text-sol-text">
+    <main id="home-scroll-root" className="h-screen snap-y snap-mandatory overflow-y-auto scroll-smooth bg-sol-bg text-sol-text">
       <div className="relative overflow-hidden">
+        <SettingBar />
+        <ScrollToTop containerId="home-scroll-root" />
         <div className="absolute inset-x-0 top-0 h-[40rem] bg-[radial-gradient(circle_at_top_left,rgba(38,139,210,0.14),transparent_38%),radial-gradient(circle_at_top_right,rgba(220,50,47,0.10),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.08),transparent_72%)]" />
         <div className="absolute left-[-5rem] top-24 h-56 w-56 rounded-full bg-sol-accent/10 blur-3xl" />
         <div className="absolute right-[-4rem] top-32 h-72 w-72 rounded-full bg-sol-orange/10 blur-3xl" />
@@ -127,14 +131,16 @@ export default function RootPage() {
             </div>
 
             <div className="flex items-center gap-3">
-              <Link
-                href={primaryHref}
-                className="inline-flex items-center gap-2 rounded-xl bg-sol-accent px-4 py-2.5 text-xs font-black uppercase tracking-wider text-sol-bg shadow-lg shadow-sol-accent/20 transition hover:opacity-90"
-              >
-                {primaryLabel}
-                <ArrowRight size={14} />
-              </Link>
+              {!isAuthenticated ? (
+                <Link
+                  href="/login"
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-sol-accent px-6 py-4 text-sm font-black uppercase tracking-wider text-sol-bg shadow-xl shadow-sol-accent/20 transition hover:opacity-90"
+                >
+                  {t("signIn")}
+                </Link>
+              ) : null}
             </div>
+
           </header>
 
           <section className="snap-start snap-always flex min-h-screen items-center py-10 lg:py-14">
@@ -152,19 +158,13 @@ export default function RootPage() {
                   {t("subheadline")}
                 </p>
 
-                <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
+                <div className="mt-7 flex justify-center">
                   <Link
                     href={primaryHref}
                     className="inline-flex items-center justify-center gap-2 rounded-2xl bg-sol-accent px-6 py-4 text-sm font-black uppercase tracking-wider text-sol-bg shadow-xl shadow-sol-accent/20 transition hover:opacity-90"
                   >
                     {primaryLabel}
                     <ArrowRight size={16} />
-                  </Link>
-                  <Link
-                    href="/student/games"
-                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-sol-border/20 bg-sol-surface/75 px-6 py-4 text-sm font-black uppercase tracking-wider text-sol-text transition hover:border-sol-orange/40 hover:text-sol-orange"
-                  >
-                    {t("viewGames")}
                   </Link>
                 </div>
               </div>
@@ -393,13 +393,6 @@ export default function RootPage() {
                 {t("deliveryText")}
               </p>
               <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
-                <Link
-                  href={primaryHref}
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-sol-accent px-6 py-4 text-sm font-black uppercase tracking-wider text-sol-bg shadow-xl shadow-sol-accent/20 transition hover:opacity-90"
-                >
-                  {primaryLabel}
-                  <ArrowRight size={16} />
-                </Link>
               </div>
             </div>
           </section>

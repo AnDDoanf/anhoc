@@ -4,10 +4,10 @@ The purpose of this application is to provide a **simple, engaging, and structur
 
 It aims to:
 
-* Help Vietnamese students from grade 1-9 understand math concepts through **easy-to-follow theory lessons**
-* Reinforce learning with **interactive practice exercises**
-* Evaluate progress through **tests and scoring**
-* Track improvement over time to build **confidence and consistency**
+- Help Vietnamese students from grade 1-9 understand math concepts through **easy-to-follow theory lessons**
+- Reinforce learning with **interactive practice exercises**
+- Evaluate progress through **tests and scoring**
+- Track improvement over time to build **confidence and consistency**
 
 ---
 
@@ -15,24 +15,24 @@ It aims to:
 
 ## Frontend
 
-* **Next.js (Vercel)**
-* React
-* Fetch API / Axios
+- **Next.js (Vercel)**
+- React
+- Fetch API / Axios
 
 ## Backend
 
-* **Node.js (Express)**
-* RESTful API
+- **Node.js (Express)**
+- RESTful API
 
 ## Database
 
-* **PostgreSQL (Neon)**
+- **PostgreSQL (Neon)**
 
 ## Deployment
 
-* Frontend: Vercel
-* Backend: Render
-* Database: Neon
+- Frontend: Vercel
+- Backend: Render
+- Database: Neon
 
 ---
 
@@ -52,34 +52,40 @@ Database (PostgreSQL - Neon)
 
 ## 👶 User Features
 
-* Learn math concepts (theory pages)
-* Practice exercises
-* Take tests
-* Track progress (scores, history)
+- Learn math concepts (theory pages)
+- Practice exercises
+- Take tests
+- Track progress (scores, history)
 
 ## 🔐 Authentication & Authorization
 
-* User registration & login
-* Secure authentication (JWT/session-based)
-* Role-based access:
-
-  * **User**: learning, practice, testing
-  * **Admin**: manage content (questions, lessons)
+- User registration & login
+- Secure authentication (JWT/session-based)
+- Role-based access:
+  - **User**: learning, practice, testing
+  - **Admin**: manage content (questions, lessons)
 
 ## 🧪 Learning Modules
 
-* Theory pages (text, examples)
-* Practice mode (interactive questions)
-* Test mode (timed or structured exams)
+- Theory pages (text, examples)
+- Practice mode (interactive questions)
+- Test mode (timed or structured exams)
 
 ## 🛠️ Admin Panel
 
-* Create/edit/delete:
+- Create/edit/delete:
+  - Lessons
+  - Questions
+  - Tests
 
-  * Lessons
-  * Questions
-  * Tests
-* Manage users (optional)
+- Manage users (optional)
+
+## 🔔 Notification System
+
+- Real-time in-app notifications for important user and system events
+- Notifies administrators of pending subject access requests or reported questions
+- Interactive notifications with direct redirection to take action (e.g., clicking an access request notification redirects directly to the approval management screen)
+- Notifies students when their access requests are approved/rejected or when someone follows them
 
 ---
 
@@ -231,10 +237,10 @@ npm run dev
 
 ## 4. Setup Database (Neon)
 
-* Create a PostgreSQL database
-* Copy connection string
-* Add to `DATABASE_URL`
-* Run migrations / create tables
+- Create a PostgreSQL database
+- Copy connection string
+- Add to `DATABASE_URL`
+- Run migrations / create tables
 
 ---
 
@@ -242,39 +248,39 @@ npm run dev
 
 ## Frontend (Vercel)
 
-* Connect GitHub repo
-* Set environment variables
-* Deploy
+- Connect GitHub repo
+- Set environment variables
+- Deploy
 
 ## Backend (Render)
 
-* Create Web Service
-* Add environment variables
-* Deploy
+- Create Web Service
+- Add environment variables
+- Deploy
 
 ## Database (Neon)
 
-* Managed automatically
-* No expiration on free tier
+- Managed automatically
+- No expiration on free tier
 
 ---
 
 # ⚠️ Notes
 
-* Render free tier may cause **cold starts (~10–30s)**
-* Neon may have **small cold start delay**
-* Always secure API endpoints with authentication middleware
-* Never expose database credentials to frontend
+- Render free tier may cause **cold starts (~10–30s)**
+- Neon may have **small cold start delay**
+- Always secure API endpoints with authentication middleware
+- Never expose database credentials to frontend
 
 ---
 
 # 🔮 Future Improvements
 
-* Gamification (badges, rewards)
-* Leaderboard
-* Adaptive difficulty
-* Multi-language support
-* Parent dashboard
+- Gamification (badges, rewards)
+- Leaderboard
+- Adaptive difficulty
+- Multi-language support
+- Parent dashboard
 
 ---
 
