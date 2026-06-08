@@ -27,20 +27,17 @@ model User {
   preferred_subject Subject? @relation(fields: [preferred_subject_id], references: [id], onDelete: SetNull)
   role_id       Int
   role          Role          @relation(fields: [role_id], references: [id])
-  supervisor_id String?       @db.Uuid
+  learn_unit_id String?       @db.Uuid
   slots_purchased Int         @default(0)
-  max_subjects   Int?
-  max_grades     Int?
-  max_lessons    Int?
-  max_templates   Int?
-  max_teachers    Int?
-  max_students    Int?
-  supervisor    User?         @relation("SupervisorMembers", fields: [supervisor_id], references: [id], onDelete: SetNull)
-  managed_members User[]      @relation("SupervisorMembers")
+  learn_unit    LearnUnit?    @relation("LearnUnitMembers", fields: [learn_unit_id], references: [id], onDelete: SetNull)
+  supervised_learn_unit LearnUnit? @relation("LearnUnitSupervisor")
   created_at    DateTime      @default(now()) @db.Timestamptz
   
   // Relations to content & tracking
+  subjects_created  Subject[]           @relation("SubjectsCreated")
+  grades_created    Grade[]             @relation("GradesCreated")
   lessons_created   Lesson[]
+  templates_created QuestionTemplate[]  @relation("TemplatesCreated")
   test_attempts     TestAttempt[]
   learning_sessions LearningSession[]
   lesson_mastery    UserLessonMastery[]
@@ -60,8 +57,29 @@ model User {
   reviewed_subject_access_requests UserSubjectAccessRequest[] @relation("UserSubjectAccessReviews")
   notifications_received Notification[] @relation("UserNotifications")
   notifications_sent Notification[] @relation("ActorNotifications")
+  subscriptions SubscriptionPlan[]
+  invoices      Invoice[]
 
   @@map("users")
+}
+
+model LearnUnit {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String   @db.VarChar(120)
+  code          String   @unique @db.VarChar(30)
+  supervisor_id String?  @unique @db.Uuid
+  max_subjects  Int?
+  max_grades    Int?
+  max_lessons   Int?
+  max_templates Int?
+  max_teachers  Int?
+  max_students  Int?
+  created_at    DateTime @default(now()) @db.Timestamptz
+
+  supervisor User?  @relation("LearnUnitSupervisor", fields: [supervisor_id], references: [id], onDelete: SetNull)
+  users      User[] @relation("LearnUnitMembers")
+
+  @@map("learn_units")
 }
 
 // ... No changes to Role, Action, Resource, RolePermission ...
@@ -117,6 +135,7 @@ model Grade {
   subject   Subject? @relation(fields: [subject_id], references: [id], onDelete: SetNull)
   lessons   Lesson[]
   created_by String?   @db.Uuid
+  creator   User?    @relation("GradesCreated", fields: [created_by], references: [id], onDelete: SetNull)
   
   // Relations to gaming
   game_challenges GameChallenge[]
@@ -132,6 +151,7 @@ model Subject {
   color     String?  @db.VarChar(20)
   is_classified Boolean @default(false)
   created_by String?   @db.Uuid
+  creator   User?    @relation("SubjectsCreated", fields: [created_by], references: [id], onDelete: SetNull)
   grades    Grade[]
   lessons   Lesson[]
   role_permissions RoleSubjectPermission[]
@@ -205,6 +225,7 @@ model Lesson {
 model QuestionTemplate {
   id                      String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   lesson_id               String?            @db.Uuid
+  created_by              String?            @db.Uuid
   template_type           String             @db.VarChar(50)
   difficulty              String             @default("medium") @db.VarChar(20)
   is_premium              Boolean            @default(false)
@@ -220,6 +241,7 @@ model QuestionTemplate {
   created_at              DateTime           @default(now()) @db.Timestamptz
   
   lesson                  Lesson?            @relation(fields: [lesson_id], references: [id], onDelete: Cascade)
+  creator                 User?              @relation("TemplatesCreated", fields: [created_by], references: [id], onDelete: SetNull)
   snapshots               QuestionSnapshot[]
   reports                 QuestionTemplateReport[]
 
@@ -491,4 +513,65 @@ model GameAttempt {
 
   @@unique([challenge_id, guest_token])
   @@map("game_attempts")
+}
+
+model Plan {
+  id             Int                @id @default(autoincrement())
+  name           String             @db.VarChar(50) // "free", "pro", "family", "learning_center"
+  description    String?            @db.VarChar(255)
+  price_monthly  Decimal            @db.Decimal(10, 2)
+  price_annually Decimal            @db.Decimal(10, 2)
+  max_students   Int?
+  max_teachers   Int?
+  max_lessons    Int?
+  max_templates  Int?
+  max_subjects   Int?
+  max_grades     Int?
+  effect_from    DateTime           @default(now()) @db.Timestamptz
+  effect_to      DateTime?          @db.Timestamptz
+  created_at     DateTime           @default(now()) @db.Timestamptz
+
+  subscriptions  SubscriptionPlan[]
+
+  @@index([name, effect_from, effect_to])
+  @@map("plans")
+}
+
+model SubscriptionPlan {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id         String    @db.Uuid
+  plan_id         Int
+  status          String    @db.VarChar(20) // "active", "cancelled", "expired", "superseded"
+  billing_cycle   String    @db.VarChar(20) // "monthly", "annually"
+  start_date      DateTime  @default(now()) @db.Timestamptz
+  end_date        DateTime? @db.Timestamptz
+  auto_renew      Boolean   @default(true) // true = continuous payment, false = stop payment
+  slots_purchased Int       @default(0)
+  effect_from     DateTime  @default(now()) @db.Timestamptz
+  effect_to       DateTime? @db.Timestamptz
+  created_at      DateTime  @default(now()) @db.Timestamptz
+  updated_at      DateTime  @default(now()) @db.Timestamptz
+
+  user            User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  plan            Plan      @relation(fields: [plan_id], references: [id])
+  invoices        Invoice[]
+
+  @@index([user_id, status, effect_from, effect_to])
+  @@map("subscription_plans")
+}
+
+model Invoice {
+  id                   String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id              String            @db.Uuid
+  subscription_plan_id String?           @db.Uuid
+  amount               Decimal           @db.Decimal(10, 2)
+  billing_date         DateTime          @default(now()) @db.Timestamptz
+  status               String            @default("paid") @db.VarChar(20) // "paid", "failed"
+  description          String?           @db.VarChar(255)
+  created_at           DateTime          @default(now()) @db.Timestamptz
+
+  user                 User              @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  subscription_plan    SubscriptionPlan? @relation(fields: [subscription_plan_id], references: [id], onDelete: SetNull)
+
+  @@map("invoices")
 }

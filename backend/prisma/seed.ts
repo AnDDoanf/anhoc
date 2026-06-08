@@ -175,12 +175,6 @@ async function main() {
       email_verified_at: new Date(),
       inactive_cleanup_at: null,
       slots_purchased: 5,
-      max_subjects: 10,
-      max_grades: 10,
-      max_lessons: 10,
-      max_templates: 20,
-      max_teachers: 2,
-      max_students: 5,
     },
     create: {
       username: 'supervisor1',
@@ -191,12 +185,6 @@ async function main() {
       account_status: 'active',
       email_verified_at: new Date(),
       slots_purchased: 5,
-      max_subjects: 10,
-      max_grades: 10,
-      max_lessons: 10,
-      max_templates: 20,
-      max_teachers: 2,
-      max_students: 5,
     },
   });
 
@@ -274,6 +262,46 @@ async function main() {
       account_status: 'active',
       email_verified_at: new Date(),
     },
+  });
+
+  const learnUnit = await prisma.learnUnit.upsert({
+    where: { supervisor_id: supervisor.id },
+    update: {
+      name: 'Supervisor Learn Unit',
+      code: 'LU-SUPERV-001',
+      max_subjects: 10,
+      max_grades: 10,
+      max_lessons: 10,
+      max_templates: 20,
+      max_teachers: 2,
+      max_students: 5,
+    },
+    create: {
+      name: 'Supervisor Learn Unit',
+      code: 'LU-SUPERV-001',
+      supervisor_id: supervisor.id,
+      max_subjects: 10,
+      max_grades: 10,
+      max_lessons: 10,
+      max_templates: 20,
+      max_teachers: 2,
+      max_students: 5,
+      users: {
+        connect: [
+          { id: supervisor.id },
+        ],
+      },
+    },
+  });
+
+  await prisma.user.update({
+    where: { id: supervisor.id },
+    data: { learn_unit_id: learnUnit.id },
+  });
+
+  await prisma.user.updateMany({
+    where: { id: { in: [teacher.id, student.id] } },
+    data: { learn_unit_id: learnUnit.id },
   });
 
   // 6. 🎓 Grades & Subjects
@@ -561,6 +589,90 @@ async function main() {
       level: 2,
       average_score: 82,
     },
+  });
+
+  // 12. 💳 Plans Seeding
+  console.log('  - Seeding Plans...');
+
+  async function upsertPlan(name: string, data: any) {
+    const activePlan = await prisma.plan.findFirst({
+      where: { name, effect_to: null },
+    });
+    if (activePlan) {
+      return prisma.plan.update({
+        where: { id: activePlan.id },
+        data,
+      });
+    } else {
+      return prisma.plan.create({
+        data: {
+          name,
+          effect_from: new Date(),
+          effect_to: null,
+          ...data,
+        },
+      });
+    }
+  }
+
+  const freePlan = await upsertPlan('free', {
+    description: 'Perfect for starting your math journey',
+    price_monthly: 0,
+    price_annually: 0,
+    max_lessons: 5,
+    max_templates: 5,
+  });
+
+  const proPlan = await upsertPlan('pro', {
+    description: 'Unlock your full potential with all premium features',
+    price_monthly: 9.99,
+    price_annually: 99.90,
+  });
+
+  const familyPlan = await upsertPlan('family', {
+    description: 'Supervisor account for families. Up to 5 students, 2 teachers.',
+    price_monthly: 19.99,
+    price_annually: 199.90,
+    max_students: 5,
+    max_teachers: 2,
+  });
+
+  const lcPlan = await upsertPlan('learning_center', {
+    description: 'Supervisor account for learning centers. Pay-as-you-grow unlimited seats.',
+    price_monthly: 49.99,
+    price_annually: 499.90,
+  });
+
+  // Create active subscription and mock invoices for the default supervisor
+  const activeSub = await prisma.subscriptionPlan.upsert({
+    where: { id: '00000000-0000-0000-0000-000000000001' },
+    update: {},
+    create: {
+      id: '00000000-0000-0000-0000-000000000001',
+      user_id: supervisor.id,
+      plan_id: familyPlan.id,
+      status: 'active',
+      billing_cycle: 'monthly',
+      start_date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
+      end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+      auto_renew: true,
+      effect_from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+      effect_to: null,
+    }
+  });
+
+  await prisma.invoice.upsert({
+    where: { id: '00000000-0000-0000-0000-000000000001' },
+    update: {},
+    create: {
+      id: '00000000-0000-0000-0000-000000000001',
+      user_id: supervisor.id,
+      subscription_plan_id: activeSub.id,
+      amount: 19.99,
+      billing_date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+      status: 'paid',
+      description: 'Family Subscription Plan - Monthly Cycle',
+    }
   });
 
   console.log('✅ Integrated Seeding completed!');
