@@ -615,11 +615,54 @@ router.delete('/users/:id', authenticate, isAdmin, async (req, res) => {
   }
 });
 
-// Get Admin Statistics
-router.get('/stats', authenticate, isAdmin, async (req, res) => {
+// Get Admin or Supervisor Statistics
+router.get('/stats', authenticate, async (req, res) => {
   try {
+    const userRole = (req as any).user.role;
+    const userId = (req as any).user.id;
+
+    if (userRole !== 'admin' && userRole !== 'supervisor') {
+      return res.status(403).json({ message: "Admin or Supervisor access required" });
+    }
+
     const recentActivityPage = parsePositiveInt(req.query.recentActivityPage, 1);
     const recentActivityPageSize = parsePositiveInt(req.query.recentActivityPageSize, 10);
+
+    let userWhere: any = {};
+    let lessonWhere: any = {};
+    let attemptWhere: any = {};
+
+    if (userRole === 'supervisor') {
+      const learnUnit = await prisma.learnUnit.findUnique({
+        where: { supervisor_id: userId }
+      });
+      if (!learnUnit) {
+        return res.json({
+          summary: { users: 0, lessons: 0, attempts: 0, avgScore: 0 },
+          topUsers: [],
+          recentActivity: [],
+          recentActivityPagination: {
+            page: recentActivityPage,
+            pageSize: recentActivityPageSize,
+            total: 0,
+            totalPages: 1,
+            hasMore: false,
+          },
+          activityHistory: []
+        });
+      }
+
+      const members = await prisma.user.findMany({
+        where: { learn_unit_id: learnUnit.id },
+        select: { id: true }
+      });
+      const memberIds = [...members.map(m => m.id), userId];
+
+      userWhere = { learn_unit_id: learnUnit.id };
+      lessonWhere = { created_by: { in: memberIds } };
+      attemptWhere = { user_id: { in: memberIds } };
+    }
+
     const [
       userCount,
       lessonCount,
@@ -628,11 +671,12 @@ router.get('/stats', authenticate, isAdmin, async (req, res) => {
       recentActivityTotal,
       recentAttempts
     ] = await Promise.all([
-      prisma.user.count(),
-      prisma.lesson.count(),
-      prisma.testAttempt.count(),
+      prisma.user.count({ where: userWhere }),
+      prisma.lesson.count({ where: lessonWhere }),
+      prisma.testAttempt.count({ where: attemptWhere }),
       prisma.user.findMany({
         take: 5,
+        where: userWhere,
         select: {
           id: true,
           username: true,
@@ -646,10 +690,11 @@ router.get('/stats', authenticate, isAdmin, async (req, res) => {
           test_attempts: { _count: 'desc' }
         }
       }),
-      prisma.testAttempt.count(),
+      prisma.testAttempt.count({ where: attemptWhere }),
       prisma.testAttempt.findMany({
         take: recentActivityPageSize,
         skip: (recentActivityPage - 1) * recentActivityPageSize,
+        where: attemptWhere,
         orderBy: { started_at: 'desc' },
         include: {
           user: { select: { id: true, username: true, email: true } },
@@ -665,12 +710,18 @@ router.get('/stats', authenticate, isAdmin, async (req, res) => {
     const [dailyRegistrations, dailyAttempts] = await Promise.all([
       prisma.user.groupBy({
         by: ['created_at'],
-        where: { created_at: { gte: fourteenDaysAgo } },
+        where: {
+          ...userWhere,
+          created_at: { gte: fourteenDaysAgo }
+        },
         _count: { id: true }
       }),
       prisma.testAttempt.groupBy({
         by: ['started_at'],
-        where: { started_at: { gte: fourteenDaysAgo } },
+        where: {
+          ...attemptWhere,
+          started_at: { gte: fourteenDaysAgo }
+        },
         _count: { id: true }
       })
     ]);
@@ -702,7 +753,10 @@ router.get('/stats', authenticate, isAdmin, async (req, res) => {
 
     // Average score across all attempts
     const avgScoreResult = await prisma.testAttempt.aggregate({
-      where: { is_completed: true },
+      where: {
+        ...attemptWhere,
+        is_completed: true
+      },
       _avg: { total_score: true }
     });
 
@@ -731,7 +785,7 @@ router.get('/stats', authenticate, isAdmin, async (req, res) => {
       activityHistory
     });
   } catch (error: any) {
-    res.status(500).json({ error: "Failed to fetch admin stats", details: error.message });
+    res.status(500).json({ error: "Failed to fetch stats", details: error.message });
   }
 });
 

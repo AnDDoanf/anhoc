@@ -5,6 +5,15 @@ import { authenticate, authorize, optionalAuthenticate } from '../middleware/aut
 import { masteryService } from '../services/masteryService';
 import { levelService } from '../services/levelService';
 import { createNotification, NotificationType, notifyAdmins } from '../services/notificationService.ts';
+import {
+  canAccessLessonForViewer,
+  canAccessStandaloneTemplate,
+  getAllowedSubjectIdsForViewer,
+  getVisibleGradeWhereForViewer,
+  getVisibleLessonWhereForViewer,
+  getVisibleTemplateWhereForViewer,
+} from '../services/contentAccessService.ts';
+import { getLearnUnitForUser, getLearnUnitMemberIds } from '../services/learnUnitService.ts';
 
 const router = Router();
 
@@ -17,34 +26,19 @@ const isCreatedByAdmin = async (createdById: string | null): Promise<boolean> =>
   return !creator || creator.role.name === "admin";
 };
 
-const getSupervisorForUser = async (userId: string) => {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    include: { role: true }
-  });
-  if (!user) return null;
-  if (user.role.name === "supervisor") {
-    return user;
-  }
-  if (user.supervisor_id) {
-    return prisma.user.findUnique({
-      where: { id: user.supervisor_id }
-    });
-  }
-  return null;
-};
-
-const getGroupMemberIds = async (supervisorId: string): Promise<string[]> => {
-  const members = await prisma.user.findMany({
-    where: { supervisor_id: supervisorId },
-    select: { id: true }
-  });
-  return [supervisorId, ...members.map((m) => m.id)];
-};
-
 const normalizeDifficulty = (difficulty: unknown): string => {
   const value = String(difficulty || "medium").toLowerCase();
   return ["easy", "medium", "hard"].includes(value) ? value : "medium";
+};
+
+const normalizeBooleanFlag = (value: unknown): boolean => {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    return normalized === "true" || normalized === "1" || normalized === "yes" || normalized === "on";
+  }
+  if (typeof value === "number") return value === 1;
+  return false;
 };
 
 const normalizeTextAnswer = (value: unknown): string => {
@@ -73,7 +67,7 @@ const normalizeTemplatePayload = (payload: any) => {
     lesson_id, template_type, difficulty,
     body_template_en, body_template_vi,
     explanation_template_en, explanation_template_vi,
-    logic_config, accepted_formulas
+    logic_config, accepted_formulas, is_premium
   } = payload || {};
 
   return {
@@ -84,52 +78,19 @@ const normalizeTemplatePayload = (payload: any) => {
     body_template_vi,
     explanation_template_en,
     explanation_template_vi,
+    is_premium: normalizeBooleanFlag(is_premium),
     logic_config: logic_config || {},
     accepted_formulas: Array.isArray(accepted_formulas) ? accepted_formulas : []
   };
 };
 
-const getAllowedSubjectIds = async (req: any): Promise<number[] | null> => {
-  if (req.user?.role === "admin") return null;
+const getAllowedSubjectIds = async (req: any): Promise<number[] | null> => (
+  getAllowedSubjectIdsForViewer(req.user)
+);
 
-  const user = await prisma.user.findUnique({
-    where: { id: req.user?.id },
-    select: {
-      role: {
-        select: {
-          subject_permissions: {
-            select: { subject_id: true }
-          }
-        }
-      }
-    }
-  });
-
-  return user?.role.subject_permissions.map((permission) => permission.subject_id) ?? [];
-};
-
-const canAccessLessonSubject = async (req: any, lessonId?: string | null) => {
-  if (!lessonId) return true;
-  const allowedSubjectIds = await getAllowedSubjectIds(req);
-  if (allowedSubjectIds === null) return true;
-
-  const lesson = await prisma.lesson.findUnique({
-    where: { id: lessonId },
-    select: { subject_id: true }
-  });
-
-  return !!lesson && allowedSubjectIds.includes(lesson.subject_id);
-};
-
-const templateSubjectWhere = (subjectIds: number[] | null) => {
-  if (subjectIds === null) return {};
-  return {
-    OR: [
-      { lesson_id: null },
-      { lesson: { subject_id: { in: subjectIds } } }
-    ]
-  };
-};
+const canAccessLessonSubject = async (req: any, lessonId?: string | null) => (
+  canAccessLessonForViewer((req as any).user, lessonId)
+);
 
 const normalizeReportStatus = (value: unknown): string => {
   const status = String(value || "open").toLowerCase();
@@ -190,13 +151,20 @@ const canAccessAttempt = (req: any, ownerUserId?: string | null) => {
 router.get('/grade-tests', authenticate, async (req, res) => {
   try {
     const userId = (req as any).user.id;
-    const allowedSubjectIds = await getAllowedSubjectIds(req);
+    const gradeWhere = await getVisibleGradeWhereForViewer((req as any).user);
+    const lessonWhere = await getVisibleLessonWhereForViewer((req as any).user);
+    const templateWhere = await getVisibleTemplateWhereForViewer((req as any).user);
     const grades = await prisma.grade.findMany({
       where: {
+        AND: [gradeWhere],
         lessons: {
           some: {
-            ...(allowedSubjectIds === null ? {} : { subject_id: { in: allowedSubjectIds } }),
-            templates: { some: {} }
+            AND: [
+              lessonWhere,
+              {
+                templates: { some: templateWhere }
+              }
+            ]
           }
         }
       },
@@ -204,12 +172,12 @@ router.get('/grade-tests', authenticate, async (req, res) => {
         subject: true,
         lessons: {
           where: {
-            ...(
-              allowedSubjectIds === null
-                ? {}
-                : { subject_id: { in: allowedSubjectIds } }
-            ),
-            templates: { some: {} }
+            AND: [
+              lessonWhere,
+              {
+                templates: { some: templateWhere }
+              }
+            ]
           },
           include: {
             _count: {
@@ -325,19 +293,32 @@ router.post('/grade-tests/:gradeId/start', optionalAuthenticate, async (req, res
       return res.status(400).json({ error: "Invalid grade id" });
     }
 
-    const allowedSubjectIds = await getAllowedSubjectIds(req);
+    const gradeWhere = await getVisibleGradeWhereForViewer((req as any).user);
+    const lessonWhere = await getVisibleLessonWhereForViewer((req as any).user);
+    const templateVisibilityWhere = await getVisibleTemplateWhereForViewer((req as any).user);
     const grade = await prisma.grade.findUnique({
       where: { id: gradeId },
       include: {
         lessons: {
-          where: allowedSubjectIds === null ? {} : { subject_id: { in: allowedSubjectIds } },
+          where: {
+            AND: [lessonWhere],
+          },
           select: { id: true, subject_id: true }
         }
       }
     });
 
     if (!grade) return res.status(404).json({ error: "Grade not found" });
-    if (grade.subject_id && !canAccessSubjectId(allowedSubjectIds, grade.subject_id)) {
+    const accessibleGrade = await prisma.grade.findFirst({
+      where: {
+        AND: [
+          gradeWhere,
+          { id: gradeId },
+        ],
+      },
+      select: { id: true },
+    });
+    if (!accessibleGrade) {
       return res.status(403).json({ error: "You do not have access to this subject" });
     }
 
@@ -349,7 +330,10 @@ router.post('/grade-tests/:gradeId/start', optionalAuthenticate, async (req, res
     const isFreeOrGuest = !(req as any).user || (req as any).user.role === 'free_student';
     const templates = await prisma.questionTemplate.findMany({
       where: {
-        lesson_id: { in: lessonIds },
+        AND: [
+          templateVisibilityWhere,
+          { lesson_id: { in: lessonIds } },
+        ],
         ...(isFreeOrGuest ? { is_premium: false } : {})
       }
     });
@@ -638,26 +622,41 @@ router.post('/templates', authenticate, authorize('manage', 'test'), async (req,
       return res.status(400).json({ error: "At least one template is required" });
     }
 
-    const templates = requestedTemplates.map(normalizeTemplatePayload);
+    const requesterRole = (req as any).user.role;
+    const requesterId = (req as any).user.id as string;
+    const templates = requestedTemplates
+      .map(normalizeTemplatePayload)
+      .map((template) => ({
+        ...template,
+        created_by: requesterId,
+        is_premium: requesterRole === "admin" ? template.is_premium : false,
+      }));
     for (const template of templates) {
       const theoreticalError = validateTheoreticalQuestion(template.template_type, template.logic_config, template.accepted_formulas);
       if (theoreticalError) return res.status(400).json({ error: theoreticalError });
       if (!(await canAccessLessonSubject(req, template.lesson_id))) {
         return res.status(403).json({ error: "You do not have access to this subject" });
       }
+      if (requesterRole !== "admin" && template.lesson_id) {
+        const targetLesson = await prisma.lesson.findUnique({
+          where: { id: template.lesson_id },
+          select: { created_by: true }
+        });
+        if (targetLesson && await isCreatedByAdmin(targetLesson.created_by)) {
+          return res.status(403).json({ error: "Access denied: you cannot attach question templates to admin-created lessons" });
+        }
+      }
     }
 
-    const supervisor = await getSupervisorForUser((req as any).user.id);
-    if (supervisor && supervisor.max_templates !== null) {
-      const memberIds = await getGroupMemberIds(supervisor.id);
+    const learnUnit = await getLearnUnitForUser(requesterId);
+    if (learnUnit && learnUnit.max_templates !== null) {
+      const memberIds = await getLearnUnitMemberIds(learnUnit.id);
       const activeTemplatesCount = await prisma.questionTemplate.count({
         where: {
-          lesson: {
-            created_by: { in: memberIds }
-          }
+          created_by: { in: memberIds }
         }
       });
-      if (activeTemplatesCount + templates.length > supervisor.max_templates) {
+      if (activeTemplatesCount + templates.length > learnUnit.max_templates) {
         return res.status(403).json({ error: "Access denied: subscription limit for question templates reached" });
       }
     }
@@ -841,9 +840,9 @@ router.patch('/question-reports/:id', authenticate, async (req, res) => {
 // Get all Question Templates (Admin)
 router.get('/templates/filters', authenticate, async (req, res) => {
   try {
-    const allowedSubjectIds = await getAllowedSubjectIds(req);
+    const visibilityWhere = await getVisibleTemplateWhereForViewer((req as any).user);
     const templates = await prisma.questionTemplate.findMany({
-      where: templateSubjectWhere(allowedSubjectIds),
+      where: visibilityWhere,
       select: {
         template_type: true,
         difficulty: true,
@@ -919,7 +918,7 @@ router.get('/templates/filters', authenticate, async (req, res) => {
 
 router.get('/templates', authenticate, async (req, res) => {
   try {
-    const allowedSubjectIds = await getAllowedSubjectIds(req);
+    const visibilityWhere = await getVisibleTemplateWhereForViewer((req as any).user);
     const page = parsePositiveInt(req.query.page, 1);
     const pageSize = parsePositiveInt(req.query.pageSize, 10);
     const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
@@ -928,24 +927,26 @@ router.get('/templates', authenticate, async (req, res) => {
     const difficulty = rawDifficulty && rawDifficulty !== 'all' ? normalizeDifficulty(rawDifficulty) : '';
     const lessonId = typeof req.query.lessonId === 'string' ? req.query.lessonId.trim() : '';
     const gradeId = Number(req.query.gradeId);
-    const where = {
-      ...templateSubjectWhere(allowedSubjectIds),
+    const filters = {
       ...(templateType && templateType !== 'all' ? { template_type: templateType } : {}),
       ...(difficulty && difficulty !== 'all' ? { difficulty } : {}),
       ...(lessonId && lessonId !== 'all' ? { lesson_id: lessonId } : {}),
       ...(Number.isInteger(gradeId) ? { lesson: { grade_id: gradeId } } : {}),
-      ...(search
-        ? {
-            OR: [
-              { template_type: { contains: search, mode: 'insensitive' as const } },
-              { body_template_en: { contains: search, mode: 'insensitive' as const } },
-              { body_template_vi: { contains: search, mode: 'insensitive' as const } },
-              { lesson_id: { contains: search, mode: 'insensitive' as const } },
-              { lesson: { title_en: { contains: search, mode: 'insensitive' as const } } },
-              { lesson: { title_vi: { contains: search, mode: 'insensitive' as const } } },
-            ]
-          }
-        : {}),
+    } as any;
+    const searchFilter = search
+      ? {
+          OR: [
+            { template_type: { contains: search, mode: 'insensitive' as const } },
+            { body_template_en: { contains: search, mode: 'insensitive' as const } },
+            { body_template_vi: { contains: search, mode: 'insensitive' as const } },
+            { lesson_id: { contains: search, mode: 'insensitive' as const } },
+            { lesson: { title_en: { contains: search, mode: 'insensitive' as const } } },
+            { lesson: { title_vi: { contains: search, mode: 'insensitive' as const } } },
+          ]
+        }
+      : {};
+    const where = {
+      AND: [visibilityWhere, filters, searchFilter],
     } as any;
     const skip = (page - 1) * pageSize;
     const total = await prisma.questionTemplate.count({ where });
@@ -983,14 +984,25 @@ router.get('/templates/:id', authenticate, async (req, res) => {
     const id = req.params.id as string;
     const template = await prisma.questionTemplate.findUnique({
       where: { id },
-      include: { lesson: true }
+      include: {
+        lesson: true,
+        creator: {
+          select: {
+            learn_unit_id: true,
+            role: { select: { name: true } }
+          }
+        }
+      }
     });
 
     if (!template) {
       return res.status(404).json({ error: "Template not found" });
     }
 
-    if (!(await canAccessLessonSubject(req, template.lesson_id))) {
+    const hasAccess = template.lesson_id
+      ? await canAccessLessonSubject(req, template.lesson_id)
+      : await canAccessStandaloneTemplate((req as any).user, template);
+    if (!hasAccess) {
       return res.status(403).json({ error: "You do not have access to this subject" });
     }
 
@@ -1008,33 +1020,53 @@ router.put('/templates/:id', authenticate, authorize('manage', 'test'), async (r
       lesson_id, template_type, difficulty,
       body_template_en, body_template_vi,
       explanation_template_en, explanation_template_vi,
-      logic_config, accepted_formulas
+      logic_config, accepted_formulas, is_premium
     } = req.body;
 
     const userRole = (req as any).user.role;
-    if (userRole === "supervisor") {
-      const existingTemplate = await prisma.questionTemplate.findUnique({
-        where: { id },
-        include: { lesson: true }
-      });
-      if (existingTemplate) {
-        if (existingTemplate.lesson && await isCreatedByAdmin(existingTemplate.lesson.created_by)) {
-          return res.status(403).json({ error: "Access denied: supervisors cannot modify question templates belonging to admin-created lessons" });
-        }
-        if (lesson_id && lesson_id !== existingTemplate.lesson_id) {
-          const targetLesson = await prisma.lesson.findUnique({
-            where: { id: lesson_id }
-          });
-          if (targetLesson && await isCreatedByAdmin(targetLesson.created_by)) {
-            return res.status(403).json({ error: "Access denied: supervisors cannot associate question templates with admin-created lessons" });
+    const existingTemplate = await prisma.questionTemplate.findUnique({
+      where: { id },
+      include: {
+        lesson: true,
+        creator: {
+          select: {
+            learn_unit_id: true,
+            role: { select: { name: true } }
           }
+        }
+      }
+    });
+    if (!existingTemplate) {
+      return res.status(404).json({ error: "Template not found" });
+    }
+
+    const canAccessExistingTemplate = existingTemplate.lesson_id
+      ? await canAccessLessonSubject(req, existingTemplate.lesson_id)
+      : await canAccessStandaloneTemplate((req as any).user, existingTemplate);
+    if (!canAccessExistingTemplate) {
+      return res.status(403).json({ error: "You do not have access to this template" });
+    }
+
+    if (userRole !== "admin") {
+      if (existingTemplate.lesson && await isCreatedByAdmin(existingTemplate.lesson.created_by)) {
+        return res.status(403).json({ error: "Access denied: supervisors cannot modify question templates belonging to admin-created lessons" });
+      }
+      if (!existingTemplate.lesson && existingTemplate.creator?.role?.name === "admin") {
+        return res.status(403).json({ error: "Access denied: you cannot modify admin-created global templates" });
+      }
+      if (lesson_id && lesson_id !== existingTemplate.lesson_id) {
+        const targetLesson = await prisma.lesson.findUnique({
+          where: { id: lesson_id }
+        });
+        if (targetLesson && await isCreatedByAdmin(targetLesson.created_by)) {
+          return res.status(403).json({ error: "Access denied: supervisors cannot associate question templates with admin-created lessons" });
         }
       }
     }
 
     const theoreticalError = validateTheoreticalQuestion(template_type, logic_config, accepted_formulas);
     if (theoreticalError) return res.status(400).json({ error: theoreticalError });
-    if (!(await canAccessLessonSubject(req, lesson_id))) {
+    if (lesson_id && !(await canAccessLessonSubject(req, lesson_id))) {
       return res.status(403).json({ error: "You do not have access to this subject" });
     }
 
@@ -1048,6 +1080,8 @@ router.put('/templates/:id', authenticate, authorize('manage', 'test'), async (r
         body_template_vi,
         explanation_template_en,
         explanation_template_vi,
+        created_by: existingTemplate.created_by,
+        is_premium: userRole === "admin" ? normalizeBooleanFlag(is_premium) : existingTemplate.is_premium,
         logic_config: logic_config || {},
         accepted_formulas: Array.isArray(accepted_formulas) ? accepted_formulas : []
       }
@@ -1066,13 +1100,35 @@ router.delete('/templates/:id', authenticate, authorize('manage', 'test'), async
     const id = req.params.id as string;
 
     const userRole = (req as any).user.role;
-    if (userRole === "supervisor") {
-      const existingTemplate = await prisma.questionTemplate.findUnique({
-        where: { id },
-        include: { lesson: true }
-      });
-      if (existingTemplate && existingTemplate.lesson && await isCreatedByAdmin(existingTemplate.lesson.created_by)) {
+    const existingTemplate = await prisma.questionTemplate.findUnique({
+      where: { id },
+      include: {
+        lesson: true,
+        creator: {
+          select: {
+            learn_unit_id: true,
+            role: { select: { name: true } }
+          }
+        }
+      }
+    });
+    if (!existingTemplate) {
+      return res.status(404).json({ error: "Template not found" });
+    }
+
+    const canAccessExistingTemplate = existingTemplate.lesson_id
+      ? await canAccessLessonSubject(req, existingTemplate.lesson_id)
+      : await canAccessStandaloneTemplate((req as any).user, existingTemplate);
+    if (!canAccessExistingTemplate) {
+      return res.status(403).json({ error: "You do not have access to this template" });
+    }
+
+    if (userRole !== "admin") {
+      if (existingTemplate.lesson && await isCreatedByAdmin(existingTemplate.lesson.created_by)) {
         return res.status(403).json({ error: "Access denied: supervisors cannot delete question templates belonging to admin-created lessons" });
+      }
+      if (!existingTemplate.lesson && existingTemplate.creator?.role?.name === "admin") {
+        return res.status(403).json({ error: "Access denied: you cannot delete admin-created global templates" });
       }
     }
 

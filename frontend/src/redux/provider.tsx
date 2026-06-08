@@ -5,6 +5,7 @@ import { store } from "./store";
 import { ReactNode, useEffect } from "react";
 import { hydrateAuth } from "../redux/slices/authSlice";
 import { hydratePermissions } from "../redux/slices/permissionSlice";
+import SessionGuard from "@/components/guard/SessionGuard";
 
 interface ReduxProviderProps {
   children: ReactNode;
@@ -39,5 +40,9 @@ export default function ReduxProvider({ children }: ReduxProviderProps) {
     }
   }, []);
 
-  return <Provider store={store}>{children}</Provider>;
+  return (
+    <Provider store={store}>
+      <SessionGuard>{children}</SessionGuard>
+    </Provider>
+  );
 }

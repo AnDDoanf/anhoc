@@ -40,7 +40,9 @@ export const useAuth = () => {
       persistSession(response);
       return response;
     } catch (err: unknown) {
-      const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || "Login failed";
+      const message = (err as { response?: { data?: { error?: string; message?: string } } })?.response?.data?.error
+        || (err as { response?: { data?: { error?: string; message?: string } } })?.response?.data?.message
+        || "Login failed";
       setError(message);
       throw err;
     } finally {

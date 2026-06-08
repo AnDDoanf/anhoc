@@ -1,21 +1,8 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-
-type User = {
-  id: string;
-  email: string;
-  username?: string;
-  country?: string | null;
-  role: string;
-  account_status?: string;
-  preferred_subject_id?: number | null;
-  requires_subject_selection?: boolean;
-  permissions?: Record<string, string[]>;
-  supervisor_id?: string | null;
-  slots_purchased?: number;
-};
+import type { AuthUser } from "@/services/auth";
 
 type AuthState = {
-  user: User | null;
+  user: AuthUser | null;
   token: string | null;
   isAuthenticated: boolean;
   isInitialized: boolean; // CRITICAL: Prevents premature redirects
@@ -33,14 +20,14 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     // Call this during login
-    setCredentials(state, action: PayloadAction<{ user: User; token: string }>) {
+    setCredentials(state, action: PayloadAction<{ user: AuthUser; token: string }>) {
       state.user = action.payload.user;
       state.token = action.payload.token;
       state.isAuthenticated = true;
       state.isInitialized = true;
     },
     // Call this when the app first loads to hydrate from localStorage
-    hydrateAuth(state, action: PayloadAction<{ user: User | null; token: string | null }>) {
+    hydrateAuth(state, action: PayloadAction<{ user: AuthUser | null; token: string | null }>) {
       state.user = action.payload.user;
       state.token = action.payload.token;
       state.isAuthenticated = !!action.payload.token;

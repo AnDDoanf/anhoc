@@ -4,6 +4,16 @@ import { authenticate, authorize, optionalAuthenticate } from '../middleware/aut
 import * as MathService from '../services/mathService';
 import { masteryService } from '../services/masteryService';
 import { createNotification, NotificationType, notifyAdmins } from '../services/notificationService.ts';
+import {
+  canAccessLessonForViewer,
+  canRequestSubjectAccess,
+  getAllowedSubjectIdsForViewer,
+  getSubjectCatalogForViewer,
+  getVisibleGradeWhereForViewer,
+  getVisibleLessonWhereForViewer,
+  getVisibleTemplateWhereForViewer,
+} from '../services/contentAccessService.ts';
+import { getLearnUnitMemberIds, getLearnUnitForUser } from '../services/learnUnitService.ts';
 
 const router = Router();
 
@@ -13,66 +23,19 @@ const normalizeDifficulty = (difficulty: unknown): string | null => {
   return null;
 };
 
-const getAllowedSubjectIds = async (req: any): Promise<number[] | null> => {
-  if (!req.user || req.user.role === "supervisor") {
-    const nonClassifiedSubjects = await prisma.subject.findMany({
-      where: { is_classified: false },
-      select: { id: true }
-    });
-    return nonClassifiedSubjects.map((s) => s.id);
+const normalizeBooleanFlag = (value: unknown): boolean => {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    return normalized === "true" || normalized === "1" || normalized === "yes" || normalized === "on";
   }
-
-  if (req.user?.role === "admin") return null;
-
-  const user = await prisma.user.findUnique({
-    where: { id: req.user?.id },
-    select: {
-      role: {
-        select: {
-          subject_permissions: {
-            select: {
-              subject_id: true,
-              subject: {
-                select: {
-                  is_classified: true
-                }
-              }
-            }
-          }
-        },
-      },
-      subject_access_requests: {
-        where: { status: "approved" },
-        select: { subject_id: true }
-      }
-    }
-  });
-
-  if (!user) return [];
-
-  const approvedSubjectIds = new Set(user.subject_access_requests.map((request) => request.subject_id));
-
-  return user.role.subject_permissions
-    .filter((permission) => !permission.subject.is_classified || approvedSubjectIds.has(permission.subject_id))
-    .map((permission) => permission.subject_id);
+  if (typeof value === "number") return value === 1;
+  return false;
 };
 
-const getRoleVisibleSubjectIds = async (userId: string): Promise<number[]> => {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      role: {
-        select: {
-          subject_permissions: {
-            select: { subject_id: true }
-          }
-        }
-      }
-    }
-  });
-
-  return user?.role.subject_permissions.map((permission) => permission.subject_id) ?? [];
-};
+const getAllowedSubjectIds = async (req: any): Promise<number[] | null> => (
+  getAllowedSubjectIdsForViewer(req.user)
+);
 
 const isCreatedByAdmin = async (createdById: string | null): Promise<boolean> => {
   if (!createdById) return true;
@@ -136,36 +99,30 @@ const buildUniqueGradeSlug = async (title: string, subjectId: number) => {
   return `${subject.slug}-${baseSlug}-${Date.now()}`;
 };
 
-const enforceSupervisorCreationLimit = async (
+const enforceLearnUnitCreationLimit = async (
   userId: string,
   contentType: "subject" | "grade" | "lesson"
 ): Promise<string | null> => {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      max_subjects: true,
-      max_grades: true,
-      max_lessons: true,
-    }
-  });
+  const learnUnit = await getLearnUnitForUser(userId);
+  if (!learnUnit) return null;
 
-  if (!user) return null;
+  const memberIds = await getLearnUnitMemberIds(learnUnit.id);
 
   let limit: number | null | undefined;
   let currentCount = 0;
   let label = "";
 
   if (contentType === "subject") {
-    limit = user.max_subjects;
-    currentCount = await prisma.subject.count({ where: { created_by: userId } });
+    limit = learnUnit.max_subjects;
+    currentCount = await prisma.subject.count({ where: { created_by: { in: memberIds } } });
     label = "subject";
   } else if (contentType === "grade") {
-    limit = user.max_grades;
-    currentCount = await prisma.grade.count({ where: { created_by: userId } });
+    limit = learnUnit.max_grades;
+    currentCount = await prisma.grade.count({ where: { created_by: { in: memberIds } } });
     label = "grade";
   } else {
-    limit = user.max_lessons;
-    currentCount = await prisma.lesson.count({ where: { created_by: userId } });
+    limit = learnUnit.max_lessons;
+    currentCount = await prisma.lesson.count({ where: { created_by: { in: memberIds } } });
     label = "lesson";
   }
 
@@ -186,9 +143,10 @@ router.post('/', authenticate, authorize('manage', 'lesson'), async (req, res) =
 
   const createdBy = (req as any).user.id;
   const userRole = (req as any).user.role;
+  const isPremium = userRole === "admin" ? normalizeBooleanFlag(req.body?.is_premium) : false;
 
-  if (userRole === "supervisor") {
-    const limitError = await enforceSupervisorCreationLimit(createdBy, "lesson");
+  if (userRole !== "admin") {
+    const limitError = await enforceLearnUnitCreationLimit(createdBy, "lesson");
     if (limitError) {
       return res.status(403).json({ error: limitError });
     }
@@ -203,6 +161,7 @@ router.post('/', authenticate, authorize('manage', 'lesson'), async (req, res) =
       grade_id,
       subject_id,
       order_index,
+      is_premium: isPremium,
       created_by: createdBy
     }
   });
@@ -211,9 +170,9 @@ router.post('/', authenticate, authorize('manage', 'lesson'), async (req, res) =
 
 // Get all lessons (With hierarchy metadata)
 router.get('/', optionalAuthenticate, async (req, res) => {
-  const allowedSubjectIds = await getAllowedSubjectIds(req);
+  const lessonWhere = await getVisibleLessonWhereForViewer((req as any).user);
   const lessons = await prisma.lesson.findMany({
-    where: subjectWhere(allowedSubjectIds),
+    where: lessonWhere,
     orderBy: { order_index: 'asc' },
     include: {
       grade: true,
@@ -231,11 +190,9 @@ router.get('/', optionalAuthenticate, async (req, res) => {
 
 // Get all grades
 router.get('/grades', authenticate, async (req, res) => {
-  const allowedSubjectIds = await getAllowedSubjectIds(req);
+  const gradeWhere = await getVisibleGradeWhereForViewer((req as any).user);
   const grades = await prisma.grade.findMany({
-    where: allowedSubjectIds === null
-      ? {}
-      : { subject_id: { in: allowedSubjectIds } },
+    where: gradeWhere,
     include: { subject: true },
     orderBy: { id: 'asc' }
   });
@@ -263,8 +220,8 @@ router.post('/grades', authenticate, authorize('manage', 'lesson'), async (req, 
     const createdBy = (req as any).user.id;
     const userRole = (req as any).user.role;
 
-    if (userRole === "supervisor") {
-      const limitError = await enforceSupervisorCreationLimit(createdBy, "grade");
+    if (userRole !== "admin") {
+      const limitError = await enforceLearnUnitCreationLimit(createdBy, "grade");
       if (limitError) {
         return res.status(403).json({ error: limitError });
       }
@@ -302,44 +259,8 @@ router.get('/subjects', authenticate, async (req, res) => {
 
 router.get('/subjects/catalog', authenticate, async (req, res) => {
   try {
-    const authUser = (req as any).user;
-    if (authUser?.role === "admin") {
-      const subjects = await prisma.subject.findMany({
-        orderBy: { id: 'asc' }
-      });
-      return res.json(subjects.map((subject) => ({
-        ...subject,
-        role_visible: true,
-        has_access: true,
-        request_status: subject.is_classified ? "approved" : null
-      })));
-    }
-
-    const userId = authUser.id as string;
-    const [roleVisibleSubjectIds, accessRequests, subjects] = await Promise.all([
-      getRoleVisibleSubjectIds(userId),
-      prisma.userSubjectAccessRequest.findMany({
-        where: { user_id: userId },
-        select: { subject_id: true, status: true }
-      }),
-      prisma.subject.findMany({ orderBy: { id: 'asc' } })
-    ]);
-
-    const roleVisibleSet = new Set(roleVisibleSubjectIds);
-    const requestMap = new Map(accessRequests.map((request) => [request.subject_id, request.status]));
-
-    res.json(subjects.map((subject) => {
-      const requestStatus = requestMap.get(subject.id) || null;
-      const roleVisible = roleVisibleSet.has(subject.id);
-      const hasAccess = roleVisible && (!subject.is_classified || requestStatus === "approved");
-
-      return {
-        ...subject,
-        role_visible: roleVisible,
-        has_access: hasAccess,
-        request_status: subject.is_classified ? requestStatus : null
-      };
-    }));
+    const catalog = await getSubjectCatalogForViewer((req as any).user);
+    res.json(catalog);
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch subject catalog" });
   }
@@ -362,8 +283,8 @@ router.post('/subjects', authenticate, authorize('manage', 'lesson'), async (req
     const createdBy = (req as any).user.id;
     const userRole = (req as any).user.role;
 
-    if (userRole === "supervisor") {
-      const limitError = await enforceSupervisorCreationLimit(createdBy, "subject");
+    if (userRole !== "admin") {
+      const limitError = await enforceLearnUnitCreationLimit(createdBy, "subject");
       if (limitError) {
         return res.status(403).json({ error: limitError });
       }
@@ -444,24 +365,10 @@ router.post('/subjects/:id/request-access', authenticate, async (req, res) => {
       return res.status(400).json({ error: "Invalid subject id" });
     }
 
-    const [subject, roleVisibleSubjectIds] = await Promise.all([
-      prisma.subject.findUnique({
-        where: { id: subjectId },
-        select: { id: true, is_classified: true }
-      }),
-      getRoleVisibleSubjectIds(userId)
-    ]);
-
-    if (!subject) {
-      return res.status(404).json({ error: "Subject not found" });
-    }
-
-    if (!subject.is_classified) {
-      return res.status(400).json({ error: "This subject does not require approval" });
-    }
-
-    if (!roleVisibleSubjectIds.includes(subjectId)) {
-      return res.status(403).json({ error: "Your role does not allow this subject" });
+    const accessCheck = await canRequestSubjectAccess((req as any).user, subjectId);
+    if (!accessCheck.allowed) {
+      const statusCode = accessCheck.reason === "Subject not found or not visible" ? 404 : 400;
+      return res.status(statusCode).json({ error: accessCheck.reason });
     }
 
     const subjectDetails = await prisma.subject.findUnique({
@@ -517,13 +424,14 @@ router.post('/subjects/:id/request-access', authenticate, async (req, res) => {
 // Get Lessons that have practice questions available
 router.get('/practice-available', optionalAuthenticate, async (req, res) => {
   try {
-    const allowedSubjectIds = await getAllowedSubjectIds(req);
+    const lessonWhere = await getVisibleLessonWhereForViewer((req as any).user);
+    const templateWhere = await getVisibleTemplateWhereForViewer((req as any).user);
     const lessons = await prisma.lesson.findMany({
       where: {
-        ...subjectWhere(allowedSubjectIds),
         templates: {
-          some: {} // At least one template
-        }
+          some: templateWhere
+        },
+        AND: [lessonWhere],
       },
       include: {
         grade: true,
@@ -553,14 +461,13 @@ router.post('/:id/practice', optionalAuthenticate, async (req, res) => {
   const difficulty = normalizeDifficulty(req.body?.difficulty);
 
   try {
-    const allowedSubjectIds = await getAllowedSubjectIds(req);
     const lesson = await prisma.lesson.findUnique({
       where: { id: lesson_id },
       select: { subject_id: true, is_premium: true }
     });
 
     if (!lesson) return res.status(404).json({ error: "Lesson not found" });
-    if (!canAccessSubject(allowedSubjectIds, lesson.subject_id)) {
+    if (!(await canAccessLessonForViewer((req as any).user, lesson_id))) {
       return res.status(403).json({ error: "You do not have access to this subject" });
     }
 
@@ -573,9 +480,13 @@ router.post('/:id/practice', optionalAuthenticate, async (req, res) => {
 
     // 1. Fetch templates associated with this lesson
     const isFreeOrGuest = !(req as any).user || (req as any).user.role === 'free_student';
+    const templateVisibilityWhere = await getVisibleTemplateWhereForViewer((req as any).user);
     const templates = await prisma.questionTemplate.findMany({
       where: {
-        lesson_id,
+        AND: [
+          templateVisibilityWhere,
+          { lesson_id },
+        ],
         ...(difficulty ? { difficulty } : {}),
         ...(isFreeOrGuest ? { is_premium: false } : {})
       }
@@ -668,7 +579,6 @@ router.post('/:id/practice', optionalAuthenticate, async (req, res) => {
 router.get('/:id', optionalAuthenticate, async (req, res) => {
   const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   try {
-    const allowedSubjectIds = await getAllowedSubjectIds(req);
     const lesson = await prisma.lesson.findUnique({
       where: { id },
       include: {
@@ -680,7 +590,7 @@ router.get('/:id', optionalAuthenticate, async (req, res) => {
     if (!lesson) {
       return res.status(404).json({ error: "Lesson not found" });
     }
-    if (!canAccessSubject(allowedSubjectIds, lesson.subject_id)) {
+    if (!(await canAccessLessonForViewer((req as any).user, id))) {
       return res.status(403).json({ error: "You do not have access to this subject" });
     }
 
@@ -700,20 +610,31 @@ router.get('/:id', optionalAuthenticate, async (req, res) => {
 // Update a lesson
 router.put('/:id', authenticate, authorize('manage', 'lesson'), async (req, res) => {
   const id = req.params.id as string;
-  const { title_en, title_vi, content_markdown_en, content_markdown_vi, grade_id, subject_id, order_index } = req.body;
+  const { title_en, title_vi, content_markdown_en, content_markdown_vi, grade_id, subject_id, order_index, is_premium } = req.body;
   try {
     const allowedSubjectIds = await getAllowedSubjectIds(req);
     if (!canAccessSubject(allowedSubjectIds, Number(subject_id))) {
       return res.status(403).json({ error: "You do not have access to this subject" });
     }
+    if (!(await canAccessLessonForViewer((req as any).user, id))) {
+      return res.status(403).json({ error: "You do not have access to this lesson" });
+    }
 
     const userRole = (req as any).user.role;
+    const existingLesson = await prisma.lesson.findUnique({ where: { id } });
+    if (!existingLesson) {
+      return res.status(404).json({ error: "Lesson not found" });
+    }
+
     if (userRole === "supervisor") {
-      const existingLesson = await prisma.lesson.findUnique({ where: { id } });
-      if (existingLesson && await isCreatedByAdmin(existingLesson.created_by)) {
+      if (await isCreatedByAdmin(existingLesson.created_by)) {
         return res.status(403).json({ error: "Access denied: supervisors cannot modify admin-created lessons" });
       }
     }
+
+    const nextPremiumValue = userRole === "admin"
+      ? normalizeBooleanFlag(is_premium)
+      : existingLesson.is_premium;
 
     const lesson = await prisma.lesson.update({
       where: { id },
@@ -725,6 +646,7 @@ router.put('/:id', authenticate, authorize('manage', 'lesson'), async (req, res)
         grade_id,
         subject_id,
         order_index,
+        is_premium: nextPremiumValue,
       }
     });
     res.json(lesson);
@@ -762,6 +684,9 @@ router.post('/:id/study-time', authenticate, async (req, res) => {
     if (!lesson) {
       return res.status(404).json({ error: "Lesson not found" });
     }
+    if (!(await canAccessLessonForViewer((req as any).user, lessonId))) {
+      return res.status(403).json({ error: "You do not have access to this subject" });
+    }
 
     if (lesson.is_premium && user.role === 'free_student') {
       return res.status(403).json({ error: "Access denied: cannot track study time for premium lessons." });
@@ -778,13 +703,12 @@ router.post('/:id/study-time', authenticate, async (req, res) => {
 router.delete('/:id', authenticate, authorize('manage', 'lesson'), async (req, res) => {
   const id = req.params.id as string;
   try {
-    const allowedSubjectIds = await getAllowedSubjectIds(req);
     const lesson = await prisma.lesson.findUnique({
       where: { id },
       select: { subject_id: true, created_by: true }
     });
     if (!lesson) return res.status(404).json({ error: "Lesson not found" });
-    if (!canAccessSubject(allowedSubjectIds, lesson.subject_id)) {
+    if (!(await canAccessLessonForViewer((req as any).user, id))) {
       return res.status(403).json({ error: "You do not have access to this subject" });
     }
 

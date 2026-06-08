@@ -7,6 +7,7 @@ import { STUDENT_ROLE_NAMES, isStudentRoleName } from "../constants/roles.ts";
 import { computeInactiveCleanupDeadline } from "../services/accountLifecycleService.ts";
 import { createEmailVerificationToken, sendActivationEmail } from "../services/mailerService.ts";
 import { createNotification, NotificationType } from "../services/notificationService.ts";
+import { createDefaultLearnUnitName, createLearnUnitForSupervisor, normalizeLearnUnitCode } from "../services/learnUnitService.ts";
 
 const router = Router();
 const SELF_SERVICE_SIGNUP_ROLE_NAMES = ["free_student", "sub_student", "supervisor"] as const;
@@ -66,6 +67,34 @@ const resolveSignupRole = async (requestedRoleName?: string) => {
   return prisma.role.findUnique({ where: { name: "free_student" } });
 };
 
+const serializeLearnUnit = (learnUnit?: {
+  id: string;
+  name: string;
+  code: string;
+  supervisor_id?: string | null;
+  max_subjects?: number | null;
+  max_grades?: number | null;
+  max_lessons?: number | null;
+  max_templates?: number | null;
+  max_teachers?: number | null;
+  max_students?: number | null;
+} | null) => {
+  if (!learnUnit) return null;
+
+  return {
+    id: learnUnit.id,
+    name: learnUnit.name,
+    code: learnUnit.code,
+    supervisor_id: learnUnit.supervisor_id ?? null,
+    max_subjects: learnUnit.max_subjects ?? null,
+    max_grades: learnUnit.max_grades ?? null,
+    max_lessons: learnUnit.max_lessons ?? null,
+    max_templates: learnUnit.max_templates ?? null,
+    max_teachers: learnUnit.max_teachers ?? null,
+    max_students: learnUnit.max_students ?? null,
+  };
+};
+
 const createAuthPayload = (user: {
   id: string;
   email: string;
@@ -73,8 +102,32 @@ const createAuthPayload = (user: {
   country?: string | null;
   account_status: string;
   preferred_subject_id?: number | null;
-  supervisor_id?: string | null;
+  learn_unit_id?: string | null;
   slots_purchased?: number;
+  learn_unit?: {
+    id: string;
+    name: string;
+    code: string;
+    supervisor_id?: string | null;
+    max_subjects?: number | null;
+    max_grades?: number | null;
+    max_lessons?: number | null;
+    max_templates?: number | null;
+    max_teachers?: number | null;
+    max_students?: number | null;
+  } | null;
+  supervised_learn_unit?: {
+    id: string;
+    name: string;
+    code: string;
+    supervisor_id?: string | null;
+    max_subjects?: number | null;
+    max_grades?: number | null;
+    max_lessons?: number | null;
+    max_templates?: number | null;
+    max_teachers?: number | null;
+    max_students?: number | null;
+  } | null;
   role: {
     name: string;
     permissions: PermissionRow[];
@@ -82,6 +135,7 @@ const createAuthPayload = (user: {
 }) => {
   const permissions = formatPermissions(user.role.permissions);
   const requiresSubjectSelection = !user.preferred_subject_id;
+  const learnUnit = serializeLearnUnit(user.learn_unit || user.supervised_learn_unit);
 
   const token = jwt.sign(
     {
@@ -91,7 +145,8 @@ const createAuthPayload = (user: {
       preferred_subject_id: user.preferred_subject_id ?? null,
       requires_subject_selection: requiresSubjectSelection,
       account_status: user.account_status,
-      supervisor_id: user.supervisor_id ?? null,
+      supervisor_id: learnUnit?.supervisor_id ?? null,
+      learn_unit_id: user.learn_unit_id ?? null,
       slots_purchased: user.slots_purchased ?? 0,
     },
     JWT_SECRET,
@@ -108,7 +163,9 @@ const createAuthPayload = (user: {
       role: user.role.name,
       account_status: user.account_status,
       preferred_subject_id: user.preferred_subject_id ?? null,
-      supervisor_id: user.supervisor_id ?? null,
+      supervisor_id: learnUnit?.supervisor_id ?? null,
+      learn_unit_id: user.learn_unit_id ?? null,
+      learn_unit: learnUnit,
       slots_purchased: user.slots_purchased ?? 0,
       requires_subject_selection: requiresSubjectSelection,
       permissions,
@@ -123,6 +180,7 @@ router.post("/register", async (req: Request, res: Response) => {
     const country = typeof req.body.country === "string" ? req.body.country.trim() : "";
     const requestedUsername = typeof req.body.username === "string" ? req.body.username : "";
     const roleName = typeof req.body.role_name === "string" ? req.body.role_name : undefined;
+    const learnUnitName = typeof req.body.learn_unit_name === "string" ? req.body.learn_unit_name.trim() : "";
 
     if (!email || !email.includes("@")) {
       return res.status(400).json({ error: "A valid email is required" });
@@ -144,36 +202,60 @@ router.post("/register", async (req: Request, res: Response) => {
     if (!roleRecord) {
       return res.status(400).json({ error: "Invalid role specified" });
     }
+    if (roleRecord.name === "supervisor" && !learnUnitName) {
+      return res.status(400).json({ error: "Learn unit name is required for supervisor registration" });
+    }
 
     const username = await createUniqueUsername(email, requestedUsername);
     const passwordHash = await bcrypt.hash(password, 10);
     const verificationToken = createEmailVerificationToken();
     const now = new Date();
 
-    const newUser = await prisma.user.create({
-      data: {
-        username,
-        email,
-        country: country || null,
-        password_hash: passwordHash,
-        role_id: roleRecord.id,
-        account_status: "inactive",
-        email_verification_token: verificationToken,
-        email_verification_sent_at: now,
-        inactive_cleanup_at: computeInactiveCleanupDeadline(now),
-        slots_purchased: roleRecord.name === "supervisor" ? 1 : 0,
-      },
-    });
+    const registration = await prisma.$transaction(async (tx) => {
+      const newUser = await tx.user.create({
+        data: {
+          username,
+          email,
+          country: country || null,
+          password_hash: passwordHash,
+          role_id: roleRecord.id,
+          account_status: "inactive",
+          email_verification_token: verificationToken,
+          email_verification_sent_at: now,
+          inactive_cleanup_at: computeInactiveCleanupDeadline(now),
+          slots_purchased: roleRecord.name === "supervisor" ? 1 : 0,
+        },
+      });
 
-    await prisma.studentStats.create({
-      data: { user_id: newUser.id },
+      await tx.studentStats.create({
+        data: { user_id: newUser.id },
+      });
+
+      const learnUnit = roleRecord.name === "supervisor"
+        ? await createLearnUnitForSupervisor(
+            newUser.id,
+            learnUnitName || createDefaultLearnUnitName(username),
+            {},
+            tx as typeof prisma
+          )
+        : null;
+
+      if (learnUnit) {
+        await tx.user.update({
+          where: { id: newUser.id },
+          data: { learn_unit_id: learnUnit.id },
+        });
+      }
+
+      return { newUser, learnUnit };
     });
 
     await sendActivationEmail(email, verificationToken);
 
     res.status(201).json({
       message: "Registration successful. Check your email to activate the account.",
-      userId: newUser.id,
+      userId: registration.newUser.id,
+      learnUnit: serializeLearnUnit(registration.learnUnit),
     });
   } catch (error) {
     console.error(error);
@@ -218,6 +300,7 @@ router.post("/login", async (req: Request, res: Response) => {
   try {
     const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
     const password = typeof req.body.password === "string" ? req.body.password : "";
+    const learnUnitCode = normalizeLearnUnitCode(req.body.learn_unit_code);
 
     const user = await prisma.user.findUnique({
       where: { email },
@@ -232,6 +315,8 @@ router.post("/login", async (req: Request, res: Response) => {
             },
           },
         },
+        learn_unit: true,
+        supervised_learn_unit: true,
       },
     });
 
@@ -246,6 +331,14 @@ router.post("/login", async (req: Request, res: Response) => {
 
     if (!user.email_verified_at) {
       return res.status(403).json({ error: "Please verify your email before logging in" });
+    }
+    if (user.learn_unit_id) {
+      if (!learnUnitCode) {
+        return res.status(403).json({ error: "Learn unit code is required for this account" });
+      }
+      if (normalizeLearnUnitCode(user.learn_unit?.code) !== learnUnitCode) {
+        return res.status(403).json({ error: "Invalid learn unit code" });
+      }
     }
 
     const shouldActivate = user.account_status === "inactive";
@@ -276,6 +369,8 @@ router.post("/login", async (req: Request, res: Response) => {
                 },
               },
             },
+            learn_unit: true,
+            supervised_learn_unit: true,
           },
         })
       : await prisma.user.update({
@@ -299,6 +394,8 @@ router.post("/login", async (req: Request, res: Response) => {
                 },
               },
             },
+            learn_unit: true,
+            supervised_learn_unit: true,
           },
         });
 
@@ -345,6 +442,7 @@ router.patch("/subject-preference", authenticate, async (req: Request, res: Resp
             },
           },
         },
+        learn_unit: true,
       },
     });
 
@@ -411,6 +509,8 @@ router.get("/profile", authenticate, async (req: Request, res: Response) => {
         },
         student_stats: true,
         preferred_subject: true,
+        learn_unit: true,
+        supervised_learn_unit: true,
       },
     });
 
@@ -433,7 +533,9 @@ router.get("/profile", authenticate, async (req: Request, res: Response) => {
       created_at: user.created_at,
       email_verified_at: user.email_verified_at,
       first_login_at: user.first_login_at,
-      supervisor_id: user.supervisor_id,
+      supervisor_id: user.learn_unit?.supervisor_id ?? null,
+      learn_unit_id: user.learn_unit_id,
+      learn_unit: serializeLearnUnit(user.learn_unit || user.supervised_learn_unit),
       slots_purchased: user.slots_purchased,
     });
   } catch (error) {
@@ -442,27 +544,82 @@ router.get("/profile", authenticate, async (req: Request, res: Response) => {
   }
 });
 
+router.post("/refresh", authenticate, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as Request & { user: { id: string } }).user.id;
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        role: {
+          include: {
+            permissions: {
+              include: {
+                action: true,
+                resource: true,
+              },
+            },
+          },
+        },
+        student_stats: true,
+        preferred_subject: true,
+        learn_unit: true,
+        supervised_learn_unit: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json(createAuthPayload(user));
+  } catch (error: any) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to refresh token", details: error.message });
+  }
+});
+
 router.post("/upgrade-role", authenticate, async (req: Request, res: Response) => {
   try {
     const userId = (req as Request & { user: { id: string } }).user.id;
     const { roleName } = req.body;
+    const learnUnitName = typeof req.body.learn_unit_name === "string" ? req.body.learn_unit_name.trim() : "";
 
     if (roleName !== "sub_student" && roleName !== "supervisor") {
       return res.status(400).json({ error: "Invalid role specified for upgrade" });
     }
 
-    const roleRecord = await prisma.role.findUnique({
-      where: { name: roleName }
-    });
+    const [roleRecord, existingUser] = await Promise.all([
+      prisma.role.findUnique({
+        where: { name: roleName }
+      }),
+      prisma.user.findUnique({
+        where: { id: userId },
+        include: { learn_unit: true }
+      })
+    ]);
 
     if (!roleRecord) {
       return res.status(404).json({ error: "Target role not found" });
+    }
+    if (!existingUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    if (roleName === "supervisor") {
+      if (existingUser.learn_unit_id) {
+        return res.status(409).json({ error: "This account is already assigned to a learn unit" });
+      }
+      if (!learnUnitName) {
+        return res.status(400).json({ error: "Learn unit name is required to upgrade to supervisor" });
+      }
     }
 
     const user = await prisma.user.update({
       where: { id: userId },
       data: {
         role_id: roleRecord.id
+      },
+      include: {
+        learn_unit: true
       }
     });
 
@@ -470,6 +627,24 @@ router.post("/upgrade-role", authenticate, async (req: Request, res: Response) =
       await prisma.user.update({
         where: { id: userId },
         data: { slots_purchased: 1 }
+      });
+    }
+
+    if (roleName === "supervisor") {
+      const learnUnit = await createLearnUnitForSupervisor(
+        userId,
+        learnUnitName || createDefaultLearnUnitName(user.username),
+      );
+
+      await prisma.user.update({
+        where: { id: userId },
+        data: { learn_unit_id: learnUnit.id }
+      });
+
+      return res.json({
+        message: `Successfully upgraded to ${roleName}`,
+        role: roleName,
+        learnUnit: serializeLearnUnit(learnUnit)
       });
     }
 
