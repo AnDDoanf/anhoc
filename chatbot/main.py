@@ -1,24 +1,39 @@
+import asyncio
 import json
 import os
-from datetime import date, datetime
-from typing import List, Optional
 
-from fastapi import FastAPI, HTTPException, Request, status
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field
 
-from database import db_mongo, in_memory_conversations, in_memory_usage
-from knowledge_base import fetch_student_context
-from llm import invoke_llm_provider, stream_ollama_provider
-from prompts import build_prompt_with_cot
+from chat_models import (
+    CheckAnswerRequest,
+    CheckAnswerResponse,
+    PracticeRequest,
+    PracticeResponse,
+    TutorChatRequest,
+    TutorChatResponse,
+    WidgetChatResponse,
+)
+from database import ensure_mongo_indexes
+from lesson_retriever import warm_lessons
+from memory_service import load_widget_history
+from tutor_service import (
+    build_tutor_context,
+    finalize_streamed_chat,
+    handle_chat,
+    handle_check_answer,
+    handle_practice,
+    make_json_safe,
+    stream_chat,
+)
 
 PORT = int(os.getenv("PORT", 5002))
 
 app = FastAPI(
-    title="Anhoc Personalized Chatbot Microservice",
-    description="Multimodal SLM Chatbot with CoT and RAG for dynamic course learning",
-    version="2.0.0",
+    title="Anhoc Math Tutor Chatbot",
+    description="Vietnamese/English friendly math tutor with memory, tools, and lesson RAG.",
+    version="3.0.0",
 )
 
 app.add_middleware(
@@ -30,108 +45,15 @@ app.add_middleware(
 )
 
 
-class ImageContent(BaseModel):
-    mime_type: str = Field(..., description="MIME type of the image, e.g., image/jpeg or image/png")
-    data: str = Field(..., description="Base64 encoded string of image data")
-
-
-class ChatRequest(BaseModel):
-    user_id: str = Field(..., description="PostgreSQL user UUID")
-    message: str = Field(..., description="Student prompt text")
-    images: Optional[List[ImageContent]] = Field(default=None, description="Optional images for multimodal reasoning")
-    locale: str = Field(default="vi", description="Target response language ('vi' or 'en')")
-    provider: str = Field(default="gemini", description="AI provider")
-    reasoning_technique: str = Field(default="step_by_step", description="Prompting technique for tutor reasoning")
-    byok_openai_key: Optional[str] = Field(default=None, description="User provided OpenAI API key")
-    byok_ollama_url: Optional[str] = Field(default=None, description="User provided local Ollama URL")
-    byok_gemini_key: Optional[str] = Field(default=None, description="User provided Gemini API key")
-    byok_claude_key: Optional[str] = Field(default=None, description="User provided Claude API key")
-
-
-class ChatResponse(BaseModel):
-    thought: str = Field(..., description="Reasoning or reasoning metadata")
-    answer: str = Field(..., description="Final clean answer presented to the student")
-    context_used: dict = Field(..., description="Personalization data context metadata")
-    remaining_uses: int = Field(..., description="Remaining daily question count limit out of 5")
-
-
-def get_daily_usage(user_id: str, today_str: str) -> tuple[int, bool]:
-    try:
-        if db_mongo is not None:
-            record = db_mongo.user_usage.find_one({"user_id": user_id, "date": today_str})
-            return (record["count"] if record else 0), True
-    except Exception as e:
-        print(f"MongoDB connection offline (falling back to in-memory storage): {e}")
-
-    return in_memory_usage.get((user_id, today_str), 0), False
-
-
-def enforce_daily_limit(current_count: int, locale: str):
-    if current_count >= 5:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Ban da dat gioi han 5 cau hoi moi ngay. Gioi han se tu dong lap lai vao nua dem."
-            if locale == "vi"
-            else "You have reached your daily limit of 5 questions. It will reset at midnight.",
-        )
-
-
-def save_chat_record(
-    user_id: str,
-    today_str: str,
-    current_count: int,
-    mongo_available: bool,
-    payload: ChatRequest,
-    thought: str,
-    answer: str,
-    context_used: dict,
-) -> int:
-    new_count = current_count + 1
-    conversation_record = {
-        "user_id": user_id,
-        "timestamp": datetime.utcnow(),
-        "date": today_str,
-        "message": payload.message,
-        "images_count": len(payload.images) if payload.images else 0,
-        "thought": thought,
-        "answer": answer,
-        "context_used": context_used,
-    }
-
-    if mongo_available:
-        try:
-            db_mongo.user_usage.update_one(
-                {"user_id": user_id, "date": today_str},
-                {"$inc": {"count": 1}},
-                upsert=True,
-            )
-            db_mongo.conversations.insert_one(conversation_record)
-            return new_count
-        except Exception as e:
-            print(f"MongoDB write failed: {e}. Defaulting to in-memory fallback.")
-
-    in_memory_usage[(user_id, today_str)] = new_count
-    in_memory_conversations.append(conversation_record)
-    return new_count
-
-
-def prepare_chat(payload: ChatRequest):
-    today_str = date.today().isoformat()
-    current_count, mongo_available = get_daily_usage(payload.user_id, today_str)
-    enforce_daily_limit(current_count, payload.locale)
-
-    student_meta, rag_context, subj_en, subj_vi = fetch_student_context(payload.user_id, payload.locale)
-    full_text_prompt = build_prompt_with_cot(
-        student_meta,
-        rag_context,
-        payload.message,
-        subj_en,
-        subj_vi,
-        payload.locale,
-        payload.reasoning_technique,
+@app.on_event("startup")
+async def startup_event():
+    await ensure_mongo_indexes()
+    rag_stats = await warm_lessons()
+    print(
+        "Tutor startup complete: "
+        f"{rag_stats['lessons_indexed']} lessons, {rag_stats['chunks_indexed']} chunks, "
+        f"ready={rag_stats['ready']}"
     )
-
-    return today_str, current_count, mongo_available, student_meta, full_text_prompt
 
 
 def sse_event(event_type: str, data: dict) -> str:
@@ -139,103 +61,107 @@ def sse_event(event_type: str, data: dict) -> str:
 
 
 @app.get("/health")
-def health_check():
-    return {"status": "ok", "service": "anhoc-chatbot-microservice"}
+async def health_check():
+    return {"status": "ok", "service": "anhoc-math-tutor"}
 
 
-@app.post("/api/v1/chat", response_model=ChatResponse)
-def handle_chat(payload: ChatRequest, request: Request):
-    today_str, current_count, mongo_available, student_meta, full_text_prompt = prepare_chat(payload)
+@app.post("/api/v1/tutor/chat", response_model=TutorChatResponse)
+async def tutor_chat(payload: TutorChatRequest):
+    return await handle_chat(payload)
 
-    thought, answer = invoke_llm_provider(
-        provider=payload.provider,
-        full_text_prompt=full_text_prompt,
-        student_meta=student_meta,
-        payload=payload,
-        locale=payload.locale,
-        authorization_header=request.headers.get("authorization"),
-    )
 
-    new_count = save_chat_record(
-        user_id=payload.user_id,
-        today_str=today_str,
-        current_count=current_count,
-        mongo_available=mongo_available,
-        payload=payload,
-        thought=thought,
-        answer=answer,
-        context_used=student_meta,
-    )
+@app.post("/api/v1/tutor/check-answer", response_model=CheckAnswerResponse)
+async def tutor_check_answer(payload: CheckAnswerRequest):
+    return await handle_check_answer(payload)
 
-    return ChatResponse(
-        thought=thought,
-        answer=answer,
-        context_used=student_meta,
-        remaining_uses=max(0, 5 - new_count),
+
+@app.post("/api/v1/tutor/practice", response_model=PracticeResponse)
+async def tutor_practice(payload: PracticeRequest):
+    return await handle_practice(payload)
+
+
+@app.get("/api/v1/chat/history")
+async def get_chat_history(user_id: str, skip: int = 0, limit: int = 3):
+    return await load_widget_history(user_id, skip, limit)
+
+
+@app.post("/api/v1/chat", response_model=WidgetChatResponse)
+async def widget_chat(payload: TutorChatRequest):
+    tutor_response = await handle_chat(payload)
+    return WidgetChatResponse(
+        thought=f"intent={tutor_response.intent}; mode={tutor_response.mode}; language={tutor_response.language}",
+        answer=tutor_response.answer,
+        context_used=tutor_response.context_used,
+        remaining_uses=5,
     )
 
 
 @app.post("/api/v1/chat/stream")
-def handle_chat_stream(payload: ChatRequest, request: Request):
-    today_str, current_count, mongo_available, student_meta, full_text_prompt = prepare_chat(payload)
-    provider = (payload.provider or "gemini").lower()
-    authorization_header = request.headers.get("authorization")
+async def widget_chat_stream(payload: TutorChatRequest, request: Request):
+    context = await build_tutor_context(payload)
 
-    def event_stream():
-        thought = "Streaming response; no separate hidden reasoning was returned."
+    async def event_stream():
         answer_parts: list[str] = []
 
+        def should_stop() -> bool:
+            return stop_event.is_set()
+
         try:
-            yield sse_event("meta", {"context_used": student_meta})
+            if await request.is_disconnected():
+                stop_event.set()
+                return
 
-            if provider in ["ollama", "ollama_byok"]:
-                for chunk in stream_ollama_provider(
-                    provider=provider,
-                    full_text_prompt=full_text_prompt,
-                    student_meta=student_meta,
-                    payload=payload,
-                    authorization_header=authorization_header,
-                ):
-                    answer_parts.append(chunk)
-                    yield sse_event("delta", {"text": chunk})
-            else:
-                thought, answer = invoke_llm_provider(
-                    provider=provider,
-                    full_text_prompt=full_text_prompt,
-                    student_meta=student_meta,
-                    payload=payload,
-                    locale=payload.locale,
-                    authorization_header=authorization_header,
-                )
-                answer_parts.append(answer)
-                yield sse_event("delta", {"text": answer})
+            context_used = make_json_safe({
+                "language": context.answer_language,
+                "detected_language": context.detected_language,
+                "intent": context.intent,
+                "mode": context.mode,
+                "memory": context.conversation.memory,
+                "lesson_sources": context.lesson.sources,
+                "tool_result": context.tool_result.__dict__ if context.tool_result else None,
+                "provider_debug": {
+                    "requested": payload.provider or "ollama",
+                    "effective": "ollama",
+                    "limited": False,
+                },
+            })
+            yield sse_event("meta", {"context_used": context_used})
 
-            answer_text = "".join(answer_parts)
-            new_count = save_chat_record(
-                user_id=payload.user_id,
-                today_str=today_str,
-                current_count=current_count,
-                mongo_available=mongo_available,
-                payload=payload,
-                thought=thought,
-                answer=answer_text,
-                context_used=student_meta,
-            )
+            async for chunk in stream_chat(context, should_stop):
+                if await request.is_disconnected():
+                    stop_event.set()
+                    break
+                answer_parts.append(chunk)
+                yield sse_event("delta", {"text": chunk})
 
+            if stop_event.is_set() or await request.is_disconnected():
+                return
+
+            answer_text = "".join(answer_parts).strip()
+            final_context = await finalize_streamed_chat(context, answer_text)
             yield sse_event(
                 "done",
                 {
-                    "thought": thought,
-                    "context_used": student_meta,
-                    "remaining_uses": max(0, 5 - new_count),
+                    "thought": f"intent={context.intent}; mode={context.mode}; language={context.answer_language}",
+                    "context_used": final_context,
+                    "remaining_uses": 5,
                 },
             )
-        except HTTPException as e:
-            yield sse_event("error", {"detail": e.detail, "status_code": e.status_code})
+        except asyncio.CancelledError:
+            stop_event.set()
+            raise
         except Exception as e:
-            print(f"Chat stream failed: {e}")
-            yield sse_event("error", {"detail": str(e), "status_code": 500})
+            if stop_event.is_set() or await request.is_disconnected():
+                return
+            yield sse_event(
+                "error",
+                {
+                    "detail": str(e),
+                    "status_code": 500,
+                },
+            )
 
+    stop_event = asyncio.Event()
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 

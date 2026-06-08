@@ -41,7 +41,7 @@ Run all Python commands from this `chatbot` directory and through the local `.ve
    GEMINI_API_KEY=your_gemini_api_key
    OPENAI_API_KEY=optional_system_openai_key
    OLLAMA_BASE_URL=http://localhost:11434
-   OLLAMA_MODEL=llama3.1:latest
+   OLLAMA_MODEL=hellonico/Qwen-2.5-Math-7.6B-Instruct-Q6_K.gguf
    OLLAMA_TIMEOUT_SECONDS=0
    OLLAMA_NUM_CTX=1024
    ```
@@ -49,7 +49,7 @@ Run all Python commands from this `chatbot` directory and through the local `.ve
    `JWT_SECRET` must match the backend `JWT_SECRET`; the chatbot uses it to verify admin access for internal providers.
    Use a secret with at least 32 bytes to avoid HMAC key length warnings.
    `OLLAMA_MODEL` must match a model shown by `ollama list`. Install a model with `ollama pull <model>`.
-   `OLLAMA_TIMEOUT_SECONDS=0` disables the chatbot-side Ollama timeout. Ollama answers are streamed to the UI and are not capped by a chatbot token limit. Install a smaller model if `llama3.1:latest` still feels slow.
+   `OLLAMA_TIMEOUT_SECONDS=0` disables the chatbot-side Ollama timeout. Ollama answers are streamed to the UI and are not capped by a chatbot token limit. If this math model feels slow on your machine, switch `OLLAMA_MODEL` to a smaller installed model.
 
 4. Launch the server:
 
@@ -60,7 +60,12 @@ Run all Python commands from this `chatbot` directory and through the local `.ve
 5. Run a quick compile check:
 
    ```powershell
-   .\.venv\Scripts\python.exe -m py_compile main.py llm.py database.py knowledge_base.py prompts.py
+   .\.venv\Scripts\python.exe -m py_compile main.py database.py chat_models.py language_service.py intent_service.py math_tool_service.py memory_service.py lesson_retriever.py prompts.py llm_service.py tutor_service.py knowledge_base.py
+   ```
+
+6. If the chatbot stuck mid conversation:
+   ```powershell   
+   Get-Process python* | Stop-Process -Force
    ```
 
 ## API

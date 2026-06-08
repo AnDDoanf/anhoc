@@ -1,72 +1,75 @@
-def build_prompt_with_cot(
-    student_meta: dict, 
-    rag_context: str, 
-    student_query: str, 
-    subject_name_en: str, 
-    subject_name_vi: str, 
-    locale: str = "vi",
-    reasoning_technique: str = "step_by_step"
-) -> str:
-    """
-    Constructs a highly structured reasoning system prompt directing the model
-    to perform step-by-step Chain of Thought encapsulated in tags, specializing
-    dynamically in the student's active course/subject.
-    """
-    subject_name = subject_name_vi if locale == "vi" else subject_name_en
-    lang_instruction = "Respond entirely in Vietnamese." if locale == "vi" else "Respond entirely in English."
-    reasoning_instruction = build_reasoning_instruction(reasoning_technique)
-    
-    prompt = f"""
-You are Anhoc, a friendly, intelligent {subject_name} tutor chatbot helping kids from grades 1-9 learn {subject_name}.
-{lang_instruction}
+VI_TUTOR_PROMPT = """Ban la gia su Toan than thien cho hoc sinh Viet Nam.
 
----
-STUDENT INFO (Use this to customize your vocabulary and tone. Adapt to their level):
-- Name: {student_meta.get('username', 'Student')}
-- Current Course Level: {student_meta.get('level', 1)}
-- XP Points: {student_meta.get('total_xp', 0)}
----
-
----
-CURRICULUM CONTEXT (RAG - Injected from our lessons. Use this mathematical or course information directly to answer if applicable):
-{rag_context}
----
-
-INSTRUCTIONS:
-1. Use this reasoning technique privately before answering: {reasoning_instruction}
-2. Put only a concise reasoning summary inside the '<thought>' block. Do not reveal hidden chain-of-thought, exhaustive internal reasoning, or private deliberation.
-3. After the closing '</thought>' tag, provide the final friendly, encouraging, and clear answer for the student. Use clean markdown.
-4. Keep the language fun, engaging, and clear for school kids. Explain academic steps with examples.
-
-Student Question: {student_query}
-
-Follow this exact structural layout:
-<thought>
-[Your step-by-step Chain-of-Thought reasoning goes here]
-</thought>
-[Your friendly student-facing tutor explanation goes here]
+Quy tac:
+- Noi tieng Viet tu nhien, de hieu.
+- Goi hoc sinh la "em".
+- Khong che bai khi hoc sinh sai.
+- Uu tien goi y truoc neu hoc sinh chua yeu cau loi giai day du.
+- Neu hoc sinh yeu cau giai, giai tung buoc ngan gon.
+- Neu hoc sinh sai, chi ra loi nhe nhang va khich le.
+- Luon dua vao TOOL RESULT khi co.
+- Khong tra loi qua dai.
 """
-    return prompt
+
+EN_TUTOR_PROMPT = """You are a friendly math tutor.
+
+Rules:
+- Use simple English.
+- Be encouraging and patient.
+- Give hints first unless the student asks for the full solution.
+- Explain step by step.
+- Check calculations with tools.
+- If the student is wrong, explain the mistake kindly.
+- Keep answers clear and not too long.
+"""
 
 
-def build_reasoning_instruction(reasoning_technique: str) -> str:
-    techniques = {
-        "step_by_step": (
-            "Step-by-step decomposition. Identify the known values, choose the relevant rule or formula, "
-            "solve in ordered steps, and summarize the key reason each step works."
-        ),
-        "plan_solve_check": (
-            "Plan-Solve-Check. First choose a plan, then solve the problem, then verify the result against "
-            "the original question and note any common mistake to avoid."
-        ),
-        "socratic": (
-            "Socratic tutoring. Guide the student with short guiding questions and reveal the solution "
-            "progressively instead of jumping directly to the final result."
-        ),
-        "worked_example": (
-            "Worked example. Solve the given problem as a model example, label each operation clearly, "
-            "and finish with a quick pattern the student can reuse."
-        ),
-    }
+def build_tutor_prompt(
+    *,
+    answer_language: str,
+    mode: str,
+    intent: str,
+    student_memory: str,
+    lesson_context: str,
+    recent_messages: str,
+    tool_result: str,
+    user_message: str,
+):
+    system_prompt = VI_TUTOR_PROMPT if answer_language == "vi" else EN_TUTOR_PROMPT
+    mode_line = {
+        "hint": "Give only a helpful hint, not the full answer, unless the student explicitly asks for it.",
+        "solve": "Solve the problem clearly in short steps.",
+        "check": "Check the student's answer and explain the mistake kindly if needed.",
+        "explain": "Explain the idea more simply than usual.",
+        "practice": "Create or support practice in the same topic.",
+        "review": "Act like a helpful tutor in a short conversation.",
+    }.get(mode, "Solve the problem clearly in short steps.")
 
-    return techniques.get(reasoning_technique, techniques["step_by_step"])
+    return f"""SYSTEM:
+{system_prompt}
+
+CURRENT MODE:
+- Mode: {mode}
+- Intent: {intent}
+- Instruction: {mode_line}
+
+STUDENT MEMORY:
+{student_memory}
+
+LESSON CONTEXT:
+{lesson_context}
+
+RECENT MESSAGES:
+{recent_messages}
+
+TOOL RESULT:
+{tool_result}
+
+USER:
+{user_message}
+
+Answer in {("Vietnamese" if answer_language == "vi" else "English")} only.
+Do not output hidden reasoning or XML tags.
+If TOOL RESULT is relevant, use it directly.
+Keep the answer warm, clear, and not too long.
+"""

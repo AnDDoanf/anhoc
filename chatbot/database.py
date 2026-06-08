@@ -1,53 +1,83 @@
 import os
-import psycopg2
 import urllib.parse
+from datetime import datetime
+
+import psycopg2
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from psycopg2.extras import RealDictCursor
-from pymongo import MongoClient
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# App Configuration
-MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017/anhoc_chatbot")
+MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
+MONGODB_DB = os.getenv("MONGODB_DB", "math_tutor")
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/anhoc")
 
-# Connect to MongoDB with a 2-second timeout for local dev resilience
+mongo_client: AsyncIOMotorClient | None = None
+db_mongo: AsyncIOMotorDatabase | None = None
+
 try:
-    mongo_client = MongoClient(MONGODB_URI, serverSelectionTimeoutMS=2000)
-    db_mongo = mongo_client.get_default_database()
+    mongo_client = AsyncIOMotorClient(MONGODB_URI, serverSelectionTimeoutMS=2000)
+    db_mongo = mongo_client.get_database(MONGODB_DB)
 except Exception as e:
-    print(f"MongoDB connection failed: {e}")
+    print(f"MongoDB client initialization failed: {e}")
+    mongo_client = None
     db_mongo = None
 
-# In-memory storage fallback for local development when MongoDB is offline
-in_memory_usage = {}        # key: (user_id, date) -> count (int)
-in_memory_conversations = [] # list of dicts
+in_memory_usage: dict[tuple[str, str], int] = {}
+in_memory_conversations: list[dict] = []
+in_memory_messages: list[dict] = []
+in_memory_student_memories: dict[str, dict] = {}
+in_memory_practice_questions: list[dict] = []
+in_memory_tutor_logs: list[dict] = []
+
+
+async def is_mongo_available() -> bool:
+    if mongo_client is None or db_mongo is None:
+        return False
+
+    try:
+        await mongo_client.admin.command("ping")
+        return True
+    except Exception as e:
+        print(f"MongoDB connection offline (falling back to in-memory storage): {e}")
+        return False
+
+
+async def ensure_mongo_indexes():
+    if not await is_mongo_available():
+        return
+
+    await db_mongo.conversations.create_index([("userId", 1), ("updatedAt", -1)])
+    await db_mongo.messages.create_index([("conversationId", 1), ("createdAt", 1)])
+    await db_mongo.student_memories.create_index("userId", unique=True)
+    await db_mongo.lesson_chunks.create_index([("grade", 1), ("lessonId", 1), ("language", 1)])
+    await db_mongo.practice_questions.create_index([("userId", 1), ("topic", 1), ("createdAt", -1)])
+    await db_mongo.tutor_logs.create_index([("userId", 1), ("createdAt", -1)])
+
+
+def utcnow() -> datetime:
+    return datetime.utcnow()
+
 
 def get_pg_connection():
-    """
-    Returns a connection to the PostgreSQL database with cleaned DSN parameters.
-    """
     try:
-        # Clean the connection URL for psycopg2 compatibility
         url_parts = urllib.parse.urlparse(DATABASE_URL)
         query_params = urllib.parse.parse_qs(url_parts.query)
-        
-        # Strip unsupported prisma/nodejs parameters (pgbouncer, channel_binding)
         unsupported = ["pgbouncer", "channel_binding"]
         cleaned_params = {k: v for k, v in query_params.items() if k not in unsupported}
         cleaned_query = urllib.parse.urlencode(cleaned_params, doseq=True)
-        
+
         cleaned_url = urllib.parse.ParseResult(
             scheme=url_parts.scheme,
             netloc=url_parts.netloc,
             path=url_parts.path,
             params=url_parts.params,
             query=cleaned_query,
-            fragment=url_parts.fragment
+            fragment=url_parts.fragment,
         ).geturl()
 
-        conn = psycopg2.connect(cleaned_url, cursor_factory=RealDictCursor)
-        return conn
+        return psycopg2.connect(cleaned_url, cursor_factory=RealDictCursor)
     except Exception as e:
         print(f"Failed to connect to PostgreSQL: {e}")
         return None
