@@ -3,7 +3,11 @@
   "version": "1.0.0",
   "description": "Anhoc Math Learning Application Monorepo Root",
   "scripts": {
-    "dev": "npx concurrently --kill-others --names \"frontend,backend,chatbot\" -c \"cyan,green,yellow\" \"npm run dev --prefix frontend\" \"npm run dev --prefix backend\" \"cd chatbot && .\\.venv\\Scripts\\python.exe -m uvicorn main:app --port 5002 --reload\"",
+    "ports:close": "node ./scripts/close-ports.mjs 5000 5001 --best-effort",
+    "ports:close:all": "node ./scripts/close-ports.mjs 5000 5001 5002 --best-effort",
+    "dev": "node ./scripts/dev-root.mjs",
+    "dev:clean": "node ./scripts/dev-root.mjs",
+    "dev:raw": "npx concurrently --kill-others --names \"frontend,backend,chatbot\" -c \"cyan,green,yellow\" \"npm run dev --prefix frontend\" \"npm run dev --prefix backend\" \"cd chatbot && .\\.venv\\Scripts\\python.exe -m uvicorn main:app --port 5002 --reload\"",
     "dev:frontend": "npm run dev --prefix frontend",
     "dev:backend": "npm run dev --prefix backend",
     "dev:chatbot": "cd chatbot && .\\.venv\\Scripts\\python.exe -m uvicorn main:app --port 5002 --reload",

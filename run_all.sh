@@ -11,6 +11,7 @@ if [ ! -d "frontend/node_modules" ] || [ ! -d "backend/node_modules" ]; then
     npm run install:all
 fi
 
-# Run the concurrent dev command
+# Close ports first, then run the concurrent dev command
+echo "[+] Closing ports 5000, 5001, and 5002 before launch..."
 echo "[+] Launching Frontend (Port 5000), Backend (Port 5001), and Chatbot (Port 5002)..."
-npm run dev
+npm run dev:clean
