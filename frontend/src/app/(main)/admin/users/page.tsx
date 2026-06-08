@@ -109,12 +109,13 @@ export default function AdminUsersPage() {
   const [countryQuery, setCountryQuery] = useState("");
   const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [hasMore, setHasMore] = useState(false);
   const [summary, setSummary] = useState({ total: 0, admins: 0, students: 0 });
   const [subjectAccessRequests, setSubjectAccessRequests] = useState<SubjectAccessRequest[]>([]);
@@ -122,21 +123,20 @@ export default function AdminUsersPage() {
 
   const loadUsers = useCallback(async (
     nextPage = 1,
-    append = false,
     searchValue = search,
-    roleValue = roleFilter
+    roleValue = roleFilter,
+    sizeValue = pageSize
   ) => {
-    if (append) setLoadingMore(true);
-    else setLoading(true);
+    setLoading(true);
     setError(null);
     try {
       const data = await adminService.listUsers({
         search: searchValue || undefined,
         role: roleValue || undefined,
         page: nextPage,
-        pageSize: 10,
+        pageSize: sizeValue,
       });
-      setUsers((current) => (append ? [...current, ...data.items] : data.items));
+      setUsers(data.items);
       if (data.summary) {
         setSummary({
           total: data.summary.total,
@@ -146,13 +146,13 @@ export default function AdminUsersPage() {
       }
       setPage(data.pagination.page);
       setHasMore(data.pagination.hasMore);
+      setTotalPages(data.pagination.totalPages || 1);
     } catch (err: unknown) {
-      setError(getErrorMessage(err, append ? t("errors.refresh") : t("errors.load")));
+      setError(getErrorMessage(err, t("errors.load")));
     } finally {
       setLoading(false);
-      setLoadingMore(false);
     }
-  }, [roleFilter, search, t]);
+  }, [roleFilter, search, t, pageSize]);
 
   const loadInitialData = useCallback(async () => {
     setLoading(true);
@@ -176,7 +176,7 @@ export default function AdminUsersPage() {
   }, [loadInitialData]);
 
   useEffect(() => {
-    loadUsers(1, false, "", "");
+    loadUsers(1, "", "");
   }, [loadUsers]);
 
   const defaultRoleName = useMemo(() => {
@@ -190,7 +190,7 @@ export default function AdminUsersPage() {
   }, [defaultRoleName, form.role_name]);
 
   const refreshUsers = async () => {
-    await loadUsers(1, false, search, roleFilter);
+    await loadUsers(1, search, roleFilter);
   };
 
   const reviewSubjectAccess = async (requestId: number, status: "approved" | "rejected") => {
@@ -285,14 +285,14 @@ export default function AdminUsersPage() {
     try {
       if (editingUser) {
         await adminService.updateUser(editingUser.id, payload);
-        await loadUsers(1, false, search, roleFilter);
+        await loadUsers(page, search, roleFilter);
         setSuccess(t("messages.updated"));
       } else {
         await adminService.createUser({
           ...payload,
           password: form.password,
         });
-        await loadUsers(1, false, search, roleFilter);
+        await loadUsers(1, search, roleFilter);
         setSuccess(t("messages.created"));
       }
       resetForm(false);
@@ -312,7 +312,8 @@ export default function AdminUsersPage() {
 
     try {
       await adminService.deleteUser(deleteTarget.id);
-      await loadUsers(1, false, search, roleFilter);
+      const nextLoadPage = (users.length === 1 && page > 1) ? page - 1 : page;
+      await loadUsers(nextLoadPage, search, roleFilter);
       setSuccess(t("messages.deleted"));
       setDeleteTarget(null);
     } catch (err: unknown) {
@@ -759,15 +760,52 @@ export default function AdminUsersPage() {
                 )}
               </div>
             )}
-            {hasMore && !loading && (
-              <div className="border-t border-sol-border/10 p-4 flex justify-center">
-                <button
-                  onClick={() => loadUsers(page + 1, true, search, roleFilter)}
-                  disabled={loadingMore}
-                  className="rounded-lg border border-sol-border/30 bg-sol-bg px-5 py-3 text-sm font-black text-sol-text transition hover:border-sol-accent/40 hover:text-sol-accent disabled:opacity-60"
-                >
-                  {loadingMore ? t("loadingMore") : t("showMore")}
-                </button>
+            {!loading && (
+              <div className="border-t border-sol-border/10 p-4 flex flex-wrap items-center justify-between gap-4 text-sm font-bold text-sol-muted">
+                <div className="flex items-center gap-2">
+                  <span>{t("pagination.show")}</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => {
+                      const newSize = parseInt(e.target.value);
+                      setPageSize(newSize);
+                      loadUsers(1, search, roleFilter, newSize);
+                    }}
+                    className="rounded-lg border border-sol-border/30 bg-sol-bg px-2 py-1 text-xs font-bold text-sol-text outline-none focus:border-sol-accent"
+                  >
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                  </select>
+                  <span>{t("pagination.perPage")}</span>
+                </div>
+                
+                {totalPages > 1 && (
+                  <div className="flex items-center gap-4">
+                    <div>
+                      {t("pagination.pageOf", { page, totalPages })}
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        disabled={page <= 1}
+                        onClick={() => loadUsers(page - 1, search, roleFilter, pageSize)}
+                        className="rounded-lg border border-sol-border/30 bg-sol-bg px-4 py-2 text-xs font-black text-sol-text transition hover:border-sol-accent/40 hover:text-sol-accent disabled:opacity-45 disabled:pointer-events-none"
+                      >
+                        {t("pagination.previous")}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={page >= totalPages}
+                        onClick={() => loadUsers(page + 1, search, roleFilter, pageSize)}
+                        className="rounded-lg border border-sol-border/30 bg-sol-bg px-4 py-2 text-xs font-black text-sol-text transition hover:border-sol-accent/40 hover:text-sol-accent disabled:opacity-45 disabled:pointer-events-none"
+                      >
+                        {t("pagination.next")}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </section>

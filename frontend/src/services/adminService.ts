@@ -16,6 +16,12 @@ export type AdminUser = {
   created_at: string;
   slots_purchased?: number;
   supervisor_id?: string | null;
+  learn_unit_id?: string | null;
+  learn_unit?: {
+    id: string;
+    name: string;
+    code: string;
+  } | null;
   max_subjects?: number | null;
   max_grades?: number | null;
   max_lessons?: number | null;
@@ -39,6 +45,7 @@ export type AdminUserPayload = {
   password?: string;
   role_name: string;
   slots_purchased?: number;
+  learn_unit_name?: string;
   max_subjects?: number | null;
   max_grades?: number | null;
   max_lessons?: number | null;
