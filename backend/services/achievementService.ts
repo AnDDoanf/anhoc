@@ -1037,8 +1037,15 @@ export async function checkAndAwardAchievements(userId: string): Promise<NewAchi
       where: { user_id: userId, is_completed: true },
       include: { lesson: true }
     }),
-    (prisma as any).user.findUnique({ where: { id: userId } })
+    (prisma as any).user.findUnique({ 
+      where: { id: userId },
+      include: { role: { select: { name: true } } }
+    })
   ]);
+
+  if (user && (user as any).role?.name === 'free_student') {
+    return [];
+  }
 
   const earnedSlugs = new Set((earned as any[]).map((e: any) => e.achievement.slug));
   const newlyEarned: NewAchievement[] = [];

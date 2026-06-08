@@ -25,12 +25,14 @@ export const levelService = {
   addXp: async (userId: string, amount: number, reason: string) => {
     if (amount <= 0) return null;
 
-    // 1. Log the XP gain for history
-    await prisma.xpLog.create({
-      data: { user_id: userId, amount, reason }
+    // Fetch user role
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: { select: { name: true } } }
     });
+    const isFreeStudent = user?.role?.name === 'free_student';
 
-    // 2. Fetch current stats
+    // Fetch current stats
     let stats = await prisma.studentStats.findUnique({
       where: { user_id: userId }
     });
@@ -40,9 +42,30 @@ export const levelService = {
         data: { user_id: userId, total_xp: 0, level: 1 }
       });
     }
+
+    const currentXp = stats.total_xp || 0;
+    let xpToAdd = amount;
+
+    if (isFreeStudent) {
+      if (currentXp >= 500) {
+        return stats;
+      }
+      if (currentXp + amount > 500) {
+        xpToAdd = 500 - currentXp;
+      }
+    }
+
+    if (xpToAdd <= 0) return stats;
+
+    // 1. Log the XP gain for history
+    await prisma.xpLog.create({
+      data: { user_id: userId, amount: xpToAdd, reason }
+    });
+
     // 3. Recompute level from cumulative XP total
-    const nextTotalXp = (stats.total_xp || 0) + amount;
+    const nextTotalXp = currentXp + xpToAdd;
     const nextLevel = levelService.getLevelFromTotalXp(nextTotalXp);
+
     // 4. Update stats
     return await prisma.studentStats.update({
       where: { user_id: userId },

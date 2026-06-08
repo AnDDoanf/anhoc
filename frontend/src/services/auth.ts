@@ -10,6 +10,7 @@ export interface RegisterRequest {
   password: string;
   username?: string;
   country?: string;
+  role_name?: string;
 }
 
 export interface LoginResponse {

@@ -27,6 +27,16 @@ model User {
   preferred_subject Subject? @relation(fields: [preferred_subject_id], references: [id], onDelete: SetNull)
   role_id       Int
   role          Role          @relation(fields: [role_id], references: [id])
+  supervisor_id String?       @db.Uuid
+  slots_purchased Int         @default(0)
+  max_subjects   Int?
+  max_grades     Int?
+  max_lessons    Int?
+  max_templates   Int?
+  max_teachers    Int?
+  max_students    Int?
+  supervisor    User?         @relation("SupervisorMembers", fields: [supervisor_id], references: [id], onDelete: SetNull)
+  managed_members User[]      @relation("SupervisorMembers")
   created_at    DateTime      @default(now()) @db.Timestamptz
   
   // Relations to content & tracking
@@ -58,7 +68,7 @@ model User {
 
 model Role {
   id          Int              @id @default(autoincrement())
-  name        String           @unique @db.VarChar(50) // e.g., "admin", "student"
+  name        String           @unique @db.VarChar(50) // e.g., "admin", "free_student"
   permissions RolePermission[]
   subject_permissions RoleSubjectPermission[]
   users       User[]
@@ -106,6 +116,7 @@ model Grade {
   subject_id Int?
   subject   Subject? @relation(fields: [subject_id], references: [id], onDelete: SetNull)
   lessons   Lesson[]
+  created_by String?   @db.Uuid
   
   // Relations to gaming
   game_challenges GameChallenge[]
@@ -120,6 +131,7 @@ model Subject {
   title_vi  String   @db.VarChar(100)
   color     String?  @db.VarChar(20)
   is_classified Boolean @default(false)
+  created_by String?   @db.Uuid
   grades    Grade[]
   lessons   Lesson[]
   role_permissions RoleSubjectPermission[]
@@ -169,6 +181,7 @@ model Lesson {
   content_markdown_vi String
   order_index         Int?
   created_by          String?            @db.Uuid
+  is_premium          Boolean            @default(false)
   updated_at          DateTime           @default(now()) @db.Timestamptz
   
   grade              Grade              @relation(fields: [grade_id], references: [id])
@@ -194,6 +207,7 @@ model QuestionTemplate {
   lesson_id               String?            @db.Uuid
   template_type           String             @db.VarChar(50)
   difficulty              String             @default("medium") @db.VarChar(20)
+  is_premium              Boolean            @default(false)
   
   // Multilingual Templates
   body_template_en        String

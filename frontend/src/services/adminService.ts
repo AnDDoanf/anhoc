@@ -14,6 +14,14 @@ export type AdminUser = {
   account_status?: string;
   role: AdminRole;
   created_at: string;
+  slots_purchased?: number;
+  supervisor_id?: string | null;
+  max_subjects?: number | null;
+  max_grades?: number | null;
+  max_lessons?: number | null;
+  max_templates?: number | null;
+  max_teachers?: number | null;
+  max_students?: number | null;
   stats?: {
     total_xp?: number | null;
     level?: number | null;
@@ -30,16 +38,13 @@ export type AdminUserPayload = {
   country?: string;
   password?: string;
   role_name: string;
-};
-
-export type AdminAction = {
-  id: number;
-  name: string;
-};
-
-export type AdminResource = {
-  id: number;
-  name: string;
+  slots_purchased?: number;
+  max_subjects?: number | null;
+  max_grades?: number | null;
+  max_lessons?: number | null;
+  max_templates?: number | null;
+  max_teachers?: number | null;
+  max_students?: number | null;
 };
 
 export type AdminSubject = {
@@ -49,36 +54,6 @@ export type AdminSubject = {
   title_vi: string;
   color?: string | null;
   is_classified?: boolean;
-};
-
-export type AdminAccessRole = {
-  id: number;
-  name: string;
-  users: number;
-  permissions: Array<{
-    id: number;
-    action_id: number;
-    action: AdminAction;
-    resource_id: number;
-    resource: AdminResource;
-  }>;
-  subject_ids: number[];
-  subjects: AdminSubject[];
-};
-
-export type AdminAccessUser = {
-  id: string;
-  username: string;
-  email: string;
-  role: AdminRole;
-};
-
-export type AccessControlData = {
-  roles: AdminAccessRole[];
-  actions: AdminAction[];
-  resources: AdminResource[];
-  subjects: AdminSubject[];
-  users: AdminAccessUser[];
 };
 
 export type SubjectAccessRequest = {
@@ -98,15 +73,6 @@ export type SubjectAccessRequest = {
     username: string;
     email: string;
   } | null;
-};
-
-export type RolePayload = {
-  name: string;
-  permissions: Array<{
-    action_id: number;
-    resource_id: number;
-  }>;
-  subject_ids: number[];
 };
 
 export type AdminUserInsights = {
@@ -205,11 +171,6 @@ export const adminService = {
     return response.data;
   },
 
-  getAccessControl: async (): Promise<AccessControlData> => {
-    const response = await api.get('/admin/access-control');
-    return response.data;
-  },
-
   listSubjectAccessRequests: async (status = 'pending'): Promise<SubjectAccessRequest[]> => {
     const response = await api.get('/admin/subject-access-requests', { params: { status } });
     return response.data;
@@ -217,21 +178,6 @@ export const adminService = {
 
   updateSubjectAccessRequest: async (id: number, status: "approved" | "rejected"): Promise<SubjectAccessRequest> => {
     const response = await api.patch(`/admin/subject-access-requests/${id}`, { status });
-    return response.data;
-  },
-
-  createRole: async (payload: RolePayload): Promise<AdminAccessRole> => {
-    const response = await api.post('/admin/roles', payload);
-    return response.data;
-  },
-
-  updateRole: async (id: number, payload: RolePayload): Promise<AdminAccessRole> => {
-    const response = await api.put(`/admin/roles/${id}`, payload);
-    return response.data;
-  },
-
-  assignUserRole: async (userId: string, roleId: number): Promise<AdminUser> => {
-    const response = await api.patch(`/admin/users/${userId}/role`, { role_id: roleId });
     return response.data;
   },
 

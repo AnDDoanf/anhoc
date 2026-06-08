@@ -269,9 +269,11 @@
     }
   },
   "Sidebar": {
-    "learning": "Learning",
-    "practice": "Practice",
-    "achievements": "Achievements",
+      "administrator": "Administrator",
+      "learningMaterial": "Learning material",
+      "learning": "Learning",
+      "practice": "Practice",
+      "achievements": "Achievements",
     "test": "Test",
     "grade1": "Grade 1",
     "grade6": "Grade 6",
@@ -281,7 +283,9 @@
     "users": "Users",
     "roles": "Roles",
     "reports": "Reports",
-    "games": "Games"
+    "games": "Games",
+    "pricing": "Subscription",
+    "members": "Members"
   },
   "Practice": {
     "title": "Master Your Skills",
@@ -564,13 +568,20 @@
       "unassignedGrade": "Unassigned Grade",
       "templateType": "Template Type",
       "difficulty": "Difficulty",
-      "questionTypes": {
-        "numeric_input": "Numeric input",
-        "true_false": "True / false",
-        "multiple_choices": "Multiple choices",
-        "ordering": "Ordering",
-        "theoretical_question": "Theoretical question"
-      },
+        "questionTypes": {
+          "numeric_input": "Numeric input",
+          "math_addition": "Addition",
+          "math_subtraction": "Subtraction",
+          "math_multiplication": "Multiplication",
+          "math_exact_division": "Exact division",
+          "math_missing_addend": "Missing addend",
+          "math_difference_compare": "Difference comparison",
+          "geometry_rectangle_perimeter": "Rectangle perimeter",
+          "true_false": "True / false",
+          "multiple_choices": "Multiple choices",
+          "ordering": "Ordering",
+          "theoretical_question": "Theoretical question"
+        },
       "difficultyOptions": {
         "easy": "Easy",
         "medium": "Medium",
@@ -693,8 +704,10 @@
     },
     "roles": {
       "admin": "Admin",
+      "supervisor": "Supervisor",
       "teacher": "Teacher",
-      "student": "Student"
+      "subStudent": "Premium Student",
+      "freeStudent": "Free Student"
     },
     "actions": {
       "refresh": "Refresh",
@@ -722,7 +735,15 @@
       "newPassword": "New Password",
       "passwordPlaceholder": "At least 6 characters",
       "optionalPassword": "Optional",
-      "role": "Role"
+        "role": "Role",
+        "slotsPurchased": "Supervisor Seats",
+        "maxSubjects": "Max Subjects",
+        "maxGrades": "Max Grades",
+        "maxLessons": "Max Lessons",
+        "maxTemplates": "Max Templates",
+        "maxTeachers": "Max Teachers",
+        "maxStudents": "Max Students",
+      "unlimitedPlaceholder": "Unlimited"
     },
     "filters": {
       "searchPlaceholder": "Search username or email",
@@ -734,7 +755,8 @@
       "level": "Level",
       "attempts": "Attempts",
       "created": "Created",
-      "actions": "Actions"
+      "actions": "Actions",
+      "seats": "{count} seats"
     },
     "messages": {
       "created": "Account created.",
@@ -1055,6 +1077,178 @@
       "submitAttempt": "Failed to submit game attempt",
       "launchTitle": "Error Launching Playroom",
       "missingConfiguration": "Game configuration missing."
+    }
+  },
+  "Pricing": {
+    "title": "Subscription Plans",
+    "subtitle": "Choose the perfect plan for your learning journey",
+    "period": {
+      "forever": "forever",
+      "month": "per month",
+      "seatMonth": "per seat / month"
+    },
+    "buttons": {
+      "currentPlan": "Current Plan",
+      "upgrade": "Upgrade Plan",
+      "getStarted": "Get Started",
+      "buySeats": "Buy Seats",
+      "manageMembers": "Manage Members"
+    },
+    "freeStudent": {
+      "title": "Free Student",
+      "price": "$0",
+      "description": "Perfect for starting your math journey",
+      "features": {
+        "accessFree": "Access free modules & lessons",
+        "xpCap": "Earn up to 500 XP (Level 3)",
+        "basicAi": "Basic AI math tutoring",
+        "premiumLocked": "No access to premium modules",
+        "rewardsLocked": "Achievements & rewards locked"
+      }
+    },
+    "subStudent": {
+      "title": "Premium Student",
+      "price": "$9.99",
+      "description": "Unlock your full potential with all features",
+      "features": {
+        "allFree": "All free features included",
+        "accessPremium": "Access all premium lessons & modules",
+        "noCap": "No XP or level cap",
+        "rewardsUnlocked": "Unlock achievements & rewards",
+        "priorityAi": "Priority AI tutor support"
+      }
+    },
+    "supervisor": {
+      "title": "Supervisor / Parent",
+      "price": "$19.99",
+      "description": "Manage and subscribe students in your organization",
+      "features": {
+        "buySeats": "Purchase learning seats for students",
+        "manageAccounts": "Create & manage student/teacher accounts",
+        "assignSeats": "Assign/unassign premium subscriptions",
+        "trackProgress": "Track progress of managed students",
+        "reviewLessons": "Review lessons, assignments & quizzes"
+      }
+    },
+    "checkout": {
+      "title": "Simulated Stripe Checkout",
+      "pendingTitle": "Stripe Integration Pending",
+      "pendingDesc": "This checkout is a simulation. Click 'Pay Now' to mock a successful subscription purchase.",
+      "cardholder": "Cardholder Name",
+      "cardNumber": "Card Number",
+      "expiry": "Expiry Date",
+      "cvc": "CVC",
+      "payNow": "Pay Now",
+      "processing": "Processing...",
+      "success": "Payment simulated successfully! Your subscription has been updated.",
+      "fail": "Payment simulation failed. Please check details and try again.",
+      "close": "Close"
+    }
+  },
+  "Supervisor": {
+    "title": "Supervisor Dashboard",
+    "subtitle": "Manage your students, teachers, and seat subscriptions.",
+    "accessDenied": "Access Denied: Supervisor role required.",
+    "slotsOverview": "Seats Subscription",
+    "slotsUsage": "{assigned} of {total} seats assigned",
+    "buyMore": "Buy More Seats",
+    "createMember": "Create Account",
+    "createMemberDesc": "Add a new student or teacher account under your organization.",
+    "fields": {
+      "email": "Email Address",
+      "password": "Password",
+      "username": "Username",
+      "role": "Role"
+    },
+    "roles": {
+      "student": "Student",
+      "teacher": "Teacher",
+      "freeStudent": "Free Student",
+      "subStudent": "Premium Student"
+    },
+    "buttons": {
+      "create": "Create Account",
+      "creating": "Creating...",
+      "assign": "Assign Premium Seat",
+      "revoke": "Revoke Premium Seat",
+      "assigning": "Assigning...",
+      "revoking": "Revoking..."
+    },
+    "alerts": {
+      "noMembers": "No managed accounts found. Add your first member above!",
+      "createSuccess": "Account for {username} created successfully!",
+      "assignSuccess": "Seat assigned successfully to {username}!",
+      "revokeSuccess": "Seat revoked successfully from {username}!",
+      "noSlots": "All slots are currently assigned. Purchase more seats to upgrade more students."
+    },
+    "directory": "Organization Directory",
+    "table": {
+      "member": "Member Info",
+      "role": "Role / Status",
+      "dateJoined": "Date Joined",
+      "actions": "Actions"
+    }
+  },
+  "AdminSubscription": {
+    "eyebrow": "Admin",
+    "title": "Subscription Management",
+    "subtitle": "View and configure capacity limits for every supervisor account.",
+    "stats": {
+      "totalSupervisors": "Total Supervisors",
+      "totalSeats": "Total Seats Purchased",
+      "activeSubscriptions": "Active Subscriptions"
+    },
+    "table": {
+      "title": "Supervisor Subscriptions",
+        "hint": "Click Edit on a row to adjust capacity limits inline. Leave a limit blank for unlimited.",
+        "account": "Account",
+        "seats": "Seats",
+        "subjects": "Subjects",
+        "grades": "Grades",
+        "lessons": "Lessons",
+        "templates": "Templates",
+        "teachers": "Teachers",
+        "students": "Students",
+      "actions": "Actions"
+    },
+    "unlimited": "Unlimited",
+    "save": "Save",
+    "cancel": "Cancel",
+    "loading": "Loading supervisors...",
+    "empty": {
+      "title": "No supervisor accounts found.",
+      "subtitle": "Create a supervisor account in the Users page first."
+    },
+      "legend": {
+        "title": "Limit Reference",
+        "blankHint": "Leave blank = unlimited",
+        "subjects": {
+          "label": "Subjects",
+          "desc": "Max subjects the supervisor can create."
+        },
+        "grades": {
+          "label": "Grades",
+          "desc": "Max grades the supervisor can create."
+        },
+        "lessons": {
+          "label": "Lessons",
+          "desc": "Max lessons the supervisor can create."
+        },
+        "templates": {
+          "label": "Templates",
+        "desc": "Max question templates the supervisor can create."
+      },
+      "teachers": {
+        "label": "Teachers",
+        "desc": "Max teacher accounts the supervisor can add."
+      },
+      "students": {
+        "label": "Students",
+        "desc": "Max premium student seats assignable by the supervisor."
+      }
+    },
+    "errors": {
+      "load": "Could not load supervisors."
     }
   }
 }

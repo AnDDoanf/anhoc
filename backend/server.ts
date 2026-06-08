@@ -10,6 +10,7 @@ import adminRoutes from './routes/admin.ts';
 import achievementRoutes from './routes/achievements.ts';
 import gameRoutes from './routes/games.ts';
 import notificationRoutes from './routes/notifications.ts';
+import supervisorRoutes from './routes/supervisor.ts';
 import { seedAchievements } from './services/achievementService.ts';
 import { scheduleInactiveAccountCleanup } from './services/accountLifecycleService.ts';
 
@@ -43,6 +44,7 @@ app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/achievements', achievementRoutes);
 app.use('/api/v1/games', gameRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
+app.use('/api/v1/supervisor', supervisorRoutes);
 
 app.get('/api/v1/health', (req: Request, res: Response) => {
   res.json({ status: 'OK', message: 'Math App Backend is running' });

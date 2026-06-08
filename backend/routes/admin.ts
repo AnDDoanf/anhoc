@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import prisma from '../lib/db';
-import { authenticate, authorize, selfOrAdmin } from '../middleware/auth';
+import { authenticate, authorize, selfOrAdmin, isAdmin } from '../middleware/auth';
+import { FIXED_ROLE_NAMES, STUDENT_ROLE_NAMES, isFixedRoleName } from '../constants/roles.ts';
 import { createNotification, NotificationType } from '../services/notificationService.ts';
 
 const router = Router();
@@ -12,6 +13,16 @@ const parsePositiveInt = (value: unknown, fallback: number, max = 100) => {
   return Math.min(Math.floor(parsed), max);
 };
 
+const fixedRoleOrder = new Map(FIXED_ROLE_NAMES.map((roleName, index) => [roleName, index]));
+
+const sortRolesByFixedOrder = <T extends { name: string }>(roles: T[]) => {
+  return [...roles].sort((left, right) => {
+    const leftOrder = fixedRoleOrder.get(left.name) ?? Number.MAX_SAFE_INTEGER;
+    const rightOrder = fixedRoleOrder.get(right.name) ?? Number.MAX_SAFE_INTEGER;
+    return leftOrder - rightOrder || left.name.localeCompare(right.name);
+  });
+};
+
 const userSelect = {
   id: true,
   username: true,
@@ -19,6 +30,14 @@ const userSelect = {
   country: true,
   account_status: true,
   created_at: true,
+  slots_purchased: true,
+  supervisor_id: true,
+  max_subjects: true,
+  max_grades: true,
+  max_lessons: true,
+  max_templates: true,
+  max_teachers: true,
+  max_students: true,
   role: {
     select: {
       id: true,
@@ -49,76 +68,18 @@ const serializeUser = (user: any) => ({
   account_status: user.account_status,
   role: user.role,
   created_at: user.created_at,
+  slots_purchased: user.slots_purchased ?? 0,
+  supervisor_id: user.supervisor_id ?? null,
+  max_subjects: user.max_subjects ?? null,
+  max_grades: user.max_grades ?? null,
+  max_lessons: user.max_lessons ?? null,
+  max_templates: user.max_templates ?? null,
+  max_teachers: user.max_teachers ?? null,
+  max_students: user.max_students ?? null,
   stats: user.student_stats,
   attempts: user._count?.test_attempts ?? 0,
   lessons_created: user._count?.lessons_created ?? 0
 });
-
-const roleInclude = {
-  permissions: {
-    include: {
-      action: true,
-      resource: true
-    }
-  },
-  subject_permissions: {
-    include: {
-      subject: true
-    }
-  },
-  _count: {
-    select: { users: true }
-  }
-};
-
-const serializeRole = (role: any) => ({
-  id: role.id,
-  name: role.name,
-  users: role._count?.users ?? 0,
-  permissions: role.permissions?.map((permission: any) => ({
-    id: permission.id,
-    action_id: permission.action_id,
-    action: permission.action,
-    resource_id: permission.resource_id,
-    resource: permission.resource
-  })) ?? [],
-  subject_ids: role.subject_permissions?.map((permission: any) => permission.subject_id) ?? [],
-  subjects: role.subject_permissions?.map((permission: any) => permission.subject) ?? []
-});
-
-const syncRoleAccess = async (
-  roleId: number,
-  permissionIds: Array<{ action_id: number; resource_id: number }>,
-  subjectIds: number[]
-) => {
-  await prisma.$transaction([
-    prisma.rolePermission.deleteMany({ where: { role_id: roleId } }),
-    prisma.roleSubjectPermission.deleteMany({ where: { role_id: roleId } }),
-    ...(permissionIds.length > 0
-      ? [
-          prisma.rolePermission.createMany({
-            data: permissionIds.map((permission) => ({
-              role_id: roleId,
-              action_id: permission.action_id,
-              resource_id: permission.resource_id
-            })),
-            skipDuplicates: true
-          })
-        ]
-      : []),
-    ...(subjectIds.length > 0
-      ? [
-          prisma.roleSubjectPermission.createMany({
-            data: subjectIds.map((subjectId) => ({
-              role_id: roleId,
-              subject_id: subjectId
-            })),
-            skipDuplicates: true
-          })
-        ]
-      : [])
-  ]);
-};
 
 const parseUserPayload = (body: any, requirePassword = true) => {
   const username = typeof body.username === 'string' ? body.username.trim() : '';
@@ -126,6 +87,25 @@ const parseUserPayload = (body: any, requirePassword = true) => {
   const password = typeof body.password === 'string' ? body.password : '';
   const roleName = typeof body.role_name === 'string' ? body.role_name.trim() : '';
   const country = typeof body.country === 'string' ? body.country.trim() : '';
+  const slots_purchased = typeof body.slots_purchased !== 'undefined' ? Number(body.slots_purchased) : undefined;
+  const max_subjects = typeof body.max_subjects !== 'undefined'
+    ? (body.max_subjects === null ? null : Number(body.max_subjects))
+    : undefined;
+  const max_grades = typeof body.max_grades !== 'undefined'
+    ? (body.max_grades === null ? null : Number(body.max_grades))
+    : undefined;
+  const max_lessons = typeof body.max_lessons !== 'undefined'
+    ? (body.max_lessons === null ? null : Number(body.max_lessons))
+    : undefined;
+  const max_templates = typeof body.max_templates !== 'undefined' 
+    ? (body.max_templates === null ? null : Number(body.max_templates)) 
+    : undefined;
+  const max_teachers = typeof body.max_teachers !== 'undefined' 
+    ? (body.max_teachers === null ? null : Number(body.max_teachers)) 
+    : undefined;
+  const max_students = typeof body.max_students !== 'undefined' 
+    ? (body.max_students === null ? null : Number(body.max_students)) 
+    : undefined;
 
   if (!username) return { error: 'Username is required' };
   if (!email || !email.includes('@')) return { error: 'A valid email is required' };
@@ -136,139 +116,59 @@ const parseUserPayload = (body: any, requirePassword = true) => {
     return { error: 'Password must be at least 6 characters' };
   }
   if (!roleName) return { error: 'Role is required' };
+  if (!isFixedRoleName(roleName)) return { error: 'Role must be one of the fixed system roles' };
+  if (typeof slots_purchased !== 'undefined' && (isNaN(slots_purchased) || slots_purchased < 0)) {
+    return { error: 'Supervisor seats must be a non-negative number' };
+  }
+  if (typeof max_subjects === 'number' && (isNaN(max_subjects) || max_subjects < 0)) {
+    return { error: 'Subjects limit must be a non-negative number' };
+  }
+  if (typeof max_grades === 'number' && (isNaN(max_grades) || max_grades < 0)) {
+    return { error: 'Grades limit must be a non-negative number' };
+  }
+  if (typeof max_lessons === 'number' && (isNaN(max_lessons) || max_lessons < 0)) {
+    return { error: 'Lessons limit must be a non-negative number' };
+  }
+  if (typeof max_templates === 'number' && (isNaN(max_templates) || max_templates < 0)) {
+    return { error: 'Templates limit must be a non-negative number' };
+  }
+  if (typeof max_teachers === 'number' && (isNaN(max_teachers) || max_teachers < 0)) {
+    return { error: 'Teachers limit must be a non-negative number' };
+  }
+  if (typeof max_students === 'number' && (isNaN(max_students) || max_students < 0)) {
+    return { error: 'Students limit must be a non-negative number' };
+  }
 
-  return { username, email, password, roleName, country };
+  return {
+    username,
+    email,
+    password,
+    roleName,
+    country,
+    slots_purchased,
+    max_subjects,
+    max_grades,
+    max_lessons,
+    max_templates,
+    max_teachers,
+    max_students
+  };
 };
 
-router.get('/roles', authenticate, authorize('manage', 'user'), async (req, res) => {
+router.get('/roles', authenticate, isAdmin, async (req, res) => {
   try {
     const roles = await prisma.role.findMany({
-      orderBy: { name: 'asc' },
+      where: { name: { in: [...FIXED_ROLE_NAMES] } },
       select: { id: true, name: true }
     });
 
-    res.json(roles);
+    res.json(sortRolesByFixedOrder(roles));
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to fetch roles', details: error.message });
   }
 });
 
-router.get('/access-control', authenticate, authorize('manage', 'user'), async (req, res) => {
-  try {
-    const [roles, actions, resources, subjects, users] = await Promise.all([
-      prisma.role.findMany({
-        orderBy: { name: 'asc' },
-        include: roleInclude
-      }),
-      prisma.action.findMany({ orderBy: { name: 'asc' } }),
-      prisma.resource.findMany({ orderBy: { name: 'asc' } }),
-      prisma.subject.findMany({ orderBy: { id: 'asc' } }),
-      prisma.user.findMany({
-        orderBy: { created_at: 'desc' },
-        select: {
-          id: true,
-          username: true,
-          email: true,
-          role: { select: { id: true, name: true } }
-        }
-      })
-    ]);
-
-    res.json({
-      roles: roles.map(serializeRole),
-      actions,
-      resources,
-      subjects,
-      users
-    });
-  } catch (error: any) {
-    res.status(500).json({ error: 'Failed to fetch access control data', details: error.message });
-  }
-});
-
-router.post('/roles', authenticate, authorize('manage', 'user'), async (req, res) => {
-  try {
-    const name = typeof req.body.name === 'string' ? req.body.name.trim().toLowerCase() : '';
-    const permissions = Array.isArray(req.body.permissions) ? req.body.permissions : [];
-    const subjectIds = Array.isArray(req.body.subject_ids)
-      ? req.body.subject_ids.map((id: unknown) => Number(id)).filter(Number.isInteger)
-      : [];
-
-    if (!name) return res.status(400).json({ error: 'Role name is required' });
-
-    const role = await prisma.role.create({ data: { name } });
-    await syncRoleAccess(role.id, permissions, subjectIds);
-
-    const freshRole = await prisma.role.findUnique({
-      where: { id: role.id },
-      include: roleInclude
-    });
-
-    res.status(201).json(serializeRole(freshRole));
-  } catch (error: any) {
-    if (error?.code === 'P2002') {
-      return res.status(409).json({ error: 'Role name already exists' });
-    }
-    res.status(500).json({ error: 'Failed to create role', details: error.message });
-  }
-});
-
-router.put('/roles/:id', authenticate, authorize('manage', 'user'), async (req, res) => {
-  try {
-    const roleId = Number(req.params.id);
-    const name = typeof req.body.name === 'string' ? req.body.name.trim().toLowerCase() : '';
-    const permissions = Array.isArray(req.body.permissions) ? req.body.permissions : [];
-    const subjectIds = Array.isArray(req.body.subject_ids)
-      ? req.body.subject_ids.map((id: unknown) => Number(id)).filter(Number.isInteger)
-      : [];
-
-    if (!Number.isInteger(roleId)) return res.status(400).json({ error: 'Invalid role id' });
-    if (!name) return res.status(400).json({ error: 'Role name is required' });
-
-    await prisma.role.update({
-      where: { id: roleId },
-      data: { name }
-    });
-    await syncRoleAccess(roleId, permissions, subjectIds);
-
-    const freshRole = await prisma.role.findUnique({
-      where: { id: roleId },
-      include: roleInclude
-    });
-
-    res.json(serializeRole(freshRole));
-  } catch (error: any) {
-    if (error?.code === 'P2002') {
-      return res.status(409).json({ error: 'Role name already exists' });
-    }
-    if (error?.code === 'P2025') {
-      return res.status(404).json({ error: 'Role not found' });
-    }
-    res.status(500).json({ error: 'Failed to update role', details: error.message });
-  }
-});
-
-router.patch('/users/:id/role', authenticate, authorize('manage', 'user'), async (req, res) => {
-  try {
-    const roleId = Number(req.body.role_id);
-    if (!Number.isInteger(roleId)) return res.status(400).json({ error: 'Invalid role id' });
-
-    const user = await prisma.user.update({
-      where: { id: req.params.id as string },
-      data: { role_id: roleId },
-      select: userSelect
-    });
-
-    res.json(serializeUser(user as any));
-  } catch (error: any) {
-    if (error?.code === 'P2025') {
-      return res.status(404).json({ error: 'User or role not found' });
-    }
-    res.status(500).json({ error: 'Failed to assign role', details: error.message });
-  }
-});
-
-router.get('/users', authenticate, authorize('manage', 'user'), async (req, res) => {
+router.get('/users', authenticate, isAdmin, async (req, res) => {
   try {
     const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
     const role = typeof req.query.role === 'string' ? req.query.role.trim() : '';
@@ -296,7 +196,7 @@ router.get('/users', authenticate, authorize('manage', 'user'), async (req, res)
         take: pageSize,
       }),
       prisma.user.count({ where: { ...where, role: { name: 'admin' } } }),
-      prisma.user.count({ where: { ...where, role: { name: 'student' } } }),
+      prisma.user.count({ where: { ...where, role: { name: { in: [...STUDENT_ROLE_NAMES] } } } }),
     ]);
 
     res.json({
@@ -319,7 +219,7 @@ router.get('/users', authenticate, authorize('manage', 'user'), async (req, res)
   }
 });
 
-router.get('/subject-access-requests', authenticate, authorize('manage', 'user'), async (req, res) => {
+router.get('/subject-access-requests', authenticate, isAdmin, async (req, res) => {
   try {
     const status = typeof req.query.status === 'string' ? req.query.status.trim().toLowerCase() : 'pending';
     const where = status === 'all' ? {} : { status };
@@ -356,7 +256,7 @@ router.get('/subject-access-requests', authenticate, authorize('manage', 'user')
   }
 });
 
-router.patch('/subject-access-requests/:id', authenticate, authorize('manage', 'user'), async (req, res) => {
+router.patch('/subject-access-requests/:id', authenticate, isAdmin, async (req, res) => {
   try {
     const requestId = Number(req.params.id);
     const status = typeof req.body.status === 'string' ? req.body.status.trim().toLowerCase() : '';
@@ -575,7 +475,8 @@ router.get('/users/:id/insights', authenticate, selfOrAdmin('id'), async (req, r
   }
 });
 
-router.post('/users', authenticate, authorize('manage', 'user'), async (req, res) => {
+
+router.post('/users', authenticate, isAdmin, async (req, res) => {
   try {
     const payload = parseUserPayload(req.body, true);
     if ('error' in payload) return res.status(400).json({ error: payload.error });
@@ -592,6 +493,13 @@ router.post('/users', authenticate, authorize('manage', 'user'), async (req, res
         country: payload.country || null,
         password_hash: passwordHash,
         role_id: roleRecord.id,
+        slots_purchased: payload.slots_purchased ?? (payload.roleName === 'supervisor' ? 1 : 0),
+        max_subjects: payload.max_subjects ?? null,
+        max_grades: payload.max_grades ?? null,
+        max_lessons: payload.max_lessons ?? null,
+        max_templates: payload.max_templates ?? null,
+        max_teachers: payload.max_teachers ?? null,
+        max_students: payload.max_students ?? null,
         student_stats: {
           create: {}
         }
@@ -631,9 +539,30 @@ router.patch('/users/:id', authenticate, selfOrAdmin('id'), async (req, res) => 
       country: payload.country || null,
     };
 
-    // Only update role if user is admin
+    // Only update role and slots_purchased and limits if user is admin
     if (isAdmin) {
       data.role_id = roleRecord.id;
+      if (typeof payload.slots_purchased !== 'undefined') {
+        data.slots_purchased = payload.slots_purchased;
+      }
+      if (typeof payload.max_subjects !== 'undefined') {
+        data.max_subjects = payload.max_subjects;
+      }
+      if (typeof payload.max_grades !== 'undefined') {
+        data.max_grades = payload.max_grades;
+      }
+      if (typeof payload.max_lessons !== 'undefined') {
+        data.max_lessons = payload.max_lessons;
+      }
+      if (typeof payload.max_templates !== 'undefined') {
+        data.max_templates = payload.max_templates;
+      }
+      if (typeof payload.max_teachers !== 'undefined') {
+        data.max_teachers = payload.max_teachers;
+      }
+      if (typeof payload.max_students !== 'undefined') {
+        data.max_students = payload.max_students;
+      }
     }
 
     if (payload.password) {
@@ -664,7 +593,7 @@ router.patch('/users/:id', authenticate, selfOrAdmin('id'), async (req, res) => 
   }
 });
 
-router.delete('/users/:id', authenticate, authorize('manage', 'user'), async (req, res) => {
+router.delete('/users/:id', authenticate, isAdmin, async (req, res) => {
   try {
     const currentUserId = (req as any).user?.id;
     if (req.params.id === currentUserId) {
@@ -687,7 +616,7 @@ router.delete('/users/:id', authenticate, authorize('manage', 'user'), async (re
 });
 
 // Get Admin Statistics
-router.get('/stats', authenticate, authorize('manage', 'lesson'), async (req, res) => {
+router.get('/stats', authenticate, isAdmin, async (req, res) => {
   try {
     const recentActivityPage = parsePositiveInt(req.query.recentActivityPage, 1);
     const recentActivityPageSize = parsePositiveInt(req.query.recentActivityPageSize, 10);

@@ -11,6 +11,7 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   console.log('🌱 Seeding database with Integrated Hierarchy...');
   const hashedPassword = await bcrypt.hash('123456', 10);
+  const fixedRoleNames = ['admin', 'supervisor', 'teacher', 'sub_student', 'free_student'];
 
   // 1. 🔑 Actions
   const actionsArr = ['create', 'read', 'update', 'delete', 'manage'];
@@ -47,11 +48,44 @@ async function main() {
     create: { name: 'teacher' },
   });
 
-  const studentRole = await prisma.role.upsert({
-    where: { name: 'student' },
+  const supervisorRole = await prisma.role.upsert({
+    where: { name: 'supervisor' },
     update: {},
-    create: { name: 'student' },
+    create: { name: 'supervisor' },
   });
+
+  const subStudentRole = await prisma.role.upsert({
+    where: { name: 'sub_student' },
+    update: {},
+    create: { name: 'sub_student' },
+  });
+
+  const freeStudentRole = await prisma.role.upsert({
+    where: { name: 'free_student' },
+    update: {},
+    create: { name: 'free_student' },
+  });
+
+  const unsupportedRoles = await prisma.role.findMany({
+    where: {
+      name: {
+        notIn: fixedRoleNames,
+      },
+    },
+    select: { id: true },
+  });
+
+  if (unsupportedRoles.length > 0) {
+    const unsupportedRoleIds = unsupportedRoles.map((role) => role.id);
+
+    await prisma.user.updateMany({
+      where: { role_id: { in: unsupportedRoleIds } },
+      data: { role_id: freeStudentRole.id },
+    });
+    await prisma.roleSubjectPermission.deleteMany({ where: { role_id: { in: unsupportedRoleIds } } });
+    await prisma.rolePermission.deleteMany({ where: { role_id: { in: unsupportedRoleIds } } });
+    await prisma.role.deleteMany({ where: { id: { in: unsupportedRoleIds } } });
+  }
 
   // 4. 📜 Permissions Mapping
   // Admin: Manage everything
@@ -79,6 +113,22 @@ async function main() {
     });
   }
 
+  // Supervisor Permissions
+  const supervisorPerms = [
+    { a: 'read', r: 'lesson' },
+    { a: 'manage', r: 'user' },
+    { a: 'manage', r: 'lesson' },
+    { a: 'manage', r: 'test' },
+  ];
+
+  for (const p of supervisorPerms) {
+    await prisma.rolePermission.upsert({
+      where: { role_id_action_id_resource_id: { role_id: supervisorRole.id, action_id: actions[p.a].id, resource_id: resources[p.r].id } },
+      update: {},
+      create: { role_id: supervisorRole.id, action_id: actions[p.a].id, resource_id: resources[p.r].id },
+    });
+  }
+
   // Student Permissions
   const studentPerms = [
     { a: 'read', r: 'lesson' },
@@ -87,18 +137,21 @@ async function main() {
     { a: 'update', r: 'stats' },
   ];
 
-  for (const p of studentPerms) {
-    await prisma.rolePermission.upsert({
-      where: { role_id_action_id_resource_id: { role_id: studentRole.id, action_id: actions[p.a].id, resource_id: resources[p.r].id } },
-      update: {},
-      create: { role_id: studentRole.id, action_id: actions[p.a].id, resource_id: resources[p.r].id },
-    });
+  for (const role of [subStudentRole, freeStudentRole]) {
+    for (const p of studentPerms) {
+      await prisma.rolePermission.upsert({
+        where: { role_id_action_id_resource_id: { role_id: role.id, action_id: actions[p.a].id, resource_id: resources[p.r].id } },
+        update: {},
+        create: { role_id: role.id, action_id: actions[p.a].id, resource_id: resources[p.r].id },
+      });
+    }
   }
 
   // 5. 🧑 Users
   const admin = await prisma.user.upsert({
     where: { email: 'admin@dev.com' },
     update: {
+      role_id: adminRole.id,
       account_status: 'active',
       email_verified_at: new Date(),
       inactive_cleanup_at: null,
@@ -114,9 +167,43 @@ async function main() {
     },
   });
 
+  const supervisor = await prisma.user.upsert({
+    where: { email: 'supervisor@dev.com' },
+    update: {
+      role_id: supervisorRole.id,
+      account_status: 'active',
+      email_verified_at: new Date(),
+      inactive_cleanup_at: null,
+      slots_purchased: 5,
+      max_subjects: 10,
+      max_grades: 10,
+      max_lessons: 10,
+      max_templates: 20,
+      max_teachers: 2,
+      max_students: 5,
+    },
+    create: {
+      username: 'supervisor1',
+      email: 'supervisor@dev.com',
+      country: 'Vietnam',
+      password_hash: hashedPassword,
+      role_id: supervisorRole.id,
+      account_status: 'active',
+      email_verified_at: new Date(),
+      slots_purchased: 5,
+      max_subjects: 10,
+      max_grades: 10,
+      max_lessons: 10,
+      max_templates: 20,
+      max_teachers: 2,
+      max_students: 5,
+    },
+  });
+
   const teacher = await prisma.user.upsert({
     where: { email: 'teacher@dev.com' },
     update: {
+      role_id: teacherRole.id,
       account_status: 'active',
       email_verified_at: new Date(),
       inactive_cleanup_at: null,
@@ -135,6 +222,7 @@ async function main() {
   const student = await prisma.user.upsert({
     where: { email: 'student@dev.com' },
     update: {
+      role_id: subStudentRole.id,
       account_status: 'active',
       email_verified_at: new Date(),
       inactive_cleanup_at: null,
@@ -144,7 +232,7 @@ async function main() {
       email: 'student@dev.com',
       country: 'Vietnam',
       password_hash: hashedPassword,
-      role_id: studentRole.id,
+      role_id: subStudentRole.id,
       account_status: 'active',
       email_verified_at: new Date(),
     },
@@ -153,6 +241,7 @@ async function main() {
   const studentTwo = await prisma.user.upsert({
     where: { email: 'student2@dev.com' },
     update: {
+      role_id: freeStudentRole.id,
       account_status: 'active',
       email_verified_at: new Date(),
       inactive_cleanup_at: null,
@@ -162,7 +251,7 @@ async function main() {
       email: 'student2@dev.com',
       country: 'Vietnam',
       password_hash: hashedPassword,
-      role_id: studentRole.id,
+      role_id: freeStudentRole.id,
       account_status: 'active',
       email_verified_at: new Date(),
     },
@@ -171,6 +260,7 @@ async function main() {
   const studentThree = await prisma.user.upsert({
     where: { email: 'student3@dev.com' },
     update: {
+      role_id: freeStudentRole.id,
       account_status: 'active',
       email_verified_at: new Date(),
       inactive_cleanup_at: null,
@@ -180,7 +270,7 @@ async function main() {
       email: 'student3@dev.com',
       country: 'Singapore',
       password_hash: hashedPassword,
-      role_id: studentRole.id,
+      role_id: freeStudentRole.id,
       account_status: 'active',
       email_verified_at: new Date(),
     },
@@ -205,10 +295,11 @@ async function main() {
     update: { subject_id: math.id },
     create: { slug: 'grade-6', title_en: 'Grade 6', title_vi: 'Lop 6', subject_id: math.id },
   });
+  void supervisor;
   void teacher;
   void grade6;
 
-  for (const role of [adminRole, teacherRole, studentRole]) {
+  for (const role of [adminRole, supervisorRole, teacherRole, subStudentRole, freeStudentRole]) {
     await prisma.roleSubjectPermission.upsert({
       where: { role_id_subject_id: { role_id: role.id, subject_id: math.id } },
       update: {},
@@ -218,7 +309,7 @@ async function main() {
 
   await prisma.user.updateMany({
     where: {
-      email: { in: ['admin@dev.com', 'teacher@dev.com', 'student@dev.com', 'student2@dev.com', 'student3@dev.com'] },
+      email: { in: ['admin@dev.com', 'supervisor@dev.com', 'teacher@dev.com', 'student@dev.com', 'student2@dev.com', 'student3@dev.com'] },
     },
     data: {
       preferred_subject_id: math.id,

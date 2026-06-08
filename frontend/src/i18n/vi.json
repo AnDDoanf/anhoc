@@ -235,9 +235,11 @@
     "guestName": "guest"
   },
   "Sidebar": {
-    "learning": "Học tập",
-    "practice": "Luyện tập",
-    "achievements": "Thành tích",
+      "administrator": "Quản trị",
+      "learningMaterial": "Học liệu",
+      "learning": "Học tập",
+      "practice": "Luyện tập",
+      "achievements": "Thành tích",
     "test": "Kiểm tra",
     "grade1": "Lớp 1",
     "grade6": "Lớp 6",
@@ -247,7 +249,9 @@
     "users": "Người dùng",
     "roles": "Vai trò",
     "reports": "Báo cáo",
-    "games": "Trò chơi"
+    "games": "Trò chơi",
+    "pricing": "Đăng ký",
+    "members": "Thành viên"
   },
   "Practice": {
     "title": "Rèn luyện Kỹ năng",
@@ -530,13 +534,20 @@
       "unassignedGrade": "Lớp chưa xác định",
       "templateType": "Loại mẫu",
       "difficulty": "Độ khó",
-      "questionTypes": {
-        "numeric_input": "Nhập số",
-        "true_false": "Đúng / sai",
-        "multiple_choices": "Trắc nghiệm",
-        "ordering": "Sắp xếp",
-        "theoretical_question": "Câu hỏi lý thuyết"
-      },
+        "questionTypes": {
+          "numeric_input": "Nhập số",
+          "math_addition": "Phép cộng",
+          "math_subtraction": "Phép trừ",
+          "math_multiplication": "Phép nhân",
+          "math_exact_division": "Phép chia hết",
+          "math_missing_addend": "Tìm số hạng còn thiếu",
+          "math_difference_compare": "So sánh hiệu",
+          "geometry_rectangle_perimeter": "Chu vi hình chữ nhật",
+          "true_false": "Đúng / sai",
+          "multiple_choices": "Trắc nghiệm",
+          "ordering": "Sắp xếp",
+          "theoretical_question": "Câu hỏi lý thuyết"
+        },
       "difficultyOptions": {
         "easy": "Dễ",
         "medium": "Trung bình",
@@ -659,8 +670,10 @@
     },
     "roles": {
       "admin": "Quản trị viên",
+      "supervisor": "Người giám sát",
       "teacher": "Giáo viên",
-      "student": "Học sinh"
+      "subStudent": "Học sinh Premium",
+      "freeStudent": "Học sinh Miễn phí"
     },
     "actions": {
       "refresh": "Làm mới",
@@ -688,7 +701,15 @@
       "newPassword": "Mật khẩu mới",
       "passwordPlaceholder": "Ít nhất 6 ký tự",
       "optionalPassword": "Không bắt buộc",
-      "role": "Vai trò"
+        "role": "Vai trò",
+        "slotsPurchased": "Số ghế giám sát",
+        "maxSubjects": "Tối đa Môn học",
+        "maxGrades": "Tối đa Lớp",
+        "maxLessons": "Tối đa Bài học",
+        "maxTemplates": "Tối đa Mẫu câu hỏi",
+        "maxTeachers": "Tối đa Giáo viên",
+        "maxStudents": "Tối đa Học sinh",
+      "unlimitedPlaceholder": "Không giới hạn"
     },
     "filters": {
       "searchPlaceholder": "Tìm theo tên người dùng hoặc email",
@@ -700,7 +721,8 @@
       "level": "Cấp độ",
       "attempts": "Lượt làm bài",
       "created": "Ngày tạo",
-      "actions": "Thao tác"
+      "actions": "Thao tác",
+      "seats": "{count} ghế"
     },
     "messages": {
       "created": "Đã tạo tài khoản.",
@@ -1056,5 +1078,177 @@
     "saving": "Đang lưu...",
     "loadError": "Không thể tải danh sách môn học.",
     "saveError": "Không thể lưu môn học đã chọn."
+  },
+  "Pricing": {
+    "title": "Gói Đăng Ký",
+    "subtitle": "Chọn gói dịch vụ phù hợp cho hành trình học tập của bạn",
+    "period": {
+      "forever": "mãi mãi",
+      "month": "mỗi tháng",
+      "seatMonth": "mỗi tài khoản / tháng"
+    },
+    "buttons": {
+      "currentPlan": "Gói Hiện Tại",
+      "upgrade": "Nâng Cấp Gói",
+      "getStarted": "Bắt Đầu Ngay",
+      "buySeats": "Mua Tài Khoản",
+      "manageMembers": "Quản Lý Thành Viên"
+    },
+    "freeStudent": {
+      "title": "Học Sinh Miễn Phí",
+      "price": "0đ",
+      "description": "Phù hợp để bắt đầu hành trình toán học của bạn",
+      "features": {
+        "accessFree": "Truy cập các chương & bài học miễn phí",
+        "xpCap": "Tích lũy tối đa 500 XP (Cấp độ 3)",
+        "basicAi": "Gia sư AI hỗ trợ cơ bản",
+        "premiumLocked": "Không thể học các chương cao cấp",
+        "rewardsLocked": "Không có thành tựu và phần thưởng"
+      }
+    },
+    "subStudent": {
+      "title": "Học Sinh Cao Cấp",
+      "price": "249.000đ",
+      "description": "Giải phóng toàn bộ tiềm năng với tất cả tính năng",
+      "features": {
+        "allFree": "Bao gồm tất cả tính năng miễn phí",
+        "accessPremium": "Truy cập tất cả bài học & chương cao cấp",
+        "noCap": "Không giới hạn XP và cấp độ",
+        "rewardsUnlocked": "Mở khóa thành tựu & phần thưởng",
+        "priorityAi": "Gia sư AI hỗ trợ ưu tiên"
+      }
+    },
+    "supervisor": {
+      "title": "Người Giám Hộ / Phụ Huynh",
+      "price": "499.000đ",
+      "description": "Quản lý và đăng ký tài khoản cho học sinh",
+      "features": {
+        "buySeats": "Mua các tài khoản học tập cho học sinh",
+        "manageAccounts": "Tạo & quản lý tài khoản học sinh/giáo viên",
+        "assignSeats": "Cấp/thu hồi quyền học cao cấp",
+        "trackProgress": "Theo dõi tiến độ của học sinh",
+        "reviewLessons": "Xem lại bài tập và bài kiểm tra"
+      }
+    },
+    "checkout": {
+      "title": "Mô Phỏng Thanh Toán Stripe",
+      "pendingTitle": "Đang Chờ Tích Hợp Stripe",
+      "pendingDesc": "Giao dịch thanh toán này là mô phỏng. Bấm 'Thanh toán ngay' để giả lập mua gói thành công.",
+      "cardholder": "Tên trên thẻ",
+      "cardNumber": "Số thẻ",
+      "expiry": "Ngày hết hạn",
+      "cvc": "CVC (Mã bảo mật)",
+      "payNow": "Thanh Toán Ngay",
+      "processing": "Đang xử lý...",
+      "success": "Mô phỏng thanh toán thành công! Gói dịch vụ đã được cập nhật.",
+      "fail": "Mô phỏng thanh toán thất bại. Vui lòng kiểm tra lại thông tin.",
+      "close": "Đóng"
+    }
+  },
+  "Supervisor": {
+    "title": "Bảng Điều Khiển Giám Hộ",
+    "subtitle": "Quản lý học sinh, giáo viên và bản quyền học tập.",
+    "accessDenied": "Từ chối truy cập: Yêu cầu quyền Giám hộ.",
+    "slotsOverview": "Bản Quyền Đăng Ký",
+    "slotsUsage": "Đã cấp {assigned} trên {total} tài khoản",
+    "buyMore": "Mua Thêm Tài Khoản",
+    "createMember": "Tạo Tài Khoản Mới",
+    "createMemberDesc": "Thêm học sinh hoặc giáo viên trực thuộc nhóm/lớp của bạn.",
+    "fields": {
+      "email": "Địa chỉ Email",
+      "password": "Mật khẩu",
+      "username": "Tên tài khoản",
+      "role": "Vai trò"
+    },
+    "roles": {
+      "student": "Học sinh",
+      "teacher": "Giáo viên",
+      "freeStudent": "Học sinh Miễn phí",
+      "subStudent": "Học sinh Cao cấp"
+    },
+    "buttons": {
+      "create": "Tạo Tài Khoản",
+      "creating": "Đang tạo...",
+      "assign": "Cấp Quyền Cao Cấp",
+      "revoke": "Thu Hồi Quyền",
+      "assigning": "Đang cấp...",
+      "revoking": "Đang thu hồi..."
+    },
+    "alerts": {
+      "noMembers": "Chưa có tài khoản quản lý nào. Hãy thêm tài khoản đầu tiên ở trên!",
+      "createSuccess": "Tài khoản của {username} đã được tạo thành công!",
+      "assignSuccess": "Đã cấp quyền cao cấp thành công cho {username}!",
+      "revokeSuccess": "Đã thu hồi quyền thành công từ {username}!",
+      "noSlots": "Đã hết lượt cấp bản quyền. Vui lòng mua thêm tài khoản để nâng cấp học sinh."
+    },
+    "directory": "Danh Sách Thành Viên",
+    "table": {
+      "member": "Thông tin thành viên",
+      "role": "Vai trò / Trạng thái",
+      "dateJoined": "Ngày tham gia",
+      "actions": "Thao tác"
+    }
+  },
+  "AdminSubscription": {
+    "eyebrow": "Quản trị",
+    "title": "Quản lý Đăng ký",
+    "subtitle": "Xem và cấu hình giới hạn năng lực cho mỗi tài khoản giám sát.",
+    "stats": {
+      "totalSupervisors": "Tổng Giám sát",
+      "totalSeats": "Tổng Ghế đã mua",
+      "activeSubscriptions": "Đăng ký Hoạt động"
+    },
+    "table": {
+      "title": "Đăng ký Giám sát",
+        "hint": "Nhấn Sửa trên hàng để điều chỉnh giới hạn trực tiếp. Để trống giới hạn nghĩa là không giới hạn.",
+        "account": "Tài khoản",
+        "seats": "Ghế",
+        "subjects": "Môn học",
+        "grades": "Lớp",
+        "lessons": "Bài học",
+        "templates": "Mẫu câu hỏi",
+        "teachers": "Giáo viên",
+        "students": "Học sinh",
+      "actions": "Thao tác"
+    },
+    "unlimited": "Không giới hạn",
+    "save": "Lưu",
+    "cancel": "Hủy",
+    "loading": "Đang tải giám sát...",
+    "empty": {
+      "title": "Không tìm thấy tài khoản giám sát.",
+      "subtitle": "Hãy tạo tài khoản giám sát trong trang Người dùng trước."
+    },
+      "legend": {
+        "title": "Tham chiếu Giới hạn",
+        "blankHint": "Để trống = không giới hạn",
+        "subjects": {
+          "label": "Môn học",
+          "desc": "Số lượng môn học tối đa giám sát có thể tạo."
+        },
+        "grades": {
+          "label": "Lớp",
+          "desc": "Số lượng lớp tối đa giám sát có thể tạo."
+        },
+        "lessons": {
+          "label": "Bài học",
+          "desc": "Số lượng bài học tối đa giám sát có thể tạo."
+        },
+        "templates": {
+          "label": "Mẫu câu hỏi",
+        "desc": "Số lượng mẫu câu hỏi tối đa giám sát có thể tạo."
+      },
+      "teachers": {
+        "label": "Giáo viên",
+        "desc": "Số lượng tài khoản giáo viên tối đa giám sát có thể thêm."
+      },
+      "students": {
+        "label": "Học sinh",
+        "desc": "Số ghế học sinh cao cấp tối đa giám sát có thể cấp."
+      }
+    },
+    "errors": {
+      "load": "Không thể tải danh sách giám sát."
+    }
   }
 }

@@ -34,6 +34,13 @@ type FormState = {
   country: string;
   password: string;
   role_name: string;
+  slots_purchased: number;
+  max_subjects: string;
+  max_grades: string;
+  max_lessons: string;
+  max_templates: string;
+  max_teachers: string;
+  max_students: string;
 };
 
 type ApiError = {
@@ -50,6 +57,13 @@ const initialForm: FormState = {
   country: "",
   password: "",
   role_name: "",
+  slots_purchased: 0,
+  max_subjects: "",
+  max_grades: "",
+  max_lessons: "",
+  max_templates: "",
+  max_teachers: "",
+  max_students: "",
 };
 
 const COUNTRY_OPTIONS = [
@@ -166,7 +180,7 @@ export default function AdminUsersPage() {
   }, [loadUsers]);
 
   const defaultRoleName = useMemo(() => {
-    return roles.find((role) => role.name === "student")?.name || roles[0]?.name || "";
+    return roles.find((role) => role.name === "free_student")?.name || roles[0]?.name || "";
   }, [roles]);
 
   useEffect(() => {
@@ -230,6 +244,13 @@ export default function AdminUsersPage() {
       country: user.country || "",
       password: "",
       role_name: user.role.name,
+      slots_purchased: user.slots_purchased || 0,
+      max_subjects: user.max_subjects !== undefined && user.max_subjects !== null ? String(user.max_subjects) : "",
+      max_grades: user.max_grades !== undefined && user.max_grades !== null ? String(user.max_grades) : "",
+      max_lessons: user.max_lessons !== undefined && user.max_lessons !== null ? String(user.max_lessons) : "",
+      max_templates: user.max_templates !== undefined && user.max_templates !== null ? String(user.max_templates) : "",
+      max_teachers: user.max_teachers !== undefined && user.max_teachers !== null ? String(user.max_teachers) : "",
+      max_students: user.max_students !== undefined && user.max_students !== null ? String(user.max_students) : "",
     });
     setCountryQuery(user.country || "");
     setCountryDropdownOpen(false);
@@ -248,6 +269,13 @@ export default function AdminUsersPage() {
       email: form.email.trim(),
       country: form.country.trim(),
       role_name: form.role_name,
+      slots_purchased: form.role_name === "supervisor" ? Number(form.slots_purchased) : 0,
+      max_subjects: form.role_name === "supervisor" && form.max_subjects ? Number(form.max_subjects) : null,
+      max_grades: form.role_name === "supervisor" && form.max_grades ? Number(form.max_grades) : null,
+      max_lessons: form.role_name === "supervisor" && form.max_lessons ? Number(form.max_lessons) : null,
+      max_templates: form.role_name === "supervisor" && form.max_templates ? Number(form.max_templates) : null,
+      max_teachers: form.role_name === "supervisor" && form.max_teachers ? Number(form.max_teachers) : null,
+      max_students: form.role_name === "supervisor" && form.max_students ? Number(form.max_students) : null,
     };
 
     if (form.password) {
@@ -297,8 +325,10 @@ export default function AdminUsersPage() {
   const formatRole = (roleName: string) => {
     const roleLabels: Record<string, string> = {
       admin: t("roles.admin"),
+      supervisor: t("roles.supervisor"),
       teacher: t("roles.teacher"),
-      student: t("roles.student"),
+      sub_student: t("roles.subStudent"),
+      free_student: t("roles.freeStudent"),
     };
 
     return roleLabels[roleName] || roleName;
@@ -518,6 +548,61 @@ export default function AdminUsersPage() {
                 </select>
               </label>
 
+              {form.role_name === "supervisor" && (
+                <>
+                  <Field
+                    label={t("form.slotsPurchased")}
+                    type="number"
+                    value={String(form.slots_purchased)}
+                    onChange={(value) => setForm((current) => ({ ...current, slots_purchased: Math.max(0, parseInt(value) || 0) }))}
+                    placeholder="e.g. 5"
+                    required
+                  />
+                  <Field
+                    label={t("form.maxSubjects") || "Max Subjects"}
+                    type="number"
+                    value={form.max_subjects}
+                    onChange={(value) => setForm((current) => ({ ...current, max_subjects: value }))}
+                    placeholder={t("form.unlimitedPlaceholder") || "Unlimited"}
+                  />
+                  <Field
+                    label={t("form.maxGrades") || "Max Grades"}
+                    type="number"
+                    value={form.max_grades}
+                    onChange={(value) => setForm((current) => ({ ...current, max_grades: value }))}
+                    placeholder={t("form.unlimitedPlaceholder") || "Unlimited"}
+                  />
+                  <Field
+                    label={t("form.maxLessons") || "Max Lessons"}
+                    type="number"
+                    value={form.max_lessons}
+                    onChange={(value) => setForm((current) => ({ ...current, max_lessons: value }))}
+                    placeholder={t("form.unlimitedPlaceholder") || "Unlimited"}
+                  />
+                  <Field
+                    label={t("form.maxTemplates") || "Max Templates"}
+                    type="number"
+                    value={form.max_templates}
+                    onChange={(value) => setForm((current) => ({ ...current, max_templates: value }))}
+                    placeholder={t("form.unlimitedPlaceholder") || "Unlimited"}
+                  />
+                  <Field
+                    label={t("form.maxTeachers") || "Max Teachers"}
+                    type="number"
+                    value={form.max_teachers}
+                    onChange={(value) => setForm((current) => ({ ...current, max_teachers: value }))}
+                    placeholder={t("form.unlimitedPlaceholder") || "Unlimited"}
+                  />
+                  <Field
+                    label={t("form.maxStudents") || "Max Students"}
+                    type="number"
+                    value={form.max_students}
+                    onChange={(value) => setForm((current) => ({ ...current, max_students: value }))}
+                    placeholder={t("form.unlimitedPlaceholder") || "Unlimited"}
+                  />
+                </>
+              )}
+
               <button
                 type="submit"
                 disabled={saving}
@@ -617,6 +702,11 @@ export default function AdminUsersPage() {
                           </td>
                           <td className="px-5 py-4">
                             <PillBadge label={formatRole(item.role.name)} compact />
+                            {item.role.name === "supervisor" && (
+                              <div className="mt-1 text-xs font-bold text-sol-accent">
+                                {t("table.seats", { count: item.slots_purchased || 0 })}
+                              </div>
+                            )}
                           </td>
                           <td className="px-5 py-4 font-black text-sol-text">
                             {item.stats?.level || 1}

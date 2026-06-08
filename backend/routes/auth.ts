@@ -3,11 +3,13 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import prisma from "../lib/db.ts";
 import { authenticate } from "../middleware/auth.ts";
+import { STUDENT_ROLE_NAMES, isStudentRoleName } from "../constants/roles.ts";
 import { computeInactiveCleanupDeadline } from "../services/accountLifecycleService.ts";
 import { createEmailVerificationToken, sendActivationEmail } from "../services/mailerService.ts";
 import { createNotification, NotificationType } from "../services/notificationService.ts";
 
 const router = Router();
+const SELF_SERVICE_SIGNUP_ROLE_NAMES = ["free_student", "sub_student", "supervisor"] as const;
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -51,39 +53,17 @@ const createUniqueUsername = async (email: string, requestedUsername?: string) =
 };
 
 const resolveSignupRole = async (requestedRoleName?: string) => {
-  const normalizedRequestedRole = requestedRoleName?.trim();
+  const normalizedRequestedRole = requestedRoleName?.trim().toLowerCase();
 
   if (normalizedRequestedRole) {
-    const explicitRole = await prisma.role.findUnique({ where: { name: normalizedRequestedRole } });
-    if (explicitRole) return explicitRole;
+    if (!SELF_SERVICE_SIGNUP_ROLE_NAMES.includes(normalizedRequestedRole as (typeof SELF_SERVICE_SIGNUP_ROLE_NAMES)[number])) {
+      return null;
+    }
+
+    return prisma.role.findUnique({ where: { name: normalizedRequestedRole } });
   }
 
-  const preferredRoleNames = ["everything_student", "student"];
-  for (const roleName of preferredRoleNames) {
-    const role = await prisma.role.findUnique({ where: { name: roleName } });
-    if (role) return role;
-  }
-
-  const fallbackRole = await prisma.role.findFirst({
-    where: {
-      name: {
-        in: ["math_student", "isom_student"],
-      },
-    },
-    orderBy: { id: "asc" },
-  });
-
-  if (fallbackRole) return fallbackRole;
-
-  return prisma.role.findFirst({
-    where: {
-      name: {
-        contains: "student",
-        mode: "insensitive",
-      },
-    },
-    orderBy: { id: "asc" },
-  });
+  return prisma.role.findUnique({ where: { name: "free_student" } });
 };
 
 const createAuthPayload = (user: {
@@ -93,6 +73,8 @@ const createAuthPayload = (user: {
   country?: string | null;
   account_status: string;
   preferred_subject_id?: number | null;
+  supervisor_id?: string | null;
+  slots_purchased?: number;
   role: {
     name: string;
     permissions: PermissionRow[];
@@ -109,6 +91,8 @@ const createAuthPayload = (user: {
       preferred_subject_id: user.preferred_subject_id ?? null,
       requires_subject_selection: requiresSubjectSelection,
       account_status: user.account_status,
+      supervisor_id: user.supervisor_id ?? null,
+      slots_purchased: user.slots_purchased ?? 0,
     },
     JWT_SECRET,
     { expiresIn: "7d" }
@@ -124,6 +108,8 @@ const createAuthPayload = (user: {
       role: user.role.name,
       account_status: user.account_status,
       preferred_subject_id: user.preferred_subject_id ?? null,
+      supervisor_id: user.supervisor_id ?? null,
+      slots_purchased: user.slots_purchased ?? 0,
       requires_subject_selection: requiresSubjectSelection,
       permissions,
     },
@@ -175,6 +161,7 @@ router.post("/register", async (req: Request, res: Response) => {
         email_verification_token: verificationToken,
         email_verification_sent_at: now,
         inactive_cleanup_at: computeInactiveCleanupDeadline(now),
+        slots_purchased: roleRecord.name === "supervisor" ? 1 : 0,
       },
     });
 
@@ -446,10 +433,53 @@ router.get("/profile", authenticate, async (req: Request, res: Response) => {
       created_at: user.created_at,
       email_verified_at: user.email_verified_at,
       first_login_at: user.first_login_at,
+      supervisor_id: user.supervisor_id,
+      slots_purchased: user.slots_purchased,
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Failed to fetch profile" });
+  }
+});
+
+router.post("/upgrade-role", authenticate, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as Request & { user: { id: string } }).user.id;
+    const { roleName } = req.body;
+
+    if (roleName !== "sub_student" && roleName !== "supervisor") {
+      return res.status(400).json({ error: "Invalid role specified for upgrade" });
+    }
+
+    const roleRecord = await prisma.role.findUnique({
+      where: { name: roleName }
+    });
+
+    if (!roleRecord) {
+      return res.status(404).json({ error: "Target role not found" });
+    }
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        role_id: roleRecord.id
+      }
+    });
+
+    if (roleName === "supervisor" && (!user.slots_purchased || user.slots_purchased === 0)) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { slots_purchased: 1 }
+      });
+    }
+
+    res.json({
+      message: `Successfully upgraded to ${roleName}`,
+      role: roleName
+    });
+  } catch (error: any) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to upgrade role", details: error.message });
   }
 });
 
@@ -560,7 +590,15 @@ router.get("/socializing", authenticate, async (req: Request, res: Response) => 
       prisma.user.findMany({
         where: {
           id: { not: userId },
-          ...(currentUser.role?.name === "student" ? { role: { name: "student" } } : {}),
+          ...(isStudentRoleName(currentUser.role?.name)
+            ? {
+                role: {
+                  name: {
+                    in: [...STUDENT_ROLE_NAMES],
+                  },
+                },
+              }
+            : {}),
           student_stats: {
             is: {
               level: {

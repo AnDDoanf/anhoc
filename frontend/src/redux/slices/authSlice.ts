@@ -10,6 +10,8 @@ type User = {
   preferred_subject_id?: number | null;
   requires_subject_selection?: boolean;
   permissions?: Record<string, string[]>;
+  supervisor_id?: string | null;
+  slots_purchased?: number;
 };
 
 type AuthState = {
