@@ -8,6 +8,7 @@ export interface CreateLessonDTO {
   grade_id: number;
   subject_id: number;
   order_index: number;
+  is_premium?: boolean;
 }
 
 export interface CreateSubjectDTO {
@@ -55,6 +56,7 @@ export interface Lesson {
   grade_id: number;
   subject_id: number;
   order_index: number;
+  is_premium?: boolean;
   grade?: Grade | null;
   subject?: Subject | null;
 }

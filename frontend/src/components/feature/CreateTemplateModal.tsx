@@ -3,9 +3,11 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { X, Save, Database, Code2, Plus, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { useSelector } from "react-redux";
 import { testService, CreateTemplateDTO } from "@/services/testService";
 import { lessonService, type Lesson } from "@/services/lessonService";
 import { isAxiosError } from "axios";
+import { RootState } from "@/redux/store";
 
 interface VariableDef {
   name: string;
@@ -157,6 +159,7 @@ const TYPE_PRESETS: Record<string, {
 export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTemplateId }: Props) {
   const t = useTranslations("Questions.modal");
   const locale = useLocale();
+  const isAdmin = useSelector((state: RootState) => state.auth.user?.role === "admin");
 
   const [loading, setLoading] = useState(false);
   const [lessons, setLessons] = useState<Lesson[]>([]);
@@ -170,6 +173,7 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
   const [lessonDropdownOpen, setLessonDropdownOpen] = useState(false);
   const [templateType, setTemplateType] = useState("numeric_input");
   const [difficulty, setDifficulty] = useState("medium");
+  const [isPremium, setIsPremium] = useState(false);
   const [bodyEn, setBodyEn] = useState("Calculate $x$ + $y$");
   const [bodyVi, setBodyVi] = useState("Tính $x$ + $y$");
 
@@ -268,6 +272,7 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
     setLessonDropdownOpen(false);
     setTemplateType("numeric_input");
     setDifficulty("medium");
+    setIsPremium(false);
     setBodyEn(preset.bodyEn);
     setBodyVi(preset.bodyVi);
     setAcceptedFormulas(preset.formulas);
@@ -286,6 +291,7 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
       lesson_id: lessonId === "" ? null : lessonId,
       template_type: templateType,
       difficulty,
+      is_premium: isAdmin ? isPremium : false,
       body_template_en: bodyEn,
       body_template_vi: bodyVi,
       accepted_formulas: templateType === "theoretical_question"
@@ -302,6 +308,8 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
     buildLogicConfig,
     difficulty,
     falseAnswers,
+    isAdmin,
+    isPremium,
     lessonId,
     templateType,
   ]);
@@ -347,6 +355,9 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
     }
     if (payload.difficulty) {
       setDifficulty(payload.difficulty);
+    }
+    if ("is_premium" in payload) {
+      setIsPremium(Boolean(payload.is_premium));
     }
     if (typeof payload.body_template_en === "string") {
       setBodyEn(payload.body_template_en);
@@ -536,6 +547,7 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
             setLessonId(curr.lesson_id || "");
             setTemplateType(curr.template_type);
             setDifficulty(curr.difficulty || "medium");
+            setIsPremium(Boolean(curr.is_premium));
             setBodyEn(curr.body_template_en);
             setBodyVi(curr.body_template_vi);
             parseLogicConfig(curr.logic_config, curr.accepted_formulas?.[0] || "", curr.accepted_formulas?.slice(1) || []);
@@ -992,6 +1004,36 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
                 </select>
               </div>
             </div>
+
+            {isAdmin && (
+              <div className="rounded-2xl border border-sol-accent/20 bg-sol-accent/5 p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-1">
+                    <p className="text-xs font-black uppercase tracking-widest text-sol-muted">{t("premiumTemplate")}</p>
+                    <p className="text-sm font-semibold text-sol-text">{t("premiumTemplateHint")}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`text-xs font-black uppercase tracking-widest ${isPremium ? "text-sol-accent" : "text-sol-muted"}`}>
+                      {isPremium ? t("premiumEnabled") : t("premiumDisabled")}
+                    </span>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={isPremium}
+                      onClick={() => {
+                        setCurrentDraftStarted(true);
+                        setIsPremium((current) => !current);
+                      }}
+                      className={`relative h-7 w-12 rounded-full transition-colors ${isPremium ? "bg-sol-accent" : "bg-sol-border/60"}`}
+                    >
+                      <span
+                        className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-transform ${isPremium ? "translate-x-6" : "translate-x-1"}`}
+                      />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Row 2: Body text */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

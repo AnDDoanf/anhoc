@@ -1,23 +1,19 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
 import {
   Users,
   UserPlus,
-  Plus,
-  Minus,
   Sparkles,
   ShieldCheck,
   ShieldAlert,
   Loader2,
-  Trash2,
   UserX,
   UserCheck,
   Mail,
-  Lock,
   Key,
   User,
   ArrowRight
@@ -25,7 +21,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { setCredentials } from "@/redux/slices/authSlice";
 import { setPermissions } from "@/redux/slices/permissionSlice";
-import { authService } from "@/services/auth";
+import { authService, LearnUnitSummary } from "@/services/auth";
 import { api } from "@/services/api";
 
 type ManagedMember = {
@@ -42,6 +38,11 @@ type ManagedMember = {
   } | null;
 };
 
+type SupervisorMembersResponse = {
+  learnUnit: LearnUnitSummary | null;
+  members: ManagedMember[];
+};
+
 export default function SupervisorMembersPage() {
   const t = useTranslations("Supervisor");
   const dispatch = useDispatch();
@@ -49,6 +50,7 @@ export default function SupervisorMembersPage() {
   const { user, isAuthenticated } = useAuth();
   
   const [members, setMembers] = useState<ManagedMember[]>([]);
+  const [learnUnit, setLearnUnit] = useState<LearnUnitSummary | null>(null);
   const [membersLoading, setMembersLoading] = useState(true);
   
   // Create member state
@@ -66,8 +68,9 @@ export default function SupervisorMembersPage() {
 
   const fetchMembers = async () => {
     try {
-      const response = await api.get<ManagedMember[]>("/supervisor/members");
-      setMembers(response.data);
+      const response = await api.get<SupervisorMembersResponse>("/supervisor/members");
+      setLearnUnit(response.data.learnUnit);
+      setMembers(response.data.members);
     } catch (error: any) {
       console.error("Failed to load managed members:", error);
     } finally {
@@ -92,7 +95,11 @@ export default function SupervisorMembersPage() {
       return;
     }
     
-    if (user && user.role !== "supervisor" && user.role !== "admin") {
+    if (!user) {
+      return;
+    }
+    
+    if (user.role !== "supervisor" && user.role !== "admin") {
       // Access denied
       return;
     }
@@ -147,7 +154,7 @@ export default function SupervisorMembersPage() {
     }
   };
 
-  const handleAssignSeat = async (memberId: string, username: string) => {
+  const handleAssignSeat = async (memberId: string) => {
     setActiveOperationId(memberId);
     setOperationError("");
 
@@ -171,7 +178,7 @@ export default function SupervisorMembersPage() {
     }
   };
 
-  const handleUnassignSeat = async (memberId: string, username: string) => {
+  const handleUnassignSeat = async (memberId: string) => {
     setActiveOperationId(memberId);
     setOperationError("");
 
@@ -211,6 +218,13 @@ export default function SupervisorMembersPage() {
             {t("title")}
           </h1>
           <p className="mt-2 text-sm font-medium text-sol-muted">{t("subtitle")}</p>
+          {learnUnit && (
+            <p className="mt-3 inline-flex flex-wrap items-center gap-2 rounded-full border border-sol-accent/20 bg-sol-accent/5 px-4 py-2 text-xs font-bold text-sol-text">
+              <span>{learnUnit.name}</span>
+              <span className="text-sol-muted">•</span>
+              <span className="text-sol-accent">{learnUnit.code}</span>
+            </p>
+          )}
         </div>
       </div>
 
@@ -469,7 +483,7 @@ export default function SupervisorMembersPage() {
                               {isSubscribed ? (
                                 <button
                                   type="button"
-                                  onClick={() => handleUnassignSeat(member.id, member.username)}
+                                  onClick={() => handleUnassignSeat(member.id)}
                                   disabled={activeOperationId !== null}
                                   className="inline-flex items-center gap-1 rounded-lg bg-sol-orange/10 hover:bg-sol-orange/15 border border-sol-orange/30 text-sol-orange px-3 py-1.5 text-xs font-bold transition hover:cursor-pointer disabled:opacity-50"
                                 >
@@ -488,7 +502,7 @@ export default function SupervisorMembersPage() {
                               ) : (
                                 <button
                                   type="button"
-                                  onClick={() => handleAssignSeat(member.id, member.username)}
+                                  onClick={() => handleAssignSeat(member.id)}
                                   disabled={activeOperationId !== null || availableSlots === 0}
                                   className="inline-flex items-center gap-1 rounded-lg bg-sol-accent/10 hover:bg-sol-accent/20 border border-sol-accent/30 text-sol-accent px-3 py-1.5 text-xs font-bold transition hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                   title={availableSlots === 0 ? t("alerts.noSlots") : ""}

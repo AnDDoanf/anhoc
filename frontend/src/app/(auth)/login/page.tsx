@@ -15,10 +15,12 @@ export default function LoginPage() {
   const { login, error: authError } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showLearnUnit, setShowLearnUnit] = useState(false);
 
   const loginSchema = z.object({
     email: z.string().email(t("errors.invalid_email")),
     password: z.string().min(6, t("errors.password_too_short")),
+    learn_unit_code: z.string().optional(),
   });
 
   type LoginFormData = z.infer<typeof loginSchema>;
@@ -34,7 +36,11 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
-      const response = await login(data);
+      const response = await login({
+        email: data.email,
+        password: data.password,
+        learn_unit_code: showLearnUnit ? data.learn_unit_code : undefined,
+      });
       window.location.href = response.user.requires_subject_selection ? "/onboarding/subject" : "/";
     } catch (error) {
       console.error(error);
@@ -87,6 +93,28 @@ export default function LoginPage() {
               </button>
               {errors.password && <p className="mt-1 text-xs text-sol-orange">{errors.password.message}</p>}
             </div>
+
+            <div className="text-right">
+              <button
+                type="button"
+                onClick={() => setShowLearnUnit((current) => !current)}
+                className="text-xs font-semibold text-sol-accent hover:underline"
+              >
+                {showLearnUnit ? t("hide_learn_unit_code") : t("use_learn_unit_code")}
+              </button>
+            </div>
+
+            {showLearnUnit && (
+              <div className="animate-in fade-in slide-in-from-top-2 duration-200">
+                <input
+                  {...register("learn_unit_code")}
+                  type="text"
+                  placeholder={t("learn_unit_code_placeholder")}
+                  className="w-full rounded-lg border border-sol-border/50 bg-sol-bg px-4 py-3 text-sol-text placeholder-sol-muted/60 transition-all focus:border-sol-accent focus:outline-none focus:ring-2 focus:ring-sol-accent/50"
+                />
+                <p className="mt-1 text-xs text-sol-muted">{t("learn_unit_code_hint")}</p>
+              </div>
+            )}
 
             <div className="flex items-center justify-between text-sm">
               <label className="flex cursor-pointer items-center gap-2 text-sol-text">

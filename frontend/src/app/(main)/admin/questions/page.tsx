@@ -10,6 +10,7 @@ import { testService } from "@/services/testService";
 import Can from "@/components/auth/Can";
 import Hero from "@/components/ui/Hero";
 import FilterBar from "@/components/ui/FilterBar";
+import ProtectedRoute from "@/components/guard/ProtectedRoute";
 
 export default function QuestionsAdminPage() {
   const t = useTranslations("Questions");
@@ -215,7 +216,8 @@ export default function QuestionsAdminPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <ProtectedRoute requiredRole={["admin", "supervisor", "teacher"]}>
+      <div className="mx-auto max-w-7xl space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
       {/* Header */}
       <Hero
@@ -376,6 +378,7 @@ export default function QuestionsAdminPage() {
         onClose={() => setPreviewTemplate(null)}
         template={previewTemplate}
       />
-    </div>
+      </div>
+    </ProtectedRoute>
   );
 }

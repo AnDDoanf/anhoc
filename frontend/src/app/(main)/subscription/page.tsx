@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { useDispatch } from "react-redux";
 import { useRouter } from "next/navigation";
@@ -8,7 +8,6 @@ import {
   Check,
   CreditCard,
   Sparkles,
-  Users,
   Lock,
   Plus,
   Minus,
@@ -16,7 +15,11 @@ import {
   ShieldAlert,
   Loader2,
   Calendar,
-  UserCheck
+  UserCheck,
+  RefreshCw,
+  Clock,
+  Infinity as InfinityIcon,
+  AlertCircle
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { setCredentials } from "@/redux/slices/authSlice";
@@ -24,31 +27,110 @@ import { setPermissions } from "@/redux/slices/permissionSlice";
 import { authService } from "@/services/auth";
 import { api } from "@/services/api";
 
-type PlanType = "free_student" | "sub_student" | "supervisor";
+type BillingCycle = "monthly" | "annually";
+
+interface Plan {
+  id: number;
+  name: string;
+  description: string;
+  price_monthly: number;
+  price_annually: number;
+  max_students: number | null;
+  max_teachers: number | null;
+  max_lessons: number | null;
+  max_templates: number | null;
+  max_subjects: number | null;
+  max_grades: number | null;
+}
+
+interface SubscriptionDetails {
+  activeSubscription: {
+    id: string;
+    plan_id: number;
+    status: string;
+    billing_cycle: BillingCycle;
+    start_date: string;
+    end_date: string | null;
+    auto_renew: boolean;
+    plan: Plan;
+  } | null;
+  invoices: Array<{
+    id: string;
+    amount: number;
+    billing_date: string;
+    status: string;
+    description: string;
+  }>;
+}
 
 export default function PricingPage() {
   const t = useTranslations("Pricing");
   const dispatch = useDispatch();
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
-  
+
+  // Tab State
+  const [activeTab, setActiveTab] = useState<"pricing" | "billing">("pricing");
+
+  // Plans & Cycle State
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [loadingPlans, setLoadingPlans] = useState(true);
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
+
+  // Billing & Invoices Details State
+  const [subDetails, setSubDetails] = useState<SubscriptionDetails | null>(null);
+  const [loadingDetails, setLoadingDetails] = useState(true);
+  const [togglingAutoRenew, setTogglingAutoRenew] = useState(false);
+
+  // Checkout States
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<PlanType | null>(null);
-  const [slotCount, setSlotCount] = useState(1);
-  
-  // Checkout Form State
+  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
+  const [learnUnitName, setLearnUnitName] = useState("");
+  const [checkoutStatus, setCheckoutStatus] = useState<"idle" | "processing" | "success" | "error">("idle");
+  const [errorMessage, setErrorMessage] = useState("");
   const [cardName, setCardName] = useState("");
   const [cardNumber, setCardNumber] = useState("");
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardCvc, setCardCvc] = useState("");
-  
   const [isPending, startTransition] = useTransition();
-  const [checkoutStatus, setCheckoutStatus] = useState<"idle" | "processing" | "success" | "error">("idle");
-  const [errorMessage, setErrorMessage] = useState("");
 
-  const handleOpenCheckout = (plan: PlanType) => {
+  // Load plans from backend
+  const loadPlans = async () => {
+    setLoadingPlans(true);
+    try {
+      const res = await api.get("/subscription/plans");
+      setPlans(res.data);
+    } catch (err) {
+      console.error("Failed to load plans:", err);
+    } finally {
+      setLoadingPlans(false);
+    }
+  };
+
+  // Load active subscription and invoices from backend
+  const loadSubDetails = async () => {
+    if (!isAuthenticated) return;
+    setLoadingDetails(true);
+    try {
+      const res = await api.get("/subscription/details");
+      setSubDetails(res.data);
+    } catch (err) {
+      console.error("Failed to load subscription details:", err);
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
+  useEffect(() => {
+    loadPlans();
+    if (isAuthenticated) {
+      loadSubDetails();
+    }
+  }, [isAuthenticated]);
+
+  const handleOpenCheckout = (plan: Plan) => {
     if (!isAuthenticated) {
-      router.push("/login?redirect=/subscription");
+      router.push(`/login?redirect=/subscription`);
       return;
     }
     setSelectedPlan(plan);
@@ -57,6 +139,7 @@ export default function PricingPage() {
     setCardNumber("");
     setCardExpiry("");
     setCardCvc("");
+    setLearnUnitName("");
     setErrorMessage("");
     setIsCheckoutOpen(true);
   };
@@ -64,7 +147,6 @@ export default function PricingPage() {
   const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/\D/g, "");
     if (value.length > 16) value = value.slice(0, 16);
-    // Format card number with spaces every 4 digits
     const formatted = value.match(/.{1,4}/g)?.join(" ") || "";
     setCardNumber(formatted);
   };
@@ -83,66 +165,90 @@ export default function PricingPage() {
     setCardCvc(value);
   };
 
+  const getCardType = () => {
+    const cleanNumber = cardNumber.replace(/\s/g, "");
+    if (cleanNumber.startsWith("4")) return "Visa";
+    if (/^5[1-5]/.test(cleanNumber)) return "Master";
+    if (cleanNumber.startsWith("3")) return "Amex";
+    return "Card";
+  };
+
   const handleCheckoutSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPlan) return;
+    
+    const isSupervisorRolePlan = selectedPlan.name === "family" || selectedPlan.name === "learning_center";
+    if (isSupervisorRolePlan && user?.role !== "supervisor" && !learnUnitName.trim()) {
+      setCheckoutStatus("error");
+      setErrorMessage(t("checkout.organizationNameRequired"));
+      return;
+    }
 
     setCheckoutStatus("processing");
     setErrorMessage("");
 
     startTransition(async () => {
       try {
-        // Simulate a 2-second payment processing delay
         await new Promise((resolve) => setTimeout(resolve, 2000));
+        
+        await api.post("/subscription/checkout", {
+          planId: selectedPlan.id,
+          billingCycle,
+          learnUnitName: learnUnitName.trim() || undefined,
+        });
 
-        if (selectedPlan === "supervisor" && user?.role === "supervisor") {
-          // Supervisor buying additional seats
-          const response = await api.post("/supervisor/buy-slots", { slots: slotCount });
-          
-          // Refresh user profile
-          const updatedProfile = await authService.getProfile();
-          const token = localStorage.getItem("token") || "";
-          localStorage.setItem("user", JSON.stringify(updatedProfile));
-          dispatch(setCredentials({ user: updatedProfile, token }));
-          dispatch(setPermissions(updatedProfile.permissions));
-        } else {
-          // Role upgrade: sub_student or supervisor
-          await api.post("/auth/upgrade-role", { roleName: selectedPlan });
-          
-          // Refresh user profile
-          const updatedProfile = await authService.getProfile();
-          const token = localStorage.getItem("token") || "";
-          localStorage.setItem("user", JSON.stringify(updatedProfile));
-          dispatch(setCredentials({ user: updatedProfile, token }));
-          dispatch(setPermissions(updatedProfile.permissions));
-        }
+        // Sync Redux profile credentials
+        const updatedProfile = await authService.getProfile();
+        const token = localStorage.getItem("token") || "";
+        localStorage.setItem("user", JSON.stringify(updatedProfile));
+        dispatch(setCredentials({ user: updatedProfile, token }));
+        dispatch(setPermissions(updatedProfile.permissions));
 
         setCheckoutStatus("success");
-      } catch (error: any) {
-        console.error("Simulation payment error:", error);
+        loadSubDetails();
+      } catch (err: any) {
+        console.error("Payment checkout error:", err);
         setCheckoutStatus("error");
-        setErrorMessage(error.response?.data?.error || t("checkout.fail"));
+        setErrorMessage(err.response?.data?.error || t("checkout.fail"));
       }
     });
   };
 
-  // Detect card type based on first digit
-  const getCardType = () => {
-    const cleanNumber = cardNumber.replace(/\s/g, "");
-    if (cleanNumber.startsWith("4")) return "Visa";
-    if (/^5[1-5]/.test(cleanNumber)) return "Mastercard";
-    if (cleanNumber.startsWith("3")) return "Amex";
-    return "Unknown";
+  const handleToggleAutoRenew = async () => {
+    if (!subDetails?.activeSubscription || togglingAutoRenew) return;
+    setTogglingAutoRenew(true);
+    try {
+      const res = await api.post("/subscription/toggle-auto-renew");
+      setSubDetails((prev) =>
+        prev
+          ? {
+              ...prev,
+              activeSubscription: res.data.activeSubscription,
+            }
+          : null
+      );
+    } catch (err) {
+      console.error("Failed to toggle auto-renew status:", err);
+    } finally {
+      setTogglingAutoRenew(false);
+    }
+  };
+
+  const getPlanLocalKey = (name: string) => {
+    if (name === "free") return "freeStudent";
+    if (name === "pro") return "subStudent";
+    if (name === "learning_center") return "learningCenter";
+    return name; // "family" maps directly
   };
 
   return (
-    <div className="relative mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      {/* Decorative blurred backdrops */}
+    <div className="relative mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 pb-24">
+      {/* Background decorations */}
       <div className="absolute top-[-5rem] left-[10%] h-72 w-72 rounded-full bg-sol-accent/10 blur-3xl pointer-events-none" />
       <div className="absolute bottom-20 right-[10%] h-80 w-80 rounded-full bg-sol-orange/8 blur-3xl pointer-events-none" />
 
       {/* Header */}
-      <div className="text-center mb-16 relative">
+      <div className="text-center mb-10 relative">
         <span className="inline-flex items-center gap-2 rounded-full border border-sol-accent/25 bg-sol-accent/10 px-4 py-1.5 text-xs font-black uppercase tracking-[0.2em] text-sol-accent">
           <Sparkles size={13} className="animate-spin-slow" />
           Anhoc Membership
@@ -153,260 +259,384 @@ export default function PricingPage() {
         <p className="mx-auto mt-4 max-w-2xl text-base sm:text-lg font-medium text-sol-muted leading-relaxed">
           {t("subtitle")}
         </p>
+
+        {/* Tab Toggle Navigation */}
+        {isAuthenticated && (
+          <div className="mt-8 inline-flex rounded-full border border-sol-border/20 bg-sol-surface p-1 shadow-sm">
+            <button
+              onClick={() => setActiveTab("pricing")}
+              className={`rounded-full px-6 py-2 text-sm font-black transition ${
+                activeTab === "pricing" ? "bg-sol-accent text-sol-bg" : "text-sol-text hover:text-sol-accent"
+              }`}
+            >
+              {t("plansAndPricing")}
+            </button>
+            <button
+              onClick={() => setActiveTab("billing")}
+              className={`rounded-full px-6 py-2 text-sm font-black transition ${
+                activeTab === "billing" ? "bg-sol-accent text-sol-bg" : "text-sol-text hover:text-sol-accent"
+              }`}
+            >
+              {t("billingAndHistory")}
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Grid of pricing cards */}
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-3 lg:max-w-6xl lg:mx-auto">
-        
-        {/* Tier 1: Free Student */}
-        <div className={`relative flex flex-col justify-between rounded-3xl border p-8 bg-sol-surface/50 backdrop-blur-md transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 ${
-          user?.role === "free_student" 
-            ? "border-sol-accent ring-2 ring-sol-accent/20" 
-            : "border-sol-border/30 hover:border-sol-accent/40"
-        }`}>
-          <div>
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-black tracking-tight text-sol-text">{t("freeStudent.title")}</h3>
-              {user?.role === "free_student" && (
-                <span className="rounded-full bg-sol-accent/15 border border-sol-accent/30 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-sol-accent">
-                  {t("buttons.currentPlan")}
-                </span>
-              )}
-            </div>
-            <p className="mt-2 text-sm text-sol-muted min-h-10">{t("freeStudent.description")}</p>
-            <p className="mt-6 flex items-baseline">
-              <span className="text-4xl font-extrabold tracking-tight text-sol-text">{t("freeStudent.price")}</span>
-              <span className="ml-1 text-sm font-semibold text-sol-muted">/ {t("period.forever")}</span>
-            </p>
-
-            <ul className="mt-8 space-y-4 border-t border-sol-border/20 pt-6">
-              <li className="flex items-start gap-3">
-                <span className="mt-0.5 rounded-full bg-sol-green/10 p-0.5 text-sol-green">
-                  <Check size={14} />
-                </span>
-                <span className="text-sm font-medium text-sol-text/90">{t("freeStudent.features.accessFree")}</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="mt-0.5 rounded-full bg-sol-green/10 p-0.5 text-sol-green">
-                  <Check size={14} />
-                </span>
-                <span className="text-sm font-medium text-sol-text/90">{t("freeStudent.features.xpCap")}</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="mt-0.5 rounded-full bg-sol-green/10 p-0.5 text-sol-green">
-                  <Check size={14} />
-                </span>
-                <span className="text-sm font-medium text-sol-text/90">{t("freeStudent.features.basicAi")}</span>
-              </li>
-              <li className="flex items-start gap-3 opacity-60">
-                <span className="mt-0.5 rounded-full bg-sol-orange/10 p-0.5 text-sol-orange">
-                  <Lock size={12} />
-                </span>
-                <span className="text-sm font-medium text-sol-muted">{t("freeStudent.features.premiumLocked")}</span>
-              </li>
-              <li className="flex items-start gap-3 opacity-60">
-                <span className="mt-0.5 rounded-full bg-sol-orange/10 p-0.5 text-sol-orange">
-                  <Lock size={12} />
-                </span>
-                <span className="text-sm font-medium text-sol-muted">{t("freeStudent.features.rewardsLocked")}</span>
-              </li>
-            </ul>
-          </div>
-
-          <button
-            type="button"
-            disabled
-            className="mt-8 w-full rounded-2xl bg-sol-surface border border-sol-border/30 px-4 py-4 text-center text-sm font-bold uppercase tracking-wider text-sol-muted cursor-not-allowed"
-          >
-            {user?.role === "free_student" ? t("buttons.currentPlan") : t("buttons.getStarted")}
-          </button>
-        </div>
-
-        {/* Tier 2: Premium Student */}
-        <div className={`relative flex flex-col justify-between rounded-3xl border p-8 bg-sol-surface/60 backdrop-blur-md transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 ${
-          user?.role === "sub_student"
-            ? "border-sol-accent ring-2 ring-sol-accent/30 bg-sol-accent/3"
-            : "border-sol-accent/40 shadow-lg ring-1 ring-sol-accent/10 hover:border-sol-accent"
-        }`}>
-          {/* Recommended ribbon */}
-          <div className="absolute top-0 right-6 -translate-y-1/2 rounded-full bg-gradient-to-r from-sol-accent to-sol-cyan px-4 py-1 text-[10px] font-black uppercase tracking-[0.15em] text-sol-bg shadow-md">
-            Popular
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-black tracking-tight text-sol-text">{t("subStudent.title")}</h3>
-              {user?.role === "sub_student" && (
-                <span className="rounded-full bg-sol-accent/15 border border-sol-accent/30 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-sol-accent">
-                  {t("buttons.currentPlan")}
-                </span>
-              )}
-            </div>
-            <p className="mt-2 text-sm text-sol-muted min-h-10">{t("subStudent.description")}</p>
-            <p className="mt-6 flex items-baseline">
-              <span className="text-4xl font-extrabold tracking-tight text-sol-text">{t("subStudent.price")}</span>
-              <span className="ml-1 text-sm font-semibold text-sol-muted">/ {t("period.month")}</span>
-            </p>
-
-            <ul className="mt-8 space-y-4 border-t border-sol-border/20 pt-6">
-              <li className="flex items-start gap-3">
-                <span className="mt-0.5 rounded-full bg-sol-green/10 p-0.5 text-sol-green">
-                  <Check size={14} />
-                </span>
-                <span className="text-sm font-bold text-sol-text">{t("subStudent.features.allFree")}</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="mt-0.5 rounded-full bg-sol-green/10 p-0.5 text-sol-green">
-                  <Check size={14} />
-                </span>
-                <span className="text-sm font-bold text-sol-text">{t("subStudent.features.accessPremium")}</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="mt-0.5 rounded-full bg-sol-green/10 p-0.5 text-sol-green">
-                  <Check size={14} />
-                </span>
-                <span className="text-sm font-bold text-sol-text">{t("subStudent.features.noCap")}</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="mt-0.5 rounded-full bg-sol-green/10 p-0.5 text-sol-green">
-                  <Check size={14} />
-                </span>
-                <span className="text-sm font-bold text-sol-text">{t("subStudent.features.rewardsUnlocked")}</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="mt-0.5 rounded-full bg-sol-green/10 p-0.5 text-sol-green">
-                  <Check size={14} />
-                </span>
-                <span className="text-sm font-bold text-sol-text">{t("subStudent.features.priorityAi")}</span>
-              </li>
-            </ul>
-          </div>
-
-          {user?.role === "sub_student" ? (
+      {activeTab === "pricing" ? (
+        <>
+          {/* Billing Cycle Selector Toggle */}
+          <div className="flex items-center justify-center gap-4 mb-12 relative">
             <button
-              type="button"
-              disabled
-              className="mt-8 w-full rounded-2xl bg-sol-accent/10 border border-sol-accent/35 px-4 py-4 text-center text-sm font-black uppercase tracking-wider text-sol-accent cursor-default"
+              onClick={() => setBillingCycle("monthly")}
+              className={`text-sm font-black tracking-wider transition ${
+                billingCycle === "monthly" ? "text-sol-accent font-black" : "text-sol-muted hover:text-sol-text"
+              }`}
             >
-              {t("buttons.currentPlan")}
+              {t("buttons.monthly")}
             </button>
+            
+            <button
+              onClick={() => setBillingCycle(billingCycle === "monthly" ? "annually" : "monthly")}
+              className="relative h-7 w-12 rounded-full bg-sol-surface border border-sol-border/40 hover:border-sol-accent transition focus:outline-none"
+            >
+              <div
+                className={`absolute top-0.5 h-5.5 w-5.5 rounded-full bg-sol-accent transition-all duration-300 ${
+                  billingCycle === "annually" ? "left-5.5" : "left-0.5"
+                }`}
+              />
+            </button>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setBillingCycle("annually")}
+                className={`text-sm font-black tracking-wider transition ${
+                  billingCycle === "annually" ? "text-sol-accent font-black" : "text-sol-muted hover:text-sol-text"
+                }`}
+              >
+                {t("buttons.annually")}
+              </button>
+              <span className="rounded-full bg-sol-green/10 border border-sol-green/35 text-sol-green text-[10px] font-black uppercase tracking-wider px-2 py-0.5 animate-pulse">
+                {t("buttons.savePercent")}
+              </span>
+            </div>
+          </div>
+
+          {/* Pricing Grid */}
+          {loadingPlans ? (
+            <div className="flex h-60 flex-col items-center justify-center gap-3">
+              <Loader2 className="animate-spin text-sol-accent" size={36} />
+              <p className="font-black text-sol-muted">{t("loadingPlans")}</p>
+            </div>
           ) : (
-            <button
-              type="button"
-              onClick={() => handleOpenCheckout("sub_student")}
-              className="mt-8 w-full rounded-2xl bg-sol-accent hover:cursor-pointer hover:opacity-95 text-sol-bg shadow-lg shadow-sol-accent/20 px-4 py-4 text-center text-sm font-black uppercase tracking-wider transition-all transform hover:scale-[1.01] active:scale-95"
-            >
-              {t("buttons.upgrade")}
-            </button>
-          )}
-        </div>
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4 max-w-7xl mx-auto">
+              {plans.map((plan) => {
+                const key = getPlanLocalKey(plan.name);
+                const isCurrent = subDetails?.activeSubscription?.plan_id === plan.id && subDetails.activeSubscription.billing_cycle === billingCycle;
+                const isPlanActive = subDetails?.activeSubscription?.plan_id === plan.id;
+                
+                const displayPrice = billingCycle === "annually" ? plan.price_annually : plan.price_monthly;
+                const displayPeriod = plan.name === "free" ? t("period.forever") : t("period.month");
+                const priceFormatted = plan.name === "free" ? "0" : displayPrice;
 
-        {/* Tier 3: Supervisor */}
-        <div className={`relative flex flex-col justify-between rounded-3xl border p-8 bg-sol-surface/50 backdrop-blur-md transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 ${
-          user?.role === "supervisor"
-            ? "border-sol-accent ring-2 ring-sol-accent/20 bg-sol-accent/2"
-            : "border-sol-border/30 hover:border-sol-accent/40"
-        }`}>
-          <div>
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-black tracking-tight text-sol-text">{t("supervisor.title")}</h3>
-              {user?.role === "supervisor" && (
-                <span className="rounded-full bg-sol-accent/15 border border-sol-accent/30 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-sol-accent">
-                  {user.slots_purchased || 0} Seats Active
-                </span>
-              )}
+                return (
+                  <div
+                    key={plan.id}
+                    className={`relative flex flex-col justify-between rounded-3xl border p-6 bg-sol-surface/50 backdrop-blur-md transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 ${
+                      isCurrent
+                        ? "border-sol-accent ring-2 ring-sol-accent/20 bg-sol-accent/3"
+                        : "border-sol-border/30 hover:border-sol-accent/40"
+                    }`}
+                  >
+                    {plan.name === "pro" && (
+                      <div className="absolute top-0 right-6 -translate-y-1/2 rounded-full bg-gradient-to-r from-sol-accent to-sol-cyan px-4 py-1 text-[10px] font-black uppercase tracking-[0.15em] text-sol-bg shadow-md">
+                        {t("popular")}
+                      </div>
+                    )}
+                    {plan.name === "learning_center" && (
+                      <div className="absolute top-0 right-6 -translate-y-1/2 rounded-full bg-sol-orange text-sol-bg px-4 py-1 text-[10px] font-black uppercase tracking-[0.15em] shadow-md">
+                        {t("enterprise")}
+                      </div>
+                    )}
+
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-lg font-black tracking-tight text-sol-text uppercase">
+                          {t(`${key}.title`)}
+                        </h3>
+                        {isCurrent && (
+                          <span className="rounded-full bg-sol-accent/15 border border-sol-accent/30 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-sol-accent">
+                            {t("buttons.currentPlan")}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-sol-muted min-h-10 mb-4">{t(`${key}.description`)}</p>
+                      
+                      <div className="flex items-baseline mb-6 border-b border-sol-border/10 pb-4">
+                        <span className="text-3xl font-extrabold tracking-tight text-sol-text">
+                          ${priceFormatted}
+                        </span>
+                        <span className="ml-1 text-xs font-semibold text-sol-muted">
+                          / {displayPeriod}
+                        </span>
+                      </div>
+
+                      <ul className="space-y-3">
+                        <li className="flex items-start gap-2 text-xs">
+                          <span className="mt-0.5 rounded-full bg-sol-green/10 p-0.5 text-sol-green shrink-0">
+                            <Check size={12} />
+                          </span>
+                          <span className="font-semibold text-sol-text/90">
+                            {plan.name === "free" ? t("freeStudent.features.accessFree") : t("subStudent.features.accessPremium")}
+                          </span>
+                        </li>
+                        
+                        {plan.max_students !== null && (
+                          <li className="flex items-start gap-2 text-xs">
+                            <span className="mt-0.5 rounded-full bg-sol-green/10 p-0.5 text-sol-green shrink-0">
+                              <Check size={12} />
+                            </span>
+                            <span className="font-semibold text-sol-text/90">
+                              {t(`${key}.features.limitStudents`)}
+                            </span>
+                          </li>
+                        )}
+                        
+                        {plan.max_teachers !== null && (
+                          <li className="flex items-start gap-2 text-xs">
+                            <span className="mt-0.5 rounded-full bg-sol-green/10 p-0.5 text-sol-green shrink-0">
+                              <Check size={12} />
+                            </span>
+                            <span className="font-semibold text-sol-text/90">
+                              {t(`${key}.features.limitTeachers`)}
+                            </span>
+                          </li>
+                        )}
+
+                        {plan.name === "free" && (
+                          <>
+                            <li className="flex items-start gap-2 text-xs">
+                              <span className="mt-0.5 rounded-full bg-sol-green/10 p-0.5 text-sol-green shrink-0">
+                                <Check size={12} />
+                              </span>
+                              <span className="font-semibold text-sol-text/90">{t("freeStudent.features.xpCap")}</span>
+                            </li>
+                            <li className="flex items-start gap-2 text-xs opacity-60">
+                              <span className="mt-0.5 rounded-full bg-sol-orange/10 p-0.5 text-sol-orange shrink-0">
+                                <Lock size={10} />
+                              </span>
+                              <span className="font-medium text-sol-muted">{t("freeStudent.features.premiumLocked")}</span>
+                            </li>
+                          </>
+                        )}
+
+                        {plan.name === "pro" && (
+                          <>
+                            <li className="flex items-start gap-2 text-xs">
+                              <span className="mt-0.5 rounded-full bg-sol-green/10 p-0.5 text-sol-green shrink-0">
+                                <Check size={12} />
+                              </span>
+                              <span className="font-semibold text-sol-text/90">{t("subStudent.features.noCap")}</span>
+                            </li>
+                            <li className="flex items-start gap-2 text-xs">
+                              <span className="mt-0.5 rounded-full bg-sol-green/10 p-0.5 text-sol-green shrink-0">
+                                <Check size={12} />
+                              </span>
+                              <span className="font-semibold text-sol-text/90">{t("subStudent.features.rewardsUnlocked")}</span>
+                            </li>
+                          </>
+                        )}
+
+                        {(plan.name === "family" || plan.name === "learning_center") && (
+                          <>
+                            <li className="flex items-start gap-2 text-xs">
+                              <span className="mt-0.5 rounded-full bg-sol-green/10 p-0.5 text-sol-green shrink-0">
+                                <Check size={12} />
+                              </span>
+                              <span className="font-semibold text-sol-text/90">Assign premium student slots</span>
+                            </li>
+                            <li className="flex items-start gap-2 text-xs">
+                              <span className="mt-0.5 rounded-full bg-sol-green/10 p-0.5 text-sol-green shrink-0">
+                                <Check size={12} />
+                              </span>
+                              <span className="font-semibold text-sol-text/90">Detailed progress monitoring</span>
+                            </li>
+                          </>
+                        )}
+                      </ul>
+                    </div>
+
+                    {plan.name === "free" ? (
+                      <button
+                        type="button"
+                        disabled
+                        className="mt-8 w-full rounded-2xl bg-sol-surface border border-sol-border/30 px-4 py-3.5 text-center text-xs font-black uppercase tracking-wider text-sol-muted cursor-not-allowed"
+                      >
+                        {user?.role === "free_student" ? t("buttons.currentPlan") : "Default Level"}
+                      </button>
+                    ) : isCurrent ? (
+                      <button
+                        type="button"
+                        disabled
+                        className="mt-8 w-full rounded-2xl bg-sol-accent/10 border border-sol-accent/35 px-4 py-3.5 text-center text-xs font-black uppercase tracking-wider text-sol-accent cursor-default"
+                      >
+                        {t("buttons.currentPlan")}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenCheckout(plan)}
+                        className="mt-8 w-full rounded-2xl bg-sol-accent hover:cursor-pointer hover:opacity-95 text-sol-bg shadow-lg shadow-sol-accent/15 px-4 py-3.5 text-center text-xs font-black uppercase tracking-wider transition-all transform hover:scale-[1.01] active:scale-95"
+                      >
+                        {isPlanActive ? "Switch Cycle" : t("buttons.upgrade")}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-            <p className="mt-2 text-sm text-sol-muted min-h-10">{t("supervisor.description")}</p>
-            <p className="mt-6 flex items-baseline">
-              <span className="text-4xl font-extrabold tracking-tight text-sol-text">{t("supervisor.price")}</span>
-              <span className="ml-1 text-sm font-semibold text-sol-muted">/ {t("period.seatMonth")}</span>
-            </p>
-
-            <ul className="mt-8 space-y-4 border-t border-sol-border/20 pt-6">
-              <li className="flex items-start gap-3">
-                <span className="mt-0.5 rounded-full bg-sol-green/10 p-0.5 text-sol-green">
-                  <Check size={14} />
-                </span>
-                <span className="text-sm font-medium text-sol-text/90">{t("supervisor.features.buySeats")}</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="mt-0.5 rounded-full bg-sol-green/10 p-0.5 text-sol-green">
-                  <Check size={14} />
-                </span>
-                <span className="text-sm font-medium text-sol-text/90">{t("supervisor.features.manageAccounts")}</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="mt-0.5 rounded-full bg-sol-green/10 p-0.5 text-sol-green">
-                  <Check size={14} />
-                </span>
-                <span className="text-sm font-medium text-sol-text/90">{t("supervisor.features.assignSeats")}</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="mt-0.5 rounded-full bg-sol-green/10 p-0.5 text-sol-green">
-                  <Check size={14} />
-                </span>
-                <span className="text-sm font-medium text-sol-text/90">{t("supervisor.features.trackProgress")}</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="mt-0.5 rounded-full bg-sol-green/10 p-0.5 text-sol-green">
-                  <Check size={14} />
-                </span>
-                <span className="text-sm font-medium text-sol-text/90">{t("supervisor.features.reviewLessons")}</span>
-              </li>
-            </ul>
-          </div>
-
-          {user?.role === "supervisor" ? (
-            <div className="mt-8 space-y-3">
-              <div className="flex items-center justify-between border border-sol-border/30 bg-sol-bg/40 rounded-2xl p-2">
-                <span className="text-xs font-black uppercase text-sol-muted pl-2">Seats to add</span>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setSlotCount(prev => Math.max(1, prev - 1))}
-                    className="flex h-8 w-8 items-center justify-center hover:cursor-pointer rounded-xl bg-sol-surface border border-sol-border/30 text-sol-text transition hover:border-sol-accent"
-                  >
-                    <Minus size={14} />
-                  </button>
-                  <span className="w-8 text-center text-sm font-black text-sol-text">{slotCount}</span>
-                  <button
-                    type="button"
-                    onClick={() => setSlotCount(prev => prev + 1)}
-                    className="flex h-8 w-8 items-center justify-center hover:cursor-pointer rounded-xl bg-sol-surface border border-sol-border/30 text-sol-text transition hover:border-sol-accent"
-                  >
-                    <Plus size={14} />
-                  </button>
+          )}
+        </>
+      ) : (
+        /* Billing & Invoice History Panel */
+        <div className="mx-auto max-w-4xl space-y-8 animate-in fade-in duration-500">
+          {loadingDetails ? (
+            <div className="flex h-60 flex-col items-center justify-center gap-3">
+              <Loader2 className="animate-spin text-sol-accent" size={36} />
+              <p className="font-black text-sol-muted">Retrieving billing info...</p>
+            </div>
+          ) : (
+            <>
+              {/* Active Plan Detail Card */}
+              <div className="bg-sol-surface border border-sol-border/15 rounded-[2rem] p-8 shadow-xl relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-sol-accent/5 rounded-full blur-2xl pointer-events-none" />
+                
+                <div>
+                  <h3 className="text-xs font-black uppercase text-sol-accent tracking-widest mb-1">
+                    {t("buttons.activePlan")}
+                  </h3>
+                  <h2 className="text-3xl font-black text-sol-text uppercase mt-1">
+                    {subDetails?.activeSubscription ? t(`${getPlanLocalKey(subDetails.activeSubscription.plan.name)}.title`) : "Free Account"}
+                  </h2>
+                  <p className="text-sm font-bold text-sol-muted mt-2">
+                    {subDetails?.activeSubscription ? (
+                      <>
+                        Price: ${subDetails.activeSubscription.billing_cycle === "annually" ? subDetails.activeSubscription.plan.price_annually : subDetails.activeSubscription.plan.price_monthly} 
+                        ({subDetails.activeSubscription.billing_cycle === "annually" ? "Annually" : "Monthly"})
+                      </>
+                    ) : (
+                      "Basic learning track with limits."
+                    )}
+                  </p>
+                  
+                  {subDetails?.activeSubscription?.end_date && (
+                    <div className="flex items-center gap-2 text-xs font-bold text-sol-muted/80 mt-4 bg-sol-bg/50 border border-sol-border/30 rounded-xl px-3 py-1.5 w-fit">
+                      <Calendar size={14} className="text-sol-accent" />
+                      <span>
+                        Renews on: {new Date(subDetails.activeSubscription.end_date).toLocaleDateString()}
+                      </span>
+                    </div>
+                  )}
                 </div>
+
+                {subDetails?.activeSubscription && (
+                  <div className="border border-sol-border/20 bg-sol-bg/30 p-5 rounded-2xl shrink-0 w-full md:w-auto flex flex-col gap-3 min-w-[240px]">
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-xs font-black uppercase text-sol-muted tracking-wider">
+                        {t("buttons.autoRenewStatus")}
+                      </span>
+                      <span className={`text-xs font-black uppercase px-2 py-0.5 rounded-full border ${
+                        subDetails.activeSubscription.auto_renew 
+                          ? "bg-sol-green/10 border-sol-green/30 text-sol-green" 
+                          : "bg-sol-orange/10 border-sol-orange/30 text-sol-orange"
+                      }`}>
+                        {subDetails.activeSubscription.auto_renew ? t("buttons.autoRenewOn") : t("buttons.autoRenewOff")}
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={handleToggleAutoRenew}
+                      disabled={togglingAutoRenew}
+                      className={`w-full text-center px-4 py-2.5 rounded-xl text-xs font-black transition hover:cursor-pointer flex items-center justify-center gap-1.5 ${
+                        subDetails.activeSubscription.auto_renew
+                          ? "bg-sol-orange/10 border border-sol-orange/30 text-sol-orange hover:bg-sol-orange/20"
+                          : "bg-sol-accent/10 border border-sol-accent/30 text-sol-accent hover:bg-sol-accent/20"
+                      }`}
+                    >
+                      {togglingAutoRenew ? (
+                        <Loader2 size={13} className="animate-spin" />
+                      ) : subDetails.activeSubscription.auto_renew ? (
+                        t("buttons.turnOffAutoRenew")
+                      ) : (
+                        t("buttons.turnOnAutoRenew")
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
 
-              <button
-                type="button"
-                onClick={() => handleOpenCheckout("supervisor")}
-                className="w-full rounded-2xl bg-sol-accent hover:cursor-pointer hover:opacity-95 text-sol-bg px-4 py-4 text-center text-sm font-black uppercase tracking-wider transition-all transform hover:scale-[1.01] active:scale-95 shadow-md shadow-sol-accent/15"
-              >
-                {t("buttons.buySeats")} ({slotCount})
-              </button>
-
-              <button
-                type="button"
-                onClick={() => router.push("/student/members")}
-                className="w-full rounded-2xl bg-sol-surface border border-sol-border/30 text-sol-text hover:border-sol-accent hover:cursor-pointer px-4 py-3.5 text-center text-sm font-bold tracking-wider transition-all"
-              >
-                {t("buttons.manageMembers")}
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => handleOpenCheckout("supervisor")}
-              className="mt-8 w-full rounded-2xl bg-sol-surface hover:cursor-pointer hover:bg-sol-bg border border-sol-border/40 hover:border-sol-accent text-sol-text px-4 py-4 text-center text-sm font-black uppercase tracking-wider transition-all transform hover:scale-[1.01] active:scale-95"
-            >
-              {t("buttons.upgrade")}
-            </button>
+              {/* Invoices List Table */}
+              <div className="bg-sol-surface border border-sol-border/10 rounded-[2.5rem] p-6 shadow-sm overflow-hidden">
+                <h3 className="text-xl font-black text-sol-text mb-6 uppercase tracking-wider">
+                  {t("buttons.billingHistory")}
+                </h3>
+                
+                {subDetails?.invoices?.length === 0 ? (
+                  <div className="text-center py-10">
+                    <AlertCircle className="mx-auto text-sol-muted mb-3" size={32} />
+                    <p className="font-bold text-sol-muted text-sm">{t("buttons.noInvoices")}</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-sol-border/10 bg-sol-bg/50">
+                          <th className="px-6 py-4 text-left text-[10px] font-black text-sol-muted uppercase tracking-widest">
+                            {t("buttons.invoiceDate")}
+                          </th>
+                          <th className="px-6 py-4 text-left text-[10px] font-black text-sol-muted uppercase tracking-widest">
+                            {t("buttons.invoiceDesc")}
+                          </th>
+                          <th className="px-6 py-4 text-left text-[10px] font-black text-sol-muted uppercase tracking-widest">
+                            {t("buttons.invoiceAmount")}
+                          </th>
+                          <th className="px-6 py-4 text-left text-[10px] font-black text-sol-muted uppercase tracking-widest">
+                            {t("buttons.invoiceStatus")}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-sol-border/5">
+                        {subDetails?.invoices?.map((invoice) => (
+                          <tr key={invoice.id} className="hover:bg-sol-bg/20 transition-colors">
+                            <td className="px-6 py-4 whitespace-nowrap text-xs font-bold text-sol-muted">
+                              {new Date(invoice.billing_date).toLocaleDateString()}
+                            </td>
+                            <td className="px-6 py-4 text-xs font-black text-sol-text">
+                              {invoice.description}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-xs font-black text-sol-text">
+                              ${Number(invoice.amount).toFixed(2)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${
+                                invoice.status === "paid"
+                                  ? "bg-sol-green/10 border-sol-green/30 text-sol-green"
+                                  : "bg-red-500/10 border-red-500/30 text-red-500"
+                              }`}>
+                                {invoice.status === "paid" ? t("buttons.invoicePaid") : t("buttons.invoiceFailed")}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </>
           )}
         </div>
-
-      </div>
+      )}
 
       {/* Stripe checkout simulation Modal */}
       {isCheckoutOpen && selectedPlan && (
@@ -444,8 +674,9 @@ export default function PricingPage() {
                   type="button"
                   onClick={() => {
                     setIsCheckoutOpen(false);
-                    // Refresh view
-                    router.refresh();
+                    // Refresh view/tab
+                    loadSubDetails();
+                    setActiveTab("billing");
                   }}
                   className="mt-8 rounded-2xl bg-sol-accent hover:cursor-pointer px-8 py-4 text-sm font-black uppercase tracking-wider text-sol-bg transition hover:opacity-90 shadow-md shadow-sol-accent/15"
                 >
@@ -457,10 +688,7 @@ export default function PricingPage() {
                 <div className="flex items-center gap-2 mb-6">
                   <CreditCard className="text-sol-accent" size={22} />
                   <h3 className="text-xl font-black tracking-tight text-sol-text">
-                    {selectedPlan === "supervisor" && user?.role === "supervisor" 
-                      ? `${t("buttons.buySeats")} (${slotCount} Seats)` 
-                      : t("checkout.title")
-                    }
+                    Subscribe to {selectedPlan.name.toUpperCase()}
                   </h3>
                 </div>
 
@@ -473,16 +701,32 @@ export default function PricingPage() {
                   </div>
                 </div>
 
+                {/* Learn Unit setup if upgrading to supervisor roles (Family / Learning Center) */}
+                {(selectedPlan.name === "family" || selectedPlan.name === "learning_center") && user?.role !== "supervisor" && (
+                  <div className="mb-6">
+                    <label className="mb-1.5 block text-xs font-black uppercase tracking-wider text-sol-muted">
+                      Organization / Learn Unit Name
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={learnUnitName}
+                      onChange={(e) => setLearnUnitName(e.target.value)}
+                      disabled={checkoutStatus === "processing"}
+                      placeholder="e.g. Sunny School Center"
+                      className="w-full rounded-xl border border-sol-border/30 bg-sol-bg/20 px-4 py-3 text-sm font-bold text-sol-text placeholder-sol-muted/50 focus:border-sol-accent focus:outline-none transition-colors"
+                    />
+                  </div>
+                )}
+
                 {/* Stylized credit card template preview */}
                 <div className="relative w-full h-44 rounded-2xl bg-gradient-to-br from-sol-accent/90 via-sol-cyan to-sol-accent p-6 text-sol-bg shadow-lg mb-6 overflow-hidden flex flex-col justify-between">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl pointer-events-none" />
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-wider opacity-60">Anhoc Premium</p>
-                      <p className="text-xs font-bold mt-0.5">
-                        {selectedPlan === "free_student" && t("freeStudent.title")}
-                        {selectedPlan === "sub_student" && t("subStudent.title")}
-                        {selectedPlan === "supervisor" && t("supervisor.title")}
+                      <p className="text-xs font-bold mt-0.5 uppercase">
+                        {t(`${getPlanLocalKey(selectedPlan.name)}.title`)}
                       </p>
                     </div>
                     <div className="h-8 w-12 bg-white/10 rounded-md backdrop-blur border border-white/10 flex items-center justify-center font-bold text-xs">
@@ -552,18 +796,15 @@ export default function PricingPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-black uppercase tracking-wider text-sol-muted mb-1.5">{t("checkout.expiry")}</label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          required
-                          placeholder="MM/YY"
-                          value={cardExpiry}
-                          onChange={handleExpiryChange}
-                          disabled={checkoutStatus === "processing"}
-                          className="w-full rounded-xl border border-sol-border/30 bg-sol-bg/20 pl-11 pr-4 py-3 text-sm font-bold text-sol-text placeholder-sol-muted/50 focus:border-sol-accent focus:outline-none transition-colors font-mono"
-                        />
-                        <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-sol-muted/80" size={16} />
-                      </div>
+                      <input
+                        type="text"
+                        required
+                        placeholder="MM/YY"
+                        value={cardExpiry}
+                        onChange={handleExpiryChange}
+                        disabled={checkoutStatus === "processing"}
+                        className="w-full rounded-xl border border-sol-border/30 bg-sol-bg/20 px-4 py-3 text-sm font-bold text-sol-text placeholder-sol-muted/50 focus:border-sol-accent focus:outline-none transition-colors font-mono"
+                      />
                     </div>
 
                     <div>
@@ -589,7 +830,7 @@ export default function PricingPage() {
                   <button
                     type="submit"
                     disabled={checkoutStatus === "processing"}
-                    className="w-full mt-6 flex items-center justify-center gap-2 rounded-2xl bg-sol-accent hover:cursor-pointer hover:opacity-95 text-sol-bg py-4 text-sm font-black uppercase tracking-wider transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-sol-accent/15"
+                    className="w-full mt-6 flex items-center justify-center gap-2 rounded-2xl bg-sol-accent hover:cursor-pointer hover:opacity-95 text-sol-bg py-4 text-sm font-black uppercase tracking-wider transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-sol-accent/15 animate-pulse-slow"
                   >
                     {checkoutStatus === "processing" ? (
                       <>
@@ -599,7 +840,9 @@ export default function PricingPage() {
                     ) : (
                       <>
                         <Lock size={14} />
-                        <span>{t("checkout.payNow")}</span>
+                        <span>
+                          {t("checkout.payNow")} (${billingCycle === "annually" ? selectedPlan.price_annually : selectedPlan.price_monthly})
+                        </span>
                       </>
                     )}
                   </button>

@@ -3,7 +3,7 @@
 import { useTranslations, useLocale } from "next-intl";
 import Link from "next/link";
 import Can from "@/components/auth/Can";
-import { GraduationCap, Library, Globe, ArrowUpRight, PlusCircle, Layers, BookMarked, ChevronRight, BookOpen, PlayCircle, Loader2, Pencil, Trash2, Flame, Users, Sparkles, TrendingUp, ShieldAlert } from "lucide-react";
+import { GraduationCap, Library, Globe, ArrowUpRight, PlusCircle, Layers, BookMarked, ChevronRight, BookOpen, PlayCircle, Loader2, Pencil, Trash2, Flame, Users, Sparkles, TrendingUp, ShieldAlert, CheckCircle2, Clock, Lock } from "lucide-react";
 import CreateLessonModal from "@/components/feature/CreateLessonModal";
 import Hero from "@/components/ui/Hero";
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -43,7 +43,7 @@ export default function LearningDashboard() {
   const router = useRouter();
   const { theme } = useTheme();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [metaModal, setMetaModal] = useState<"subject" | "grade" | "subjectAccess" | null>(null);
+  const [metaModal, setMetaModal] = useState<"subject" | "grade" | "subjectAccess" | "subjectsList" | null>(null);
   const [editLessonId, setEditLessonId] = useState<string | null>(null);
   const [lessonGroups, setLessonGroups] = useState<LessonSubjectGroup[]>([]);
   const [masteryData, setMasteryData] = useState<Record<string, LessonMastery>>({});
@@ -55,11 +55,12 @@ export default function LearningDashboard() {
   const [socialSummary, setSocialSummary] = useState({ followers: 0, following: 0 });
   const [followLoadingId, setFollowLoadingId] = useState<string | null>(null);
   const [lockedSubjects, setLockedSubjects] = useState<Subject[]>([]);
+  const [subjectCatalog, setSubjectCatalog] = useState<Subject[]>([]);
   const [requestingSubjectId, setRequestingSubjectId] = useState<number | null>(null);
 
   const fetchDisplayData = useCallback(async () => {
     try {
-      const [lessons, mastery, activityData, socializingData, subjectCatalog] = await Promise.all([
+      const [lessons, mastery, activityData, socializingData, catalog] = await Promise.all([
         lessonService.list(),
         lessonService.getMasteryAll(),
         authService.getActivity(),
@@ -104,7 +105,8 @@ export default function LearningDashboard() {
       setNearbyLearners(socializingData.nearbyLearners);
       setRecommendedUser(socializingData.recommendedUser);
       setSocialSummary(socializingData.summary);
-      setLockedSubjects(subjectCatalog.filter((subject) => subject.is_classified && subject.role_visible && !subject.has_access));
+      setSubjectCatalog(catalog);
+      setLockedSubjects(catalog.filter((subject) => subject.is_classified && subject.role_visible && !subject.has_access));
     } catch (err) {
       console.error("Failed to load dashboard lessons:", err);
     }
@@ -156,7 +158,7 @@ export default function LearningDashboard() {
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this lesson?")) {
+    if (confirm(t("deleteLessonConfirm"))) {
       try {
         await lessonService.remove(id);
         fetchDisplayData();
@@ -238,6 +240,13 @@ export default function LearningDashboard() {
               <Library size={16} className="text-sol-accent md:h-[18px] md:w-[18px]" />
               <span>{commonT("tracks", { count: 12 })}</span>
             </div>
+            <button
+              onClick={() => setMetaModal("subjectsList")}
+              className="flex items-center gap-2 rounded-2xl bg-sol-accent hover:opacity-90 transition-transform hover:scale-105 px-4 py-2 text-sm font-bold text-sol-bg shadow-lg shadow-sol-accent/20 cursor-pointer md:px-5 md:py-2.5"
+            >
+              <Library size={16} className="md:h-[18px] md:w-[18px]" />
+              <span>{t("subjects")}</span>
+            </button>
           </div>
         </div>
       </Hero>
@@ -277,50 +286,6 @@ export default function LearningDashboard() {
 
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start">
         <div className="space-y-12 md:space-y-24">
-          {lockedSubjects.length > 0 && (
-            <section className="rounded-[2rem] border border-sol-orange/30 bg-sol-surface p-6 shadow-sm">
-              <div className="flex items-center gap-3 text-sol-orange">
-                <ShieldAlert size={20} />
-                <div>
-                  <h2 className="text-lg font-black uppercase tracking-tight text-sol-text">{t("classifiedSubjectsTitle")}</h2>
-                  <p className="text-sm font-bold text-sol-text/65">{t("classifiedSubjectsSubtitle")}</p>
-                </div>
-              </div>
-
-              <div className="mt-5 grid gap-4 md:grid-cols-2">
-                {lockedSubjects.map((subject) => {
-                  const subjectLabel = locale === "vi" ? subject.title_vi : subject.title_en;
-                  const isPending = subject.request_status === "pending";
-                  const isRejected = subject.request_status === "rejected";
-
-                  return (
-                    <div key={subject.id} className="rounded-[1.6rem] border border-sol-border/30 bg-sol-bg p-4">
-                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sol-orange">{t("classifiedBadge")}</p>
-                      <h3 className="mt-2 text-xl font-black text-sol-text">{subjectLabel}</h3>
-                      <p className="mt-1 text-sm font-medium text-sol-text/65">{subject.slug}</p>
-                      <div className="mt-4">
-                        <button
-                          type="button"
-                          onClick={() => handleRequestSubjectAccess(subject.id)}
-                          disabled={isPending || requestingSubjectId === subject.id}
-                          className="rounded-2xl bg-sol-accent px-4 py-3 text-sm font-black text-sol-bg disabled:opacity-60"
-                        >
-                          {requestingSubjectId === subject.id
-                            ? t("classifiedRequestSending")
-                            : isPending
-                              ? t("classifiedRequestPending")
-                              : isRejected
-                                ? t("classifiedRequestRetry")
-                                : t("classifiedRequestAction")}
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          )}
-
           {lessonGroups.map((subject) => (
             <section key={subject.subject} className="group/section space-y-8 md:space-y-12">
               <div className="flex flex-col gap-3 border-b border-sol-border/30 pb-4 sm:flex-row sm:items-end sm:justify-between md:pb-6">
@@ -688,6 +653,13 @@ export default function LearningDashboard() {
         onClose={() => setMetaModal(null)}
         onSuccess={handleCreateSuccess}
       />
+      <SubjectsListModal
+        isOpen={metaModal === "subjectsList"}
+        onClose={() => setMetaModal(null)}
+        subjects={subjectCatalog}
+        onRequestAccess={handleRequestSubjectAccess}
+        requestingId={requestingSubjectId}
+      />
     </div>
   );
 }
@@ -920,5 +892,170 @@ function MetaField({ label, value, onChange, type = "text", required = false }: 
         className="w-full rounded-lg border border-sol-border/30 bg-sol-bg px-3 py-3 font-bold text-sol-text outline-none focus:border-sol-accent"
       />
     </label>
+  );
+}
+
+// Subject description lookup is now handled via i18n subjectDescriptions keys
+
+function SubjectsListModal({
+  isOpen,
+  onClose,
+  subjects,
+  onRequestAccess,
+  requestingId,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  subjects: Subject[];
+  onRequestAccess: (id: number) => Promise<void>;
+  requestingId: number | null;
+}) {
+  const t = useTranslations("Learning");
+  const locale = useLocale();
+  const [search, setSearch] = useState("");
+
+  if (!isOpen) return null;
+
+  const filtered = subjects.filter((subject) => {
+    const title = (locale === "vi" ? subject.title_vi : subject.title_en).toLowerCase();
+    const slug = subject.slug.toLowerCase();
+    const query = search.toLowerCase();
+    return title.includes(query) || slug.includes(query);
+  });
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-sol-bg/85 backdrop-blur-xl transition-opacity animate-in fade-in duration-300" onClick={onClose} />
+      
+      <div className="relative w-full max-w-3xl rounded-[2.5rem] border border-sol-border/20 bg-sol-surface p-6 sm:p-8 shadow-2xl origin-center animate-in zoom-in-95 duration-300 flex flex-col max-h-[85vh]">
+        
+        {/* Header */}
+        <div className="mb-6 flex items-start justify-between">
+          <div>
+            <h2 className="text-2xl font-black text-sol-text tracking-tight uppercase flex items-center gap-2">
+              <Library className="text-sol-accent" size={24} />
+              {t("subjectCatalogTitle")}
+            </h2>
+            <p className="mt-1 text-sm font-medium text-sol-muted">
+              {t("subjectCatalogSubtitle")}
+            </p>
+          </div>
+          <button 
+            onClick={onClose} 
+            className="rounded-full w-8 h-8 border border-sol-border/30 flex items-center justify-center text-sol-muted hover:text-sol-text hover:bg-sol-bg transition cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Search */}
+        <div className="mb-6 relative">
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t("searchSubjectsPlaceholder")}
+            className="w-full rounded-2xl border border-sol-border/30 bg-sol-bg px-4 py-3 text-sm font-bold text-sol-text placeholder-sol-muted/50 focus:border-sol-accent focus:outline-none transition-colors"
+          />
+        </div>
+
+        {/* Subjects List Scroll Area */}
+        <div className="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-hide">
+          {filtered.length === 0 ? (
+            <div className="text-center py-12 text-sol-muted font-bold">
+              {t("noSubjectsFound")}
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {filtered.map((subject) => {
+                const title = locale === "vi" ? subject.title_vi : subject.title_en;
+                const color = subject.color || "#268bd2";
+                const isPending = subject.request_status === "pending";
+                const isRejected = subject.request_status === "rejected";
+                const hasAccess = subject.has_access;
+
+                return (
+                  <div 
+                    key={subject.id} 
+                    className="flex flex-col justify-between rounded-3xl border border-sol-border/30 bg-sol-bg/50 p-5 hover:border-sol-accent/30 transition-all hover:bg-sol-bg/80 relative overflow-hidden group shadow-sm animate-in fade-in duration-300"
+                  >
+                    {/* Color bar indicator */}
+                    <div className="absolute top-0 left-0 w-1.5 h-full" style={{ backgroundColor: color }} />
+                    
+                    <div className="space-y-3 pl-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-sol-muted font-mono">
+                          {subject.slug}
+                        </span>
+                        
+                        {hasAccess ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-sol-green/10 px-2.5 py-0.5 text-[9px] font-black uppercase text-sol-green">
+                            <CheckCircle2 size={10} />
+                            {t("subjectEnrolled")}
+                          </span>
+                        ) : isPending ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-sol-accent/10 px-2.5 py-0.5 text-[9px] font-black uppercase text-sol-accent animate-pulse">
+                            <Clock size={10} />
+                            {t("subjectPending")}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-sol-orange/10 px-2.5 py-0.5 text-[9px] font-black uppercase text-sol-orange">
+                            <Lock size={10} />
+                            {t("subjectClassified")}
+                          </span>
+                        )}
+                      </div>
+
+                      <h3 className="text-lg font-black text-sol-text leading-tight group-hover:text-sol-accent transition-colors">
+                        {title}
+                      </h3>
+
+                      <p className="text-xs font-medium text-sol-muted leading-relaxed min-h-[40px]">
+                        {t(["math", "isom", "church"].includes(subject.slug)
+                          ? `subjectDescriptions.${subject.slug}`
+                          : "subjectDescriptions.default"
+                        )}
+                      </p>
+                    </div>
+
+                    <div className="mt-4 pl-2">
+                      {hasAccess ? (
+                        <button
+                          type="button"
+                          disabled
+                          className="w-full rounded-2xl bg-sol-green/10 border border-sol-green/20 py-3 text-xs font-black uppercase text-sol-green cursor-default"
+                        >
+                          {t("subjectActive")}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => onRequestAccess(subject.id)}
+                          disabled={isPending || requestingId === subject.id}
+                          className="w-full rounded-2xl bg-sol-accent hover:opacity-90 py-3 text-xs font-black uppercase text-sol-bg transition hover:scale-[1.01] active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed hover:cursor-pointer shadow-md shadow-sol-accent/10"
+                        >
+                          {requestingId === subject.id ? (
+                            <span className="flex items-center justify-center gap-2">
+                              <Loader2 size={12} className="animate-spin" />
+                              {t("classifiedRequestSending")}
+                            </span>
+                          ) : isPending ? (
+                            t("classifiedRequestPending")
+                          ) : isRejected ? (
+                            t("classifiedRequestRetry")
+                          ) : (
+                            t("classifiedRequestAction")
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

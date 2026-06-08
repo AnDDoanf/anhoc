@@ -24,6 +24,7 @@ import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
 import Can from "@/components/auth/Can";
+import { usePermission } from "@/hooks/usePermission";
 import Image from 'next/image';
 import logo from '../../../public/anhoc.svg';
 import { authService } from "@/services/auth";
@@ -33,6 +34,9 @@ export default function Sidebar() {
   const t = useTranslations("Sidebar");
   const user = useSelector((state: RootState) => state.auth.user);
   const isSupervisorOrAdmin = user?.role === "supervisor" || user?.role === "admin";
+  const canManageLesson = usePermission("manage", "lesson");
+  const canManageUser = usePermission("manage", "user");
+  const hasAdminAccess = isSupervisorOrAdmin || canManageLesson || canManageUser;
 
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -191,54 +195,67 @@ export default function Sidebar() {
 
           <div className={`flex-1 overflow-y-auto p-2 md:p-4 pb-24 md:pb-10 space-y-8 scrollbar-hide`}>
             <div className="space-y-6">
-              <section className="space-y-1">
-                <SidebarSectionHeading label={t("administrator")} isCollapsed={isCollapsed} />
-                <Can I="manage" a="lesson">
-                  <NavItem
-                    href="/admin/dashboard"
-                    label={t("systemDashboard")}
-                    icon={<ChartArea size={18} />}
-                    pathname={pathname}
-                    isCollapsed={isCollapsed}
-                  />
-                </Can>
-                <Can I="manage" a="user">
-                  <NavItem
-                    href="/admin/users"
-                    label={t("users")}
-                    icon={<Users size={18} />}
-                    pathname={pathname}
-                    isCollapsed={isCollapsed}
-                  />
-                </Can>
-                {isSupervisorOrAdmin && (
-                  <NavItem
-                    href="/student/members"
-                    label={t("members")}
-                    icon={<Users size={18} />}
-                    pathname={pathname}
-                    isCollapsed={isCollapsed}
-                  />
-                )}
-                {user?.role === "admin" && (
-                  <NavItem
-                    href="/admin/subscription"
-                    label={t("pricing")}
-                    icon={<CreditCard size={18} />}
-                    pathname={pathname}
-                    isCollapsed={isCollapsed}
-                  />
-                )}
-                <Can I="manage" a="lesson">
-                  <NavItem
-                    href="/admin/reports"
-                    label={t("reports")}
-                    icon={<Flag size={18} />}
-                    pathname={pathname}
-                    isCollapsed={isCollapsed}
-                  />
-                </Can>
-              </section>
+              {hasAdminAccess && (
+                <section className="space-y-1">
+                  <SidebarSectionHeading label={t("administrator")} isCollapsed={isCollapsed} />
+                  <Can I="manage" a="lesson">
+                    <NavItem
+                      href="/admin/dashboard"
+                      label={t("systemDashboard")}
+                      icon={<ChartArea size={18} />}
+                      pathname={pathname}
+                      isCollapsed={isCollapsed}
+                    />
+                  </Can>
+                  {user?.role !== "supervisor" && (
+                    <Can I="manage" a="user">
+                      <NavItem
+                        href="/admin/users"
+                        label={t("users")}
+                        icon={<Users size={18} />}
+                        pathname={pathname}
+                        isCollapsed={isCollapsed}
+                      />
+                    </Can>
+                  )}
+                  {isSupervisorOrAdmin && (
+                    <NavItem
+                      href="/student/members"
+                      label={t("members")}
+                      icon={<Users size={18} />}
+                      pathname={pathname}
+                      isCollapsed={isCollapsed}
+                    />
+                  )}
+                  {isSupervisorOrAdmin && (
+                    <NavItem
+                      href="/admin/subscription"
+                      label={t("pricing")}
+                      icon={<CreditCard size={18} />}
+                      pathname={pathname}
+                      isCollapsed={isCollapsed}
+                    />
+                  )}
+                  <Can I="manage" a="lesson">
+                    {user?.role !== "supervisor" && (
+                      <NavItem
+                        href="/admin/reports"
+                        label={t("reports")}
+                        icon={<Flag size={18} />}
+                        pathname={pathname}
+                        isCollapsed={isCollapsed}
+                      />
+                    )}
+                    <NavItem
+                      href="/admin/questions"
+                      label={t("questions")}
+                      icon={<Database size={18} />}
+                      pathname={pathname}
+                      isCollapsed={isCollapsed}
+                    />
+                  </Can>
+                </section>
+              )}
 
               <section className="space-y-1">
                 <SidebarSectionHeading label={t("learningMaterial")} isCollapsed={isCollapsed} />
@@ -256,7 +273,7 @@ export default function Sidebar() {
                   pathname={pathname}
                   isCollapsed={isCollapsed}
                 />
-                {user?.role !== "admin" && (
+                {user?.role !== "admin" && !user?.learn_unit_id && (
                   <NavItem
                     href="/subscription"
                     label={t("pricing")}
@@ -293,15 +310,7 @@ export default function Sidebar() {
                   pathname={pathname}
                   isCollapsed={isCollapsed}
                 />
-                <Can I="manage" a="lesson">
-                  <NavItem
-                    href="/student/questions"
-                    label={t("questions")}
-                    icon={<Database size={18} />}
-                    pathname={pathname}
-                    isCollapsed={isCollapsed}
-                  />
-                </Can>
+
               </section>
             </div>
           </div>

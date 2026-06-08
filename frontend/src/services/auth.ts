@@ -1,8 +1,57 @@
 import { api } from "./api";
 
+export interface LearnUnitSummary {
+  id: string;
+  name: string;
+  code: string;
+  supervisor_id?: string | null;
+  max_subjects?: number | null;
+  max_grades?: number | null;
+  max_lessons?: number | null;
+  max_templates?: number | null;
+  max_teachers?: number | null;
+  max_students?: number | null;
+}
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  username?: string;
+  country?: string | null;
+  role: string;
+  account_status?: string;
+  preferred_subject_id?: number | null;
+  requires_subject_selection?: boolean;
+  permissions: Record<string, string[]>;
+  supervisor_id?: string | null;
+  learn_unit_id?: string | null;
+  learn_unit?: LearnUnitSummary | null;
+  slots_purchased?: number;
+}
+
+export interface AuthProfile extends AuthUser {
+  preferred_subject?: {
+    id: number;
+    slug: string;
+    title_en: string;
+    title_vi: string;
+  } | null;
+  student_stats?: {
+    level?: number | null;
+    total_xp?: number | null;
+    average_score?: number | string | null;
+    lessons_completed?: number | null;
+    last_active?: string | null;
+  } | null;
+  created_at?: string;
+  email_verified_at?: string | null;
+  first_login_at?: string | null;
+}
+
 export interface LoginRequest {
   email: string;
   password: string;
+  learn_unit_code?: string;
 }
 
 export interface RegisterRequest {
@@ -11,20 +60,17 @@ export interface RegisterRequest {
   username?: string;
   country?: string;
   role_name?: string;
+  learn_unit_name?: string;
+}
+
+export interface RegisterResponse {
+  message: string;
+  userId: string;
+  learnUnit?: LearnUnitSummary | null;
 }
 
 export interface LoginResponse {
-  user: {
-    id: string;
-    email: string;
-    username?: string;
-    country?: string | null;
-    role: string;
-    account_status?: string;
-    preferred_subject_id?: number | null;
-    requires_subject_selection?: boolean;
-    permissions: Record<string, string[]>;
-  };
+  user: AuthUser;
   token: string;
 }
 
@@ -55,8 +101,8 @@ export interface SocializingData {
 }
 
 export const authService = {
-  register: async (payload: RegisterRequest) => {
-    const response = await api.post("/auth/register", payload);
+  register: async (payload: RegisterRequest): Promise<RegisterResponse> => {
+    const response = await api.post<RegisterResponse>("/auth/register", payload);
     return response.data;
   },
 
@@ -102,8 +148,8 @@ export const authService = {
     }
   },
 
-  getProfile: async () => {
-    const response = await api.get("/auth/profile");
+  getProfile: async (): Promise<AuthProfile> => {
+    const response = await api.get<AuthProfile>("/auth/profile");
     return response.data;
   },
 

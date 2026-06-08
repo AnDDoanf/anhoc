@@ -8,6 +8,7 @@ export interface CreateTemplateDTO {
   body_template_vi: string;
   explanation_template_en?: string;
   explanation_template_vi?: string;
+  is_premium?: boolean;
   logic_config?: unknown;
   accepted_formulas?: string[];
 }

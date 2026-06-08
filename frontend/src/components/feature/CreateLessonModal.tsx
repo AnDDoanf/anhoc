@@ -6,8 +6,10 @@ import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
+import { useSelector } from "react-redux";
 import { lessonService, CreateLessonDTO, Grade, Subject } from "@/services/lessonService";
 import { useTranslations } from "next-intl";
+import { RootState } from "@/redux/store";
 
 interface Props {
   isOpen: boolean;
@@ -18,6 +20,7 @@ interface Props {
 
 export default function CreateLessonModal({ isOpen, onClose, onSuccess, editLessonId }: Props) {
   const t = useTranslations("Learning.modal");
+  const isAdmin = useSelector((state: RootState) => state.auth.user?.role === "admin");
   const [tab, setTab] = useState<"en" | "vi">("vi");
   const [preview, setPreview] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -29,6 +32,7 @@ export default function CreateLessonModal({ isOpen, onClose, onSuccess, editLess
     grade_id: 1, 
     subject_id: 1,
     order_index: 10,
+    is_premium: false,
   });
   const [grades, setGrades] = useState<Grade[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -58,6 +62,7 @@ export default function CreateLessonModal({ isOpen, onClose, onSuccess, editLess
               grade_id: currentLesson.grade_id,
               subject_id: currentLesson.subject_id,
               order_index: currentLesson.order_index,
+              is_premium: Boolean(currentLesson.is_premium),
             });
           } else {
             setFormData({
@@ -68,6 +73,7 @@ export default function CreateLessonModal({ isOpen, onClose, onSuccess, editLess
               subject_id: sList.length > 0 ? sList[0].id : 1,
               grade_id: gList.find((grade) => !grade.subject_id || grade.subject_id === (sList[0]?.id || 1))?.id || gList[0]?.id || 1,
               order_index: 10,
+              is_premium: false,
             });
           }
         } catch (err) {
@@ -223,6 +229,33 @@ export default function CreateLessonModal({ isOpen, onClose, onSuccess, editLess
                   />
                 </div>
               </div>
+
+              {isAdmin && (
+                <div className="rounded-[2rem] border border-sol-accent/20 bg-sol-accent/5 p-5">
+                  <label className="flex items-start justify-between gap-4 cursor-pointer">
+                    <div className="space-y-1">
+                      <p className="text-xs font-black uppercase tracking-widest text-sol-muted">{t("premiumLesson")}</p>
+                      <p className="text-sm font-semibold text-sol-text">{t("premiumLessonHint")}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className={`text-xs font-black uppercase tracking-widest ${formData.is_premium ? "text-sol-accent" : "text-sol-muted"}`}>
+                        {formData.is_premium ? t("premiumEnabled") : t("premiumDisabled")}
+                      </span>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={Boolean(formData.is_premium)}
+                        onClick={() => setFormData((current) => ({ ...current, is_premium: !current.is_premium }))}
+                        className={`relative h-7 w-12 rounded-full transition-colors ${formData.is_premium ? "bg-sol-accent" : "bg-sol-border/60"}`}
+                      >
+                        <span
+                          className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-transform ${formData.is_premium ? "translate-x-6" : "translate-x-1"}`}
+                        />
+                      </button>
+                    </div>
+                  </label>
+                </div>
+              )}
 
               {/* Markdown Editor */}
               <div className="space-y-2 flex-1 min-h-[400px] flex flex-col">

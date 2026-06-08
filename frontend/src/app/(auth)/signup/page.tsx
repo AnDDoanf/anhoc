@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -16,7 +16,6 @@ import {
   Calendar,
   ShieldAlert,
   Loader2,
-  CheckCircle2,
   GraduationCap,
   Users
 } from "lucide-react";
@@ -36,6 +35,7 @@ export default function SignupPage() {
   // Subscription Plan State
   const [selectedPlan, setSelectedPlan] = useState<PlanType>("free_student");
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [learnUnitName, setLearnUnitName] = useState("");
   
   // Checkout Form State
   const [cardName, setCardName] = useState("");
@@ -97,8 +97,12 @@ export default function SignupPage() {
         email: values.email,
         password: values.password,
         role_name: selectedPlan,
+        learn_unit_name: selectedPlan === "supervisor" ? learnUnitName.trim() : undefined,
       });
-      setSuccessMessage(response.message || t("success"));
+      const codeMessage = response.learnUnit?.code
+        ? `Learn unit code: ${response.learnUnit.code}`
+        : "";
+      setSuccessMessage([response.message || t("success"), codeMessage].filter(Boolean).join(" "));
       setIsCheckoutOpen(false);
     } catch (error: unknown) {
       const message =
@@ -117,6 +121,11 @@ export default function SignupPage() {
     setErrorMessage(null);
     setSuccessMessage(null);
 
+    if (selectedPlan === "supervisor" && !learnUnitName.trim()) {
+      setErrorMessage("Learn unit name is required for the supervisor plan.");
+      return;
+    }
+
     // If paid plan, prompt checkout simulation first
     if (selectedPlan !== "free_student") {
       setCardName("");
@@ -131,7 +140,7 @@ export default function SignupPage() {
     setIsLoading(true);
     try {
       await performRegistration(values);
-    } catch (err) {
+    } catch {
       // Handled in performRegistration
     } finally {
       setIsLoading(false);
@@ -149,7 +158,7 @@ export default function SignupPage() {
       
       const values = getValues();
       await performRegistration(values);
-    } catch (err) {
+    } catch {
       // Error handled in performRegistration
     } finally {
       setCheckoutPending(false);
@@ -231,6 +240,25 @@ export default function SignupPage() {
               </p>
             )}
           </div>
+
+          {selectedPlan === "supervisor" && (
+            <div className="mb-6 space-y-2">
+              <label className="block text-xs font-black uppercase tracking-wider text-sol-muted">
+                Learn unit name
+              </label>
+              <input
+                type="text"
+                required
+                value={learnUnitName}
+                onChange={(e) => setLearnUnitName(e.target.value)}
+                placeholder="e.g. Sunrise Learning Center"
+                className="w-full rounded-xl border border-sol-border/50 bg-sol-bg/40 px-4 py-3.5 text-sm font-bold text-sol-text placeholder-sol-muted/50 transition-all focus:border-sol-accent focus:outline-none"
+              />
+              <p className="text-[11px] text-sol-muted">
+                Supervisor registration creates a learn unit and generates a login code for your members.
+              </p>
+            </div>
+          )}
 
           {successMessage && (
             <div className="mb-6 rounded-2xl border border-sol-green/20 bg-sol-green/10 p-4 text-xs font-bold text-sol-green leading-relaxed">
