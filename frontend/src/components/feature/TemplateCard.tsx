@@ -18,7 +18,18 @@ export default function TemplateCard({ tmpl, onEdit, onDelete, onPreview }: Temp
   const lessonTitle = tmpl.lesson
     ? (locale === "vi" ? tmpl.lesson.title_vi : tmpl.lesson.title_en)
     : "";
-  const typeLabel = t(`modal.questionTypes.${tmpl.template_type}`);
+  const fallbackTypeLabel = String(tmpl.template_type || "")
+    .split("_")
+    .filter(Boolean)
+    .map((segment: string) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(" ");
+
+  let typeLabel = fallbackTypeLabel;
+  try {
+    typeLabel = t(`modal.questionTypes.${tmpl.template_type}`);
+  } catch {
+    typeLabel = fallbackTypeLabel || t("unknown");
+  }
 
   return (
     <div className="bg-[#f5f2e6] dark:bg-sol-surface border border-[#e8e4d2] dark:border-sol-border/10 rounded-[2.5rem] p-8 md:p-10 relative group hover:border-sol-accent/40 transition-all flex flex-col justify-between hover:shadow-2xl hover:shadow-[#e8e4d2]/50 dark:hover:shadow-sol-accent/5 duration-500">
