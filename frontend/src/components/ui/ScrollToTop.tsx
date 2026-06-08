@@ -5,9 +5,10 @@ import { ArrowUp } from "lucide-react";
 
 type ScrollToTopProps = {
   containerId?: string;
+  className?: string;
 };
 
-export default function ScrollToTop({ containerId }: ScrollToTopProps) {
+export default function ScrollToTop({ containerId, className = "bottom-6 right-6" }: ScrollToTopProps) {
   const [isVisible, setIsVisible] = useState(false);
 
   const scrollToTop = () => {
@@ -38,7 +39,7 @@ export default function ScrollToTop({ containerId }: ScrollToTopProps) {
   }, [containerId]);
 
   return (
-    <div className="fixed bottom-6 right-6 z-[60]">
+    <div className={`fixed z-[60] ${className}`}>
       <button
         type="button"
         onClick={scrollToTop}

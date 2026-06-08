@@ -54,7 +54,7 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
         <main className="min-w-0 px-3 py-4 sm:px-4 md:px-8 md:py-8">
           {children}
         </main>
-        <ScrollToTop />
+        <ScrollToTop className="bottom-24 right-6" />
         <ChatbotWidget />
       </div>
     );
@@ -72,7 +72,7 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
         </main>
 
         <Footer />
-        <ScrollToTop />
+        <ScrollToTop className="bottom-24 right-6" />
         <ChatbotWidget />
       </div>
     </div>
