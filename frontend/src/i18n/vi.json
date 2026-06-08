@@ -18,6 +18,9 @@
     "accessDenied": "Không có quyền truy cập",
     "requiredFound": "Yêu cầu: {required} | Hiện tại: {found}",
     "backToHome": "Quay về trang chủ",
+    "sessionExpiredTitle": "Phiên làm việc hết hạn",
+    "sessionExpiredDesc": "Phiên đăng nhập của bạn đã hết hạn hoặc không hợp lệ. Vui lòng đăng nhập lại để tiếp tục học và bảo toàn tiến độ học tập.",
+    "logInAgain": "Đăng nhập lại",
     "footerCopyright": "© 2026 Your App",
     "welcomeBack": "Chào mừng trở lại, {email}!",
     "dashboardPlaceholder": "Nội dung tổng quan của bạn sẽ hiển thị ở đây.",
@@ -181,6 +184,10 @@
     "signing_in": "Đang đăng nhập...",
     "no_account": "Chưa có tài khoản?",
     "sign_up": "Đăng ký",
+    "learn_unit_code_placeholder": "Mã đơn vị học tập",
+    "learn_unit_code_hint": "Bắt buộc nếu tài khoản của bạn thuộc về một đơn vị học tập.",
+    "use_learn_unit_code": "Đăng nhập bằng mã đơn vị",
+    "hide_learn_unit_code": "Ẩn tùy chọn đăng nhập tổ chức",
     "errors": {
       "invalid_email": "Địa chỉ email không hợp lệ",
       "password_too_short": "Mật khẩu phải có ít nhất 6 ký tự"
@@ -235,11 +242,11 @@
     "guestName": "guest"
   },
   "Sidebar": {
-      "administrator": "Quản trị",
-      "learningMaterial": "Học liệu",
-      "learning": "Học tập",
-      "practice": "Luyện tập",
-      "achievements": "Thành tích",
+    "administrator": "Quản trị",
+    "learningMaterial": "Học liệu",
+    "learning": "Học tập",
+    "practice": "Luyện tập",
+    "achievements": "Thành tích",
     "test": "Kiểm tra",
     "grade1": "Lớp 1",
     "grade6": "Lớp 6",
@@ -332,6 +339,15 @@
     }
   },
   "Learning": {
+    "subjects": "Môn học",
+    "subjectCatalogTitle": "Danh mục môn học",
+    "subjectCatalogSubtitle": "Đăng ký hoặc yêu cầu truy cập các môn học bên dưới.",
+    "searchSubjectsPlaceholder": "Tìm kiếm môn học...",
+    "noSubjectsFound": "Không tìm thấy môn học nào.",
+    "subjectEnrolled": "Đã mở khóa",
+    "subjectPending": "Đang chờ duyệt",
+    "subjectClassified": "Bị hạn chế",
+    "subjectActive": "Đang học",
     "backToGrade": "Quay lại Lớp",
     "title": "Trung tâm Học tập",
     "subtitle": "Khám phá các bài học và làm chủ những kiến thức mới ngay hôm nay.",
@@ -362,6 +378,13 @@
     "newSubject": "Môn học mới",
     "newGrade": "Lớp mới",
     "tracks": "{count} lớp",
+    "deleteLessonConfirm": "Bạn có chắc chắn muốn xóa bài học này không?",
+    "subjectDescriptions": {
+      "math": "Làm chủ số học cơ bản, đại số, hình học và giải tích để xây dựng nền tảng phân tích vững chắc.",
+      "isom": "Chương trình học của Trường Mục Vụ Quốc Tế (ISOM) bao gồm thần học cơ bản và đào tạo lãnh đạo mục vụ.",
+      "church": "Chương trình học chuyên đề cho thành viên giáo hội, tập trung vào thần học, mục vụ và lãnh đạo tâm linh.",
+      "default": "Khám phá các bài học toàn diện, bài kiểm tra và nội dung tùy chỉnh phù hợp với trình độ của bạn."
+    },
     "metaModal": {
       "subjectTitle": "Tạo môn học",
       "gradeTitle": "Tạo lớp",
@@ -395,6 +418,10 @@
       "grade": "Lớp",
       "subject": "Môn học",
       "orderIndex": "Thứ tự",
+      "premiumLesson": "Bài học cao cấp",
+      "premiumLessonHint": "Chỉ người dùng đã đăng ký mới có thể mở và luyện tập bài học này.",
+      "premiumEnabled": "Đã bật cao cấp",
+      "premiumDisabled": "Truy cập thường",
       "lessonContent": "Nội dung bài học (Markdown)",
       "lessonContentPlaceholder": "## Bắt đầu viết bằng Markdown... Hỗ trợ LaTeX bằng $...$ và khối mã TikZ.",
       "tikzDetected": "Đã phát hiện mã TikZ Geometry",
@@ -477,6 +504,10 @@
       "searchPlaceholder": "Tìm theo mẫu, bài học hoặc nội dung",
       "templateType": "Loại mẫu",
       "difficulty": "Độ khó",
+      "premiumTemplate": "Mẫu cao cấp",
+      "premiumTemplateHint": "Chỉ người dùng đã đăng ký mới nhận được mẫu này trong luyện tập và bài kiểm tra.",
+      "premiumEnabled": "Đã bật cao cấp",
+      "premiumDisabled": "Truy cập thường",
       "grade": "Lớp",
       "lesson": "Bài học",
       "allTemplateTypes": "Tất cả loại mẫu",
@@ -534,20 +565,20 @@
       "unassignedGrade": "Lớp chưa xác định",
       "templateType": "Loại mẫu",
       "difficulty": "Độ khó",
-        "questionTypes": {
-          "numeric_input": "Nhập số",
-          "math_addition": "Phép cộng",
-          "math_subtraction": "Phép trừ",
-          "math_multiplication": "Phép nhân",
-          "math_exact_division": "Phép chia hết",
-          "math_missing_addend": "Tìm số hạng còn thiếu",
-          "math_difference_compare": "So sánh hiệu",
-          "geometry_rectangle_perimeter": "Chu vi hình chữ nhật",
-          "true_false": "Đúng / sai",
-          "multiple_choices": "Trắc nghiệm",
-          "ordering": "Sắp xếp",
-          "theoretical_question": "Câu hỏi lý thuyết"
-        },
+      "questionTypes": {
+        "numeric_input": "Nhập số",
+        "math_addition": "Phép cộng",
+        "math_subtraction": "Phép trừ",
+        "math_multiplication": "Phép nhân",
+        "math_exact_division": "Phép chia hết",
+        "math_missing_addend": "Tìm số hạng còn thiếu",
+        "math_difference_compare": "So sánh hiệu",
+        "geometry_rectangle_perimeter": "Chu vi hình chữ nhật",
+        "true_false": "Đúng / sai",
+        "multiple_choices": "Trắc nghiệm",
+        "ordering": "Sắp xếp",
+        "theoretical_question": "Câu hỏi lý thuyết"
+      },
       "difficultyOptions": {
         "easy": "Dễ",
         "medium": "Trung bình",
@@ -701,19 +732,26 @@
       "newPassword": "Mật khẩu mới",
       "passwordPlaceholder": "Ít nhất 6 ký tự",
       "optionalPassword": "Không bắt buộc",
-        "role": "Vai trò",
-        "slotsPurchased": "Số ghế giám sát",
-        "maxSubjects": "Tối đa Môn học",
-        "maxGrades": "Tối đa Lớp",
-        "maxLessons": "Tối đa Bài học",
-        "maxTemplates": "Tối đa Mẫu câu hỏi",
-        "maxTeachers": "Tối đa Giáo viên",
-        "maxStudents": "Tối đa Học sinh",
+      "role": "Vai trò",
+      "slotsPurchased": "Số ghế giám sát",
+      "maxSubjects": "Tối đa Môn học",
+      "maxGrades": "Tối đa Lớp",
+      "maxLessons": "Tối đa Bài học",
+      "maxTemplates": "Tối đa Mẫu câu hỏi",
+      "maxTeachers": "Tối đa Giáo viên",
+      "maxStudents": "Tối đa Học sinh",
       "unlimitedPlaceholder": "Không giới hạn"
     },
     "filters": {
       "searchPlaceholder": "Tìm theo tên người dùng hoặc email",
       "allRoles": "Tất cả vai trò"
+    },
+    "pagination": {
+      "show": "Hiển thị",
+      "perPage": "dòng / trang",
+      "pageOf": "Trang {page} trên {totalPages}",
+      "previous": "Trước",
+      "next": "Tiếp"
     },
     "table": {
       "account": "Tài khoản",
@@ -1082,6 +1120,16 @@
   "Pricing": {
     "title": "Gói Đăng Ký",
     "subtitle": "Chọn gói dịch vụ phù hợp cho hành trình học tập của bạn",
+    "plansAndPricing": "Gói & Giá",
+    "billingAndHistory": "Thanh toán & Lịch sử",
+    "loadingPlans": "Đang tải các gói...",
+    "retrievingBillingInfo": "Đang truy xuất thông tin thanh toán...",
+    "popular": "Phổ biến",
+    "enterprise": "Doanh nghiệp",
+    "assignSeatsDesc": "Phân bổ bản quyền học sinh cao cấp",
+    "trackProgressDesc": "Theo dõi chi tiết tiến trình học tập",
+    "defaultLevel": "Cấp độ mặc định",
+    "switchCycle": "Đổi chu kỳ",
     "period": {
       "forever": "mãi mãi",
       "month": "mỗi tháng",
@@ -1092,7 +1140,28 @@
       "upgrade": "Nâng Cấp Gói",
       "getStarted": "Bắt Đầu Ngay",
       "buySeats": "Mua Tài Khoản",
-      "manageMembers": "Quản Lý Thành Viên"
+      "manageMembers": "Quản Lý Thành Viên",
+      "billingCycle": "Chu Kỳ Thanh Toán",
+      "monthly": "Hàng Tháng",
+      "annually": "Hàng Năm",
+      "billedAnnually": "Thanh toán hàng năm",
+      "billedMonthly": "Thanh toán hàng tháng",
+      "savePercent": "Tiết kiệm ~17% (Tặng 2 tháng)",
+      "toggleBillingCycle": "Thay đổi chu kỳ thanh toán",
+      "billingHistory": "Lịch Sử Thanh Toán",
+      "invoiceDate": "Ngày Hóa Đơn",
+      "invoiceDesc": "Mô Tả",
+      "invoiceAmount": "Số Tiền",
+      "invoiceStatus": "Trạng Thái",
+      "invoicePaid": "Đã Thanh Toán",
+      "invoiceFailed": "Thất Bại",
+      "activePlan": "Gói Đang Sử Dụng",
+      "autoRenewStatus": "Thanh Toán Tự Động",
+      "autoRenewOn": "Đang Bật",
+      "autoRenewOff": "Đã Tắt",
+      "turnOffAutoRenew": "Ngừng Thanh Toán Tự Động",
+      "turnOnAutoRenew": "Bật Thanh Toán Tự Động",
+      "noInvoices": "Không tìm thấy giao dịch nào."
     },
     "freeStudent": {
       "title": "Học Sinh Miễn Phí",
@@ -1118,13 +1187,25 @@
         "priorityAi": "Gia sư AI hỗ trợ ưu tiên"
       }
     },
-    "supervisor": {
-      "title": "Người Giám Hộ / Phụ Huynh",
+    "family": {
+      "title": "Gói Gia Đình",
       "price": "499.000đ",
-      "description": "Quản lý và đăng ký tài khoản cho học sinh",
+      "description": "Hoàn hảo cho gia đình cùng quản lý học tập",
       "features": {
-        "buySeats": "Mua các tài khoản học tập cho học sinh",
-        "manageAccounts": "Tạo & quản lý tài khoản học sinh/giáo viên",
+        "limitStudents": "Tối đa 5 tài khoản học sinh",
+        "limitTeachers": "Tối đa 2 tài khoản giáo viên",
+        "assignSeats": "Cấp/thu hồi quyền học cao cấp",
+        "trackProgress": "Theo dõi tiến độ của học sinh",
+        "reviewLessons": "Xem lại bài tập và bài kiểm tra"
+      }
+    },
+    "learningCenter": {
+      "title": "Trung Tâm Học Tập",
+      "price": "1.249.000đ",
+      "description": "Mô hình quản lý theo lớp học & trường học linh hoạt",
+      "features": {
+        "limitStudents": "Mức phí theo tài khoản học sinh sử dụng",
+        "limitTeachers": "Không giới hạn tài khoản giáo viên",
         "assignSeats": "Cấp/thu hồi quyền học cao cấp",
         "trackProgress": "Theo dõi tiến độ của học sinh",
         "reviewLessons": "Xem lại bài tập và bài kiểm tra"
@@ -1142,7 +1223,46 @@
       "processing": "Đang xử lý...",
       "success": "Mô phỏng thanh toán thành công! Gói dịch vụ đã được cập nhật.",
       "fail": "Mô phỏng thanh toán thất bại. Vui lòng kiểm tra lại thông tin.",
-      "close": "Đóng"
+      "close": "Đóng",
+      "subscribeTo": "Đăng ký gói {plan}",
+      "organizationName": "Tên tổ chức / Nhóm học tập",
+      "organizationNamePlaceholder": "vd. Trung tâm Anh ngữ Mặt Trời",
+      "organizationNameRequired": "Yêu cầu nhập tên tổ chức để khởi tạo không gian làm việc Giám hộ.",
+      "cardHolderShort": "Chủ thẻ",
+      "expires": "Hạn dùng"
+    },
+    "supervisorBilling": {
+      "roleSupervisor": "Giám hộ",
+      "priceDetail": "Giá: {price}đ ({cycle})",
+      "additionalSeats": "Tài Khoản Học Tập Bổ Sung",
+      "seatRateDesc": "125.000đ / tháng mỗi tài khoản",
+      "seatPurchase": "Mua Tài Khoản",
+      "cardHolderPlaceholder": "Tên Của Bạn",
+      "retrievingPlan": "Đang tải chi tiết gói...",
+      "freeAccount": "Tài khoản Miễn phí",
+      "freeDesc": "Lộ trình học tập cơ bản có giới hạn.",
+      "renewsOn": "Gia hạn vào: {date}",
+      "changePlan": "Thay Đổi Gói",
+      "choosePlan": "Chọn Gói / Nâng Cấp",
+      "capacityLimits": "Giới Hạn Dung Lượng Sử Dụng",
+      "loadingInvoices": "Đang tải hóa đơn...",
+      "learnUnitInfo": "Thông Tin Nhóm Học",
+      "unitName": "Tên Nhóm",
+      "registrationCode": "Mã Đăng Ký",
+      "capacityModel": "Mô Hình Bản Quyền",
+      "fixedPlan": "Giới Hạn Gói Cố Định",
+      "payAsYouGrow": "Dùng đến đâu trả đến đó ({count} tài khoản)",
+      "purchaseSeats": "Mua Thêm Tài Khoản",
+      "purchaseSeatsDesc": "Thêm tài khoản học sinh trực thuộc nhóm của bạn ngay lập tức.",
+      "totalSlots": "Tổng số tài khoản đã mua",
+      "needMoreSeats": "Cần thêm tài khoản?",
+      "limitedTo": "Gói hiện tại của bạn giới hạn tối đa {count} học sinh.",
+      "upgradeDesc": "Nâng cấp lên gói Trung Tâm Học Tập để mua không giới hạn tài khoản học sinh và giáo viên linh hoạt.",
+      "upgradePlan": "Nâng Cấp Gói",
+      "usedProgress": "Đã dùng {progress}%",
+      "defaultOrganization": "Tổ chức của tôi",
+      "notAvailable": "N/A",
+      "brandName": "Anhoc Premium"
     }
   },
   "Supervisor": {
@@ -1200,15 +1320,15 @@
     },
     "table": {
       "title": "Đăng ký Giám sát",
-        "hint": "Nhấn Sửa trên hàng để điều chỉnh giới hạn trực tiếp. Để trống giới hạn nghĩa là không giới hạn.",
-        "account": "Tài khoản",
-        "seats": "Ghế",
-        "subjects": "Môn học",
-        "grades": "Lớp",
-        "lessons": "Bài học",
-        "templates": "Mẫu câu hỏi",
-        "teachers": "Giáo viên",
-        "students": "Học sinh",
+      "hint": "Nhấn Sửa trên hàng để điều chỉnh giới hạn trực tiếp. Để trống giới hạn nghĩa là không giới hạn.",
+      "account": "Tài khoản",
+      "seats": "Ghế",
+      "subjects": "Môn học",
+      "grades": "Lớp",
+      "lessons": "Bài học",
+      "templates": "Mẫu câu hỏi",
+      "teachers": "Giáo viên",
+      "students": "Học sinh",
       "actions": "Thao tác"
     },
     "unlimited": "Không giới hạn",
@@ -1219,23 +1339,23 @@
       "title": "Không tìm thấy tài khoản giám sát.",
       "subtitle": "Hãy tạo tài khoản giám sát trong trang Người dùng trước."
     },
-      "legend": {
-        "title": "Tham chiếu Giới hạn",
-        "blankHint": "Để trống = không giới hạn",
-        "subjects": {
-          "label": "Môn học",
-          "desc": "Số lượng môn học tối đa giám sát có thể tạo."
-        },
-        "grades": {
-          "label": "Lớp",
-          "desc": "Số lượng lớp tối đa giám sát có thể tạo."
-        },
-        "lessons": {
-          "label": "Bài học",
-          "desc": "Số lượng bài học tối đa giám sát có thể tạo."
-        },
-        "templates": {
-          "label": "Mẫu câu hỏi",
+    "legend": {
+      "title": "Tham chiếu Giới hạn",
+      "blankHint": "Để trống = không giới hạn",
+      "subjects": {
+        "label": "Môn học",
+        "desc": "Số lượng môn học tối đa giám sát có thể tạo."
+      },
+      "grades": {
+        "label": "Lớp",
+        "desc": "Số lượng lớp tối đa giám sát có thể tạo."
+      },
+      "lessons": {
+        "label": "Bài học",
+        "desc": "Số lượng bài học tối đa giám sát có thể tạo."
+      },
+      "templates": {
+        "label": "Mẫu câu hỏi",
         "desc": "Số lượng mẫu câu hỏi tối đa giám sát có thể tạo."
       },
       "teachers": {

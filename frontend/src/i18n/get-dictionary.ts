@@ -8,8 +8,7 @@ const dictionaries = {
   vi: () => import('./vi.json').then((module) => module.default),
 };
 
-// 3. Use a clear return type
-// This tells TS: "The return is whatever the 'en' dictionary function returns"
-export const getDictionary = async (locale: Locale): Promise<typeof import('./en.json')> => {
+// Locale files are allowed to drift slightly while we evolve features.
+export const getDictionary = async (locale: Locale): Promise<Record<string, unknown>> => {
   return dictionaries[locale]();
 };

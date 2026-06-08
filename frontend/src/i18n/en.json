@@ -18,6 +18,9 @@
     "accessDenied": "Access Denied",
     "requiredFound": "Required: {required} | Found: {found}",
     "backToHome": "Back to Home",
+    "sessionExpiredTitle": "Session Expired",
+    "sessionExpiredDesc": "Your login session has expired or is invalid. Please log in again to continue studying and keep your progress.",
+    "logInAgain": "Log In Again",
     "footerCopyright": "© 2026 Your App",
     "welcomeBack": "Welcome back, {email}!",
     "dashboardPlaceholder": "Your dashboard content goes here.",
@@ -366,6 +369,15 @@
     }
   },
   "Learning": {
+    "subjects": "Subjects",
+    "subjectCatalogTitle": "Subject Catalog",
+    "subjectCatalogSubtitle": "Enroll or request access to available subjects below.",
+    "searchSubjectsPlaceholder": "Search subjects...",
+    "noSubjectsFound": "No subjects found.",
+    "subjectEnrolled": "Access Granted",
+    "subjectPending": "Pending Approval",
+    "subjectClassified": "Restricted",
+    "subjectActive": "Active",
     "backToGrade": "Back to Grade",
     "title": "Learning Hub",
     "subtitle": "Dive into your lessons and master new concepts today.",
@@ -405,6 +417,13 @@
     "manageSubjectAccess": "Manage Subject Access",
     "newGrade": "New Grade",
     "tracks": "{count} grades",
+    "deleteLessonConfirm": "Are you sure you want to delete this lesson?",
+    "subjectDescriptions": {
+      "math": "Master basic arithmetic, algebra, geometry, and calculus to build a strong analytical foundation.",
+      "isom": "International School of Ministry (ISOM) curriculum covering christian theology, leadership training, and church ministry.",
+      "church": "Specialized study program for church members, focusing on theology, community service, and spiritual leadership.",
+      "default": "Explore comprehensive learning units, test attempts, and customized content matching your level."
+    },
     "metaModal": {
       "subjectTitle": "Create Subject",
       "subjectAccessTitle": "Manage Subject Accessibility",
@@ -1082,6 +1101,16 @@
   "Pricing": {
     "title": "Subscription Plans",
     "subtitle": "Choose the perfect plan for your learning journey",
+    "plansAndPricing": "Plans & Pricing",
+    "billingAndHistory": "Billing & History",
+    "loadingPlans": "Loading plans...",
+    "retrievingBillingInfo": "Retrieving billing info...",
+    "popular": "Popular",
+    "enterprise": "Enterprise",
+    "assignSeatsDesc": "Assign premium student slots",
+    "trackProgressDesc": "Detailed progress monitoring",
+    "defaultLevel": "Default Level",
+    "switchCycle": "Switch Cycle",
     "period": {
       "forever": "forever",
       "month": "per month",
@@ -1092,7 +1121,28 @@
       "upgrade": "Upgrade Plan",
       "getStarted": "Get Started",
       "buySeats": "Buy Seats",
-      "manageMembers": "Manage Members"
+      "manageMembers": "Manage Members",
+      "billingCycle": "Billing Cycle",
+      "monthly": "Monthly",
+      "annually": "Annually",
+      "billedAnnually": "Billed Annually",
+      "billedMonthly": "Billed Monthly",
+      "savePercent": "Save ~17% (2 months free)",
+      "toggleBillingCycle": "Toggle Billing Cycle",
+      "billingHistory": "Billing History",
+      "invoiceDate": "Billing Date",
+      "invoiceDesc": "Description",
+      "invoiceAmount": "Amount",
+      "invoiceStatus": "Status",
+      "invoicePaid": "Paid",
+      "invoiceFailed": "Failed",
+      "activePlan": "Active Plan",
+      "autoRenewStatus": "Continuous Payment",
+      "autoRenewOn": "Enabled",
+      "autoRenewOff": "Disabled",
+      "turnOffAutoRenew": "Stop Payment",
+      "turnOnAutoRenew": "Resume Continuous Payment",
+      "noInvoices": "No billing transactions found."
     },
     "freeStudent": {
       "title": "Free Student",
@@ -1118,13 +1168,25 @@
         "priorityAi": "Priority AI tutor support"
       }
     },
-    "supervisor": {
-      "title": "Supervisor / Parent",
+    "family": {
+      "title": "Family Plan",
       "price": "$19.99",
-      "description": "Manage and subscribe students in your organization",
+      "description": "Perfect for families managing student progress",
       "features": {
-        "buySeats": "Purchase learning seats for students",
-        "manageAccounts": "Create & manage student/teacher accounts",
+        "limitStudents": "Up to 5 student accounts",
+        "limitTeachers": "Up to 2 teacher accounts",
+        "assignSeats": "Assign/unassign premium subscriptions",
+        "trackProgress": "Track progress of managed students",
+        "reviewLessons": "Review lessons, assignments & quizzes"
+      }
+    },
+    "learningCenter": {
+      "title": "Learning Center",
+      "price": "$49.99",
+      "description": "Pay-as-you-grow organization model for schools",
+      "features": {
+        "limitStudents": "Pay-as-you-grow student seats",
+        "limitTeachers": "Unlimited teacher accounts",
         "assignSeats": "Assign/unassign premium subscriptions",
         "trackProgress": "Track progress of managed students",
         "reviewLessons": "Review lessons, assignments & quizzes"
@@ -1142,7 +1204,46 @@
       "processing": "Processing...",
       "success": "Payment simulated successfully! Your subscription has been updated.",
       "fail": "Payment simulation failed. Please check details and try again.",
-      "close": "Close"
+      "close": "Close",
+      "subscribeTo": "Subscribe to {plan}",
+      "organizationName": "Organization / Learn Unit Name",
+      "organizationNamePlaceholder": "e.g. Sunny School Center",
+      "organizationNameRequired": "Organization name is required to initialize a Supervisor workspace.",
+      "cardHolderShort": "Card Holder",
+      "expires": "Expires"
+    },
+    "supervisorBilling": {
+      "roleSupervisor": "Supervisor",
+      "priceDetail": "Price: ${price} ({cycle})",
+      "additionalSeats": "Additional Learning Seats",
+      "seatRateDesc": "$5.00 / month per seat",
+      "seatPurchase": "Seat Purchase",
+      "cardHolderPlaceholder": "Your Name",
+      "retrievingPlan": "Retrieving plan details...",
+      "freeAccount": "Free Account",
+      "freeDesc": "Basic learning track with limits.",
+      "renewsOn": "Renews on: {date}",
+      "changePlan": "Change Plan",
+      "choosePlan": "Choose Plan / Upgrade",
+      "capacityLimits": "Capacity Usage Limits",
+      "loadingInvoices": "Loading invoices...",
+      "learnUnitInfo": "Learn Unit Info",
+      "unitName": "Unit Name",
+      "registrationCode": "Registration Code",
+      "capacityModel": "Seats Capacity Model",
+      "fixedPlan": "Fixed Plan Limits",
+      "payAsYouGrow": "Pay-as-you-grow ({count} slots)",
+      "purchaseSeats": "Purchase Seats",
+      "purchaseSeatsDesc": "Add additional student slots to your organization immediately.",
+      "totalSlots": "Total slots purchased",
+      "needMoreSeats": "Need more seats?",
+      "limitedTo": "Your current plan is limited to {count} students.",
+      "upgradeDesc": "Upgrade to the Learning Center plan to purchase unlimited student and teacher seats dynamically.",
+      "upgradePlan": "Upgrade Plan",
+      "usedProgress": "{progress}% Used",
+      "defaultOrganization": "My Organization",
+      "notAvailable": "N/A",
+      "brandName": "Anhoc Premium"
     }
   },
   "Supervisor": {
