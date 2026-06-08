@@ -40,9 +40,8 @@
     "clearLogs": "Xóa nhật ký",
     "confirmClearHistory": "Xóa lịch sử chatbot?",
     "tabs": {
-      "chat": "Trò chuyện",
-      "thought": "Suy luận",
-      "context": "Hồ sơ"
+      "chat": "Chatbox",
+      "settings": "Cài đặt"
     },
     "engineLabel": "Mô hình:",
     "providerTypes": {
@@ -94,6 +93,7 @@
     "inputPlaceholder": "Hỏi một bài toán...",
     "attachImage": "Đính kèm ảnh",
     "removeAttachment": "Gỡ ảnh đính kèm",
+    "stop": "Dừng",
     "send": "Gửi",
     "errors": {
       "fetchFailed": "Không thể lấy câu trả lời",

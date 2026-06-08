@@ -89,9 +89,6 @@ export const authService = {
     // Clear cookie by setting expiry to the past
     document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
     delete api.defaults.headers.common["Authorization"];
-
-    // Optional: Redirect to login after logout
-    window.location.href = "/login";
   },
 
   getToken: () => {

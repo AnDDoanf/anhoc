@@ -40,9 +40,8 @@
     "clearLogs": "Clear logs",
     "confirmClearHistory": "Clear chatbot history?",
     "tabs": {
-      "chat": "Chat",
-      "thought": "Thoughts",
-      "context": "Profile"
+      "chat": "Chatbox",
+      "settings": "Settings"
     },
     "engineLabel": "Engine:",
     "providerTypes": {
@@ -94,6 +93,7 @@
     "inputPlaceholder": "Ask a math problem...",
     "attachImage": "Attach image",
     "removeAttachment": "Remove attachment",
+    "stop": "Stop",
     "send": "Send",
     "errors": {
       "fetchFailed": "Failed to fetch response",
