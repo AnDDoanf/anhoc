@@ -158,7 +158,7 @@ export default function GamesHubPage() {
 
   return (
     <ProtectedRoute requiredRole="student">
-      <div className="mx-auto max-w-7xl space-y-10 animate-in fade-in duration-700">
+      <div className="mx-auto max-w-7xl space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
         
         {/* Banner Section */}
         <div className="relative overflow-hidden rounded-[2.5rem] bg-sol-surface border border-sol-border/30 p-8 md:p-12 shadow-2xl">
@@ -170,10 +170,10 @@ export default function GamesHubPage() {
               <Gamepad2 size={16} />
               {t("title")}
             </div>
-            <h1 className="text-4xl md:text-5xl font-black text-sol-text tracking-tight">
+            <h1 className="text-4xl md:text-6xl font-black text-sol-text tracking-tight leading-[1.05]">
               {t("title")}
             </h1>
-            <p className="text-lg text-sol-muted font-medium">
+            <p className="text-sm md:text-lg text-sol-muted font-medium max-w-xl leading-relaxed">
               {t("subtitle")}
             </p>
           </div>
@@ -266,7 +266,7 @@ export default function GamesHubPage() {
               <div className="bg-sol-surface border border-sol-border/30 rounded-[2.5rem] p-8 shadow-xl space-y-6 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-sol-accent/5 rounded-full blur-3xl pointer-events-none" />
                 
-                <h2 className="text-2xl font-black text-sol-text tracking-tight flex items-center gap-2">
+                <h2 className="text-xl md:text-2xl font-black text-sol-text tracking-tight flex items-center gap-2">
                   <Sword className="text-sol-accent" size={24} />
                   {t("createChallenge")}
                 </h2>

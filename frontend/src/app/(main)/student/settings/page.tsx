@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { authService } from "@/services/auth";
 import { KeyRound, ShieldCheck, AlertCircle, CheckCircle2, Loader2, Eye, EyeOff } from "lucide-react";
 import ProtectedRoute from "@/components/guard/ProtectedRoute";
+import Hero from "@/components/ui/Hero";
 
 export default function SettingsPage() {
   const t = useTranslations("Settings");
@@ -42,16 +43,29 @@ export default function SettingsPage() {
 
   return (
     <ProtectedRoute requiredRole="student">
-      <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-black text-sol-text tracking-tight flex items-center gap-3">
-            <ShieldCheck className="text-sol-accent" size={32} />
-            {t("userSettings")}
-          </h1>
-          <p className="text-sol-muted font-medium">
-            {t("modifyPassword")}
-          </p>
-        </div>
+      <div className="mx-auto max-w-7xl space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        {/* Hero Banner */}
+        <Hero
+          icon={<ShieldCheck size={160} className="text-sol-accent md:h-[260px] md:w-[260px]" />}
+          iconPosition="bottom-right"
+          className="md:rounded-[3rem]"
+          containerClassName="relative z-10 flex w-full flex-col items-start gap-5 lg:max-w-2xl"
+        >
+          <div className="space-y-4">
+            <div className="inline-flex items-center gap-2 rounded-full border border-sol-accent/20 bg-sol-accent/10 px-3 py-1.5 text-xs font-black uppercase tracking-[0.2em] text-sol-accent">
+              <KeyRound size={12} />
+              <span>{t("userSettings")}</span>
+            </div>
+            <h1 className="text-[1.75rem] font-black leading-[1.05] tracking-tight text-sol-text sm:text-4xl md:text-6xl">
+              {t("userSettings")}
+            </h1>
+            <p className="max-w-xl text-sm leading-relaxed text-sol-muted md:text-lg font-medium">
+              {t("modifyPassword")}
+            </p>
+          </div>
+        </Hero>
+
+        <div className="max-w-2xl mx-auto">
 
         <div className="bg-sol-surface border border-sol-border/30 rounded-3xl p-8 shadow-xl shadow-sol-accent/5 backdrop-blur-sm relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-32 h-32 bg-sol-accent/5 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-sol-accent/10 transition-colors duration-500" />
@@ -164,6 +178,7 @@ export default function SettingsPage() {
               )}
             </button>
           </form>
+        </div>
         </div>
       </div>
     </ProtectedRoute>

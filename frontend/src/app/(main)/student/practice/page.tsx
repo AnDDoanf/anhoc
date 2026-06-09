@@ -171,10 +171,10 @@ export default function PracticePage() {
             <Sparkles size={14} className="animate-spin-slow" />
             <span>{t("hubBadge")}</span>
           </div>
-          <h1 className="text-4xl md:text-7xl font-black leading-[0.95] tracking-tighter text-sol-text max-w-[15ch] lg:max-w-none">
+          <h1 className="text-4xl md:text-6xl font-black tracking-tight leading-[1.05] text-sol-text max-w-[15ch] lg:max-w-none">
             {t("title")}
           </h1>
-          <p className="max-w-2xl text-[14px] leading-relaxed text-sol-muted md:text-xl font-medium">
+          <p className="max-w-xl text-sm md:text-lg font-medium leading-relaxed text-sol-muted">
             {t("subtitle")}
           </p>
         </div>
@@ -274,7 +274,7 @@ export default function PracticePage() {
           <div className="flex max-h-[calc(100vh-10rem)] flex-col space-y-5 overflow-hidden rounded-[1.5rem] border border-sol-border/30 bg-sol-surface p-4 shadow-sm backdrop-blur-md md:rounded-[2rem] md:p-6 md:space-y-8">
             <div className="flex items-center gap-3">
               <HistoryIcon size={18} className="text-sol-accent md:h-5 md:w-5" />
-              <h3 className="text-base font-bold uppercase tracking-tight text-sol-text md:text-lg">{t("recentActivity")}</h3>
+              <h3 className="text-xl font-black tracking-tight text-sol-text">{t("recentActivity")}</h3>
             </div>
 
             <div className="custom-scrollbar flex-grow space-y-3 overflow-y-auto pr-1 md:space-y-4 md:pr-2">

@@ -226,7 +226,7 @@ export default function LearningDashboard() {
               {t("title")}
             </h1>
             
-            <p className="max-w-xl text-[13px] leading-relaxed text-sol-muted sm:text-sm md:text-xl">
+            <p className="max-w-xl text-sm md:text-lg font-medium leading-relaxed text-sol-muted">
               {t("subtitle")}
             </p>
           </div>
@@ -290,7 +290,7 @@ export default function LearningDashboard() {
             <section key={subject.subject} className="group/section space-y-8 md:space-y-12">
               <div className="flex flex-col gap-3 border-b border-sol-border/30 pb-4 sm:flex-row sm:items-end sm:justify-between md:pb-6">
                 <div className="space-y-2">
-                  <h2 className="text-2xl font-black uppercase tracking-tight text-sol-text transition-colors group-hover/section:text-sol-accent md:text-3xl">
+                  <h2 className="text-xl md:text-2xl font-black uppercase tracking-tight text-sol-text transition-colors group-hover/section:text-sol-accent">
                     {subject.label}
                   </h2>
                   <p className="text-sol-muted text-sm font-medium">

@@ -23,6 +23,7 @@ import { setCredentials } from "@/redux/slices/authSlice";
 import { setPermissions } from "@/redux/slices/permissionSlice";
 import { authService, LearnUnitSummary } from "@/services/auth";
 import { api } from "@/services/api";
+import Hero from "@/components/ui/Hero";
 
 type ManagedMember = {
   id: string;
@@ -208,25 +209,35 @@ export default function SupervisorMembersPage() {
   const availableSlots = Math.max(0, totalSlots - assignedSlots);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-10">
+    <div className="mx-auto max-w-7xl space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
-      {/* Page Title */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-black tracking-tight text-sol-text flex items-center gap-3">
-            <Users className="text-sol-accent" size={28} />
+      {/* Hero Banner */}
+      <Hero
+        icon={<Users size={160} className="text-sol-accent md:h-[280px] md:w-[280px]" />}
+        iconPosition="bottom-right"
+        className="md:rounded-[3rem]"
+        containerClassName="relative z-10 flex w-full flex-col items-start gap-5 lg:max-w-3xl"
+      >
+        <div className="space-y-4 md:space-y-6">
+          <div className="inline-flex items-center gap-2 rounded-full border border-sol-accent/20 bg-sol-accent/10 px-3 py-1.5 text-xs font-black uppercase tracking-[0.2em] text-sol-accent">
+            <ShieldCheck size={12} className="md:h-3.5 md:w-3.5" />
+            <span>{t("title")}</span>
+          </div>
+          <h1 className="text-[1.75rem] font-black leading-[1.05] tracking-tight text-sol-text sm:text-4xl md:text-6xl">
             {t("title")}
           </h1>
-          <p className="mt-2 text-sm font-medium text-sol-muted">{t("subtitle")}</p>
+          <p className="max-w-xl text-sm leading-relaxed text-sol-muted md:text-lg font-medium">
+            {t("subtitle")}
+          </p>
           {learnUnit && (
-            <p className="mt-3 inline-flex flex-wrap items-center gap-2 rounded-full border border-sol-accent/20 bg-sol-accent/5 px-4 py-2 text-xs font-bold text-sol-text">
+            <p className="inline-flex flex-wrap items-center gap-2 rounded-full border border-sol-accent/20 bg-sol-accent/5 px-4 py-2 text-xs font-bold text-sol-text">
               <span>{learnUnit.name}</span>
               <span className="text-sol-muted">•</span>
               <span className="text-sol-accent">{learnUnit.code}</span>
             </p>
           )}
         </div>
-      </div>
+      </Hero>
 
       {/* Overview Dashboard Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -305,7 +316,7 @@ export default function SupervisorMembersPage() {
         <div className="rounded-3xl border border-sol-border/30 bg-sol-surface/50 backdrop-blur p-6 sm:p-8 h-fit lg:col-span-1">
           <div className="flex items-center gap-2 mb-4">
             <UserPlus className="text-sol-accent" size={20} />
-            <h2 className="text-lg font-black tracking-tight text-sol-text">{t("createMember")}</h2>
+            <h2 className="text-xl font-black tracking-tight text-sol-text">{t("createMember")}</h2>
           </div>
           <p className="text-xs text-sol-muted mb-6 leading-relaxed">{t("createMemberDesc")}</p>
 
@@ -403,7 +414,7 @@ export default function SupervisorMembersPage() {
         {/* Directory Panel */}
         <div className="rounded-3xl border border-sol-border/30 bg-sol-surface/50 backdrop-blur p-6 sm:p-8 lg:col-span-2 space-y-6">
           <div className="flex items-center justify-between border-b border-sol-border/10 pb-4">
-            <h2 className="text-lg font-black tracking-tight text-sol-text">{t("directory")}</h2>
+            <h2 className="text-xl font-black tracking-tight text-sol-text">{t("directory")}</h2>
             <span className="rounded-full bg-sol-bg border border-sol-border/30 px-3 py-1 text-xs font-bold text-sol-muted">
               {members.length} Accounts
             </span>

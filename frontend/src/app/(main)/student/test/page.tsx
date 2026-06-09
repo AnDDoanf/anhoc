@@ -176,10 +176,10 @@ export default function TestPage() {
             <Sparkles size={14} className="animate-pulse" />
             <span>{t("challengeBadge")}</span>
           </div>
-          <h1 className="text-4xl md:text-7xl font-black leading-[0.95] tracking-tighter text-sol-text max-w-[15ch] lg:max-w-none">
+          <h1 className="text-4xl md:text-6xl font-black tracking-tight leading-[1.05] text-sol-text max-w-[15ch] lg:max-w-none">
             {t("title")}
           </h1>
-          <p className="max-w-2xl text-[14px] leading-relaxed text-sol-muted md:text-xl font-medium">
+          <p className="max-w-xl text-sm md:text-lg font-medium leading-relaxed text-sol-muted">
             {t("subtitle")}
           </p>
         </div>

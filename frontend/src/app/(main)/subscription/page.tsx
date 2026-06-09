@@ -242,7 +242,7 @@ export default function PricingPage() {
   };
 
   return (
-    <div className="relative mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 pb-24">
+    <div className="relative mx-auto max-w-7xl space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Background decorations */}
       <div className="absolute top-[-5rem] left-[10%] h-72 w-72 rounded-full bg-sol-accent/10 blur-3xl pointer-events-none" />
       <div className="absolute bottom-20 right-[10%] h-80 w-80 rounded-full bg-sol-orange/8 blur-3xl pointer-events-none" />
@@ -253,10 +253,10 @@ export default function PricingPage() {
           <Sparkles size={13} className="animate-spin-slow" />
           Anhoc Membership
         </span>
-        <h1 className="mt-4 text-3xl font-black tracking-tight text-sol-text sm:text-5xl bg-gradient-to-r from-sol-text via-sol-accent to-sol-cyan bg-clip-text text-transparent">
+        <h1 className="mt-4 text-4xl font-black tracking-tight leading-[1.05] text-sol-text sm:text-5xl md:text-6xl bg-gradient-to-r from-sol-text via-sol-accent to-sol-cyan bg-clip-text text-transparent">
           {t("title")}
         </h1>
-        <p className="mx-auto mt-4 max-w-2xl text-base sm:text-lg font-medium text-sol-muted leading-relaxed">
+        <p className="mx-auto mt-4 max-w-xl text-sm md:text-lg font-medium text-sol-muted leading-relaxed">
           {t("subtitle")}
         </p>
 

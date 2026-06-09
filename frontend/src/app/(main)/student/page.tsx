@@ -120,7 +120,7 @@ export default function UserHomePage() {
 
   return (
     <ProtectedRoute requiredRole="student">
-      <div className="mx-auto max-w-7xl space-y-8 animate-in fade-in duration-700">
+      <div className="mx-auto max-w-7xl space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
         {/* Hero Section */}
         <div className="relative overflow-hidden rounded-[2.5rem] bg-sol-surface border border-sol-border/30 p-8 md:p-12 shadow-2xl shadow-sol-accent/5">
           <div className="absolute top-0 right-0 w-96 h-96 bg-sol-accent/10 rounded-full -mr-32 -mt-32 blur-3xl animate-pulse" />
@@ -132,10 +132,10 @@ export default function UserHomePage() {
                 <Sparkles size={14} />
                 {dt("studentHub")}
               </div>
-              <h1 className="text-4xl md:text-5xl font-black text-sol-text tracking-tight">
+              <h1 className="text-4xl md:text-6xl font-black text-sol-text tracking-tight leading-[1.05]">
                 {dt("welcomeBackMessage", { email: user?.username || user?.email?.split("@")[0] || "" })}
               </h1>
-              <p className="text-lg text-sol-muted font-medium max-w-xl">
+              <p className="text-sm md:text-lg text-sol-muted font-medium max-w-xl leading-relaxed">
                 {dt("readyMessage")}
               </p>
               <div className="flex flex-wrap gap-4 pt-2">
@@ -206,7 +206,7 @@ export default function UserHomePage() {
           <div className="lg:col-span-2 bg-sol-surface border border-sol-border/30 rounded-[2.5rem] p-8 shadow-xl relative overflow-hidden group">
              <div className="flex items-center justify-between mb-8">
                 <div>
-                  <h2 className="text-2xl font-black text-sol-text tracking-tight flex items-center gap-2">
+                  <h2 className="text-xl md:text-2xl font-black text-sol-text tracking-tight flex items-center gap-2">
                     <Clock className="text-sol-accent" size={24} />
                     {t("activity")}
                   </h2>
@@ -307,7 +307,7 @@ export default function UserHomePage() {
           <div className="bg-sol-surface border border-sol-border/30 rounded-[2.5rem] p-8 shadow-xl space-y-6">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <h2 className="text-2xl font-black text-sol-text tracking-tight flex items-center gap-2">
+                <h2 className="text-xl md:text-2xl font-black text-sol-text tracking-tight flex items-center gap-2">
                   <Gamepad2 className="text-sol-accent" size={24} />
                   {dt("createdGames")}
                 </h2>
@@ -390,7 +390,7 @@ export default function UserHomePage() {
 
           <div className="bg-sol-surface border border-sol-border/30 rounded-[2.5rem] p-8 shadow-xl space-y-6">
             <div>
-              <h2 className="text-2xl font-black text-sol-text tracking-tight flex items-center gap-2">
+              <h2 className="text-xl md:text-2xl font-black text-sol-text tracking-tight flex items-center gap-2">
                 <Trophy className="text-sol-orange" size={24} />
                 {dt("participatedGames")}
               </h2>
