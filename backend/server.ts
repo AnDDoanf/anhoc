@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import './lib/env.ts';
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import cors from 'cors';
 import prisma, { describeDatabaseTarget } from './lib/db.ts';

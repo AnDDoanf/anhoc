@@ -1,289 +1,270 @@
-# 📘Anhoc Math Learning App (Next.js + Node.js + PostgreSQL)
+# Anhoc Gamify Learning App
 
-The purpose of this application is to provide a **simple, engaging, and structured platform** for children to learn and practice mathematics effectively.
+The purpose of this application is to provide a **simple, engaging, structured, and AI-augmented platform** for children to learn and practice mathematics effectively.
 
 It aims to:
-
-- Help Vietnamese students from grade 1-9 understand math concepts through **easy-to-follow theory lessons**
-- Reinforce learning with **interactive practice exercises**
-- Evaluate progress through **tests and scoring**
-- Track improvement over time to build **confidence and consistency**
+- Help Vietnamese students from grade 1-9 understand math concepts through **easy-to-follow theory lessons**.
+- Reinforce learning with **interactive practice exercises** powered by a procedurally checked math solver.
+- Evaluate progress through **tests, auto-grading, and gamification**.
+- Support students via an **AI Math Tutor Chatbot** with step-by-step reasoning.
+- Track improvement over time to build **confidence and consistency**.
 
 ---
 
-# 🏗️ Tech Stack
+# Tech Stack
 
 ## Frontend
-
-- **Next.js (Vercel)**
-- React
-- Fetch API / Axios
+- **Next.js 16** (App Router, Tailwind CSS, Lucide icons, date-fns)
+- **React 19 & Redux Toolkit** (State Management)
+- **Axios & Fetch API** (API client with automatic JWT token refresh handlers)
 
 ## Backend
+- **Node.js (Express)** with **Prisma ORM**
+- **Swagger UI** (RESTful API documentation at `/api/docs`)
+- **Helmet, CORS validation & Express Rate Limit** (Hardened Security headers)
+- **Pino** (Structured logging) & Request Correlation ID tracking
 
-- **Node.js (Express)**
-- RESTful API
+## AI Chatbot Tutor Service
+- **FastAPI (Python)**
+- **Google Gemini API** (Main tutor reasoning) & **Ollama** (Local Qwen math model fallback)
+- **SymPy** (Symbolic math engine, equation solver, and template validator)
+- **Motor** (Asynchronous MongoDB driver)
 
-## Database
+## Databases & Storage
+- **PostgreSQL (Neon / Containerized)** - Primary relational storage for users, achievements, lessons, and tests.
+- **MongoDB (Atlas / Containerized)** - Conversational logs, history tracking, and student memory profile storage.
 
-- **PostgreSQL (Neon)**
-
-## Deployment
-
-- Frontend: Vercel
-- Backend: Render
-- Database: Neon
-
----
-
-# 🧩 Architecture
-
-```
-Frontend (Next.js - Vercel)
-        ↓ HTTP Requests
-Backend (Node.js - Render)
-        ↓ SQL Queries
-Database (PostgreSQL - Neon)
-```
+## Infrastructure & DevOps
+- **Docker & Docker Compose** - Full orchestration containing all services with container-level healthchecks.
+- **Reverse Proxy Routing** - Same-port client routing via Next.js server-side rewrites (zero CORS configuration issues).
+- **Automated Backups** - Daily cron-ready shell scripts compressing Postgres and MongoDB data with a rolling 7-day retention.
+- **Environment Validation** - Dynamic configuration sanity validation blocking boot on missing/weak keys.
 
 ---
 
-# ✨ Features
+# Architecture
 
-## 👶 User Features
+```mermaid
+flowchart TD
+    subgraph Client ["Client Browser (Single Origin Port 5000)"]
+        Browser["User Browser"]
+    end
 
-- Learn math concepts (theory pages)
-- Practice exercises
-- Take tests
-- Track progress (scores, history)
+    subgraph FrontendService ["Frontend Container (Next.js - Port 5000)"]
+        NextJS["Next.js Server"]
+        NextConfig["next.config.ts (Rewrites Engine)"]
+        NextJS --> NextConfig
+    end
 
-## 🔐 Authentication & Authorization
+    subgraph BackendService ["Backend Container (Express - Port 5001)"]
+        Express["Express API Server"]
+        PrismaClient["Prisma Client"]
+        Express --> PrismaClient
+    end
 
-- User registration & login
-- Secure authentication (JWT/session-based)
-- Role-based access:
-  - **User**: learning, practice, testing
-  - **Admin**: manage content (questions, lessons)
+    subgraph ChatbotService ["Chatbot Container (FastAPI - Port 5002)"]
+        FastAPI["FastAPI Server"]
+        Motor["Motor (MongoDB Driver)"]
+        Psycopg2["Psycopg2 (PostgreSQL Driver)"]
+        FastAPI --> Motor
+        FastAPI --> Psycopg2
+    end
 
-## 🧪 Learning Modules
+    subgraph Databases ["Database Tier"]
+        Postgres[(PostgreSQL Relational DB)]
+        MongoDB[(MongoDB Document DB)]
+    end
 
-- Theory pages (text, examples)
-- Practice mode (interactive questions)
-- Test mode (timed or structured exams)
+    subgraph LLMTier ["LLM Service Tier"]
+        Gemini[Google Gemini API]
+        Ollama[Ollama Local Model]
+    end
 
-## 🛠️ Admin Panel
+    %% Network routing
+    Browser -->|HTTP / SSE on Port 5000| NextJS
+    NextConfig -->|"/api/v1/auth, /lessons..." Proxy to http://backend:5001| Express
+    NextConfig -->|"/api/v1/chat, /tutor..." Proxy to http://chatbot:5002| FastAPI
 
-- Create/edit/delete:
-  - Lessons
-  - Questions
-  - Tests
+    %% Database queries
+    PrismaClient --> Postgres
+    Psycopg2 -->|Read queries| Postgres
+    Motor --> MongoDB
 
-- Manage users (optional)
+    %% LLM integration
+    FastAPI --> Gemini
+    FastAPI -.->|Local Fallback| Ollama
 
-## 🔔 Notification System
+    %% Styling
+    classDef client fill:#eef2f7,stroke:#3b82f6,stroke-width:2px;
+    classDef fe fill:#e0f2fe,stroke:#0284c7,stroke-width:2px;
+    classDef be fill:#f0fdf4,stroke:#16a34a,stroke-width:2px;
+    classDef cb fill:#fef3c7,stroke:#d97706,stroke-width:2px;
+    classDef db fill:#faf5ff,stroke:#7c3aed,stroke-width:2px;
+    classDef llm fill:#fff1f2,stroke:#e11d48,stroke-width:2px;
 
-- Real-time in-app notifications for important user and system events
-- Notifies administrators of pending subject access requests or reported questions
-- Interactive notifications with direct redirection to take action (e.g., clicking an access request notification redirects directly to the approval management screen)
-- Notifies students when their access requests are approved/rejected or when someone follows them
+    class Browser client;
+    class NextJS,NextConfig fe;
+    class Express,PrismaClient be;
+    class FastAPI,Motor,Psycopg2 cb;
+    class Postgres,MongoDB db;
+    class Gemini,Ollama llm;
+```
+
+When containerized inside Docker, Next.js acts as the ingress reverse-proxy. Client browsers talk strictly to port **5000** for all page views, backend API routes, and chatbot streaming. Next.js server-side routes proxy these requests internally using the container network.
 
 ---
 
-# 📂 Project Structure
+# Features
 
-## Frontend (Next.js)
+## User Features
+- Learn math concepts (theory pages) with KaTeX rendering.
+- Interactive practice exercises with instant step-by-step reasoning hints.
+- Take timed tests and track scores, history, and streaks.
+- Earn XP, unlock achievements, and view gamified progression.
+
+## Math Tutor Chatbot
+- Streaming SSE conversations.
+- SymPy augmented intent detection (routes math equations to the solver).
+- Student memory tracking (saves mistakes, categorizes weak topics in MongoDB).
+- Hint-first, step-by-step, and full solution explanation tutoring modes.
+
+## Hardened Security
+- Login, registration, and password lockout rate-limit protection.
+- Strong password requirements and refresh token rotation policies.
+- Auto-validation of JWT signatures and startup safety checks.
+
+## Admin Panel
+- Content management (lessons, questions, tests).
+- Student access request logs and approvals.
+
+---
+
+# Project Structure
 
 ```
-/frontend
-  /app or /pages
-    /login
-    /register
-    /learn
-    /practice
-    /test
-    /admin
-  /components
-  /services (API calls)
-  /utils
-```
-
-## Backend (Node.js)
-
-```
-/backend
-  /src
-    /controllers
-    /routes
-    /middlewares
-    /services
-    /models
-    /config
-  server.js
+├── backend/               # Express + Prisma API
+│   ├── lib/env.ts         # Backend Env Validation
+│   ├── prisma/            # DB Schema and seeding scripts
+│   └── routes/            # REST API Routes
+├── frontend/              # Next.js Application
+│   ├── src/components/    # Feature widget layers
+│   ├── src/services/api.ts# Axios instance with refresh intercepts
+│   └── src/utils/env.ts   # Frontend Env Validation
+├── chatbot/               # FastAPI Chatbot Service
+│   ├── config_validator.py# Chatbot Env Validation
+│   ├── database.py        # Relational and document connection loaders
+│   └── main.py            # Streaming Chatbot API
+├── scripts/               # Backup and utilities
+│   ├── backup-postgres.sh # daily PG backup runner
+│   └── backup-mongodb.sh  # daily Mongo backup runner
+└── docs/                  # System guides & operations
+    └── infrastructure/    # Secrets management and restore guides
 ```
 
 ---
 
-# 🗄️ Database Schema (Simplified)
+# Environment Variables
 
-```sql
-users (
-  id uuid primary key,
-  email text unique,
-  password text,
-  role text, -- 'user' | 'admin'
-  created_at timestamptz
-);
+Copy the `.env.example` templates in each folder to configure environment profiles.
 
-lessons (
-  id uuid primary key,
-  title text,
-  content text
-);
-
-questions (
-  id uuid primary key,
-  lesson_id uuid,
-  question text,
-  answer text
-);
-
-tests (
-  id uuid primary key,
-  name text
-);
-
-test_results (
-  id uuid primary key,
-  user_id uuid,
-  score int,
-  created_at timestamptz
-);
+### Frontend (`frontend/.env.development`)
+```env
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/anhoc?sslmode=disable
+NEXT_PUBLIC_API_URL=/api/v1
+NEXT_PUBLIC_CHATBOT_API_URL=/
+INTERNAL_API_URL=http://localhost:5001
+BACKEND_URL=http://localhost:5001
 ```
 
----
-
-# 🔐 Authentication Flow
-
-1. User logs in via frontend
-2. Backend validates credentials
-3. Backend returns JWT token
-4. Frontend stores token (cookie/localStorage)
-5. Protected routes require valid token
-
----
-
-# ⚙️ Environment Variables
-
-## Frontend (.env)
-
-```
-# Browser API base.
-# Leave unset to use same-origin /api/v1 via Next rewrites.
-NEXT_PUBLIC_API_URL=
-
-# Server-side fetch base for Next.js loaders/components.
-# In local:    http://127.0.0.1:5001
-# In prod:     https://your-backend.url.com
-INTERNAL_API_URL=
-
-# Optional rewrite target for Next.js so frontend can call /api/v1 on the same origin.
-# In local:    http://127.0.0.1:5001
-# In prod:     https://your-backend.url.com
-BACKEND_URL=
-```
-
-## Backend (.env)
-
-```
+### Backend (`backend/.env.development`)
+```env
 SERVER_PORT=5001
-DATABASE_URL=your_neon_connection_string
-JWT_SECRET=generate_at_least_32_bytes_and_use_the_same_value_for_backend_and_chatbot
-CORS_ORIGINS=http://localhost:5000,https://your-backend.url.com
-AUTO_SEED_ACHIEVEMENTS=false
+NODE_ENV=development
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/anhoc?sslmode=disable
+JWT_SECRET=this-is-a-long-development-only-jwt-secret-key-32-chars
+CORS_ORIGINS=http://localhost:5000
+AUTO_SEED_ACHIEVEMENTS=true
+```
+
+### Chatbot (`chatbot/.env.development`)
+```env
+PORT=5002
+MONGODB_URI=mongodb://localhost:27017/anhoc_chatbot
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/anhoc?sslmode=disable
+JWT_SECRET=this-is-a-long-development-only-jwt-secret-key-32-chars
+GEMINI_API_KEY=your_gemini_api_key_here
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=hellonico/Qwen-2.5-Math-7.6B-Instruct-Q6_K.gguf:latest
+OLLAMA_TIMEOUT_SECONDS=0
+OLLAMA_NUM_CTX=1024
 ```
 
 ---
 
-# 🚀 Getting Started
+# Getting Started
 
-## 1. Clone repository
+## Method A: Running with Docker Compose (Recommended)
+This spins up the entire application, databases, and network routing in a single terminal command.
 
-```
-git clone <your-repo-url>
-cd project
-```
+1. Ensure Docker Desktop is installed.
+2. In the project root, run:
+   ```bash
+   docker compose up --build -d
+   ```
+3. Once running, access the services:
+   - **Frontend App**: `http://localhost:5000`
+   - **Backend API Docs**: `http://localhost:5000/api/docs` (proxied)
+   - **Chatbot Health**: `http://localhost:5000/health` (proxied)
+4. Check running status using:
+   ```bash
+   docker compose ps
+   ```
 
 ---
 
-## 2. Setup Backend
+## Method B: Manual Local Development
 
-```
-cd backend
-npm install
+### 1. Prerequisites
+- **Node.js**: v20+
+- **Python**: v3.10+
+- **PostgreSQL**: Local or Neon DB
+- **MongoDB**: Local community edition or Atlas
+
+### 2. Configure Databases
+Update your `.env` files in `backend/` and `chatbot/` to target your local PostgreSQL and MongoDB credentials.
+
+### 3. Install & Start Services
+From the root workspace folder, you can install and spin up all three services concurrently using the workspace scripts:
+
+```bash
+# Install dependencies for all modules
+npm run install:all
+
+# Run all services (Frontend, Backend, Chatbot) concurrently
 npm run dev
 ```
 
----
-
-## 3. Setup Frontend
-
-```
-cd frontend
-npm install
-npm run dev
-```
+If you prefer to start them in separate terminals:
+- **Backend**: `cd backend && npm install && npm run dev`
+- **Frontend**: `cd frontend && npm install && npm run dev`
+- **Chatbot**: `cd chatbot && python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt && uvicorn main:app --port 5002 --reload`
 
 ---
 
-## 4. Setup Database (Neon)
+# Backups & Secrets Management
 
-- Create a PostgreSQL database
-- Copy connection string
-- Add to `DATABASE_URL`
-- Run migrations / create tables
+### Automated Backups
+Automated backup scripts are available in the `/scripts` directory. They can be scheduled using crontab on the hosting VM:
+- **PostgreSQL Backups**: Daily dump compressed with Gzip to `/backups/postgres`. Handles a rolling 7-day retention deletion process automatically.
+  - Setup and recovery instructions: [postgres_backup.md](file:///c:/code/anhoc/docs/infrastructure/postgres_backup.md).
+- **MongoDB Backups**: Daily database dumps compressed to archives in `/backups/mongodb`.
+  - Setup and recovery instructions: [mongodb_backup.md](file:///c:/code/anhoc/docs/infrastructure/mongodb_backup.md).
 
----
-
-# 🌐 Deployment
-
-## Frontend (Vercel)
-
-- Connect GitHub repo
-- Set environment variables
-- Deploy
-
-## Backend (Render)
-
-- Create Web Service
-- Add environment variables
-- Deploy
-
-## Database (Neon)
-
-- Managed automatically
-- No expiration on free tier
+### Secrets Management Strategy
+For production secrets (such as JWT signatures, DB passwords, Gemini keys), we enforce environment validation at startup to block startup on misconfigured keys. Review the [secrets_management.md](file:///c:/code/anhoc/docs/infrastructure/secrets_management.md) guide for details.
 
 ---
 
-# ⚠️ Notes
+# License
 
-- Render free tier may cause **cold starts (~10–30s)**
-- Neon may have **small cold start delay**
-- Always secure API endpoints with authentication middleware
-- Never expose database credentials to frontend
-
----
-
-# 🔮 Future Improvements
-
-- Gamification (badges, rewards)
-- Leaderboard
-- Adaptive difficulty
-- Multi-language support
-- Parent dashboard
-
----
-
-# 📄 License
-
-This project is for personal purposes.
+This project is for academic and personal research purposes.

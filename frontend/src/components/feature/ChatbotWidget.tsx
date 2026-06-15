@@ -73,7 +73,7 @@ export default function ChatbotWidget() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const chatbotApiUrl = process.env.NEXT_PUBLIC_CHATBOT_API_URL || "http://127.0.0.1:5002";
+  const chatbotApiUrl = (process.env.NEXT_PUBLIC_CHATBOT_API_URL || "http://127.0.0.1:5002").replace(/\/+$/, "");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
