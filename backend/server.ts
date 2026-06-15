@@ -14,6 +14,8 @@ import supervisorRoutes from './routes/supervisor.ts';
 import subscriptionRoutes from './routes/subscription.ts';
 import { seedAchievements } from './services/achievementService.ts';
 import { scheduleInactiveAccountCleanup } from './services/accountLifecycleService.ts';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './swagger.ts';
 
 const app: Application = express();
 
@@ -37,6 +39,9 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json());
+
+// Serve Swagger API Documentation at /api/docs
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/lessons', lessonRoutes);

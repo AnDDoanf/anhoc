@@ -3,19 +3,16 @@
   "version": "1.0.0",
   "type": "module",
   "main": "server.ts",
-
   "scripts": {
     "build": "node ./node_modules/prisma/build/index.js generate",
     "lint": "tsc --noEmit",
     "start": "node ./node_modules/tsx/dist/cli.mjs server.ts",
     "dev": "node ./node_modules/tsx/dist/cli.mjs watch server.ts",
-
     "prisma:generate": "node ./node_modules/prisma/build/index.js generate",
     "prisma:migrate": "node ./node_modules/prisma/build/index.js migrate dev",
     "prisma:reset": "node ./node_modules/prisma/build/index.js migrate reset",
     "prisma:seed": "node ./node_modules/prisma/build/index.js db seed"
   },
-
   "dependencies": {
     "@prisma/adapter-pg": "^7.6.0",
     "@prisma/client": "^7.6.0",
@@ -27,16 +24,19 @@
     "mathjs": "^15.1.1",
     "nodemailer": "^7.0.5",
     "pg": "^8.20.0",
+    "swagger-jsdoc": "^6.3.0",
+    "swagger-ui-express": "^5.0.1",
     "tsx": "^4.21.0"
   },
-
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
-    "@types/nodemailer": "^7.0.1",
     "@types/node": "^25.5.2",
+    "@types/nodemailer": "^7.0.1",
+    "@types/swagger-jsdoc": "^6.0.4",
+    "@types/swagger-ui-express": "^4.1.8",
     "prisma": "^7.6.0",
     "typescript": "^6.0.2"
   }
