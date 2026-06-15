@@ -203,7 +203,14 @@ router.post("/members", authenticate, requireSupervisor, async (req: Request, re
         role_id: roleRecord.id,
         learn_unit_id: learnUnit.id,
         account_status: "active",
-        email_verified_at: new Date(),
+        security: {
+          create: {
+            email_verified_at: new Date(),
+          }
+        },
+        learning_profile: {
+          create: {}
+        }
       },
       select: {
         id: true,

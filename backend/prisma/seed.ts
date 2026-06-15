@@ -87,6 +87,7 @@ async function main() {
     await prisma.role.deleteMany({ where: { id: { in: unsupportedRoleIds } } });
   }
 
+
   // 4. 📜 Permissions Mapping
   // Admin: Manage everything
   for (const res of resourcesArr) {
@@ -153,8 +154,12 @@ async function main() {
     update: {
       role_id: adminRole.id,
       account_status: 'active',
-      email_verified_at: new Date(),
-      inactive_cleanup_at: null,
+      security: {
+        upsert: {
+          create: { email_verified_at: new Date(), inactive_cleanup_at: null },
+          update: { email_verified_at: new Date(), inactive_cleanup_at: null },
+        },
+      },
     },
     create: {
       username: 'admin',
@@ -163,7 +168,9 @@ async function main() {
       password_hash: hashedPassword,
       role_id: adminRole.id,
       account_status: 'active',
-      email_verified_at: new Date(),
+      security: {
+        create: { email_verified_at: new Date() },
+      },
     },
   });
 
@@ -172,9 +179,13 @@ async function main() {
     update: {
       role_id: supervisorRole.id,
       account_status: 'active',
-      email_verified_at: new Date(),
-      inactive_cleanup_at: null,
       slots_purchased: 5,
+      security: {
+        upsert: {
+          create: { email_verified_at: new Date(), inactive_cleanup_at: null },
+          update: { email_verified_at: new Date(), inactive_cleanup_at: null },
+        },
+      },
     },
     create: {
       username: 'supervisor1',
@@ -183,8 +194,10 @@ async function main() {
       password_hash: hashedPassword,
       role_id: supervisorRole.id,
       account_status: 'active',
-      email_verified_at: new Date(),
       slots_purchased: 5,
+      security: {
+        create: { email_verified_at: new Date() },
+      },
     },
   });
 
@@ -193,8 +206,12 @@ async function main() {
     update: {
       role_id: teacherRole.id,
       account_status: 'active',
-      email_verified_at: new Date(),
-      inactive_cleanup_at: null,
+      security: {
+        upsert: {
+          create: { email_verified_at: new Date(), inactive_cleanup_at: null },
+          update: { email_verified_at: new Date(), inactive_cleanup_at: null },
+        },
+      },
     },
     create: {
       username: 'teacher1',
@@ -203,7 +220,9 @@ async function main() {
       password_hash: hashedPassword,
       role_id: teacherRole.id,
       account_status: 'active',
-      email_verified_at: new Date(),
+      security: {
+        create: { email_verified_at: new Date() },
+      },
     },
   });
 
@@ -212,8 +231,12 @@ async function main() {
     update: {
       role_id: subStudentRole.id,
       account_status: 'active',
-      email_verified_at: new Date(),
-      inactive_cleanup_at: null,
+      security: {
+        upsert: {
+          create: { email_verified_at: new Date(), inactive_cleanup_at: null },
+          update: { email_verified_at: new Date(), inactive_cleanup_at: null },
+        },
+      },
     },
     create: {
       username: 'student1',
@@ -222,7 +245,9 @@ async function main() {
       password_hash: hashedPassword,
       role_id: subStudentRole.id,
       account_status: 'active',
-      email_verified_at: new Date(),
+      security: {
+        create: { email_verified_at: new Date() },
+      },
     },
   });
 
@@ -231,8 +256,12 @@ async function main() {
     update: {
       role_id: freeStudentRole.id,
       account_status: 'active',
-      email_verified_at: new Date(),
-      inactive_cleanup_at: null,
+      security: {
+        upsert: {
+          create: { email_verified_at: new Date(), inactive_cleanup_at: null },
+          update: { email_verified_at: new Date(), inactive_cleanup_at: null },
+        },
+      },
     },
     create: {
       username: 'student2',
@@ -241,7 +270,9 @@ async function main() {
       password_hash: hashedPassword,
       role_id: freeStudentRole.id,
       account_status: 'active',
-      email_verified_at: new Date(),
+      security: {
+        create: { email_verified_at: new Date() },
+      },
     },
   });
 
@@ -250,8 +281,12 @@ async function main() {
     update: {
       role_id: freeStudentRole.id,
       account_status: 'active',
-      email_verified_at: new Date(),
-      inactive_cleanup_at: null,
+      security: {
+        upsert: {
+          create: { email_verified_at: new Date(), inactive_cleanup_at: null },
+          update: { email_verified_at: new Date(), inactive_cleanup_at: null },
+        },
+      },
     },
     create: {
       username: 'student3',
@@ -260,7 +295,9 @@ async function main() {
       password_hash: hashedPassword,
       role_id: freeStudentRole.id,
       account_status: 'active',
-      email_verified_at: new Date(),
+      security: {
+        create: { email_verified_at: new Date() },
+      },
     },
   });
 
@@ -332,14 +369,14 @@ async function main() {
     });
   }
 
-  await prisma.user.updateMany({
-    where: {
-      email: { in: ['admin@dev.com', 'supervisor@dev.com', 'teacher@dev.com', 'student@dev.com', 'student2@dev.com', 'student3@dev.com'] },
-    },
-    data: {
-      preferred_subject_id: math.id,
-    },
-  });
+  // Seed learning profiles (Option A)
+  for (const u of [admin, supervisor, teacher, student, studentTwo, studentThree]) {
+    await prisma.userLearningProfile.upsert({
+      where: { user_id: u.id },
+      update: { preferred_subject_id: math.id },
+      create: { user_id: u.id, preferred_subject_id: math.id },
+    });
+  }
 
   // 7. 📚 Lesson (Refactored)
   console.log('  - Seeding Lessons...');

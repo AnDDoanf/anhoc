@@ -1,5 +1,17 @@
 import * as math from 'mathjs';
 
+const compileCache = new Map<string, math.EvalFunction>();
+
+const getCompiledExpression = (expression: string): math.EvalFunction => {
+  const normalized = expression.trim();
+  let compiled = compileCache.get(normalized);
+  if (!compiled) {
+    compiled = math.compile(normalized);
+    compileCache.set(normalized, compiled);
+  }
+  return compiled;
+};
+
 export interface LogicConfig {
   [key: string]: VariableRule;
 }
@@ -32,7 +44,7 @@ const pickFromRule = (rule: VariableRule, vars: Record<string, number>): number 
   if (!rule || typeof rule !== 'object') return null;
 
   if (rule.expression) {
-    const result = math.evaluate(normalizeFormula(rule.expression), normalizeVars(vars));
+    const result = getCompiledExpression(normalizeFormula(rule.expression)).evaluate(normalizeVars(vars));
     return typeof result === 'number' ? result : Number(result);
   }
 
@@ -60,7 +72,7 @@ const applyDerived = (vars: Record<string, number>, derived: any) => {
 
   for (const [key, rule] of Object.entries(derived)) {
     const value = typeof rule === 'string'
-      ? math.evaluate(normalizeFormula(rule), normalizeVars(vars))
+      ? getCompiledExpression(normalizeFormula(rule)).evaluate(normalizeVars(vars))
       : pickFromRule(rule as VariableRule, vars);
     if (value !== null && value !== undefined && !Number.isNaN(Number(value))) {
       vars[key] = Number(value);
@@ -73,7 +85,7 @@ const passesConstraints = (vars: Record<string, number>, constraints: any): bool
 
   return constraints.every((constraint) => {
     try {
-      return Boolean(math.evaluate(normalizeFormula(String(constraint)), normalizeVars(vars)));
+      return Boolean(getCompiledExpression(normalizeFormula(String(constraint))).evaluate(normalizeVars(vars)));
     } catch {
       return false;
     }
@@ -161,7 +173,7 @@ export const checkAnswer = (
   const allFormulas = [formula, ...(acceptedFormulas || [])];
   return allFormulas.some(f => {
     try {
-      const result = math.evaluate(normalizeFormula(f), cleanVars);
+      const result = getCompiledExpression(normalizeFormula(f)).evaluate(cleanVars);
       if (typeof result === 'boolean') {
         return normalizedBooleanAns !== null && result === normalizedBooleanAns;
       }
@@ -185,7 +197,7 @@ export const formatTemplate = (template: string, vars: any): string => {
   // e.g. ${(100-x)}$ → evaluated against vars → $49$
   formatted = formatted.replace(/\$\{([^}]+)\}\$/g, (_, expr) => {
     try {
-      const result = math.evaluate(normalizeFormula(expr), cleanVars);
+      const result = getCompiledExpression(normalizeFormula(expr)).evaluate(cleanVars);
       return `$${result}$`;
     } catch {
       return `$${expr}$`; // fallback: show expression as-is
@@ -203,7 +215,7 @@ export const formatTemplate = (template: string, vars: any): string => {
 
 export const evaluateFormula = (formula: string, vars: any): string | null => {
   try {
-    const result = math.evaluate(normalizeFormula(formula), normalizeVars(vars));
+    const result = getCompiledExpression(normalizeFormula(formula)).evaluate(normalizeVars(vars));
     return result.toString();
   } catch {
     return null;

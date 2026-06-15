@@ -16,13 +16,27 @@ export const computeInactiveCleanupDeadline = (createdAt: Date) => {
 };
 
 export const purgeExpiredInactiveAccounts = async () => {
-  const result = await prisma.user.deleteMany({
+  const inactiveUsers = await prisma.user.findMany({
     where: {
       account_status: "inactive",
-      inactive_cleanup_at: { lte: new Date() },
+      security: {
+        inactive_cleanup_at: { lte: new Date() },
+      },
       audit_logs: { none: {} },
     },
-    limit: 200,
+    select: { id: true },
+    take: 200,
+  });
+
+  if (inactiveUsers.length === 0) {
+    return 0;
+  }
+
+  const ids = inactiveUsers.map((u) => u.id);
+  const result = await prisma.user.deleteMany({
+    where: {
+      id: { in: ids },
+    },
   });
 
   if (result.count > 0) {

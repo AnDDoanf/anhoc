@@ -128,7 +128,9 @@ const createAuthPayload = async (user: {
   username: string;
   country?: string | null;
   account_status: string;
-  preferred_subject_id?: number | null;
+  learning_profile?: {
+    preferred_subject_id?: number | null;
+  } | null;
   learn_unit_id?: string | null;
   slots_purchased?: number;
   learn_unit?: {
@@ -161,7 +163,8 @@ const createAuthPayload = async (user: {
   };
 }) => {
   const permissions = formatPermissions(user.role.permissions);
-  const requiresSubjectSelection = !user.preferred_subject_id;
+  const preferred_subject_id = user.learning_profile?.preferred_subject_id ?? null;
+  const requiresSubjectSelection = !preferred_subject_id;
   const learnUnit = serializeLearnUnit(user.learn_unit || user.supervised_learn_unit);
 
   const token = jwt.sign(
@@ -169,7 +172,7 @@ const createAuthPayload = async (user: {
       id: user.id,
       role: user.role.name,
       permissions,
-      preferred_subject_id: user.preferred_subject_id ?? null,
+      preferred_subject_id,
       requires_subject_selection: requiresSubjectSelection,
       account_status: user.account_status,
       supervisor_id: learnUnit?.supervisor_id ?? null,
@@ -201,7 +204,7 @@ const createAuthPayload = async (user: {
       country: user.country ?? null,
       role: user.role.name,
       account_status: user.account_status,
-      preferred_subject_id: user.preferred_subject_id ?? null,
+      preferred_subject_id,
       supervisor_id: learnUnit?.supervisor_id ?? null,
       learn_unit_id: user.learn_unit_id ?? null,
       learn_unit: learnUnit,
@@ -259,10 +262,17 @@ router.post("/register", registerLimiter, async (req: Request, res: Response) =>
           password_hash: passwordHash,
           role_id: roleRecord.id,
           account_status: "inactive",
-          email_verification_token: verificationToken,
-          email_verification_sent_at: now,
-          inactive_cleanup_at: computeInactiveCleanupDeadline(now),
           slots_purchased: roleRecord.name === "supervisor" ? 1 : 0,
+          security: {
+            create: {
+              email_verification_token: verificationToken,
+              email_verification_sent_at: now,
+              inactive_cleanup_at: computeInactiveCleanupDeadline(now),
+            }
+          },
+          learning_profile: {
+            create: {}
+          }
         },
       });
 
@@ -309,18 +319,18 @@ router.post("/activate", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Activation token is required" });
     }
 
-    const user = await prisma.user.findUnique({
+    const security = await prisma.userSecurity.findUnique({
       where: { email_verification_token: token },
-      select: { id: true, email_verified_at: true },
+      select: { user_id: true, email_verified_at: true },
     });
 
-    if (!user) {
+    if (!security) {
       return res.status(404).json({ error: "Activation token is invalid or expired" });
     }
 
-    if (!user.email_verified_at) {
-      await prisma.user.update({
-        where: { id: user.id },
+    if (!security.email_verified_at) {
+      await prisma.userSecurity.update({
+        where: { user_id: security.user_id },
         data: {
           email_verified_at: new Date(),
           email_verification_token: null,
@@ -356,6 +366,8 @@ router.post("/login", loginLimiter, async (req: Request, res: Response) => {
         },
         learn_unit: true,
         supervised_learn_unit: true,
+        security: true,
+        learning_profile: true,
       },
     });
 
@@ -363,8 +375,8 @@ router.post("/login", loginLimiter, async (req: Request, res: Response) => {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    if (user.lockout_until && user.lockout_until > new Date()) {
-      const minutesLeft = Math.ceil((user.lockout_until.getTime() - Date.now()) / (60 * 1000));
+    if (user.security?.lockout_until && user.security.lockout_until > new Date()) {
+      const minutesLeft = Math.ceil((user.security.lockout_until.getTime() - Date.now()) / (60 * 1000));
       return res.status(403).json({
         error: `Account is temporarily locked due to repeated failed login attempts. Please try again in ${minutesLeft} minute(s).`,
       });
@@ -372,7 +384,7 @@ router.post("/login", loginLimiter, async (req: Request, res: Response) => {
 
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
-      const newAttempts = user.failed_login_attempts + 1;
+      const newAttempts = (user.security?.failed_login_attempts ?? 0) + 1;
       const dataToUpdate: any = {
         failed_login_attempts: newAttempts,
       };
@@ -381,8 +393,8 @@ router.post("/login", loginLimiter, async (req: Request, res: Response) => {
         dataToUpdate.lockout_until = new Date(Date.now() + 15 * 60 * 1000);
       }
 
-      await prisma.user.update({
-        where: { id: user.id },
+      await prisma.userSecurity.update({
+        where: { user_id: user.id },
         data: dataToUpdate,
       });
 
@@ -397,7 +409,7 @@ router.post("/login", loginLimiter, async (req: Request, res: Response) => {
       });
     }
 
-    if (!user.email_verified_at) {
+    if (!user.security?.email_verified_at) {
       return res.status(403).json({ error: "Please verify your email before logging in" });
     }
     if (user.learn_unit_id) {
@@ -417,10 +429,14 @@ router.post("/login", loginLimiter, async (req: Request, res: Response) => {
           where: { id: user.id },
           data: {
             account_status: "active",
-            first_login_at: user.first_login_at || now,
-            inactive_cleanup_at: null,
-            failed_login_attempts: 0,
-            lockout_until: null,
+            security: {
+              update: {
+                first_login_at: user.security?.first_login_at || now,
+                inactive_cleanup_at: null,
+                failed_login_attempts: 0,
+                lockout_until: null,
+              }
+            },
             audit_logs: {
               create: {
                 event_type: "FIRST_LOGIN",
@@ -441,13 +457,19 @@ router.post("/login", loginLimiter, async (req: Request, res: Response) => {
             },
             learn_unit: true,
             supervised_learn_unit: true,
+            learning_profile: true,
+            security: true,
           },
         })
       : await prisma.user.update({
           where: { id: user.id },
           data: {
-            failed_login_attempts: 0,
-            lockout_until: null,
+            security: {
+              update: {
+                failed_login_attempts: 0,
+                lockout_until: null,
+              }
+            },
             audit_logs: {
               create: {
                 event_type: "LOGIN",
@@ -468,6 +490,8 @@ router.post("/login", loginLimiter, async (req: Request, res: Response) => {
             },
             learn_unit: true,
             supervised_learn_unit: true,
+            learning_profile: true,
+            security: true,
           },
         });
 
@@ -495,7 +519,12 @@ router.patch("/subject-preference", authenticate, async (req: Request, res: Resp
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
-        preferred_subject_id: subjectId,
+        learning_profile: {
+          upsert: {
+            create: { preferred_subject_id: subjectId },
+            update: { preferred_subject_id: subjectId },
+          }
+        },
         audit_logs: {
           create: {
             event_type: "SUBJECT_SELECTED",
@@ -515,6 +544,7 @@ router.patch("/subject-preference", authenticate, async (req: Request, res: Resp
           },
         },
         learn_unit: true,
+        learning_profile: true,
       },
     });
 
@@ -581,7 +611,12 @@ router.get("/profile", authenticate, async (req: Request, res: Response) => {
           },
         },
         student_stats: true,
-        preferred_subject: true,
+        learning_profile: {
+          include: {
+            preferred_subject: true,
+          }
+        },
+        security: true,
         learn_unit: true,
         supervised_learn_unit: true,
       },
@@ -597,15 +632,15 @@ router.get("/profile", authenticate, async (req: Request, res: Response) => {
       username: user.username,
       country: user.country,
       account_status: user.account_status,
-      preferred_subject_id: user.preferred_subject_id,
-      requires_subject_selection: !user.preferred_subject_id,
+      preferred_subject_id: user.learning_profile?.preferred_subject_id ?? null,
+      requires_subject_selection: !user.learning_profile?.preferred_subject_id,
       role: user.role.name,
       permissions: formatPermissions(user.role.permissions),
-      preferred_subject: user.preferred_subject,
+      preferred_subject: user.learning_profile?.preferred_subject ?? null,
       student_stats: user.student_stats,
       created_at: user.created_at,
-      email_verified_at: user.email_verified_at,
-      first_login_at: user.first_login_at,
+      email_verified_at: user.security?.email_verified_at ?? null,
+      first_login_at: user.security?.first_login_at ?? null,
       supervisor_id: user.learn_unit?.supervisor_id ?? null,
       learn_unit_id: user.learn_unit_id,
       learn_unit: serializeLearnUnit(user.learn_unit || user.supervised_learn_unit),
@@ -641,6 +676,8 @@ router.post("/refresh", async (req: Request, res: Response) => {
             },
             learn_unit: true,
             supervised_learn_unit: true,
+            learning_profile: true,
+            security: true,
           },
         },
       },
@@ -1009,8 +1046,8 @@ router.post("/forgot-password", forgotPasswordLimiter, async (req: Request, res:
 
     if (user) {
       const resetToken = crypto.randomBytes(32).toString("hex");
-      await prisma.user.update({
-        where: { id: user.id },
+      await prisma.userSecurity.update({
+        where: { user_id: user.id },
         data: {
           password_reset_token: resetToken,
           password_reset_sent_at: new Date(),
@@ -1040,16 +1077,16 @@ router.post("/reset-password", resetPasswordLimiter, async (req: Request, res: R
       return res.status(400).json({ error: "Password must be at least 6 characters" });
     }
 
-    const user = await prisma.user.findUnique({
+    const security = await prisma.userSecurity.findUnique({
       where: { password_reset_token: token },
-      select: { id: true, password_reset_sent_at: true },
+      select: { user_id: true, password_reset_sent_at: true },
     });
 
-    if (!user || !user.password_reset_sent_at) {
+    if (!security || !security.password_reset_sent_at) {
       return res.status(400).json({ error: "Invalid or expired reset token" });
     }
 
-    const tokenAgeMs = Date.now() - user.password_reset_sent_at.getTime();
+    const tokenAgeMs = Date.now() - security.password_reset_sent_at.getTime();
     const oneHourMs = 60 * 60 * 1000;
     if (tokenAgeMs > oneHourMs) {
       return res.status(400).json({ error: "Invalid or expired reset token" });
@@ -1057,16 +1094,21 @@ router.post("/reset-password", resetPasswordLimiter, async (req: Request, res: R
 
     const passwordHash = await bcrypt.hash(newPassword, 10);
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        password_hash: passwordHash,
-        password_reset_token: null,
-        password_reset_sent_at: null,
-        failed_login_attempts: 0,
-        lockout_until: null,
-      },
-    });
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: security.user_id },
+        data: { password_hash: passwordHash },
+      }),
+      prisma.userSecurity.update({
+        where: { user_id: security.user_id },
+        data: {
+          password_reset_token: null,
+          password_reset_sent_at: null,
+          failed_login_attempts: 0,
+          lockout_until: null,
+        },
+      }),
+    ]);
 
     res.json({ message: "Password reset successful. You can now log in." });
   } catch (error) {

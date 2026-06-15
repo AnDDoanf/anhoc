@@ -18,13 +18,6 @@ model User {
   country       String?       @db.VarChar(100)
   password_hash String
   account_status String       @default("active") @db.VarChar(20)
-  email_verification_token String? @unique @db.VarChar(255)
-  email_verification_sent_at DateTime? @db.Timestamptz
-  email_verified_at DateTime? @db.Timestamptz
-  first_login_at DateTime? @db.Timestamptz
-  inactive_cleanup_at DateTime? @db.Timestamptz
-  preferred_subject_id Int?
-  preferred_subject Subject? @relation(fields: [preferred_subject_id], references: [id], onDelete: SetNull)
   role_id       Int
   role          Role          @relation(fields: [role_id], references: [id])
   learn_unit_id String?       @db.Uuid
@@ -59,15 +52,38 @@ model User {
   notifications_sent Notification[] @relation("ActorNotifications")
   subscriptions SubscriptionPlan[]
   invoices      Invoice[]
-
-  // Security tracking
-  failed_login_attempts Int @default(0)
-  lockout_until DateTime? @db.Timestamptz
-  password_reset_token String? @unique @db.VarChar(255)
-  password_reset_sent_at DateTime? @db.Timestamptz
   refresh_tokens RefreshToken[]
 
+  // Security & Learning Profile modular associations
+  security      UserSecurity?
+  learning_profile UserLearningProfile?
+
   @@map("users")
+}
+
+model UserSecurity {
+  user_id                   String    @id @db.Uuid
+  user                      User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  email_verification_token  String?   @unique @db.VarChar(255)
+  email_verification_sent_at DateTime? @db.Timestamptz
+  email_verified_at         DateTime? @db.Timestamptz
+  first_login_at            DateTime? @db.Timestamptz
+  inactive_cleanup_at       DateTime? @db.Timestamptz
+  failed_login_attempts     Int       @default(0)
+  lockout_until             DateTime? @db.Timestamptz
+  password_reset_token      String?   @unique @db.VarChar(255)
+  password_reset_sent_at    DateTime? @db.Timestamptz
+
+  @@map("user_securities")
+}
+
+model UserLearningProfile {
+  user_id              String    @id @db.Uuid
+  user                 User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  preferred_subject_id Int?
+  preferred_subject    Subject?  @relation(fields: [preferred_subject_id], references: [id], onDelete: SetNull)
+
+  @@map("user_learning_profiles")
 }
 
 model LearnUnit {
@@ -162,7 +178,7 @@ model Subject {
   grades    Grade[]
   lessons   Lesson[]
   role_permissions RoleSubjectPermission[]
-  preferred_by_users User[]
+  preferred_by_users UserLearningProfile[]
   access_requests UserSubjectAccessRequest[]
 
   @@map("subjects")
@@ -252,6 +268,7 @@ model QuestionTemplate {
   snapshots               QuestionSnapshot[]
   reports                 QuestionTemplateReport[]
 
+  @@index([lesson_id])
   @@map("question_templates")
 }
 
@@ -273,6 +290,8 @@ model TestAttempt {
   evidence     ActivityEvidence[]
   reports      QuestionTemplateReport[]
 
+  @@index([user_id])
+  @@index([lesson_id])
   @@map("test_attempts")
 }
 
@@ -291,6 +310,8 @@ model QuestionSnapshot {
   evidence            ActivityEvidence[]
   reports             QuestionTemplateReport[]
 
+  @@index([attempt_id])
+  @@index([template_id])
   @@map("question_snapshots")
 }
 
