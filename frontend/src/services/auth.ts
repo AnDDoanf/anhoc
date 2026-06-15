@@ -72,6 +72,7 @@ export interface RegisterResponse {
 export interface LoginResponse {
   user: AuthUser;
   token: string;
+  refreshToken: string;
 }
 
 export interface ActivityPoint {
@@ -114,11 +115,14 @@ export const authService = {
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
     const response = await api.post<LoginResponse>("/auth/login", credentials);
 
-    const { token } = response.data;
+    const { token, refreshToken } = response.data;
 
     if (token) {
       // 1. Store in LocalStorage for frontend persistence
       localStorage.setItem("token", token);
+      if (refreshToken) {
+        localStorage.setItem("refreshToken", refreshToken);
+      }
 
       // 2. Set Cookie for your proxy.ts (Middleware)
       // Added Max-Age (7 days) so the cookie persists across browser restarts
@@ -133,6 +137,7 @@ export const authService = {
 
   logout: () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("refreshToken");
     // Clear cookie by setting expiry to the past
     document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
     delete api.defaults.headers.common["Authorization"];

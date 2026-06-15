@@ -48,20 +48,25 @@ api.interceptors.request.use(async (config) => {
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
 
-      // Check JWT exp claim to see if it expires in less than 24 hours (86400 seconds)
+      // Check JWT exp claim to see if it expires in less than 60 seconds
       const payload = decodeJwt(token);
       if (payload && payload.exp) {
         const timeRemaining = payload.exp - Date.now() / 1000;
+        const refreshToken = localStorage.getItem("refreshToken");
         
-        // Refresh token if remaining validity is under 24 hours
-        if (timeRemaining < 86400 && !isRefreshing && config.url !== "/auth/refresh") {
+        // Refresh token if remaining validity is under 60 seconds
+        if (timeRemaining < 60 && refreshToken && !isRefreshing && config.url !== "/auth/refresh") {
           isRefreshing = true;
           
-          api.post("/auth/refresh")
+          api.post("/auth/refresh", { refreshToken })
             .then((res) => {
               const newToken = res.data.token;
+              const newRefreshToken = res.data.refreshToken;
               const newUser = res.data.user;
               localStorage.setItem("token", newToken);
+              if (newRefreshToken) {
+                localStorage.setItem("refreshToken", newRefreshToken);
+              }
               localStorage.setItem("user", JSON.stringify(newUser));
               
               // Notify listeners of the refreshed credentials
@@ -84,14 +89,15 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
-// Intercept 401 Unauthorized responses and notify the app
+// Intercept 401 Unauthorized or 403 Forbidden responses and notify the app
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 || error.response?.status === 403) {
       if (typeof window !== "undefined") {
         // Clear local credentials so subsequent pages check roles properly
         localStorage.removeItem("token");
+        localStorage.removeItem("refreshToken");
         localStorage.removeItem("user");
 
         // Notify global guard to display the relogin modal

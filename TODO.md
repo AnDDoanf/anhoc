@@ -14,12 +14,12 @@
 
 ### Authentication Security
 
-* [ ] Rate limit login endpoint
-* [ ] Rate limit signup endpoint
-* [ ] Rate limit password reset endpoint
-* [ ] Add account lockout after repeated failures
-* [ ] Add refresh token rotation
-* [ ] Add JWT expiration strategy
+* [x] Rate limit login endpoint
+* [x] Rate limit signup endpoint
+* [x] Rate limit password reset endpoint
+* [x] Add account lockout after repeated failures
+* [x] Add refresh token rotation
+* [x] Add JWT expiration strategy
 
 ### Infrastructure
 

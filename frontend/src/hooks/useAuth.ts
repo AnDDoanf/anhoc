@@ -21,6 +21,9 @@ export const useAuth = () => {
     if (response.token) {
       localStorage.setItem("token", response.token);
     }
+    if (response.refreshToken) {
+      localStorage.setItem("refreshToken", response.refreshToken);
+    }
 
     dispatch(setCredentials({
       user: response.user,
@@ -61,6 +64,7 @@ export const useAuth = () => {
     // Clear LocalStorage
     localStorage.removeItem("user");
     localStorage.removeItem("token");
+    localStorage.removeItem("refreshToken");
     
     // Clear Redux
     dispatch(logoutAction());

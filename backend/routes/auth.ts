@@ -1,22 +1,49 @@
 import { Router, type Request, type Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import crypto from "node:crypto";
 import prisma from "../lib/db.ts";
 import { authenticate } from "../middleware/auth.ts";
 import { STUDENT_ROLE_NAMES, isStudentRoleName } from "../constants/roles.ts";
 import { computeInactiveCleanupDeadline } from "../services/accountLifecycleService.ts";
-import { createEmailVerificationToken, sendActivationEmail } from "../services/mailerService.ts";
+import { createEmailVerificationToken, sendActivationEmail, sendPasswordResetEmail } from "../services/mailerService.ts";
 import { createNotification, NotificationType } from "../services/notificationService.ts";
 import { createDefaultLearnUnitName, createLearnUnitForSupervisor, normalizeLearnUnitCode } from "../services/learnUnitService.ts";
+import { createRateLimiter } from "../middleware/rateLimiter.ts";
 
 const router = Router();
 const SELF_SERVICE_SIGNUP_ROLE_NAMES = ["free_student", "sub_student", "supervisor"] as const;
+
+const loginLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: "Too many login attempts from this IP, please try again after 15 minutes",
+});
+
+const registerLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: "Too many registration attempts from this IP, please try again after 15 minutes",
+});
+
+const forgotPasswordLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 3,
+  message: "Too many password reset requests from this IP, please try again after 15 minutes",
+});
+
+const resetPasswordLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: "Too many password reset attempts from this IP, please try again after 15 minutes",
+});
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
 if (!JWT_SECRET) {
   throw new Error("JWT_SECRET environment variable is not defined");
 }
+
 
 type PermissionRow = {
   resource: { name: string };
@@ -95,7 +122,7 @@ const serializeLearnUnit = (learnUnit?: {
   };
 };
 
-const createAuthPayload = (user: {
+const createAuthPayload = async (user: {
   id: string;
   email: string;
   username: string;
@@ -150,11 +177,23 @@ const createAuthPayload = (user: {
       slots_purchased: user.slots_purchased ?? 0,
     },
     JWT_SECRET,
-    { expiresIn: "7d" }
+    { expiresIn: "15m" }
   );
+
+  const refreshTokenString = crypto.randomBytes(40).toString("hex");
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+  await prisma.refreshToken.create({
+    data: {
+      token: refreshTokenString,
+      user_id: user.id,
+      expires_at: expiresAt,
+    },
+  });
 
   return {
     token,
+    refreshToken: refreshTokenString,
     user: {
       id: user.id,
       email: user.email,
@@ -173,7 +212,7 @@ const createAuthPayload = (user: {
   };
 };
 
-router.post("/register", async (req: Request, res: Response) => {
+router.post("/register", registerLimiter, async (req: Request, res: Response) => {
   try {
     const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
     const password = typeof req.body.password === "string" ? req.body.password : "";
@@ -296,7 +335,7 @@ router.post("/activate", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/login", async (req: Request, res: Response) => {
+router.post("/login", loginLimiter, async (req: Request, res: Response) => {
   try {
     const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
     const password = typeof req.body.password === "string" ? req.body.password : "";
@@ -324,9 +363,38 @@ router.post("/login", async (req: Request, res: Response) => {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
+    if (user.lockout_until && user.lockout_until > new Date()) {
+      const minutesLeft = Math.ceil((user.lockout_until.getTime() - Date.now()) / (60 * 1000));
+      return res.status(403).json({
+        error: `Account is temporarily locked due to repeated failed login attempts. Please try again in ${minutesLeft} minute(s).`,
+      });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
-      return res.status(401).json({ error: "Invalid credentials" });
+      const newAttempts = user.failed_login_attempts + 1;
+      const dataToUpdate: any = {
+        failed_login_attempts: newAttempts,
+      };
+
+      if (newAttempts >= 5) {
+        dataToUpdate.lockout_until = new Date(Date.now() + 15 * 60 * 1000);
+      }
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: dataToUpdate,
+      });
+
+      if (newAttempts >= 5) {
+        return res.status(403).json({
+          error: "Too many failed login attempts. Your account has been locked for 15 minutes.",
+        });
+      }
+
+      return res.status(401).json({
+        error: `Invalid credentials. You have ${5 - newAttempts} attempt(s) remaining before your account is locked.`,
+      });
     }
 
     if (!user.email_verified_at) {
@@ -351,6 +419,8 @@ router.post("/login", async (req: Request, res: Response) => {
             account_status: "active",
             first_login_at: user.first_login_at || now,
             inactive_cleanup_at: null,
+            failed_login_attempts: 0,
+            lockout_until: null,
             audit_logs: {
               create: {
                 event_type: "FIRST_LOGIN",
@@ -376,6 +446,8 @@ router.post("/login", async (req: Request, res: Response) => {
       : await prisma.user.update({
           where: { id: user.id },
           data: {
+            failed_login_attempts: 0,
+            lockout_until: null,
             audit_logs: {
               create: {
                 event_type: "LOGIN",
@@ -399,7 +471,7 @@ router.post("/login", async (req: Request, res: Response) => {
           },
         });
 
-    res.json(createAuthPayload(normalizedUser));
+    res.json(await createAuthPayload(normalizedUser));
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Login failed" });
@@ -446,9 +518,10 @@ router.patch("/subject-preference", authenticate, async (req: Request, res: Resp
       },
     });
 
+    const authPayload = await createAuthPayload(updatedUser);
     res.json({
       message: "Subject preference saved",
-      ...createAuthPayload(updatedUser),
+      ...authPayload,
     });
   } catch (error) {
     console.error(error);
@@ -544,34 +617,58 @@ router.get("/profile", authenticate, async (req: Request, res: Response) => {
   }
 });
 
-router.post("/refresh", authenticate, async (req: Request, res: Response) => {
+router.post("/refresh", async (req: Request, res: Response) => {
   try {
-    const userId = (req as Request & { user: { id: string } }).user.id;
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      return res.status(400).json({ error: "Refresh token is required" });
+    }
+
+    const storedToken = await prisma.refreshToken.findUnique({
+      where: { token: refreshToken },
       include: {
-        role: {
+        user: {
           include: {
-            permissions: {
+            role: {
               include: {
-                action: true,
-                resource: true,
+                permissions: {
+                  include: {
+                    action: true,
+                    resource: true,
+                  },
+                },
               },
             },
+            learn_unit: true,
+            supervised_learn_unit: true,
           },
         },
-        student_stats: true,
-        preferred_subject: true,
-        learn_unit: true,
-        supervised_learn_unit: true,
       },
     });
 
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
+    if (!storedToken) {
+      return res.status(401).json({ error: "Invalid refresh token" });
     }
 
-    res.json(createAuthPayload(user));
+    if (storedToken.revoked_at !== null) {
+      await prisma.refreshToken.updateMany({
+        where: { user_id: storedToken.user_id },
+        data: { revoked_at: new Date() },
+      });
+      return res.status(403).json({ error: "Compromised refresh token. All sessions revoked." });
+    }
+
+    if (storedToken.expires_at < new Date()) {
+      return res.status(401).json({ error: "Refresh token expired. Please log in again." });
+    }
+
+    await prisma.refreshToken.update({
+      where: { id: storedToken.id },
+      data: { revoked_at: new Date() },
+    });
+
+    const payload = await createAuthPayload(storedToken.user);
+    res.json(payload);
   } catch (error: any) {
     console.error(error);
     res.status(500).json({ error: "Failed to refresh token", details: error.message });
@@ -898,6 +995,86 @@ router.post("/follow/:targetUserId", authenticate, async (req: Request, res: Res
   }
 });
 
+router.post("/forgot-password", forgotPasswordLimiter, async (req: Request, res: Response) => {
+  try {
+    const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true, email: true },
+    });
+
+    if (user) {
+      const resetToken = crypto.randomBytes(32).toString("hex");
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          password_reset_token: resetToken,
+          password_reset_sent_at: new Date(),
+        },
+      });
+
+      await sendPasswordResetEmail(email, resetToken);
+    }
+
+    res.json({ message: "If the email is registered, a password reset link has been sent." });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to send password reset email" });
+  }
+});
+
+router.post("/reset-password", resetPasswordLimiter, async (req: Request, res: Response) => {
+  try {
+    const token = typeof req.body.token === "string" ? req.body.token.trim() : "";
+    const newPassword = typeof req.body.newPassword === "string" ? req.body.newPassword : "";
+
+    if (!token) {
+      return res.status(400).json({ error: "Token is required" });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: "Password must be at least 6 characters" });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { password_reset_token: token },
+      select: { id: true, password_reset_sent_at: true },
+    });
+
+    if (!user || !user.password_reset_sent_at) {
+      return res.status(400).json({ error: "Invalid or expired reset token" });
+    }
+
+    const tokenAgeMs = Date.now() - user.password_reset_sent_at.getTime();
+    const oneHourMs = 60 * 60 * 1000;
+    if (tokenAgeMs > oneHourMs) {
+      return res.status(400).json({ error: "Invalid or expired reset token" });
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password_hash: passwordHash,
+        password_reset_token: null,
+        password_reset_sent_at: null,
+        failed_login_attempts: 0,
+        lockout_until: null,
+      },
+    });
+
+    res.json({ message: "Password reset successful. You can now log in." });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to reset password" });
+  }
+});
+
 router.delete("/follow/:targetUserId", authenticate, async (req: Request, res: Response) => {
   try {
     const followerId = (req as Request & { user: { id: string } }).user.id;
@@ -918,3 +1095,4 @@ router.delete("/follow/:targetUserId", authenticate, async (req: Request, res: R
 });
 
 export default router;
+

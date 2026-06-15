@@ -56,3 +56,30 @@ export const sendActivationEmail = async (email: string, token: string) => {
     `,
   });
 };
+
+export const sendPasswordResetEmail = async (email: string, token: string) => {
+  const frontendBase = (process.env.FRONTEND_URL || "http://localhost:5000").replace(/\/+$/, "");
+  const resetUrl = `${frontendBase}/reset-password?token=${encodeURIComponent(token)}`;
+  const transporter = await getTransporter();
+  const from = process.env.SMTP_FROM?.trim() || process.env.SMTP_USER?.trim() || "no-reply@anhoc.local";
+
+  if (!transporter) {
+    console.log(`Password reset link for ${email}: ${resetUrl}`);
+    return;
+  }
+
+  await transporter.sendMail({
+    from,
+    to: email,
+    subject: "Reset your Anhoc account password",
+    text: `Reset your Anhoc account password by opening this link: ${resetUrl}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; line-height: 1.5;">
+        <h2>Reset your Anhoc account password</h2>
+        <p>Open the link below to reset your password. This link is valid for 1 hour.</p>
+        <p><a href="${resetUrl}">${resetUrl}</a></p>
+      </div>
+    `,
+  });
+};
+

@@ -204,3 +204,52 @@ describe('requestLogger Middleware', () => {
     assert.ok(true, 'Finish event handled without throwing errors');
   });
 });
+
+import { createRateLimiter } from '../backend/middleware/rateLimiter.ts';
+
+describe('rateLimiter Middleware', () => {
+  test('should allow requests below threshold and block when exceeded', () => {
+    const limiter = createRateLimiter({
+      windowMs: 1000,
+      max: 2,
+      message: 'Too many requests'
+    });
+
+    const headers: Record<string, any> = {};
+    let statusReturned = 0;
+    let jsonPayload: any = null;
+
+    const res: any = {
+      setHeader: (name: string, value: any) => {
+        headers[name] = value;
+      },
+      status: (code: number) => {
+        statusReturned = code;
+        return {
+          json: (payload: any) => {
+            jsonPayload = payload;
+          }
+        };
+      }
+    };
+
+    const req1: any = { ip: '192.168.1.1', originalUrl: '/test-route', headers: {}, socket: {} };
+    let next1 = false;
+    limiter(req1, res, () => { next1 = true; });
+    assert.strictEqual(next1, true, 'First request should pass');
+    assert.strictEqual(headers['X-RateLimit-Remaining'], 1);
+
+    const req2: any = { ip: '192.168.1.1', originalUrl: '/test-route', headers: {}, socket: {} };
+    let next2 = false;
+    limiter(req2, res, () => { next2 = true; });
+    assert.strictEqual(next2, true, 'Second request should pass');
+    assert.strictEqual(headers['X-RateLimit-Remaining'], 0);
+
+    const req3: any = { ip: '192.168.1.1', originalUrl: '/test-route', headers: {}, socket: {} };
+    let next3 = false;
+    limiter(req3, res, () => { next3 = true; });
+    assert.strictEqual(next3, false, 'Third request should be blocked');
+    assert.strictEqual(statusReturned, 429);
+    assert.strictEqual(jsonPayload.error, 'Too many requests');
+  });
+});
