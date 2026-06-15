@@ -40,7 +40,7 @@ The API design is pragmatic. It is expressive enough for the frontend and explic
 
 \section{Question Generation and Grading}
 
-The file \code{backend/services/mathService.ts} contains a central part of the project: logic-driven variable generation and answer evaluation. The implementation supports several rule types:
+The file \code{backend/services/mathService.ts} contains a central part of the project: logic-driven variable generation and answer evaluation. The implementation uses the \code{mathjs} expression engine for parsing and evaluating formulas, derived expressions, and constraints \cite{mathjs-docs}. The service supports several rule types:
 \begin{itemize}
   \item fixed numeric values;
   \item arrays of possible values;

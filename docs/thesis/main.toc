@@ -1,4 +1,7 @@
-\contentsline {chapter}{Abstract}{i}{chapter*.1}%
+\contentsline {chapter}{List of Acronyms}{i}{chapter*.4}%
+\contentsline {chapter}{List of Figures}{ii}{table.0.1}%
+\contentsline {chapter}{List of Tables}{iii}{chapter*.5}%
+\contentsline {chapter}{Abstract}{iv}{chapter*.7}%
 \contentsline {chapter}{\numberline {1}Introduction}{1}{chapter.1}%
 \contentsline {section}{\numberline {1.1}Background}{1}{section.1.1}%
 \contentsline {section}{\numberline {1.2}Problem Statement}{1}{section.1.2}%
@@ -10,36 +13,36 @@
 \contentsline {section}{\numberline {2.1}Stakeholders and User Roles}{4}{section.2.1}%
 \contentsline {section}{\numberline {2.2}Functional Requirements}{4}{section.2.2}%
 \contentsline {section}{\numberline {2.3}Non-Functional Requirements}{5}{section.2.3}%
-\contentsline {section}{\numberline {2.4}Learning Content Requirements}{6}{section.2.4}%
+\contentsline {section}{\numberline {2.4}Learning Content Requirements}{5}{section.2.4}%
 \contentsline {section}{\numberline {2.5}Assessment Requirements}{6}{section.2.5}%
 \contentsline {section}{\numberline {2.6}Administrative Requirements}{6}{section.2.6}%
 \contentsline {section}{\numberline {2.7}Operational Assumptions}{7}{section.2.7}%
 \contentsline {chapter}{\numberline {3}System Design}{8}{chapter.3}%
 \contentsline {section}{\numberline {3.1}Architectural Overview}{8}{section.3.1}%
 \contentsline {section}{\numberline {3.2}Deployment Design}{9}{section.3.2}%
-\contentsline {section}{\numberline {3.3}Backend Design}{9}{section.3.3}%
+\contentsline {section}{\numberline {3.3}Backend Design}{10}{section.3.3}%
 \contentsline {section}{\numberline {3.4}Frontend Design}{10}{section.3.4}%
-\contentsline {section}{\numberline {3.5}Security Model}{10}{section.3.5}%
-\contentsline {section}{\numberline {3.6}Data Model}{10}{section.3.6}%
-\contentsline {section}{\numberline {3.7}Question Snapshot Strategy}{11}{section.3.7}%
+\contentsline {section}{\numberline {3.5}Security Model}{11}{section.3.5}%
+\contentsline {section}{\numberline {3.6}Data Model}{11}{section.3.6}%
+\contentsline {section}{\numberline {3.7}Question Snapshot Strategy}{12}{section.3.7}%
 \contentsline {section}{\numberline {3.8}Progression Design}{12}{section.3.8}%
-\contentsline {chapter}{\numberline {4}Implementation}{13}{chapter.4}%
-\contentsline {section}{\numberline {4.1}Frontend Implementation}{13}{section.4.1}%
-\contentsline {section}{\numberline {4.2}Backend API Implementation}{13}{section.4.2}%
-\contentsline {section}{\numberline {4.3}Question Generation and Grading}{14}{section.4.3}%
-\contentsline {section}{\numberline {4.4}Attempt Lifecycle}{15}{section.4.4}%
-\contentsline {section}{\numberline {4.5}Administrative Implementation}{16}{section.4.5}%
+\contentsline {chapter}{\numberline {4}Implementation}{14}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Frontend Implementation}{14}{section.4.1}%
+\contentsline {section}{\numberline {4.2}Backend API Implementation}{14}{section.4.2}%
+\contentsline {section}{\numberline {4.3}Question Generation and Grading}{15}{section.4.3}%
+\contentsline {section}{\numberline {4.4}Attempt Lifecycle}{16}{section.4.4}%
+\contentsline {section}{\numberline {4.5}Administrative Implementation}{17}{section.4.5}%
 \contentsline {section}{\numberline {4.6}Configuration and Deployment}{17}{section.4.6}%
-\contentsline {chapter}{\numberline {5}Evaluation and Discussion}{18}{chapter.5}%
-\contentsline {section}{\numberline {5.1}Method of Evaluation}{18}{section.5.1}%
-\contentsline {section}{\numberline {5.2}Representative User Scenarios}{18}{section.5.2}%
-\contentsline {section}{\numberline {5.3}Observed Strengths}{19}{section.5.3}%
-\contentsline {section}{\numberline {5.4}Current Limitations}{19}{section.5.4}%
-\contentsline {section}{\numberline {5.5}Risks and Tradeoffs}{20}{section.5.5}%
-\contentsline {section}{\numberline {5.6}Future Improvements}{20}{section.5.6}%
-\contentsline {section}{\numberline {5.7}Discussion}{21}{section.5.7}%
-\contentsline {chapter}{\numberline {6}Conclusion}{22}{chapter.6}%
-\contentsline {chapter}{\numberline {A}Appendix}{23}{appendix.A}%
-\contentsline {section}{\numberline {A.1}Build and Run Notes}{23}{section.A.1}%
-\contentsline {section}{\numberline {A.2}Selected Environment Variables}{23}{section.A.2}%
-\contentsline {section}{\numberline {A.3}Selected REST Endpoints}{24}{section.A.3}%
+\contentsline {chapter}{\numberline {5}Evaluation and Discussion}{19}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Method of Evaluation}{19}{section.5.1}%
+\contentsline {section}{\numberline {5.2}Representative User Scenarios}{19}{section.5.2}%
+\contentsline {section}{\numberline {5.3}Observed Strengths}{20}{section.5.3}%
+\contentsline {section}{\numberline {5.4}Current Limitations}{20}{section.5.4}%
+\contentsline {section}{\numberline {5.5}Risks and Tradeoffs}{21}{section.5.5}%
+\contentsline {section}{\numberline {5.6}Future Improvements}{21}{section.5.6}%
+\contentsline {section}{\numberline {5.7}Discussion}{22}{section.5.7}%
+\contentsline {chapter}{\numberline {6}Conclusion}{23}{chapter.6}%
+\contentsline {chapter}{\numberline {A}Appendix}{24}{appendix.A}%
+\contentsline {section}{\numberline {A.1}Build and Run Notes}{24}{section.A.1}%
+\contentsline {section}{\numberline {A.2}Selected Environment Variables}{25}{section.A.2}%
+\contentsline {section}{\numberline {A.3}Selected REST Endpoints}{25}{section.A.3}%

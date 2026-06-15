@@ -1,8 +1,8 @@
-\documentclass[12pt,a4paper]{report}
+\documentclass[12pt,a4paper,oneside]{report}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
-\usepackage[a4paper,margin=1in]{geometry}
+\usepackage[a4paper,left=3.5cm,right=2.5cm,top=3cm,bottom=3cm]{geometry}
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{longtable}
@@ -12,21 +12,36 @@
 \usepackage{xcolor}
 \usepackage{hyperref}
 \usepackage{listings}
+\usepackage{setspace}
+\usepackage{enumitem}
+
+% Update these fields before formal submission.
+\newcommand{\thesistype}{Bachelor Thesis}
+\newcommand{\thesistitle}{Design and Implementation of Anhoc}
+\newcommand{\thesissubtitle}{A Web-Based Mathematics Learning Platform for Structured Learning, Adaptive Practice, and Progress Tracking}
+\newcommand{\thesisstudent}{Your Name}
+\newcommand{\thesisstudentid}{Your Student ID}
+\newcommand{\thesisspecialty}{Information and Communication Technology}
+\newcommand{\thesissupervisor}{Your Supervisor}
+\newcommand{\thesislocation}{Ho Chi Minh City}
+\newcommand{\thesismonthyear}{June 2026}
 
 \hypersetup{
   colorlinks=true,
   linkcolor=blue,
   urlcolor=blue,
   pdftitle={Design and Implementation of Anhoc},
-  pdfauthor={OpenAI Codex}
+  pdfauthor={Your Name}
 }
 
-\graphicspath{{../../}}
-\renewcommand{\baselinestretch}{1.15}
-\setlength{\parindent}{0pt}
-\setlength{\parskip}{0.6em}
+\graphicspath{{docs/thesis/chapters/}{docs/thesis/}{docs/images/}{docs/}}
+\setstretch{1.2}
+\setlength{\parindent}{1.5em}
+\setlength{\parskip}{0.35em}
+\setlist[itemize]{topsep=0.35em,itemsep=0.15em}
+\setlist[enumerate]{topsep=0.35em,itemsep=0.15em}
 
-\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\code}[1]{\nolinkurl{#1}}
 \newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
 \newcolumntype{Y}{>{\raggedright\arraybackslash}X}
 
@@ -43,42 +58,139 @@
 
 \hypersetup{pageanchor=false}
 \begin{titlepage}
-\centering
-{\Large Thesis Report\par}
-\vspace{1.5cm}
-{\huge \textbf{Design and Implementation of Anhoc}\par}
+\thispagestyle{empty}
+\begin{center}
+{\Large UNIVERSITY OF SCIENCE AND TECHNOLOGY OF HANOI\par}
+\vspace{0.35cm}
+{\large BACHELOR'S DEGREE\par}
+
+\vspace{2.1cm}
+{\LARGE \textbf{\thesistype}\par}
+
+\vspace{1.25cm}
+{\large by\par}
+\vspace{0.4cm}
+{\Large \textbf{\thesisstudent}\par}
+{\large \thesisstudentid\par}
+\vspace{0.3cm}
+{\large \thesisspecialty\par}
+
+\vspace{1.6cm}
+{\large Title:\par}
+\vspace{0.35cm}
+{\Large \textbf{\thesistitle}\par}
 \vspace{0.5cm}
-{\Large A Web-Based Mathematics Learning Platform for Structured Practice and Progress Tracking\par}
-\vspace{2cm}
-{\large Prepared from the implemented Anhoc project repository\par}
-\vfill
-\begin{tabular}{ll}
-Project Name: & Anhoc \\
-Frontend Stack: & Next.js, React, TypeScript \\
-Backend Stack: & Node.js, Express, Prisma \\
-Database: & PostgreSQL \\
-Deployment Target: & Vercel, Render, Neon
+{\large \thesissubtitle\par}
+
+\vspace{1.8cm}
+\begin{tabular}{rl}
+Supervisor: & \thesissupervisor \\
+Project basis: & Anhoc web application repository \\
+Implementation scope: & \code{frontend/}, \code{backend/}, and \code{chatbot/}
 \end{tabular}
+
 \vfill
-{\large \today\par}
+{\thesislocation. \thesismonthyear\par}
+\end{center}
 \end{titlepage}
-\hypersetup{pageanchor=true}
 
-\pagenumbering{roman}
+\chapter*{Declaration}
+\thispagestyle{empty}
+I hereby declare that this thesis titled \textit{\thesistitle} is prepared from the implemented
+Anhoc repository and the accompanying project documentation. All architectural descriptions,
+feature summaries, and implementation details presented in this report are derived from the
+inspected codebase, and external concepts or technologies are cited where appropriate.
 
-\chapter*{Abstract}
-\addcontentsline{toc}{chapter}{Abstract}
-Anhoc is a web-based mathematics learning platform designed to provide structured theory content, automatically generated practice exercises, grade-level tests, and progression tracking for students. The system also includes administration capabilities for lesson management, question template authoring, role-based access control, and achievement configuration. This thesis documents the design and implementation of Anhoc based on the current codebase in the repository.
+To the best of my knowledge, this report does not intentionally reproduce uncited work as an
+original contribution. Any frameworks, libraries, documents, or external references used in the
+preparation of this thesis are acknowledged in the bibliography.
 
-The project follows a client-server architecture in which a Next.js frontend communicates with a Node.js and Express backend through REST endpoints. Prisma is used as the data access layer, while PostgreSQL stores application data such as users, lessons, question templates, attempts, mastery records, achievements, and audit evidence. A notable implementation decision is the use of persisted question snapshots, which allows each generated exercise to remain stable after creation and supports reproducible scoring, review, and reporting.
+\vfill
+\begin{flushright}
+\thesislocation, \thesismonthyear\\[2cm]
+\textbf{\thesisstudent}
+\end{flushright}
 
-This thesis presents the problem context, functional and non-functional requirements, system architecture, data model, implementation details, and an evaluation of the current solution. It also discusses limitations and future improvements needed to move the platform from a capable academic software project to a more mature production learning system.
+\chapter*{Acknowledgements}
+\thispagestyle{empty}
+This thesis was prepared from the current Anhoc web application repository. The document reflects
+the work embodied in the frontend, backend, database, and chatbot modules, as well as the
+supporting technical design notes maintained with the project.
 
+I would like to acknowledge the contributors who shaped the platform's architecture, educational
+workflows, and deployment configuration, together with the maintainers of the open-source tools
+that made the system possible, including Next.js, React, Express, Prisma, PostgreSQL, and the
+supporting Python ecosystem used by the tutoring service.
+
+\vfill
+\begin{flushright}
+(\thesisstudent)\\
+\thesislocation, \thesismonthyear
+\end{flushright}
+\clearpage
 \tableofcontents
+\thispagestyle{empty}
+
+\clearpage
+\pagenumbering{roman}
+\setcounter{page}{1}
+
+\chapter*{List of Acronyms}
+\addcontentsline{toc}{chapter}{List of Acronyms}
+\begin{longtable}{L{0.22\textwidth}L{0.68\textwidth}}
+\textbf{API} & Application Programming Interface \\
+\textbf{BYOK} & Bring Your Own Key \\
+\textbf{CORS} & Cross-Origin Resource Sharing \\
+\textbf{JWT} & JSON Web Token \\
+\textbf{LLM} & Large Language Model \\
+\textbf{ORM} & Object-Relational Mapping \\
+\textbf{RBAC} & Role-Based Access Control \\
+\textbf{REST} & Representational State Transfer \\
+\textbf{UI} & User Interface \\
+\textbf{XP} & Experience Points \\
+\end{longtable}
+
+\clearpage
+\addcontentsline{toc}{chapter}{List of Figures}
 \listoffigures
+
+\clearpage
+\addcontentsline{toc}{chapter}{List of Tables}
 \listoftables
 
 \clearpage
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+Anhoc is a web-based mathematics learning platform designed for structured school-level study. The
+implemented system combines bilingual lesson content, dynamically generated practice exercises,
+grade-level tests, progression tracking, administrative management, notifications, multiplayer and
+single-player math games, and an integrated tutoring chatbot. This thesis documents the design
+and implementation of Anhoc based on the current repository contents.
+
+The software follows a service-oriented web architecture. A Next.js frontend provides the student
+and administrative interfaces. An Express backend exposes REST endpoints for authentication,
+lessons, tests, achievements, notifications, games, supervisor workflows, and subscription
+management. Prisma is used as the persistence layer, PostgreSQL stores the core application
+state, and a companion Python chatbot service extends the platform with conversational tutoring
+capabilities.
+
+A notable implementation decision is the use of persisted question snapshots. Reusable templates
+define how questions are generated, while snapshots preserve the exact generated variables,
+accepted answers, and scoring outcomes for each attempt. This design supports reproducible
+grading, debugging, review, and reporting. The project also adopts dynamic role-based access
+control with subject-level restrictions, progression services for mastery and XP, and operational
+support for learn units and subscription-oriented platform management.
+
+This thesis presents the problem context, requirements, system architecture, data model,
+implementation details, and an evaluation of the current solution. It also discusses limitations
+and practical improvements required to mature the platform further as an educational software
+system.
+
+\textbf{Keywords:} mathematics learning platform, question generation, role-based access control,
+progress tracking, tutoring chatbot, web application architecture
+
+\clearpage
+\hypersetup{pageanchor=true}
 \pagenumbering{arabic}
 
 \input{chapters/introduction}
@@ -89,9 +201,50 @@ This thesis presents the problem context, functional and non-functional requirem
 \input{chapters/conclusion}
 \input{chapters/appendix}
 
-\begin{thebibliography}{9}
+\begin{thebibliography}{99}
 \bibitem{anhoc-readme}
-Anhoc project repository README, accessed from the local repository at \code{README.md}.
+Anhoc project repository overview, \code{README.md}.
+
+\bibitem{frontend-package}
+Anhoc frontend package manifest and framework dependencies, \code{frontend/package.json}.
+
+\bibitem{backend-package}
+Anhoc backend package manifest and runtime dependencies, \code{backend/package.json}.
+
+\bibitem{nextjs-docs}
+Vercel. \textit{Next.js Documentation: App Router}. Available at:
+\url{https://nextjs.org/docs/app}. Accessed June 15, 2026.
+
+\bibitem{react-docs}
+Meta Platforms, Inc. and contributors. \textit{React Documentation}. Available at:
+\url{https://react.dev/learn}. Accessed June 15, 2026.
+
+\bibitem{express-docs}
+OpenJS Foundation and Express contributors. \textit{Express.js 5.x API Reference}. Available at:
+\url{https://expressjs.com/en/api/}. Accessed June 15, 2026.
+
+\bibitem{prisma-docs}
+Prisma. \textit{Prisma ORM Documentation}. Available at:
+\url{https://www.prisma.io/docs/orm}. Accessed June 15, 2026.
+
+\bibitem{postgresql-docs}
+PostgreSQL Global Development Group. \textit{PostgreSQL 18 Documentation}. Available at:
+\url{https://www.postgresql.org/docs/current/index.html}. Accessed June 15, 2026.
+
+\bibitem{jwt-rfc}
+M. Jones, J. Bradley, and N. Sakimura. \textit{RFC 7519: JSON Web Token (JWT)}.
+RFC Editor, May 2015. Available at: \url{https://www.rfc-editor.org/info/rfc7519/}.
+
+\bibitem{jwt-bcp}
+N. Sheffer, D. Hardt, and M. Jones. \textit{RFC 8725: JSON Web Token Best Current Practices}.
+RFC Editor, February 2020. Available at: \url{https://www.rfc-editor.org/info/rfc8725/}.
+
+\bibitem{mathjs-docs}
+\textit{mathjs Documentation}. Available at: \url{https://mathjs.org/docs/}. Accessed June 15, 2026.
+
+\bibitem{nextintl-docs}
+Jan Amann and contributors. \textit{next-intl Documentation: Getting Started}. Available at:
+\url{https://next-intl.dev/docs/getting-started}. Accessed June 15, 2026.
 
 \bibitem{backend-server}
 Anhoc backend bootstrap implementation, \code{backend/server.ts}.
@@ -104,6 +257,13 @@ Anhoc authentication and authorization middleware, \code{backend/middleware/auth
 
 \bibitem{backend-math}
 Anhoc math generation and answer evaluation service, \code{backend/services/mathService.ts}.
+
+\bibitem{chatbot-spec}
+Anhoc tutoring chatbot specification and implementation, \code{chatbot/SPEC.md},
+\code{chatbot/README.md}, and \code{chatbot/main.py}.
+
+\bibitem{chatbot-widget}
+Anhoc tutoring widget integration in the frontend, \code{frontend/src/components/feature/ChatbotWidget.tsx}.
 
 \bibitem{technical-design}
 Anhoc technical design document, \code{docs/TDD/technical-design.md}.

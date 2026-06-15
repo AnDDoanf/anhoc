@@ -2,7 +2,7 @@
 
 \section{Architectural Overview}
 
-Anhoc uses a three-tier web architecture. A Next.js frontend provides the user interface. An Express backend exposes REST endpoints and business logic. PostgreSQL stores content, user identities, generated snapshots, and progression data. Prisma acts as the ORM boundary between the backend and the database.
+Anhoc uses a three-tier web architecture. A Next.js frontend built on React provides the user interface. An Express backend exposes REST endpoints and business logic. PostgreSQL stores content, user identities, generated snapshots, and progression data. Prisma acts as the ORM boundary between the backend and the database \cite{nextjs-docs,react-docs,express-docs,prisma-docs,postgresql-docs}.
 
 \begin{figure}[H]
 \centering
@@ -47,7 +47,7 @@ This separation keeps HTTP concerns close to route boundaries while pushing calc
 
 \section{Frontend Design}
 
-The frontend is built with Next.js using an app-router structure under \code{frontend/src/app}. It includes separate areas for authentication, student flows, and administration. The frontend is supported by Axios-based service modules, Redux state for authentication and permissions, and feature-specific components such as lesson cards, question players, result modals, and achievement galleries.
+The frontend is built with Next.js using an app-router structure under \code{frontend/src/app}. It includes separate areas for authentication, student flows, and administration. The frontend is supported by Axios-based service modules, Redux state for authentication and permissions, and feature-specific components such as lesson cards, question players, result modals, and achievement galleries. The repository also uses \code{next-intl} for localized dictionaries and request-scoped internationalization in the App Router \cite{nextintl-docs}.
 
 From a design perspective, the frontend acts as an orchestration layer:
 \begin{itemize}
@@ -59,7 +59,7 @@ From a design perspective, the frontend acts as an orchestration layer:
 
 \section{Security Model}
 
-Authentication is handled with JWT bearer tokens. The middleware in \code{backend/middleware/auth.ts} extracts the token from the \code{Authorization} header, verifies it using the configured secret, and attaches the decoded payload to the request object.
+Authentication is handled with JWT bearer tokens. The middleware in \code{backend/middleware/auth.ts} extracts the token from the \code{Authorization} header, verifies it using the configured secret, and attaches the decoded payload to the request object \cite{jwt-rfc,jwt-bcp}.
 
 Authorization is layered on top of authentication. The project uses:
 \begin{itemize}
