@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Logo from "@/components/ui/Logo";
 import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
 import { useState, useEffect } from "react";
@@ -401,7 +402,7 @@ export default function SignupPage() {
           <div className="w-full rounded-[2rem] border border-sol-border/30 bg-sol-surface/85 backdrop-blur-md p-8 sm:p-10 shadow-2xl relative flex flex-col justify-between overflow-y-auto">
           <div className="mb-6 flex flex-col items-center">
             <div className="mb-2">
-              <Image src="/anhoc.svg" alt="Anhoc Logo" width={640} height={320} className="h-32 w-auto object-contain" priority />
+              <Logo className="h-32 w-auto" />
             </div>
             <h2 className="text-center text-2xl sm:text-3xl font-black tracking-tight text-sol-text">{t("title")}</h2>
             <p className="mt-2 text-center text-xs sm:text-sm text-sol-muted leading-relaxed">{t("subtitle")}</p>

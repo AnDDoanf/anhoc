@@ -25,8 +25,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
 import Can from "@/components/auth/Can";
 import { usePermission } from "@/hooks/usePermission";
-import Image from 'next/image';
-import logo from '../../../public/anhoc.svg';
+import Logo from "@/components/ui/Logo";
 import { authService } from "@/services/auth";
 
 export default function Sidebar() {
@@ -157,7 +156,7 @@ export default function Sidebar() {
           <div className={`flex items-center p-6 pb-2 transition-all duration-500 overflow-hidden ${isMobile ? "pt-16" : ""} ${isCollapsed ? "justify-center px-0" : "justify-between"}`}>
             <Link href="/" className="group flex items-center gap-2 whitespace-nowrap" prefetch={false}>
               <div className="flex-shrink-0">
-                <Image src={logo} alt="Logo" className="w-16 h-8 object-contain" />
+                <Logo className="w-16 h-8" />
               </div>
               <span className={`text-xl font-bold text-sol-text group-hover:text-sol-accent transition-all duration-500 overflow-hidden
               ${isCollapsed ? "w-0 opacity-0 pointer-events-none" : "w-auto opacity-100 ml-1"}

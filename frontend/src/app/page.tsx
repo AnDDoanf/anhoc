@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import Image from "next/image";
+import Logo from "@/components/ui/Logo";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import {
@@ -123,7 +124,7 @@ export default function RootPage() {
         <div className="relative mx-auto max-w-7xl px-6 py-8 md:px-10 lg:px-12">
           <header className="flex items-center justify-between gap-4 rounded-[1.9rem] border border-sol-border/20 bg-sol-surface/80 px-5 py-4 shadow-sm backdrop-blur">
             <div className="flex items-center gap-3">
-              <Image src="/anhoc.svg" alt="Anhoc" width={44} height={44} className="h-11 w-auto" priority />
+              <Logo className="h-11 w-auto" />
               <div>
                 <p className="text-lg font-black tracking-tight text-sol-text">Anhoc</p>
                 <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-sol-muted">{t("tagline")}</p>

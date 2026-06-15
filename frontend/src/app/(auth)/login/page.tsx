@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import Image from "next/image";
+import Logo from "@/components/ui/Logo";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
 
@@ -55,7 +55,7 @@ export default function LoginPage() {
         <div className="rounded-xl border border-sol-border/30 bg-sol-surface p-10 shadow-sm">
           <div className="mb-4 flex flex-col items-center">
             <div className="mb-2">
-              <Image src="/anhoc.svg" alt="Anhoc Logo" width={640} height={320} className="h-48 w-auto" priority />
+              <Logo className="h-48 w-auto" />
             </div>
             <h2 className="text-center text-3xl font-black tracking-tight text-sol-text">{t("title")}</h2>
           </div>
