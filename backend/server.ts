@@ -16,8 +16,25 @@ import { seedAchievements } from './services/achievementService.ts';
 import { scheduleInactiveAccountCleanup } from './services/accountLifecycleService.ts';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './swagger.ts';
+import helmet from 'helmet';
+import { correlationId } from './middleware/correlation.ts';
+import { requestTimeout } from './middleware/timeout.ts';
+import { requestLogger } from './middleware/logging.ts';
+import { errorHandler } from './middleware/errorHandler.ts';
 
 const app: Application = express();
+
+// Set correlation ID header for request tracing
+app.use(correlationId);
+
+// Log HTTP requests
+app.use(requestLogger);
+
+// Request timeouts (15 seconds)
+app.use(requestTimeout(15000));
+
+// Secure Express apps by setting various HTTP headers
+app.use(helmet());
 
 const PORT = process.env.SERVER_PORT || process.env.PORT || 5001;
 const normalizeOrigin = (origin: string) => origin.replace(/\/+$/, '');
@@ -38,7 +55,9 @@ app.use(cors({
   },
   credentials: true,
 }));
-app.use(express.json());
+
+// Apply body size limits (1mb is standard security limit for JSON requests)
+app.use(express.json({ limit: '1mb' }));
 
 // Serve Swagger API Documentation at /api/docs
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
@@ -57,13 +76,8 @@ app.get('/api/v1/health', (req: Request, res: Response) => {
   res.json({ status: 'OK', message: 'Math App Backend is running' });
 });
 
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error(err.stack);
-  res.status(500).json({
-    error: 'Something went wrong!',
-    message: err.message
-  });
-});
+// Centralized Error Handling Middleware (must be registered last)
+app.use(errorHandler);
 
 async function main() {
   try {
