@@ -218,16 +218,7 @@ export default function Sidebar() {
                       />
                     </Can>
                   )}
-                  {isSupervisorOrAdmin && (
-                    <NavItem
-                      href="/student/members"
-                      label={t("members")}
-                      icon={<Users size={18} />}
-                      pathname={pathname}
-                      isCollapsed={isCollapsed}
-                    />
-                  )}
-                  {isSupervisorOrAdmin && (
+                  {user?.role === "supervisor" && (
                     <NavItem
                       href="/admin/subscription"
                       label={t("pricing")}

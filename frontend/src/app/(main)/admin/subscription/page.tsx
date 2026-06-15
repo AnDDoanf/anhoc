@@ -2,10 +2,9 @@
 
 import ProtectedRoute from "@/components/guard/ProtectedRoute";
 import PillBadge from "@/components/ui/PillBadge";
-import { adminService, type AdminUser, type AdminUserPayload } from "@/services/adminService";
+import { adminService } from "@/services/adminService";
 import {
   Check,
-  Edit3,
   Infinity as InfinityIcon,
   Loader2,
   RefreshCw,
@@ -19,29 +18,44 @@ import {
   UserCheck,
   BookOpen,
   Zap,
-  Lock,
   Calendar,
   AlertCircle,
+  UserPlus,
+  ShieldCheck,
+  UserX,
+  Mail,
+  Key,
+  User,
+  ArrowRight,
 } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import { RootState } from "@/redux/store";
+import { useDispatch } from "react-redux";
 import { useAuth } from "@/hooks/useAuth";
 import { setCredentials } from "@/redux/slices/authSlice";
 import { setPermissions } from "@/redux/slices/permissionSlice";
-import { authService } from "@/services/auth";
+import { authService, LearnUnitSummary } from "@/services/auth";
 import { api } from "@/services/api";
 import Link from "next/link";
+import Hero from "@/components/ui/Hero";
 
-type CapacityEdit = {
-  slots_purchased: string;
-  max_subjects: string;
-  max_grades: string;
-  max_lessons: string;
-  max_templates: string;
-  max_teachers: string;
-  max_students: string;
+type ManagedMember = {
+  id: string;
+  username: string;
+  email: string;
+  role: {
+    name: string;
+  };
+  created_at: string;
+  student_stats?: {
+    level: number;
+    total_xp: number;
+  } | null;
+};
+
+type SupervisorMembersResponse = {
+  learnUnit: LearnUnitSummary | null;
+  members: ManagedMember[];
 };
 
 type ApiError = {
@@ -50,19 +64,6 @@ type ApiError = {
 
 const getErrorMessage = (err: unknown, fallback: string) =>
   (err as ApiError)?.response?.data?.error || fallback;
-
-const toDisplay = (val: number | null | undefined) =>
-  val !== null && val !== undefined ? String(val) : "";
-
-interface SupervisorMember {
-  id: string;
-  username: string;
-  email: string;
-  role: {
-    name: string;
-  };
-  created_at: string;
-}
 
 interface Plan {
   id: number;
@@ -110,28 +111,9 @@ export default function AdminSubscriptionPage() {
   const dispatch = useDispatch();
 
   const { user } = useAuth();
-  const isSupervisor = user?.role === "supervisor";
-  const isAdmin = user?.role === "admin";
 
-  // Admin view states
-  const [supervisors, setSupervisors] = useState<AdminUser[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<CapacityEdit>({
-    slots_purchased: "",
-    max_subjects: "",
-    max_grades: "",
-    max_lessons: "",
-    max_templates: "",
-    max_teachers: "",
-    max_students: "",
-  });
-  const [saving, setSaving] = useState(false);
-
-  // Supervisor view states
-  const [members, setMembers] = useState<SupervisorMember[]>([]);
+  // Supervisor billing states
+  const [members, setMembers] = useState<ManagedMember[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(true);
   const [stats, setStats] = useState<any>(null);
   const [loadingStats, setLoadingStats] = useState(true);
@@ -150,27 +132,36 @@ export default function AdminSubscriptionPage() {
   const [cardCvc, setCardCvc] = useState("");
   const [isPending, startTransition] = useTransition();
 
-  const loadSupervisors = useCallback(async () => {
-    if (!isAdmin) return;
-    setLoading(true);
-    setError(null);
+  // Supervisor member management states
+  const [learnUnit, setLearnUnit] = useState<LearnUnitSummary | null>(null);
+  const [newEmail, setNewEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newUsername, setNewUsername] = useState("");
+  const [newRole, setNewRole] = useState<"free_student" | "teacher">("free_student");
+  const [formError, setFormError] = useState("");
+  const [formSuccess, setFormSuccess] = useState("");
+  const [formPending, setFormPending] = useState(false);
+  const [activeOperationId, setActiveOperationId] = useState<string | null>(null);
+  const [operationError, setOperationError] = useState("");
+
+  const refreshProfile = async () => {
     try {
-      const data = await adminService.listUsers({ role: "supervisor", pageSize: 100 });
-      setSupervisors(data.items);
-    } catch (err) {
-      setError(getErrorMessage(err, t("errors.load")));
-    } finally {
-      setLoading(false);
+      const updatedProfile = await authService.getProfile();
+      const token = localStorage.getItem("token") || "";
+      dispatch(setCredentials({ user: updatedProfile, token }));
+      dispatch(setPermissions(updatedProfile.permissions));
+    } catch (error) {
+      console.error("Failed to refresh supervisor profile:", error);
     }
-  }, [isAdmin, t]);
+  };
 
   const fetchSupervisorData = useCallback(async () => {
-    if (!isSupervisor) return;
     setLoadingMembers(true);
     setLoadingStats(true);
     setLoadingDetails(true);
     try {
-      const membersRes = await api.get("/supervisor/members");
+      const membersRes = await api.get<SupervisorMembersResponse>("/supervisor/members");
+      setLearnUnit(membersRes.data.learnUnit);
       setMembers(membersRes.data.members || []);
       
       const statsRes = await adminService.getStats();
@@ -185,7 +176,7 @@ export default function AdminSubscriptionPage() {
       setLoadingStats(false);
       setLoadingDetails(false);
     }
-  }, [isSupervisor]);
+  }, []);
 
   const handleToggleAutoRenew = async () => {
     if (!subDetails?.activeSubscription || togglingAutoRenew) return;
@@ -214,61 +205,10 @@ export default function AdminSubscriptionPage() {
   };
 
   useEffect(() => {
-    if (isAdmin) {
-      loadSupervisors();
-    } else if (isSupervisor) {
-      fetchSupervisorData();
+    if (user?.role === "supervisor") {
+      void fetchSupervisorData();
     }
-  }, [isAdmin, isSupervisor, loadSupervisors, fetchSupervisorData]);
-
-  // Admin actions
-  const startEdit = (user: AdminUser) => {
-    setEditingId(user.id);
-    setEditForm({
-      slots_purchased: String(user.slots_purchased || 0),
-      max_subjects: toDisplay(user.max_subjects),
-      max_grades: toDisplay(user.max_grades),
-      max_lessons: toDisplay(user.max_lessons),
-      max_templates: toDisplay(user.max_templates),
-      max_teachers: toDisplay(user.max_teachers),
-      max_students: toDisplay(user.max_students),
-    });
-    setError(null);
-    setSuccess(null);
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-  };
-
-  const handleSave = async (u: AdminUser) => {
-    setSaving(true);
-    setError(null);
-    setSuccess(null);
-    try {
-      const payload: AdminUserPayload = {
-        username: u.username,
-        email: u.email,
-        country: u.country || "",
-        role_name: "supervisor",
-        slots_purchased: Math.max(0, parseInt(editForm.slots_purchased) || 0),
-        max_subjects: editForm.max_subjects ? Number(editForm.max_subjects) : null,
-        max_grades: editForm.max_grades ? Number(editForm.max_grades) : null,
-        max_lessons: editForm.max_lessons ? Number(editForm.max_lessons) : null,
-        max_templates: editForm.max_templates ? Number(editForm.max_templates) : null,
-        max_teachers: editForm.max_teachers ? Number(editForm.max_teachers) : null,
-        max_students: editForm.max_students ? Number(editForm.max_students) : null,
-      };
-      await adminService.updateUser(u.id, payload);
-      await loadSupervisors();
-      setEditingId(null);
-      setSuccess(tUsers("messages.updated"));
-    } catch (err) {
-      setError(getErrorMessage(err, tUsers("errors.save")));
-    } finally {
-      setSaving(false);
-    }
-  };
+  }, [user, fetchSupervisorData]);
 
   // Supervisor actions
   const handleOpenCheckout = () => {
@@ -327,13 +267,91 @@ export default function AdminSubscriptionPage() {
         dispatch(setPermissions(updatedProfile.permissions));
 
         setCheckoutStatus("success");
-        fetchSupervisorData();
+        void fetchSupervisorData();
       } catch (err: any) {
         console.error("Payment error:", err);
         setCheckoutStatus("error");
         setErrorMessage(err.response?.data?.error || tPricing("checkout.fail"));
       }
     });
+  };
+
+  const handleCreateMember = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError("");
+    setFormSuccess("");
+    setFormPending(true);
+
+    try {
+      await api.post("/supervisor/members", {
+        email: newEmail,
+        password: newPassword,
+        username: newUsername,
+        role_name: newRole
+      });
+
+      setFormSuccess(tSupervisor("alerts.createSuccess", { username: newUsername }));
+      setNewEmail("");
+      setNewPassword("");
+      setNewUsername("");
+      setNewRole("free_student");
+      
+      // Refresh list
+      void fetchSupervisorData();
+    } catch (error: any) {
+      console.error("Failed to create member:", error);
+      setFormError(error.response?.data?.error || "Failed to create account");
+    } finally {
+      setFormPending(false);
+    }
+  };
+
+  const handleAssignSeat = async (memberId: string) => {
+    setActiveOperationId(memberId);
+    setOperationError("");
+
+    try {
+      await api.post(`/supervisor/members/${memberId}/assign-seat`);
+      
+      // Update locally
+      setMembers((prev) =>
+        prev.map((m) =>
+          m.id === memberId ? { ...m, role: { name: "sub_student" } } : m
+        )
+      );
+      
+      // Refresh slots count from backend profile
+      void refreshProfile();
+    } catch (error: any) {
+      console.error("Failed to assign seat:", error);
+      setOperationError(error.response?.data?.error || "Failed to assign seat");
+    } finally {
+      setActiveOperationId(null);
+    }
+  };
+
+  const handleUnassignSeat = async (memberId: string) => {
+    setActiveOperationId(memberId);
+    setOperationError("");
+
+    try {
+      await api.post(`/supervisor/members/${memberId}/unassign-seat`);
+      
+      // Update locally
+      setMembers((prev) =>
+        prev.map((m) =>
+          m.id === memberId ? { ...m, role: { name: "free_student" } } : m
+        )
+      );
+
+      // Refresh slots count from backend profile
+      void refreshProfile();
+    } catch (error: any) {
+      console.error("Failed to unassign seat:", error);
+      setOperationError(error.response?.data?.error || "Failed to revoke seat");
+    } finally {
+      setActiveOperationId(null);
+    }
   };
 
   const legendItems = [
@@ -345,8 +363,8 @@ export default function AdminSubscriptionPage() {
     { key: "students" as const },
   ];
 
-  if (isSupervisor) {
-    const lu = user?.learn_unit;
+  {
+    const lu = user?.learn_unit || learnUnit;
     const activeStudents = members.filter((m) => m.role.name === "sub_student").length;
     const activeTeachers = members.filter((m) => m.role.name === "teacher").length;
 
@@ -404,7 +422,7 @@ export default function AdminSubscriptionPage() {
     };
 
     return (
-      <ProtectedRoute requiredRole={["admin", "supervisor"]}>
+      <ProtectedRoute requiredRole="supervisor">
         <div className="mx-auto max-w-7xl space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
           {/* Header */}
           <section className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -986,335 +1004,246 @@ export default function AdminSubscriptionPage() {
               </div>
             </div>
           )}
+
+          {/* Members Management Section */}
+          <div className="border-t border-sol-border/10 pt-10 grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            {/* Create Member Panel */}
+            <div className="rounded-3xl border border-sol-border/30 bg-sol-surface/50 backdrop-blur p-6 sm:p-8 h-fit lg:col-span-1">
+              <div className="flex items-center gap-2 mb-4">
+                <UserPlus className="text-sol-accent" size={20} />
+                <h2 className="text-xl font-black tracking-tight text-sol-text">{tSupervisor("createMember")}</h2>
+              </div>
+              <p className="text-xs text-sol-muted mb-6 leading-relaxed">{tSupervisor("createMemberDesc")}</p>
+
+              <form onSubmit={handleCreateMember} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-sol-muted mb-1.5">{tSupervisor("fields.username")}</label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. jason_math"
+                      value={newUsername}
+                      onChange={(e) => setNewUsername(e.target.value)}
+                      disabled={formPending}
+                      className="w-full rounded-xl border border-sol-border/30 bg-sol-bg/25 pl-10 pr-4 py-2.5 text-sm font-bold text-sol-text placeholder-sol-muted/40 focus:border-sol-accent focus:outline-none transition-colors"
+                    />
+                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sol-muted" size={14} />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-sol-muted mb-1.5">{tSupervisor("fields.email")}</label>
+                  <div className="relative">
+                    <input
+                      type="email"
+                      required
+                      placeholder="student@example.com"
+                      value={newEmail}
+                      onChange={(e) => setNewEmail(e.target.value)}
+                      disabled={formPending}
+                      className="w-full rounded-xl border border-sol-border/30 bg-sol-bg/25 pl-10 pr-4 py-2.5 text-sm font-bold text-sol-text placeholder-sol-muted/40 focus:border-sol-accent focus:outline-none transition-colors"
+                    />
+                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sol-muted" size={14} />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-sol-muted mb-1.5">{tSupervisor("fields.password")}</label>
+                  <div className="relative">
+                    <input
+                      type="password"
+                      required
+                      placeholder="Minimum 6 characters"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      disabled={formPending}
+                      className="w-full rounded-xl border border-sol-border/30 bg-sol-bg/25 pl-10 pr-4 py-2.5 text-sm font-bold text-sol-text placeholder-sol-muted/40 focus:border-sol-accent focus:outline-none transition-colors font-mono"
+                    />
+                    <Key className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sol-muted" size={14} />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-sol-muted mb-1.5">{tSupervisor("fields.role")}</label>
+                  <select
+                    value={newRole}
+                    onChange={(e) => setNewRole(e.target.value as "free_student" | "teacher")}
+                    disabled={formPending}
+                    className="w-full rounded-xl border border-sol-border/30 bg-sol-bg/25 px-4 py-2.5 text-sm font-bold text-sol-text focus:border-sol-accent focus:outline-none transition-colors"
+                  >
+                    <option value="free_student" className="bg-sol-surface">{tSupervisor("roles.student")}</option>
+                    <option value="teacher" className="bg-sol-surface">{tSupervisor("roles.teacher")}</option>
+                  </select>
+                </div>
+
+                {formError && (
+                  <div className="rounded-xl border border-sol-red/25 bg-sol-red/5 p-3 text-xs font-bold text-sol-red">
+                    {formError}
+                  </div>
+                )}
+
+                {formSuccess && (
+                  <div className="rounded-xl border border-sol-green/25 bg-sol-green/5 p-3 text-xs font-bold text-sol-green">
+                    {formSuccess}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={formPending}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-sol-accent hover:cursor-pointer hover:opacity-95 text-sol-bg py-3 text-xs font-black uppercase tracking-wider transition-opacity disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-sol-accent/15"
+                >
+                  {formPending ? (
+                    <>
+                      <Loader2 className="animate-spin" size={14} />
+                      <span>{tSupervisor("buttons.creating")}</span>
+                    </>
+                  ) : (
+                    <span>{tSupervisor("buttons.create")}</span>
+                  )}
+                </button>
+              </form>
+            </div>
+
+            {/* Directory Panel */}
+            <div className="rounded-3xl border border-sol-border/30 bg-sol-surface/50 backdrop-blur p-6 sm:p-8 lg:col-span-2 space-y-6">
+              <div className="flex items-center justify-between border-b border-sol-border/10 pb-4">
+                <h2 className="text-xl font-black tracking-tight text-sol-text">{tSupervisor("directory")}</h2>
+                <span className="rounded-full bg-sol-bg border border-sol-border/30 px-3 py-1 text-xs font-bold text-sol-muted">
+                  {members.length} Accounts
+                </span>
+              </div>
+
+              {operationError && (
+                <div className="rounded-xl border border-sol-red/25 bg-sol-red/5 p-3 text-xs font-bold text-sol-red">
+                  {operationError}
+                </div>
+              )}
+
+              {loadingMembers ? (
+                <div className="flex flex-col items-center justify-center py-20 text-sol-muted gap-3">
+                  <Loader2 className="animate-spin text-sol-accent" size={32} />
+                  <p className="text-sm font-bold">Loading directory...</p>
+                </div>
+              ) : members.length === 0 ? (
+                <div className="text-center py-20 border border-dashed border-sol-border/30 rounded-2xl bg-sol-bg/20">
+                  <Users className="mx-auto text-sol-muted/50 mb-3" size={32} />
+                  <p className="text-sm font-bold text-sol-muted">{tSupervisor("alerts.noMembers")}</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-sol-border/20 text-[10px] font-black uppercase tracking-wider text-sol-muted">
+                        <th className="pb-3 pr-4">{tSupervisor("table.member")}</th>
+                        <th className="pb-3 px-4">{tSupervisor("table.role")}</th>
+                        <th className="pb-3 px-4 hidden sm:table-cell">{tSupervisor("table.dateJoined")}</th>
+                        <th className="pb-3 pl-4 text-right">{tSupervisor("table.actions")}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-sol-border/10">
+                      {members.map((member) => {
+                        const isStudent = member.role.name === "free_student" || member.role.name === "sub_student";
+                        const isSubscribed = member.role.name === "sub_student";
+                        const isTeacher = member.role.name === "teacher";
+                        const availableSlots = Math.max(0, studentLimit - activeStudents);
+                        
+                        return (
+                          <tr key={member.id} className="text-sm">
+                            {/* Member detail */}
+                            <td className="py-4 pr-4">
+                              <div className="font-bold text-sol-text">{member.username}</div>
+                              <div className="text-xs text-sol-muted mt-0.5">{member.email}</div>
+                            </td>
+
+                            {/* Role tag */}
+                            <td className="py-4 px-4 whitespace-nowrap">
+                              {isSubscribed && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-sol-green/10 border border-sol-green/30 px-2.5 py-0.5 text-xs font-bold text-sol-green">
+                                  <Sparkles size={11} />
+                                  {tSupervisor("roles.subStudent")}
+                                </span>
+                              )}
+                              {member.role.name === "free_student" && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-sol-bg border border-sol-border/30 px-2.5 py-0.5 text-xs font-bold text-sol-muted">
+                                  {tSupervisor("roles.freeStudent")}
+                                </span>
+                              )}
+                              {isTeacher && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-sol-accent/10 border border-sol-accent/30 px-2.5 py-0.5 text-xs font-bold text-sol-accent">
+                                  <ShieldCheck size={11} />
+                                  {tSupervisor("roles.teacher")}
+                                </span>
+                              )}
+                            </td>
+
+                            {/* Joined Date */}
+                            <td className="py-4 px-4 text-xs font-medium text-sol-muted hidden sm:table-cell">
+                              {new Date(member.created_at).toLocaleDateString()}
+                            </td>
+
+                            {/* Actions */}
+                            <td className="py-4 pl-4 text-right whitespace-nowrap">
+                              {isStudent && (
+                                <>
+                                  {isSubscribed ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleUnassignSeat(member.id)}
+                                      disabled={activeOperationId !== null}
+                                      className="inline-flex items-center gap-1 rounded-lg bg-sol-orange/10 hover:bg-sol-orange/15 border border-sol-orange/30 text-sol-orange px-3 py-1.5 text-xs font-bold transition hover:cursor-pointer disabled:opacity-50"
+                                    >
+                                      {activeOperationId === member.id ? (
+                                        <>
+                                          <Loader2 className="animate-spin" size={12} />
+                                          <span>{tSupervisor("buttons.revoking")}</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <UserX size={12} />
+                                          <span>{tSupervisor("buttons.revoke")}</span>
+                                        </>
+                                      )}
+                                    </button>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleAssignSeat(member.id)}
+                                      disabled={activeOperationId !== null || availableSlots === 0}
+                                      className="inline-flex items-center gap-1 rounded-lg bg-sol-accent/10 hover:bg-sol-accent/20 border border-sol-accent/30 text-sol-accent px-3 py-1.5 text-xs font-bold transition hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                      title={availableSlots === 0 ? tSupervisor("alerts.noSlots") : ""}
+                                    >
+                                      {activeOperationId === member.id ? (
+                                        <>
+                                          <Loader2 className="animate-spin" size={12} />
+                                          <span>{tSupervisor("buttons.assigning")}</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <UserCheck size={12} />
+                                          <span>{tSupervisor("buttons.assign")}</span>
+                                        </>
+                                      )}
+                                    </button>
+                                  )}
+                                </>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+          </div>
+
         </div>
       </ProtectedRoute>
     );
   }
-
-  // Fallback to default admin view if current user is an admin
-  return (
-    <ProtectedRoute requiredRole="admin">
-      <div className="mx-auto max-w-7xl space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        {/* Header */}
-        <section className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <PillBadge label={t("eyebrow")} icon={<Sparkles size={16} />} className="mb-3" />
-            <h1 className="text-3xl font-black uppercase tracking-tight text-sol-text sm:text-4xl">
-              {t("title")}
-            </h1>
-            <p className="mt-2 max-w-2xl font-bold text-sol-muted text-sm md:text-base">
-              {t("subtitle")}
-            </p>
-          </div>
-          <button
-            onClick={loadSupervisors}
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-sol-border/30 bg-sol-surface px-4 py-2.5 text-sm font-black text-sol-text transition hover:border-sol-accent/50 hover:text-sol-accent"
-          >
-            <RefreshCw size={16} />
-            {tUsers("actions.refresh")}
-          </button>
-        </section>
-
-        {/* Summary cards */}
-        <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <StatCard
-            label={t("stats.totalSupervisors")}
-            value={supervisors.length}
-            icon={<Users size={20} />}
-          />
-          <StatCard
-            label={t("stats.totalSeats")}
-            value={supervisors.reduce((s, u) => s + (u.slots_purchased || 0), 0)}
-            icon={<Check size={20} />}
-          />
-          <StatCard
-            label={t("stats.activeSubscriptions")}
-            value={supervisors.filter((u) => (u.slots_purchased || 0) > 0).length}
-            icon={<Sparkles size={20} />}
-          />
-        </section>
-
-        {/* Alerts */}
-        {(error || success) && (
-          <div
-            className={`rounded-lg border px-4 py-3 text-sm font-bold ${
-              error
-                ? "border-red-500/20 bg-red-500/10 text-red-500"
-                : "border-green-500/20 bg-green-500/10 text-green-600"
-            }`}
-          >
-            {error || success}
-          </div>
-        )}
-
-        {/* Table */}
-        <section className="rounded-xl border border-sol-border/20 bg-sol-surface shadow-sm overflow-hidden">
-          <div className="border-b border-sol-border/10 p-5">
-            <h2 className="text-xl font-black text-sol-text">{t("table.title")}</h2>
-            <p className="mt-1 text-sm font-bold text-sol-muted">{t("table.hint")}</p>
-          </div>
-
-          {loading ? (
-            <div className="flex min-h-60 flex-col items-center justify-center gap-3 p-8">
-              <Loader2 className="animate-spin text-sol-accent" size={36} />
-              <p className="font-black text-sol-muted">{t("loading")}</p>
-            </div>
-          ) : supervisors.length === 0 ? (
-            <div className="p-10 text-center">
-              <p className="font-black text-sol-text">{t("empty.title")}</p>
-              <p className="mt-1 text-sm font-bold text-sol-muted">{t("empty.subtitle")}</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[1200px]">
-                <thead>
-                  <tr className="border-b border-sol-border/10 bg-sol-bg/50">
-                    <Th>{t("table.account")}</Th>
-                    <Th>{t("table.seats")}</Th>
-                    <Th>{t("table.subjects")}</Th>
-                    <Th>{t("table.grades")}</Th>
-                    <Th>{t("table.lessons")}</Th>
-                    <Th>{t("table.templates")}</Th>
-                    <Th>{t("table.teachers")}</Th>
-                    <Th>{t("table.students")}</Th>
-                    <Th>{t("table.actions")}</Th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-sol-border/10">
-                  {supervisors.map((u) => {
-                    const isEditing = editingId === u.id;
-                    return (
-                      <tr key={u.id} className="transition hover:bg-sol-bg/30">
-                        {/* Account */}
-                        <td className="px-5 py-4">
-                          <div className="font-black text-sol-text">{u.username}</div>
-                          <div className="text-xs font-bold text-sol-muted">{u.email}</div>
-                          {u.country && (
-                            <div className="mt-0.5 text-[10px] font-bold uppercase tracking-wider text-sol-text/50">
-                              {u.country}
-                            </div>
-                          )}
-                        </td>
-
-                        {/* Seats */}
-                        <td className="px-5 py-4">
-                          {isEditing ? (
-                            <LimitInput
-                              value={editForm.slots_purchased}
-                              onChange={(v) => setEditForm((f) => ({ ...f, slots_purchased: v }))}
-                              required
-                            />
-                          ) : (
-                            <LimitBadge value={u.slots_purchased} unlimitedLabel={t("unlimited")} />
-                          )}
-                        </td>
-
-                        {/* Subjects */}
-                        <td className="px-5 py-4">
-                          {isEditing ? (
-                            <LimitInput
-                              value={editForm.max_subjects}
-                              onChange={(v) => setEditForm((f) => ({ ...f, max_subjects: v }))}
-                            />
-                          ) : (
-                            <LimitBadge value={u.max_subjects} unlimitedLabel={t("unlimited")} />
-                          )}
-                        </td>
-
-                        {/* Grades */}
-                        <td className="px-5 py-4">
-                          {isEditing ? (
-                            <LimitInput
-                              value={editForm.max_grades}
-                              onChange={(v) => setEditForm((f) => ({ ...f, max_grades: v }))}
-                            />
-                          ) : (
-                            <LimitBadge value={u.max_grades} unlimitedLabel={t("unlimited")} />
-                          )}
-                        </td>
-
-                        {/* Lessons */}
-                        <td className="px-5 py-4">
-                          {isEditing ? (
-                            <LimitInput
-                              value={editForm.max_lessons}
-                              onChange={(v) => setEditForm((f) => ({ ...f, max_lessons: v }))}
-                            />
-                          ) : (
-                            <LimitBadge value={u.max_lessons} unlimitedLabel={t("unlimited")} />
-                          )}
-                        </td>
-
-                        {/* Templates */}
-                        <td className="px-5 py-4">
-                          {isEditing ? (
-                            <LimitInput
-                              value={editForm.max_templates}
-                              onChange={(v) => setEditForm((f) => ({ ...f, max_templates: v }))}
-                            />
-                          ) : (
-                            <LimitBadge value={u.max_templates} unlimitedLabel={t("unlimited")} />
-                          )}
-                        </td>
-
-                        {/* Teachers */}
-                        <td className="px-5 py-4">
-                          {isEditing ? (
-                            <LimitInput
-                              value={editForm.max_teachers}
-                              onChange={(v) => setEditForm((f) => ({ ...f, max_teachers: v }))}
-                            />
-                          ) : (
-                            <LimitBadge value={u.max_teachers} unlimitedLabel={t("unlimited")} />
-                          )}
-                        </td>
-
-                        {/* Students */}
-                        <td className="px-5 py-4">
-                          {isEditing ? (
-                            <LimitInput
-                              value={editForm.max_students}
-                              onChange={(v) => setEditForm((f) => ({ ...f, max_students: v }))}
-                            />
-                          ) : (
-                            <LimitBadge value={u.max_students} unlimitedLabel={t("unlimited")} />
-                          )}
-                        </td>
-
-                        {/* Actions */}
-                        <td className="px-5 py-4">
-                          {isEditing ? (
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => handleSave(u)}
-                                disabled={saving}
-                                className="inline-flex items-center gap-1.5 rounded-lg bg-sol-accent px-3 py-2 text-xs font-black text-sol-bg shadow-sm transition hover:bg-sol-accent/90 disabled:opacity-60"
-                              >
-                                {saving ? (
-                                  <Loader2 size={13} className="animate-spin" />
-                                ) : (
-                                  <Check size={13} />
-                                )}
-                                {t("save")}
-                              </button>
-                              <button
-                                onClick={cancelEdit}
-                                disabled={saving}
-                                className="inline-flex items-center gap-1.5 rounded-lg border border-sol-border/30 px-3 py-2 text-xs font-black text-sol-muted transition hover:text-sol-text disabled:opacity-60"
-                              >
-                                <X size={13} />
-                                {t("cancel")}
-                              </button>
-                            </div>
-                          ) : (
-                            <button
-                              onClick={() => startEdit(u)}
-                              className="inline-flex items-center gap-2 rounded-lg border border-sol-border/30 px-3 py-2 text-sm font-black text-sol-text transition hover:border-sol-accent/50 hover:text-sol-accent"
-                            >
-                              <Edit3 size={14} />
-                              {tUsers("actions.edit")}
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
-
-        {/* Legend */}
-        <section className="rounded-xl border border-sol-border/10 bg-sol-surface/50 p-5">
-          <h3 className="mb-3 text-xs font-black uppercase tracking-widest text-sol-muted">
-            {t("legend.title")}
-          </h3>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {legendItems.map(({ key }) => (
-              <div key={key} className="rounded-lg border border-sol-border/10 bg-sol-bg/40 p-3">
-                <div className="text-xs font-black text-sol-accent">{t(`legend.${key}.label`)}</div>
-                <p className="mt-1 text-xs font-bold text-sol-muted leading-relaxed">
-                  {t(`legend.${key}.desc`)}
-                </p>
-                <p className="mt-1 text-[10px] font-bold text-sol-text/40">{t("legend.blankHint")}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-      </div>
-    </ProtectedRoute>
-  );
-}
-
-function Th({ children }: { children: React.ReactNode }) {
-  return (
-    <th className="px-5 py-3 text-left text-xs font-black uppercase tracking-widest text-sol-muted">
-      {children}
-    </th>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  icon,
-}: {
-  label: string;
-  value: number;
-  icon: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-lg border border-sol-border/20 bg-sol-surface p-5 shadow-sm">
-      <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-sol-accent/10 text-sol-accent">
-        {icon}
-      </div>
-      <div className="text-xs font-black uppercase tracking-widest text-sol-muted">{label}</div>
-      <div className="mt-1 text-3xl font-black text-sol-text">{value}</div>
-    </div>
-  );
-}
-
-function LimitBadge({
-  value,
-  unlimitedLabel,
-}: {
-  value: number | null | undefined;
-  unlimitedLabel: string;
-}) {
-  if (value === null || value === undefined) {
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-sol-accent/10 px-2.5 py-1 text-xs font-black text-sol-accent">
-        <InfinityIcon size={11} />
-        {unlimitedLabel}
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center rounded-full bg-sol-bg border border-sol-border/20 px-2.5 py-1 text-xs font-black text-sol-text">
-      {value}
-    </span>
-  );
-}
-
-function LimitInput({
-  value,
-  onChange,
-  required = false,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  required?: boolean;
-}) {
-  return (
-    <input
-      type="number"
-      min={0}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder="∞"
-      required={required}
-      className="w-20 rounded-lg border border-sol-border/30 bg-sol-bg px-2 py-1.5 text-sm font-bold text-sol-text outline-none transition placeholder:text-sol-muted/50 focus:border-sol-accent"
-    />
-  );
 }

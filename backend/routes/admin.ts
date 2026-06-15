@@ -4,6 +4,7 @@ import prisma from '../lib/db';
 import { authenticate, authorize, selfOrAdmin, isAdmin } from '../middleware/auth';
 import { FIXED_ROLE_NAMES, STUDENT_ROLE_NAMES, isFixedRoleName } from '../constants/roles.ts';
 import { createNotification, NotificationType } from '../services/notificationService.ts';
+import { createLearnUnitForSupervisor, upsertSupervisorLearnUnit, createDefaultLearnUnitName } from '../services/learnUnitService.ts';
 
 const router = Router();
 
@@ -17,8 +18,8 @@ const fixedRoleOrder = new Map(FIXED_ROLE_NAMES.map((roleName, index) => [roleNa
 
 const sortRolesByFixedOrder = <T extends { name: string }>(roles: T[]) => {
   return [...roles].sort((left, right) => {
-    const leftOrder = fixedRoleOrder.get(left.name) ?? Number.MAX_SAFE_INTEGER;
-    const rightOrder = fixedRoleOrder.get(right.name) ?? Number.MAX_SAFE_INTEGER;
+    const leftOrder = fixedRoleOrder.get(left.name as any) ?? Number.MAX_SAFE_INTEGER;
+    const rightOrder = fixedRoleOrder.get(right.name as any) ?? Number.MAX_SAFE_INTEGER;
     return leftOrder - rightOrder || left.name.localeCompare(right.name);
   });
 };
@@ -31,13 +32,23 @@ const userSelect = {
   account_status: true,
   created_at: true,
   slots_purchased: true,
-  supervisor_id: true,
-  max_subjects: true,
-  max_grades: true,
-  max_lessons: true,
-  max_templates: true,
-  max_teachers: true,
-  max_students: true,
+  learn_unit: {
+    select: {
+      id: true,
+      supervisor_id: true
+    }
+  },
+  supervised_learn_unit: {
+    select: {
+      id: true,
+      max_subjects: true,
+      max_grades: true,
+      max_lessons: true,
+      max_templates: true,
+      max_teachers: true,
+      max_students: true
+    }
+  },
   role: {
     select: {
       id: true,
@@ -69,13 +80,13 @@ const serializeUser = (user: any) => ({
   role: user.role,
   created_at: user.created_at,
   slots_purchased: user.slots_purchased ?? 0,
-  supervisor_id: user.supervisor_id ?? null,
-  max_subjects: user.max_subjects ?? null,
-  max_grades: user.max_grades ?? null,
-  max_lessons: user.max_lessons ?? null,
-  max_templates: user.max_templates ?? null,
-  max_teachers: user.max_teachers ?? null,
-  max_students: user.max_students ?? null,
+  supervisor_id: user.learn_unit?.supervisor_id ?? null,
+  max_subjects: user.supervised_learn_unit?.max_subjects ?? null,
+  max_grades: user.supervised_learn_unit?.max_grades ?? null,
+  max_lessons: user.supervised_learn_unit?.max_lessons ?? null,
+  max_templates: user.supervised_learn_unit?.max_templates ?? null,
+  max_teachers: user.supervised_learn_unit?.max_teachers ?? null,
+  max_students: user.supervised_learn_unit?.max_students ?? null,
   stats: user.student_stats,
   attempts: user._count?.test_attempts ?? 0,
   lessons_created: user._count?.lessons_created ?? 0
@@ -486,25 +497,47 @@ router.post('/users', authenticate, isAdmin, async (req, res) => {
 
     const passwordHash = await bcrypt.hash(payload.password, 10);
 
-    const user = await prisma.user.create({
-      data: {
-        username: payload.username,
-        email: payload.email,
-        country: payload.country || null,
-        password_hash: passwordHash,
-        role_id: roleRecord.id,
-        slots_purchased: payload.slots_purchased ?? (payload.roleName === 'supervisor' ? 1 : 0),
-        max_subjects: payload.max_subjects ?? null,
-        max_grades: payload.max_grades ?? null,
-        max_lessons: payload.max_lessons ?? null,
-        max_templates: payload.max_templates ?? null,
-        max_teachers: payload.max_teachers ?? null,
-        max_students: payload.max_students ?? null,
-        student_stats: {
-          create: {}
+    const user = await prisma.$transaction(async (tx) => {
+      const newUser = await tx.user.create({
+        data: {
+          username: payload.username,
+          email: payload.email,
+          country: payload.country || null,
+          password_hash: passwordHash,
+          role_id: roleRecord.id,
+          slots_purchased: payload.slots_purchased ?? (payload.roleName === 'supervisor' ? 1 : 0),
+          student_stats: {
+            create: {}
+          }
         }
-      },
-      select: userSelect
+      });
+
+      if (payload.roleName === 'supervisor') {
+        const learnUnit = await createLearnUnitForSupervisor(
+          newUser.id,
+          createDefaultLearnUnitName(payload.username),
+          {
+            max_subjects: payload.max_subjects,
+            max_grades: payload.max_grades,
+            max_lessons: payload.max_lessons,
+            max_templates: payload.max_templates,
+            max_teachers: payload.max_teachers,
+            max_students: payload.max_students,
+          },
+          tx as typeof prisma
+        );
+
+        return tx.user.update({
+          where: { id: newUser.id },
+          data: { learn_unit_id: learnUnit.id },
+          select: userSelect
+        });
+      }
+
+      return tx.user.findUnique({
+        where: { id: newUser.id },
+        select: userSelect
+      });
     });
 
     res.status(201).json(serializeUser(user));
@@ -545,40 +578,47 @@ router.patch('/users/:id', authenticate, selfOrAdmin('id'), async (req, res) => 
       if (typeof payload.slots_purchased !== 'undefined') {
         data.slots_purchased = payload.slots_purchased;
       }
-      if (typeof payload.max_subjects !== 'undefined') {
-        data.max_subjects = payload.max_subjects;
-      }
-      if (typeof payload.max_grades !== 'undefined') {
-        data.max_grades = payload.max_grades;
-      }
-      if (typeof payload.max_lessons !== 'undefined') {
-        data.max_lessons = payload.max_lessons;
-      }
-      if (typeof payload.max_templates !== 'undefined') {
-        data.max_templates = payload.max_templates;
-      }
-      if (typeof payload.max_teachers !== 'undefined') {
-        data.max_teachers = payload.max_teachers;
-      }
-      if (typeof payload.max_students !== 'undefined') {
-        data.max_students = payload.max_students;
-      }
     }
 
     if (payload.password) {
       data.password_hash = await bcrypt.hash(payload.password, 10);
     }
 
-    const user = await prisma.user.update({
-      where: { id: req.params.id as string },
-      data,
-      select: userSelect
-    });
+    const user = await prisma.$transaction(async (tx) => {
+      const isSupervisor = roleRecord.name === 'supervisor';
+      if (isSupervisor && isAdmin) {
+        const limits: any = {};
+        if (typeof payload.max_subjects !== 'undefined') limits.max_subjects = payload.max_subjects;
+        if (typeof payload.max_grades !== 'undefined') limits.max_grades = payload.max_grades;
+        if (typeof payload.max_lessons !== 'undefined') limits.max_lessons = payload.max_lessons;
+        if (typeof payload.max_templates !== 'undefined') limits.max_templates = payload.max_templates;
+        if (typeof payload.max_teachers !== 'undefined') limits.max_teachers = payload.max_teachers;
+        if (typeof payload.max_students !== 'undefined') limits.max_students = payload.max_students;
 
-    await prisma.studentStats.upsert({
-      where: { user_id: user.id },
-      update: {},
-      create: { user_id: user.id }
+        if (Object.keys(limits).length > 0) {
+          const learnUnit = await upsertSupervisorLearnUnit(
+            req.params.id as string,
+            createDefaultLearnUnitName(payload.username || existingUser.username),
+            limits,
+            tx as typeof prisma
+          );
+          data.learn_unit_id = learnUnit.id;
+        }
+      }
+
+      const updatedUser = await tx.user.update({
+        where: { id: req.params.id as string },
+        data,
+        select: userSelect
+      });
+
+      await tx.studentStats.upsert({
+        where: { user_id: updatedUser.id },
+        update: {},
+        create: { user_id: updatedUser.id }
+      });
+
+      return updatedUser;
     });
 
     res.json(serializeUser(user));
