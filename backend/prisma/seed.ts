@@ -616,6 +616,8 @@ async function main() {
   }
 
   const freePlan = await upsertPlan('free', {
+    en_name: 'Free Student',
+    vi_name: 'Học Sinh Miễn Phí',
     description: 'Perfect for starting your math journey',
     price_monthly: 0,
     price_annually: 0,
@@ -624,12 +626,16 @@ async function main() {
   });
 
   const proPlan = await upsertPlan('pro', {
+    en_name: 'Premium Student',
+    vi_name: 'Học Sinh Cao Cấp',
     description: 'Unlock your full potential with all premium features',
     price_monthly: 9.99,
     price_annually: 99.90,
   });
 
   const familyPlan = await upsertPlan('family', {
+    en_name: 'Family Plan',
+    vi_name: 'Gói Gia Đình',
     description: 'Supervisor account for families. Up to 5 students, 2 teachers.',
     price_monthly: 19.99,
     price_annually: 199.90,
@@ -638,9 +644,27 @@ async function main() {
   });
 
   const lcPlan = await upsertPlan('learning_center', {
+    en_name: 'Learning Center',
+    vi_name: 'Trung Tâm Học Tập',
     description: 'Supervisor account for learning centers. Pay-as-you-grow unlimited seats.',
     price_monthly: 49.99,
     price_annually: 499.90,
+    max_students: 20,
+    max_teachers: 5,
+    max_subjects: 5,
+    max_grades: 20,
+    max_lessons: 50,
+    max_templates: 200,
+    price_per_student_monthly: 5.00,
+    price_per_student_annually: 50.00,
+    price_per_teacher_monthly: 10.00,
+    price_per_teacher_annually: 100.00,
+    price_per_lesson_monthly: 1.00,
+    price_per_lesson_annually: 10.00,
+    price_per_grade_monthly: 2.00,
+    price_per_grade_annually: 20.00,
+    price_per_template_monthly: 0.50,
+    price_per_template_annually: 5.00,
   });
 
   // Create active subscription and mock invoices for the default supervisor

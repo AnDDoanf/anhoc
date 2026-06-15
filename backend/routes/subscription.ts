@@ -38,6 +38,37 @@ router.get("/details", authenticate, async (req: Request, res: Response) => {
       },
     });
 
+    let activeSubResponse: any = activeSubscription;
+    if (activeSubscription && activeSubscription.plan.name === "learning_center") {
+      const plan = activeSubscription.plan as any;
+      const billingCycle = activeSubscription.billing_cycle;
+      const numStudents = (activeSubscription as any).max_students ?? 20;
+      const numTeachers = (activeSubscription as any).max_teachers ?? 5;
+      const numLessons = (activeSubscription as any).max_lessons ?? 50;
+      const numGrades = (activeSubscription as any).max_grades ?? 20;
+      const numTemplates = (activeSubscription as any).max_templates ?? 200;
+
+      const pStudent = Number(billingCycle === "annually" ? plan.price_per_student_annually : plan.price_per_student_monthly);
+      const pTeacher = Number(billingCycle === "annually" ? plan.price_per_teacher_annually : plan.price_per_teacher_monthly);
+      const pLesson = Number(billingCycle === "annually" ? plan.price_per_lesson_annually : plan.price_per_lesson_monthly);
+      const pGrade = Number(billingCycle === "annually" ? plan.price_per_grade_annually : plan.price_per_grade_monthly);
+      const pTemplate = Number(billingCycle === "annually" ? plan.price_per_template_annually : plan.price_per_template_monthly);
+
+      const basePrice = Number(billingCycle === "annually" ? plan.price_annually : plan.price_monthly);
+
+      const calculatedPrice = basePrice +
+        (numStudents * pStudent) +
+        (numTeachers * pTeacher) +
+        (numLessons * pLesson) +
+        (numGrades * pGrade) +
+        (numTemplates * pTemplate);
+
+      activeSubResponse = {
+        ...activeSubscription,
+        calculatedPrice,
+      };
+    }
+
     // Fetch invoices
     const invoices = await prisma.invoice.findMany({
       where: { user_id: userId },
@@ -45,7 +76,7 @@ router.get("/details", authenticate, async (req: Request, res: Response) => {
     });
 
     res.json({
-      activeSubscription: activeSubscription || null,
+      activeSubscription: activeSubResponse || null,
       invoices,
     });
   } catch (error: any) {
@@ -108,7 +139,16 @@ router.post("/toggle-auto-renew", authenticate, async (req: Request, res: Respon
 router.post("/checkout", authenticate, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
-    const { planId, billingCycle, learnUnitName } = req.body;
+    const { 
+      planId, 
+      billingCycle, 
+      learnUnitName,
+      maxStudents,
+      maxTeachers,
+      maxLessons,
+      maxGrades,
+      maxTemplates
+    } = req.body;
 
     if (!planId || !["monthly", "annually"].includes(billingCycle)) {
       return res.status(400).json({ error: "Invalid planId or billingCycle" });
@@ -139,6 +179,31 @@ router.post("/checkout", authenticate, async (req: Request, res: Response) => {
       return res.status(500).json({ error: `System role '${roleName}' not found` });
     }
 
+    // Parse dynamic capacity limits
+    const numStudents = Number(maxStudents ?? 20);
+    const numTeachers = Number(maxTeachers ?? 5);
+    const numLessons = Number(maxLessons ?? 50);
+    const numGrades = Number(maxGrades ?? 20);
+    const numTemplates = Number(maxTemplates ?? 200);
+
+    // Calculate dynamic price for Learning Center plan
+    const planAny = plan as any;
+    let calculatedPrice = billingCycle === "annually" ? Number(plan.price_annually) : Number(plan.price_monthly);
+    if (plan.name === "learning_center") {
+      const pStudent = Number(billingCycle === "annually" ? planAny.price_per_student_annually : planAny.price_per_student_monthly);
+      const pTeacher = Number(billingCycle === "annually" ? planAny.price_per_teacher_annually : planAny.price_per_teacher_monthly);
+      const pLesson = Number(billingCycle === "annually" ? planAny.price_per_lesson_annually : planAny.price_per_lesson_monthly);
+      const pGrade = Number(billingCycle === "annually" ? planAny.price_per_grade_annually : planAny.price_per_grade_monthly);
+      const pTemplate = Number(billingCycle === "annually" ? planAny.price_per_template_annually : planAny.price_per_template_monthly);
+
+      calculatedPrice += 
+        (numStudents * pStudent) +
+        (numTeachers * pTeacher) +
+        (numLessons * pLesson) +
+        (numGrades * pGrade) +
+        (numTemplates * pTemplate);
+    }
+
     // Start database transaction to ensure billing consistency
     await prisma.$transaction(async (tx) => {
       // 1. Terminate any previous active subscriptions
@@ -162,6 +227,12 @@ router.post("/checkout", authenticate, async (req: Request, res: Response) => {
       const endDate = new Date();
       endDate.setDate(endDate.getDate() + durationDays);
 
+      const targetMaxStudents = plan.name === "learning_center" ? numStudents : plan.max_students;
+      const targetMaxTeachers = plan.name === "learning_center" ? numTeachers : plan.max_teachers;
+      const targetMaxLessons = plan.name === "learning_center" ? numLessons : plan.max_lessons;
+      const targetMaxTemplates = plan.name === "learning_center" ? numTemplates : plan.max_templates;
+      const targetMaxGrades = plan.name === "learning_center" ? numGrades : plan.max_grades;
+
       const sub = await tx.subscriptionPlan.create({
         data: {
           user_id: userId,
@@ -171,20 +242,25 @@ router.post("/checkout", authenticate, async (req: Request, res: Response) => {
           start_date: startDate,
           end_date: endDate,
           auto_renew: true,
-          slots_purchased: plan.name === "learning_center" ? 10 : 0, // Default seats for LC base plan
+          slots_purchased: plan.name === "learning_center" ? numStudents : (plan.max_students || 0),
+          max_students: targetMaxStudents,
+          max_teachers: targetMaxTeachers,
+          max_lessons: targetMaxLessons,
+          max_templates: targetMaxTemplates,
+          max_grades: targetMaxGrades,
+          max_subjects: plan.max_subjects,
           effect_from: new Date(),
           effect_to: null,
-        },
+        } as any,
       });
 
       // 3. Create the Invoice record
-      const invoiceAmount = billingCycle === "annually" ? plan.price_annually : plan.price_monthly;
       const cycleLabel = billingCycle === "annually" ? "Annual" : "Monthly";
       await tx.invoice.create({
         data: {
           user_id: userId,
           subscription_plan_id: sub.id,
-          amount: invoiceAmount,
+          amount: calculatedPrice,
           status: "paid",
           description: `${plan.name.toUpperCase()} Subscription Plan - ${cycleLabel} Cycle`,
         },
@@ -195,7 +271,7 @@ router.post("/checkout", authenticate, async (req: Request, res: Response) => {
         where: { id: userId },
         data: {
           role_id: roleRecord.id,
-          slots_purchased: plan.name === "learning_center" ? 10 : 0, // Reset slots to LC defaults
+          slots_purchased: plan.name === "learning_center" ? numStudents : (plan.max_students || 0),
         },
       });
 
@@ -205,9 +281,6 @@ router.post("/checkout", authenticate, async (req: Request, res: Response) => {
           where: { supervisor_id: userId },
         });
 
-        const targetMaxStudents = plan.max_students;
-        const targetMaxTeachers = plan.max_teachers;
-
         if (existingUnit) {
           // Update limits of existing learn unit
           await tx.learnUnit.update({
@@ -215,6 +288,10 @@ router.post("/checkout", authenticate, async (req: Request, res: Response) => {
             data: {
               max_students: targetMaxStudents,
               max_teachers: targetMaxTeachers,
+              max_lessons: targetMaxLessons,
+              max_templates: targetMaxTemplates,
+              max_grades: targetMaxGrades,
+              max_subjects: plan.max_subjects,
             },
           });
         } else {
@@ -228,6 +305,10 @@ router.post("/checkout", authenticate, async (req: Request, res: Response) => {
             {
               max_students: targetMaxStudents,
               max_teachers: targetMaxTeachers,
+              max_lessons: targetMaxLessons,
+              max_templates: targetMaxTemplates,
+              max_grades: targetMaxGrades,
+              max_subjects: plan.max_subjects,
             },
             tx as any
           );

@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useTranslations, useLocale } from "next-intl";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -17,16 +17,228 @@ import {
   ShieldAlert,
   Loader2,
   GraduationCap,
-  Users
+  Users,
+  BookOpen,
+  Zap,
+  Check,
+  X
 } from "lucide-react";
 import { authService } from "@/services/auth";
+import { api } from "@/services/api";
 
-type PlanType = "free_student" | "sub_student" | "supervisor";
+type PlanType = "free_student" | "sub_student" | "supervisor" | "learning_center";
+
+const planDetailsContent = {
+  free_student: {
+    en: {
+      subheader: "For students starting out:",
+      checklist: [
+        { text: "Access free modules & lessons", isLimit: false },
+        { text: "Earn up to 500 XP (Level 3)", isLimit: true },
+        { text: "Basic AI math tutoring", isLimit: false },
+        { text: "Limit of 5 lessons and 5 templates", isLimit: true }
+      ],
+      descHeader: "Basic study tools:",
+      descText: "Access standard lessons, practice quizzes, and basic progress stats.",
+      buttonText: "Get started",
+      subLink: "or explore features"
+    },
+    vi: {
+      subheader: "Cho người mới bắt đầu học toán:",
+      checklist: [
+        { text: "Truy cập bài học & chuyên đề miễn phí", isLimit: false },
+        { text: "Tích lũy tối đa 500 XP (Cấp độ 3)", isLimit: true },
+        { text: "Gia sư AI hỗ trợ cơ bản", isLimit: false },
+        { text: "Giới hạn 5 bài học và 5 mẫu câu hỏi", isLimit: true }
+      ],
+      descHeader: "Công cụ học tập cơ bản:",
+      descText: "Truy cập các bài học tiêu chuẩn, trắc nghiệm luyện tập, và bảng theo dõi tiến độ cơ bản.",
+      buttonText: "Bắt đầu ngay",
+      subLink: "hoặc tìm hiểu tính năng"
+    }
+  },
+  sub_student: {
+    en: {
+      subheader: "For dedicated independent learners:",
+      checklist: [
+        { text: "Unlimited lessons & templates", isLimit: false },
+        { text: "No XP or level cap", isLimit: false },
+        { text: "Priority AI tutor support", isLimit: false }
+      ],
+      descHeader: "All Free features plus:",
+      descText: "Unlock achievements, earn rewards, access premium math modules, priority support, and advanced learning statistics.",
+      buttonText: "Try for free",
+      subLink: "or subscribe"
+    },
+    vi: {
+      subheader: "Cho học sinh tự học chuyên sâu:",
+      checklist: [
+        { text: "Không giới hạn bài học & mẫu câu hỏi", isLimit: false },
+        { text: "Không giới hạn XP & cấp độ", isLimit: false },
+        { text: "Gia sư AI hỗ trợ ưu tiên", isLimit: false }
+      ],
+      descHeader: "Bao gồm tất cả tính năng Miễn phí và:",
+      descText: "Mở khóa thành tựu, nhận phần thưởng, học chuyên đề toán cao cấp, hỗ trợ ưu tiên và thống kê học tập chi tiết.",
+      buttonText: "Dùng thử miễn phí",
+      subLink: "hoặc đăng ký ngay"
+    }
+  },
+  supervisor: {
+    en: {
+      subheader: "For families and small tutor groups:",
+      checklist: [
+        { text: "Up to 5 student accounts", isLimit: false },
+        { text: "Up to 2 teacher accounts", isLimit: false },
+        { text: "Premium student seats allocation", isLimit: false },
+        { text: "Limit of 10 lessons and 20 templates", isLimit: true }
+      ],
+      descHeader: "All Premium features plus:",
+      descText: "Track progress of managed students, review lessons & assignments, assign customized quizzes, and manage study schedules.",
+      buttonText: "Try for free",
+      subLink: "or subscribe"
+    },
+    vi: {
+      subheader: "Cho gia đình và nhóm học tập nhỏ:",
+      checklist: [
+        { text: "Tối đa 5 tài khoản học sinh", isLimit: false },
+        { text: "Tối đa 2 tài khoản giáo viên", isLimit: false },
+        { text: "Phân bổ bản quyền học cao cấp", isLimit: false },
+        { text: "Giới hạn 10 bài học và 20 mẫu câu hỏi", isLimit: true }
+      ],
+      descHeader: "Bao gồm tất cả tính năng Cao cấp và:",
+      descText: "Theo dõi tiến độ học sinh, phê duyệt bài tập & bài kiểm tra, giao bài tự chọn, và quản lý lịch trình học tập.",
+      buttonText: "Dùng thử miễn phí",
+      subLink: "hoặc đăng ký ngay"
+    }
+  },
+  learning_center: {
+    en: {
+      subheader: "For large agencies and schools:",
+      checklist: [
+        { text: "Starts with 20 student seats", isLimit: false },
+        { text: "Includes 5 teachers & 5 subjects", isLimit: false },
+        { text: "Includes 20 grades, 50 lessons & 200 templates", isLimit: false },
+        { text: "Customized numbers as you grow", isLimit: false }
+      ],
+      descHeader: "All Family features plus:",
+      descText: "Custom workspace branding, dedicated manager support, advanced capacity management, multi-grade/subject licensing, API access, and more.",
+      buttonText: "Subscribe",
+      subLink: "or try a custom plan"
+    },
+    vi: {
+      subheader: "Cho trung tâm lớn và trường học:",
+      checklist: [
+        { text: "Bắt đầu với 20 tài khoản học sinh", isLimit: false },
+        { text: "Có sẵn 5 giáo viên & 5 môn học", isLimit: false },
+        { text: "Có sẵn 20 khối lớp, 50 bài học & 200 mẫu câu hỏi", isLimit: false },
+        { text: "Tùy chỉnh số lượng theo nhu cầu", isLimit: false }
+      ],
+      descHeader: "Bao gồm tất cả tính năng Gia đình và:",
+      descText: "Thương hiệu trung tâm riêng, hỗ trợ quản lý riêng, quản lý tài nguyên linh hoạt, cấp phép môn học diện rộng, và truy cập API.",
+      buttonText: "Đăng ký",
+      subLink: "hoặc yêu cầu tùy chỉnh"
+    }
+  }
+};
 
 export default function SignupPage() {
   const t = useTranslations("Signup");
   const tPricing = useTranslations("Pricing");
-  
+  const locale = useLocale();
+
+  interface Plan {
+    id: number;
+    name: string;
+    vi_name: string;
+    en_name: string;
+    description: string | null;
+    price_monthly: number;
+    price_annually: number;
+    max_students: number | null;
+    max_teachers: number | null;
+    max_lessons: number | null;
+    max_templates: number | null;
+    max_subjects: number | null;
+    max_grades: number | null;
+  }
+
+  const [plans, setPlans] = useState<Plan[]>([]);
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const res = await api.get("/subscription/plans");
+        setPlans(res.data);
+      } catch (err) {
+        console.error("Failed to fetch plans on signup", err);
+      }
+    };
+    fetchPlans();
+  }, []);
+
+  const getPlanDisplayName = (planType: PlanType) => {
+    const dbName =
+      planType === "free_student"
+        ? "free"
+        : planType === "sub_student"
+        ? "pro"
+        : planType === "supervisor"
+        ? "family"
+        : "learning_center";
+    const matchedPlan = plans.find(p => p.name === dbName);
+    if (matchedPlan) {
+      return locale === "vi" ? matchedPlan.vi_name : matchedPlan.en_name;
+    }
+    if (locale === "vi") {
+      if (planType === "free_student") return "Học Sinh Miễn Phí";
+      if (planType === "sub_student") return "Học Sinh Cao Cấp";
+      if (planType === "supervisor") return "Gói Gia Đình";
+      return "Trung Tâm Học Tập";
+    } else {
+      if (planType === "free_student") return "Free Student";
+      if (planType === "sub_student") return "Premium Student";
+      if (planType === "supervisor") return "Family Plan";
+      return "Learning Center";
+    }
+  };
+
+  const getFormattedPriceParts = (plan: Plan) => {
+    if (plan.name === "free") {
+      return {
+        currency: locale === "vi" ? "" : "$",
+        integer: "0",
+        decimal: locale === "vi" ? "đ" : "",
+        period: locale === "vi" ? "mãi mãi" : "forever"
+      };
+    }
+
+    const price = Number(plan.price_monthly);
+    if (locale === "vi") {
+      let vndPrice = 0;
+      if (plan.name === "pro") vndPrice = 249000;
+      else if (plan.name === "family") vndPrice = 499000;
+      else if (plan.name === "learning_center") vndPrice = 1249000;
+      else vndPrice = Math.round(price * 25000);
+
+      const formatted = vndPrice.toLocaleString("vi-VN");
+      return {
+        currency: "",
+        integer: formatted,
+        decimal: "đ",
+        period: "tháng"
+      };
+    } else {
+      const integerPart = Math.floor(price);
+      const decimalPart = (price % 1).toFixed(2).substring(1);
+      return {
+        currency: "$",
+        integer: String(integerPart),
+        decimal: decimalPart === ".00" ? "" : decimalPart,
+        period: "monthly"
+      };
+    }
+  };
+
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -35,6 +247,18 @@ export default function SignupPage() {
   // Subscription Plan State
   const [selectedPlan, setSelectedPlan] = useState<PlanType>("free_student");
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+
+  const activeDbPlan = plans.find(
+    (p) =>
+      p.name ===
+      (selectedPlan === "free_student"
+        ? "free"
+        : selectedPlan === "sub_student"
+        ? "pro"
+        : selectedPlan === "supervisor"
+        ? "family"
+        : "learning_center")
+  );
   const [learnUnitName, setLearnUnitName] = useState("");
   
   // Checkout Form State
@@ -96,8 +320,8 @@ export default function SignupPage() {
       const response = await authService.register({
         email: values.email,
         password: values.password,
-        role_name: selectedPlan,
-        learn_unit_name: selectedPlan === "supervisor" ? learnUnitName.trim() : undefined,
+        role_name: selectedPlan === "learning_center" ? "supervisor" : selectedPlan,
+        learn_unit_name: (selectedPlan === "supervisor" || selectedPlan === "learning_center") ? learnUnitName.trim() : undefined,
       });
       const codeMessage = response.learnUnit?.code
         ? `Learn unit code: ${response.learnUnit.code}`
@@ -121,7 +345,7 @@ export default function SignupPage() {
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    if (selectedPlan === "supervisor" && !learnUnitName.trim()) {
+    if ((selectedPlan === "supervisor" || selectedPlan === "learning_center") && !learnUnitName.trim()) {
       setErrorMessage("Learn unit name is required for the supervisor plan.");
       return;
     }
@@ -171,8 +395,10 @@ export default function SignupPage() {
       <div className="absolute top-[10%] left-[5%] h-56 w-56 rounded-full bg-sol-accent/5 blur-3xl pointer-events-none" />
       <div className="absolute bottom-[10%] right-[5%] h-72 w-72 rounded-full bg-sol-orange/5 blur-3xl pointer-events-none" />
 
-      <div className="w-full max-w-[500px]">
-        <div className="rounded-[2rem] border border-sol-border/30 bg-sol-surface/85 backdrop-blur-md p-8 sm:p-10 shadow-2xl relative">
+      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        {/* Left Column: Signup Form Card */}
+        <div className="lg:col-span-7 w-full max-w-[500px] lg:max-w-none mx-auto flex lg:h-[720px]">
+          <div className="w-full rounded-[2rem] border border-sol-border/30 bg-sol-surface/85 backdrop-blur-md p-8 sm:p-10 shadow-2xl relative flex flex-col justify-between overflow-y-auto">
           <div className="mb-6 flex flex-col items-center">
             <div className="mb-2">
               <Image src="/anhoc.svg" alt="Anhoc Logo" width={640} height={320} className="h-32 w-auto object-contain" priority />
@@ -184,7 +410,7 @@ export default function SignupPage() {
           {/* Plan Choice Selector */}
           <div className="mb-6 space-y-2.5">
             <span className="block text-xs font-black uppercase tracking-wider text-sol-muted">Select Learning Plan</span>
-            <div className="grid grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
               {/* Free Student Option */}
               <button
                 type="button"
@@ -196,7 +422,7 @@ export default function SignupPage() {
                 }`}
               >
                 <GraduationCap size={16} className={selectedPlan === "free_student" ? "text-sol-accent" : "text-sol-muted"} />
-                <span className="text-xs font-extrabold text-sol-text mt-1.5">{tPricing("freeStudent.title")}</span>
+                <span className="text-xs font-extrabold text-sol-text mt-1.5">{getPlanDisplayName("free_student")}</span>
                 <span className="text-[10px] font-black text-sol-accent mt-0.5">{tPricing("freeStudent.price")}</span>
               </button>
 
@@ -214,7 +440,7 @@ export default function SignupPage() {
                   Hot
                 </div>
                 <Sparkles size={16} className={selectedPlan === "sub_student" ? "text-sol-accent animate-pulse" : "text-sol-muted"} />
-                <span className="text-xs font-extrabold text-sol-text mt-1.5">{tPricing("subStudent.title")}</span>
+                <span className="text-xs font-extrabold text-sol-text mt-1.5">{getPlanDisplayName("sub_student")}</span>
                 <span className="text-[10px] font-black text-sol-accent mt-0.5">{tPricing("subStudent.price")}</span>
               </button>
 
@@ -229,8 +455,25 @@ export default function SignupPage() {
                 }`}
               >
                 <Users size={16} className={selectedPlan === "supervisor" ? "text-sol-accent" : "text-sol-muted"} />
-                <span className="text-xs font-extrabold text-sol-text mt-1.5">{tPricing("supervisor.title")}</span>
+                <span className="text-xs font-extrabold text-sol-text mt-1.5">{getPlanDisplayName("supervisor")}</span>
                 <span className="text-[10px] font-black text-sol-accent mt-0.5">{tPricing("supervisor.price")}</span>
+              </button>
+
+              {/* Learning Center Option */}
+              <button
+                type="button"
+                onClick={() => setSelectedPlan("learning_center")}
+                className={`flex flex-col items-center justify-between p-3 rounded-2xl border text-center transition-all hover:cursor-pointer ${
+                  selectedPlan === "learning_center"
+                    ? "border-sol-accent bg-sol-accent/5 ring-1 ring-sol-accent/20"
+                    : "border-sol-border/30 bg-sol-bg/20 hover:border-sol-accent/30"
+                }`}
+              >
+                <BookOpen size={16} className={selectedPlan === "learning_center" ? "text-sol-accent" : "text-sol-muted"} />
+                <span className="text-xs font-extrabold text-sol-text mt-1.5">{getPlanDisplayName("learning_center")}</span>
+                <span className="text-[10px] font-black text-sol-accent mt-0.5">
+                  {locale === "vi" ? "Từ 1.249.000đ" : "From $49.99"}
+                </span>
               </button>
             </div>
 
@@ -241,7 +484,7 @@ export default function SignupPage() {
             )}
           </div>
 
-          {selectedPlan === "supervisor" && (
+          {(selectedPlan === "supervisor" || selectedPlan === "learning_center") && (
             <div className="mb-6 space-y-2">
               <label className="block text-xs font-black uppercase tracking-wider text-sol-muted">
                 Learn unit name
@@ -272,7 +515,7 @@ export default function SignupPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form id="signup-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
               <input
                 {...register("email")}
@@ -322,6 +565,101 @@ export default function SignupPage() {
               {t("signIn")}
             </Link>
           </p>
+          </div>
+        </div>
+
+        {/* Right Column: Plan Details */}
+        <div className="lg:col-span-5 w-full bg-sol-surface/80 border border-sol-border/20 backdrop-blur-md rounded-[2rem] p-8 shadow-2xl flex flex-col justify-between lg:h-[720px] overflow-y-auto animate-in fade-in slide-in-from-right-4 duration-500">
+          <div>
+            {activeDbPlan ? (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-3xl font-black text-sol-text uppercase tracking-tight">
+                    {locale === "vi" ? activeDbPlan.vi_name : activeDbPlan.en_name}
+                  </h3>
+                </div>
+
+                {/* Price block styled exactly like Semrush */}
+                <div className="border-t border-sol-border/10 pt-6">
+                  {(() => {
+                    const parts = getFormattedPriceParts(activeDbPlan);
+                    return (
+                      <div className="flex items-baseline gap-1 text-sol-text font-black">
+                        {activeDbPlan.name === "learning_center" && (
+                          <span className="text-lg font-black text-sol-accent mr-1.5 uppercase self-center">
+                            {locale === "vi" ? "Từ" : "From"}
+                          </span>
+                        )}
+                        <div className="flex items-start">
+                          {parts.currency && (
+                            <span className="text-3xl mt-1.5 mr-0.5">{parts.currency}</span>
+                          )}
+                          <span className="text-6xl tracking-tight leading-none">
+                            {parts.integer}
+                          </span>
+                          <div className="ml-1 flex flex-col justify-start">
+                            {parts.decimal && (
+                              <span className="text-xl font-black leading-none">{parts.decimal}</span>
+                            )}
+                            <span className="text-xs font-semibold text-sol-muted leading-none mt-1">
+                              {parts.period}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+
+                {/* Checklist with checkmarks */}
+                <div className="border-t border-sol-border/10 pt-6 space-y-4">
+                  <h4 className="text-sm font-bold text-sol-text">
+                    {locale === "vi"
+                      ? planDetailsContent[selectedPlan].vi.subheader
+                      : planDetailsContent[selectedPlan].en.subheader}
+                  </h4>
+                  <ul className="space-y-2.5">
+                    {(locale === "vi"
+                      ? planDetailsContent[selectedPlan].vi.checklist
+                      : planDetailsContent[selectedPlan].en.checklist
+                    ).map((feature, i) => (
+                      <li key={i} className="flex items-start gap-2.5 text-xs text-sol-text font-medium">
+                        {feature.isLimit ? (
+                          <X className="text-[#dc322f] shrink-0 mt-0.5" size={16} />
+                        ) : (
+                          <Check className="text-[#10b981] shrink-0 mt-0.5" size={16} />
+                        )}
+                        <span>{feature.text}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Bottom description */}
+                <div className="border-t border-sol-border/10 pt-6 space-y-2">
+                  <h4 className="text-xs font-black uppercase text-sol-muted tracking-wider">
+                    {locale === "vi"
+                      ? planDetailsContent[selectedPlan].vi.descHeader
+                      : planDetailsContent[selectedPlan].en.descHeader}
+                  </h4>
+                  <p className="text-xs font-medium text-sol-muted leading-relaxed">
+                    {locale === "vi"
+                      ? planDetailsContent[selectedPlan].vi.descText
+                      : planDetailsContent[selectedPlan].en.descText}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-60 gap-3">
+                <Loader2 className="animate-spin text-sol-accent" size={32} />
+                <p className="text-xs font-bold text-sol-muted">
+                  {locale === "vi" ? "Đang tải thông tin gói học..." : "Loading plan details..."}
+                </p>
+              </div>
+            )}
+          </div>
+
         </div>
       </div>
 
@@ -371,7 +709,7 @@ export default function SignupPage() {
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-wider opacity-60">Anhoc Premium</p>
                     <p className="text-xs font-bold mt-0.5">
-                      {selectedPlan === "sub_student" ? tPricing("subStudent.title") : tPricing("supervisor.title")}
+                      {getPlanDisplayName(selectedPlan)}
                     </p>
                   </div>
                   <div className="h-8 w-12 bg-white/10 rounded-md backdrop-blur border border-white/10 flex items-center justify-center font-bold text-xs">

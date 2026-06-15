@@ -1187,6 +1187,18 @@
         "priorityAi": "Gia sư AI hỗ trợ ưu tiên"
       }
     },
+    "supervisor": {
+      "title": "Giám hộ",
+      "price": "499.000đ",
+      "description": "Hoàn hảo cho gia đình và tổ chức quản lý học tập",
+      "features": {
+        "limitStudents": "Tối đa 5 tài khoản học sinh",
+        "limitTeachers": "Tối đa 2 tài khoản giáo viên",
+        "assignSeats": "Cấp/thu hồi quyền học cao cấp",
+        "trackProgress": "Theo dõi tiến độ của học sinh",
+        "reviewLessons": "Xem lại bài tập và bài kiểm tra"
+      }
+    },
     "family": {
       "title": "Gói Gia Đình",
       "price": "499.000đ",

@@ -1168,6 +1168,18 @@
         "priorityAi": "Priority AI tutor support"
       }
     },
+    "supervisor": {
+      "title": "Supervisor",
+      "price": "$19.99",
+      "description": "Perfect for families and organizations managing student progress",
+      "features": {
+        "limitStudents": "Up to 5 student accounts",
+        "limitTeachers": "Up to 2 teacher accounts",
+        "assignSeats": "Assign/unassign premium subscriptions",
+        "trackProgress": "Track progress of managed students",
+        "reviewLessons": "Review lessons, assignments & quizzes"
+      }
+    },
     "family": {
       "title": "Family Plan",
       "price": "$19.99",

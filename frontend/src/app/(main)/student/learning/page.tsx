@@ -3,7 +3,7 @@
 import { useTranslations, useLocale } from "next-intl";
 import Link from "next/link";
 import Can from "@/components/auth/Can";
-import { GraduationCap, Library, Globe, ArrowUpRight, PlusCircle, Layers, BookMarked, ChevronRight, BookOpen, PlayCircle, Loader2, Pencil, Trash2, Flame, Users, Sparkles, TrendingUp, ShieldAlert, CheckCircle2, Clock, Lock } from "lucide-react";
+import { GraduationCap, Library, Globe, ArrowUpRight, PlusCircle, Layers, BookMarked, ChevronRight, ChevronLeft, BookOpen, PlayCircle, Loader2, Pencil, Trash2, Flame, Users, Sparkles, TrendingUp, ShieldAlert, CheckCircle2, Clock, Lock } from "lucide-react";
 import CreateLessonModal from "@/components/feature/CreateLessonModal";
 import Hero from "@/components/ui/Hero";
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -12,6 +12,7 @@ import { isAxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import { ActivityPoint, authService, NearbyLearner } from "@/services/auth";
 import { useTheme } from "@/hooks/useTheme";
+import { useAuth } from "@/hooks/useAuth";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 
 type LessonGradeGroup = {
@@ -42,6 +43,7 @@ export default function LearningDashboard() {
   const locale = useLocale();
   const router = useRouter();
   const { theme } = useTheme();
+  const { user } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [metaModal, setMetaModal] = useState<"subject" | "grade" | "subjectAccess" | "subjectsList" | null>(null);
   const [editLessonId, setEditLessonId] = useState<string | null>(null);
@@ -57,6 +59,8 @@ export default function LearningDashboard() {
   const [lockedSubjects, setLockedSubjects] = useState<Subject[]>([]);
   const [subjectCatalog, setSubjectCatalog] = useState<Subject[]>([]);
   const [requestingSubjectId, setRequestingSubjectId] = useState<number | null>(null);
+  const [learnerPage, setLearnerPage] = useState(0);
+  const LEARNERS_PER_PAGE = 1;
 
   const fetchDisplayData = useCallback(async () => {
     try {
@@ -260,13 +264,15 @@ export default function LearningDashboard() {
             <BookMarked size={18} className="md:h-5 md:w-5" />
             <span>{t("newSubject")}</span>
           </button>
-          <button
-            onClick={() => setMetaModal("subjectAccess")}
-            className="flex items-center gap-2 rounded-2xl border border-sol-border/20 bg-sol-surface px-4 py-2.5 text-sm font-bold text-sol-text transition-transform hover:scale-105 hover:text-sol-accent cursor-pointer md:px-5 md:py-3"
-          >
-            <ShieldAlert size={18} className="md:h-5 md:w-5" />
-            <span>{t("manageSubjectAccess")}</span>
-          </button>
+          {user?.role !== "supervisor" && (
+            <button
+              onClick={() => setMetaModal("subjectAccess")}
+              className="flex items-center gap-2 rounded-2xl border border-sol-border/20 bg-sol-surface px-4 py-2.5 text-sm font-bold text-sol-text transition-transform hover:scale-105 hover:text-sol-accent cursor-pointer md:px-5 md:py-3"
+            >
+              <ShieldAlert size={18} className="md:h-5 md:w-5" />
+              <span>{t("manageSubjectAccess")}</span>
+            </button>
+          )}
           <button
             onClick={() => setMetaModal("grade")}
             className="flex items-center gap-2 rounded-2xl border border-sol-border/20 bg-sol-surface px-4 py-2.5 text-sm font-bold text-sol-text transition-transform hover:scale-105 hover:text-sol-accent cursor-pointer md:px-5 md:py-3"
@@ -526,7 +532,13 @@ export default function LearningDashboard() {
                 <span className="text-xs font-black uppercase tracking-[0.2em]">{t("socializingTitle")}</span>
               </div>
               <div className="rounded-full border border-sol-border/30 bg-sol-bg px-3 py-1 text-[10px] font-black uppercase tracking-widest text-sol-text/55">
-                {t("nearbyCount", { count: nearbyLearners.length })}
+                {(() => {
+                  const filtered = nearbyLearners.filter((l) => l.id !== recommendedUser?.id);
+                  if (filtered.length === 0) return t("nearbyCount", { count: 0 });
+                  const start = learnerPage * LEARNERS_PER_PAGE + 1;
+                  const end = Math.min((learnerPage + 1) * LEARNERS_PER_PAGE, filtered.length);
+                  return `${start}–${end} / ${filtered.length}`;
+                })()}
               </div>
             </div>
 
@@ -575,50 +587,97 @@ export default function LearningDashboard() {
             )}
 
             <div className="mt-5 space-y-3">
-              {nearbyLearners.map((learner) => (
-                <div
-                  key={learner.id}
-                  className="rounded-[1.5rem] border border-sol-border/30 bg-sol-bg p-3"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sol-accent/12 text-sm font-black text-sol-accent">
-                      {learner.username.slice(0, 2).toUpperCase()}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-black text-sol-text">{learner.username}</p>
-                      <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] font-bold text-sol-text/60">
-                        <span className="inline-flex items-center gap-1">
-                          <Sparkles size={12} className="text-sol-accent" />
-                          Lv {learner.level}
-                        </span>
-                        <span className="inline-flex items-center gap-1">
-                          <TrendingUp size={12} className="text-sol-green" />
-                          {Math.round(learner.average_score || 0)}%
-                        </span>
-                        {learner.country && <span>{learner.country}</span>}
+              {(() => {
+                const filteredLearners = nearbyLearners.filter((l) => l.id !== recommendedUser?.id);
+                const totalPages = Math.ceil(filteredLearners.length / LEARNERS_PER_PAGE);
+                const visibleLearners = filteredLearners.slice(
+                  learnerPage * LEARNERS_PER_PAGE,
+                  (learnerPage + 1) * LEARNERS_PER_PAGE
+                );
+                return (
+                  <>
+                    {visibleLearners.map((learner) => (
+                      <div
+                        key={learner.id}
+                        className="rounded-[1.5rem] border border-sol-border/30 bg-sol-bg p-3 animate-in fade-in duration-300"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sol-accent/12 text-sm font-black text-sol-accent">
+                            {learner.username.slice(0, 2).toUpperCase()}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-black text-sol-text">{learner.username}</p>
+                            <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] font-bold text-sol-text/60">
+                              <span className="inline-flex items-center gap-1">
+                                <Sparkles size={12} className="text-sol-accent" />
+                                Lv {learner.level}
+                              </span>
+                              <span className="inline-flex items-center gap-1">
+                                <TrendingUp size={12} className="text-sol-green" />
+                                {Math.round(learner.average_score || 0)}%
+                              </span>
+                              {learner.country && <span>{learner.country}</span>}
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleFollowToggle(learner)}
+                          disabled={followLoadingId === learner.id}
+                          className={`mt-3 w-full rounded-2xl px-4 py-2.5 text-sm font-black transition-all ${
+                            learner.is_following
+                              ? "border border-sol-border/30 bg-sol-surface text-sol-text hover:border-sol-accent/30 hover:text-sol-accent"
+                              : "bg-sol-accent text-sol-bg hover:bg-sol-accent/90"
+                          } disabled:opacity-60`}
+                        >
+                          {followLoadingId === learner.id ? <span className="inline-flex items-center gap-2"><Loader2 size={14} className="animate-spin" />{t("updatingFollow")}</span> : learner.is_following ? t("followingAction") : t("followAction")}
+                        </button>
                       </div>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleFollowToggle(learner)}
-                    disabled={followLoadingId === learner.id}
-                    className={`mt-3 w-full rounded-2xl px-4 py-2.5 text-sm font-black transition-all ${
-                      learner.is_following
-                        ? "border border-sol-border/30 bg-sol-surface text-sol-text hover:border-sol-accent/30 hover:text-sol-accent"
-                        : "bg-sol-accent text-sol-bg hover:bg-sol-accent/90"
-                    } disabled:opacity-60`}
-                  >
-                    {followLoadingId === learner.id ? <span className="inline-flex items-center gap-2"><Loader2 size={14} className="animate-spin" />{t("updatingFollow")}</span> : learner.is_following ? t("followingAction") : t("followAction")}
-                  </button>
-                </div>
-              ))}
+                    ))}
 
-              {nearbyLearners.length === 0 && (
-                <div className="rounded-[1.5rem] border border-sol-border/30 bg-sol-bg p-4 text-sm font-medium text-sol-text/60">
-                  {t("noNearbyLearners")}
-                </div>
-              )}
+                    {nearbyLearners.length === 0 && (
+                      <div className="rounded-[1.5rem] border border-sol-border/30 bg-sol-bg p-4 text-sm font-medium text-sol-text/60">
+                        {t("noNearbyLearners")}
+                      </div>
+                    )}
+
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-between gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setLearnerPage((p) => Math.max(0, p - 1))}
+                          disabled={learnerPage === 0}
+                          className="flex h-8 w-8 items-center justify-center rounded-xl border border-sol-border/30 bg-sol-bg text-sol-muted transition-all hover:border-sol-accent hover:text-sol-accent disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          <ChevronLeft size={14} />
+                        </button>
+                        <div className="flex items-center gap-1.5">
+                          {Array.from({ length: totalPages }).map((_, i) => (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => setLearnerPage(i)}
+                              className={`h-1.5 rounded-full transition-all duration-300 ${
+                                i === learnerPage
+                                  ? "w-4 bg-sol-accent"
+                                  : "w-1.5 bg-sol-border/40 hover:bg-sol-accent/50"
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setLearnerPage((p) => Math.min(totalPages - 1, p + 1))}
+                          disabled={learnerPage >= totalPages - 1}
+                          className="flex h-8 w-8 items-center justify-center rounded-xl border border-sol-border/30 bg-sol-bg text-sol-muted transition-all hover:border-sol-accent hover:text-sol-accent disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          <ChevronRight size={14} />
+                        </button>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           </section>
         </aside>
@@ -754,6 +813,7 @@ function ManageSubjectAccessModal({ isOpen, onClose, onSuccess }: { isOpen: bool
 
 function CreateSubjectModal({ isOpen, onClose, onSuccess }: { isOpen: boolean; onClose: () => void; onSuccess: () => void }) {
   const t = useTranslations("Learning.metaModal");
+  const { user } = useAuth();
   const [form, setForm] = useState({ title_en: "", title_vi: "", slug: "", color: "#268bd2", is_classified: false });
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -783,15 +843,17 @@ function CreateSubjectModal({ isOpen, onClose, onSuccess }: { isOpen: boolean; o
         <MetaField label={t("titleVi")} value={form.title_vi} onChange={(value) => setForm({ ...form, title_vi: value })} required />
         <MetaField label={t("slug")} value={form.slug} onChange={(value) => setForm({ ...form, slug: value })} />
         <MetaField label={t("color")} type="color" value={form.color} onChange={(value) => setForm({ ...form, color: value })} />
-        <label className="flex items-center gap-3 rounded-lg border border-sol-border/20 bg-sol-bg px-3 py-3 font-bold text-sol-text">
-          <input
-            type="checkbox"
-            checked={form.is_classified}
-            onChange={(event) => setForm({ ...form, is_classified: event.target.checked })}
-            className="h-4 w-4 accent-sol-accent"
-          />
-          <span>{t("classified")}</span>
-        </label>
+        {user?.role !== "supervisor" && (
+          <label className="flex items-center gap-3 rounded-lg border border-sol-border/20 bg-sol-bg px-3 py-3 font-bold text-sol-text">
+            <input
+              type="checkbox"
+              checked={form.is_classified}
+              onChange={(event) => setForm({ ...form, is_classified: event.target.checked })}
+              className="h-4 w-4 accent-sol-accent"
+            />
+            <span>{t("classified")}</span>
+          </label>
+        )}
         {errorMessage && <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm font-bold text-red-500">{errorMessage}</p>}
         <button disabled={loading} className="w-full rounded-lg bg-sol-accent px-4 py-3 font-black text-sol-bg">
           {loading ? t("saving") : t("createSubject")}

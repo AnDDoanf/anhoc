@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { useDispatch } from "react-redux";
 import { useRouter } from "next/navigation";
 import {
@@ -32,6 +32,8 @@ type BillingCycle = "monthly" | "annually";
 interface Plan {
   id: number;
   name: string;
+  vi_name: string;
+  en_name: string;
   description: string;
   price_monthly: number;
   price_annually: number;
@@ -41,6 +43,16 @@ interface Plan {
   max_templates: number | null;
   max_subjects: number | null;
   max_grades: number | null;
+  price_per_student_monthly: number;
+  price_per_student_annually: number;
+  price_per_teacher_monthly: number;
+  price_per_teacher_annually: number;
+  price_per_lesson_monthly: number;
+  price_per_lesson_annually: number;
+  price_per_grade_monthly: number;
+  price_per_grade_annually: number;
+  price_per_template_monthly: number;
+  price_per_template_annually: number;
 }
 
 interface SubscriptionDetails {
@@ -53,6 +65,7 @@ interface SubscriptionDetails {
     end_date: string | null;
     auto_renew: boolean;
     plan: Plan;
+    calculatedPrice?: number;
   } | null;
   invoices: Array<{
     id: string;
@@ -65,6 +78,7 @@ interface SubscriptionDetails {
 
 export default function PricingPage() {
   const t = useTranslations("Pricing");
+  const locale = useLocale();
   const dispatch = useDispatch();
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
@@ -93,6 +107,33 @@ export default function PricingPage() {
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardCvc, setCardCvc] = useState("");
   const [isPending, startTransition] = useTransition();
+
+  // Custom limits for Learning Center plan
+  const [lcStudents, setLcStudents] = useState(20);
+  const [lcTeachers, setLcTeachers] = useState(5);
+  const [lcLessons, setLcLessons] = useState(50);
+  const [lcGrades, setLcGrades] = useState(20);
+  const [lcTemplates, setLcTemplates] = useState(200);
+
+  const calculateDynamicPrice = (plan: Plan) => {
+    if (plan.name !== "learning_center") {
+      return billingCycle === "annually" ? Number(plan.price_annually) : Number(plan.price_monthly);
+    }
+
+    const basePrice = billingCycle === "annually" ? Number(plan.price_annually) : Number(plan.price_monthly);
+    const pStudent = Number(billingCycle === "annually" ? plan.price_per_student_annually : plan.price_per_student_monthly);
+    const pTeacher = Number(billingCycle === "annually" ? plan.price_per_teacher_annually : plan.price_per_teacher_monthly);
+    const pLesson = Number(billingCycle === "annually" ? plan.price_per_lesson_annually : plan.price_per_lesson_monthly);
+    const pGrade = Number(billingCycle === "annually" ? plan.price_per_grade_annually : plan.price_per_grade_monthly);
+    const pTemplate = Number(billingCycle === "annually" ? plan.price_per_template_annually : plan.price_per_template_monthly);
+
+    return basePrice + 
+      (lcStudents * pStudent) + 
+      (lcTeachers * pTeacher) + 
+      (lcLessons * pLesson) + 
+      (lcGrades * pGrade) + 
+      (lcTemplates * pTemplate);
+  };
 
   // Load plans from backend
   const loadPlans = async () => {
@@ -141,6 +182,14 @@ export default function PricingPage() {
     setCardCvc("");
     setLearnUnitName("");
     setErrorMessage("");
+    // Reset limits for Learning Center when opening checkout
+    if (plan.name === "learning_center") {
+      setLcStudents(plan.max_students ?? 20);
+      setLcTeachers(plan.max_teachers ?? 5);
+      setLcLessons(plan.max_lessons ?? 50);
+      setLcGrades(plan.max_grades ?? 20);
+      setLcTemplates(plan.max_templates ?? 200);
+    }
     setIsCheckoutOpen(true);
   };
 
@@ -195,6 +244,11 @@ export default function PricingPage() {
           planId: selectedPlan.id,
           billingCycle,
           learnUnitName: learnUnitName.trim() || undefined,
+          maxStudents: selectedPlan.name === "learning_center" ? lcStudents : undefined,
+          maxTeachers: selectedPlan.name === "learning_center" ? lcTeachers : undefined,
+          maxLessons: selectedPlan.name === "learning_center" ? lcLessons : undefined,
+          maxGrades: selectedPlan.name === "learning_center" ? lcGrades : undefined,
+          maxTemplates: selectedPlan.name === "learning_center" ? lcTemplates : undefined,
         });
 
         // Sync Redux profile credentials
@@ -362,7 +416,7 @@ export default function PricingPage() {
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <h3 className="text-lg font-black tracking-tight text-sol-text uppercase">
-                          {t(`${key}.title`)}
+                          {locale === "vi" ? plan.vi_name : plan.en_name}
                         </h3>
                         {isCurrent && (
                           <span className="rounded-full bg-sol-accent/15 border border-sol-accent/30 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-sol-accent">
@@ -373,6 +427,11 @@ export default function PricingPage() {
                       <p className="text-xs text-sol-muted min-h-10 mb-4">{t(`${key}.description`)}</p>
                       
                       <div className="flex items-baseline mb-6 border-b border-sol-border/10 pb-4">
+                        {plan.name === "learning_center" && (
+                          <span className="text-sm font-black text-sol-accent mr-1.5 uppercase tracking-wide">
+                            {locale === "vi" ? "Từ" : "From"}
+                          </span>
+                        )}
                         <span className="text-3xl font-extrabold tracking-tight text-sol-text">
                           ${priceFormatted}
                         </span>
@@ -416,10 +475,18 @@ export default function PricingPage() {
                         {plan.name === "free" && (
                           <>
                             <li className="flex items-start gap-2 text-xs">
-                              <span className="mt-0.5 rounded-full bg-sol-green/10 p-0.5 text-sol-green shrink-0">
-                                <Check size={12} />
+                              <span className="mt-0.5 rounded-full bg-red-500/10 p-0.5 text-red-500 shrink-0">
+                                <X size={12} />
                               </span>
                               <span className="font-semibold text-sol-text/90">{t("freeStudent.features.xpCap")}</span>
+                            </li>
+                            <li className="flex items-start gap-2 text-xs">
+                              <span className="mt-0.5 rounded-full bg-red-500/10 p-0.5 text-red-500 shrink-0">
+                                <X size={12} />
+                              </span>
+                              <span className="font-semibold text-sol-text/90">
+                                {locale === "vi" ? "Giới hạn 5 bài học và 5 mẫu câu hỏi" : "Limit of 5 lessons and 5 templates"}
+                              </span>
                             </li>
                             <li className="flex items-start gap-2 text-xs opacity-60">
                               <span className="mt-0.5 rounded-full bg-sol-orange/10 p-0.5 text-sol-orange shrink-0">
@@ -461,6 +528,52 @@ export default function PricingPage() {
                               </span>
                               <span className="font-semibold text-sol-text/90">Detailed progress monitoring</span>
                             </li>
+                            {plan.name === "family" && (
+                              <li className="flex items-start gap-2 text-xs">
+                                <span className="mt-0.5 rounded-full bg-red-500/10 p-0.5 text-red-500 shrink-0">
+                                  <X size={12} />
+                                </span>
+                                <span className="font-semibold text-sol-text/90">
+                                  {locale === "vi" ? "Giới hạn 10 bài học và 20 mẫu câu hỏi" : "Limit of 10 lessons and 20 templates"}
+                                </span>
+                              </li>
+                            )}
+                            {plan.name === "learning_center" && (
+                              <>
+                                <li className="flex items-start gap-2 text-xs">
+                                  <span className="mt-0.5 rounded-full bg-sol-green/10 p-0.5 text-sol-green shrink-0">
+                                    <Check size={12} />
+                                  </span>
+                                  <span className="font-semibold text-sol-text/90">
+                                    {locale === "vi" ? "Bắt đầu với 20 tài khoản học sinh" : "Starts with 20 student seats"}
+                                  </span>
+                                </li>
+                                <li className="flex items-start gap-2 text-xs">
+                                  <span className="mt-0.5 rounded-full bg-sol-green/10 p-0.5 text-sol-green shrink-0">
+                                    <Check size={12} />
+                                  </span>
+                                  <span className="font-semibold text-sol-text/90">
+                                    {locale === "vi" ? "Có sẵn 5 giáo viên & 5 môn học" : "Includes 5 teachers & 5 subjects"}
+                                  </span>
+                                </li>
+                                <li className="flex items-start gap-2 text-xs">
+                                  <span className="mt-0.5 rounded-full bg-sol-green/10 p-0.5 text-sol-green shrink-0">
+                                    <Check size={12} />
+                                  </span>
+                                  <span className="font-semibold text-sol-text/90">
+                                    {locale === "vi" ? "Có sẵn 20 khối lớp, 50 bài học & 200 mẫu câu hỏi" : "Includes 20 grades, 50 lessons & 200 templates"}
+                                  </span>
+                                </li>
+                                <li className="flex items-start gap-2 text-xs">
+                                  <span className="mt-0.5 rounded-full bg-sol-green/10 p-0.5 text-sol-green shrink-0">
+                                    <Check size={12} />
+                                  </span>
+                                  <span className="font-semibold text-sol-text/90">
+                                    {locale === "vi" ? "Tùy chỉnh số lượng theo nhu cầu" : "Customized numbers as you grow"}
+                                  </span>
+                                </li>
+                              </>
+                            )}
                           </>
                         )}
                       </ul>
@@ -516,12 +629,12 @@ export default function PricingPage() {
                     {t("buttons.activePlan")}
                   </h3>
                   <h2 className="text-3xl font-black text-sol-text uppercase mt-1">
-                    {subDetails?.activeSubscription ? t(`${getPlanLocalKey(subDetails.activeSubscription.plan.name)}.title`) : "Free Account"}
+                    {subDetails?.activeSubscription ? (locale === "vi" ? subDetails.activeSubscription.plan.vi_name : subDetails.activeSubscription.plan.en_name) : "Free Account"}
                   </h2>
                   <p className="text-sm font-bold text-sol-muted mt-2">
                     {subDetails?.activeSubscription ? (
                       <>
-                        Price: ${subDetails.activeSubscription.billing_cycle === "annually" ? subDetails.activeSubscription.plan.price_annually : subDetails.activeSubscription.plan.price_monthly} 
+                        Price: ${subDetails.activeSubscription.calculatedPrice ?? (subDetails.activeSubscription.billing_cycle === "annually" ? subDetails.activeSubscription.plan.price_annually : subDetails.activeSubscription.plan.price_monthly)} 
                         ({subDetails.activeSubscription.billing_cycle === "annually" ? "Annually" : "Monthly"})
                       </>
                     ) : (
@@ -719,6 +832,105 @@ export default function PricingPage() {
                   </div>
                 )}
 
+                {/* Custom Resource limits configuration for Learning Center */}
+                {selectedPlan.name === "learning_center" && (
+                  <div className="mb-6 space-y-4 rounded-2xl border border-sol-border/20 bg-sol-surface/30 p-4">
+                    <h4 className="text-xs font-black uppercase tracking-wider text-sol-accent">
+                      {locale === "vi" ? "Cấu hình tài nguyên" : "Resource Allocation"}
+                    </h4>
+                    
+                    {/* Max Students */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs font-bold text-sol-text">
+                        <span>{locale === "vi" ? "Số lượng học sinh tối đa" : "Max Students"}</span>
+                        <span className="text-sol-accent font-mono">{lcStudents}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="5"
+                        max="200"
+                        step="5"
+                        value={lcStudents}
+                        onChange={(e) => setLcStudents(Number(e.target.value))}
+                        disabled={checkoutStatus === "processing"}
+                        className="w-full h-1.5 rounded-lg bg-sol-border/30 accent-sol-accent appearance-none cursor-pointer"
+                      />
+                    </div>
+
+                    {/* Max Teachers */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs font-bold text-sol-text">
+                        <span>{locale === "vi" ? "Số lượng giáo viên tối đa" : "Max Teachers"}</span>
+                        <span className="text-sol-accent font-mono">{lcTeachers}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="1"
+                        max="20"
+                        step="1"
+                        value={lcTeachers}
+                        onChange={(e) => setLcTeachers(Number(e.target.value))}
+                        disabled={checkoutStatus === "processing"}
+                        className="w-full h-1.5 rounded-lg bg-sol-border/30 accent-sol-accent appearance-none cursor-pointer"
+                      />
+                    </div>
+
+                    {/* Max Lessons */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs font-bold text-sol-text">
+                        <span>{locale === "vi" ? "Số bài học tối đa" : "Max Lessons"}</span>
+                        <span className="text-sol-accent font-mono">{lcLessons}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="5"
+                        max="100"
+                        step="5"
+                        value={lcLessons}
+                        onChange={(e) => setLcLessons(Number(e.target.value))}
+                        disabled={checkoutStatus === "processing"}
+                        className="w-full h-1.5 rounded-lg bg-sol-border/30 accent-sol-accent appearance-none cursor-pointer"
+                      />
+                    </div>
+
+                    {/* Max Grades */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs font-bold text-sol-text">
+                        <span>{locale === "vi" ? "Số khối lớp tối đa" : "Max Grades"}</span>
+                        <span className="text-sol-accent font-mono">{lcGrades}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="1"
+                        max="50"
+                        step="1"
+                        value={lcGrades}
+                        onChange={(e) => setLcGrades(Number(e.target.value))}
+                        disabled={checkoutStatus === "processing"}
+                        className="w-full h-1.5 rounded-lg bg-sol-border/30 accent-sol-accent appearance-none cursor-pointer"
+                      />
+                    </div>
+
+                    {/* Max Templates */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs font-bold text-sol-text">
+                        <span>{locale === "vi" ? "Số mẫu câu hỏi tối đa" : "Max Question Templates"}</span>
+                        <span className="text-sol-accent font-mono">{lcTemplates}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="10"
+                        max="300"
+                        step="10"
+                        value={lcTemplates}
+                        onChange={(e) => setLcTemplates(Number(e.target.value))}
+                        disabled={checkoutStatus === "processing"}
+                        className="w-full h-1.5 rounded-lg bg-sol-border/30 accent-sol-accent appearance-none cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 {/* Stylized credit card template preview */}
                 <div className="relative w-full h-44 rounded-2xl bg-gradient-to-br from-sol-accent/90 via-sol-cyan to-sol-accent p-6 text-sol-bg shadow-lg mb-6 overflow-hidden flex flex-col justify-between">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl pointer-events-none" />
@@ -726,7 +938,7 @@ export default function PricingPage() {
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-wider opacity-60">Anhoc Premium</p>
                       <p className="text-xs font-bold mt-0.5 uppercase">
-                        {t(`${getPlanLocalKey(selectedPlan.name)}.title`)}
+                        {locale === "vi" ? selectedPlan.vi_name : selectedPlan.en_name}
                       </p>
                     </div>
                     <div className="h-8 w-12 bg-white/10 rounded-md backdrop-blur border border-white/10 flex items-center justify-center font-bold text-xs">
@@ -841,7 +1053,7 @@ export default function PricingPage() {
                       <>
                         <Lock size={14} />
                         <span>
-                          {t("checkout.payNow")} (${billingCycle === "annually" ? selectedPlan.price_annually : selectedPlan.price_monthly})
+                          {t("checkout.payNow")} (${calculateDynamicPrice(selectedPlan).toFixed(2)})
                         </span>
                       </>
                     )}

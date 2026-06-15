@@ -518,6 +518,8 @@ model GameAttempt {
 model Plan {
   id             Int                @id @default(autoincrement())
   name           String             @db.VarChar(50) // "free", "pro", "family", "learning_center"
+  vi_name        String             @default("") @db.VarChar(100)
+  en_name        String             @default("") @db.VarChar(100)
   description    String?            @db.VarChar(255)
   price_monthly  Decimal            @db.Decimal(10, 2)
   price_annually Decimal            @db.Decimal(10, 2)
@@ -527,6 +529,19 @@ model Plan {
   max_templates  Int?
   max_subjects   Int?
   max_grades     Int?
+  
+  // Dynamic pricing multipliers
+  price_per_student_monthly   Decimal @default(0.00) @db.Decimal(10, 2)
+  price_per_student_annually  Decimal @default(0.00) @db.Decimal(10, 2)
+  price_per_teacher_monthly   Decimal @default(0.00) @db.Decimal(10, 2)
+  price_per_teacher_annually  Decimal @default(0.00) @db.Decimal(10, 2)
+  price_per_lesson_monthly    Decimal @default(0.00) @db.Decimal(10, 2)
+  price_per_lesson_annually   Decimal @default(0.00) @db.Decimal(10, 2)
+  price_per_grade_monthly     Decimal @default(0.00) @db.Decimal(10, 2)
+  price_per_grade_annually    Decimal @default(0.00) @db.Decimal(10, 2)
+  price_per_template_monthly  Decimal @default(0.00) @db.Decimal(10, 2)
+  price_per_template_annually Decimal @default(0.00) @db.Decimal(10, 2)
+
   effect_from    DateTime           @default(now()) @db.Timestamptz
   effect_to      DateTime?          @db.Timestamptz
   created_at     DateTime           @default(now()) @db.Timestamptz
@@ -547,6 +562,15 @@ model SubscriptionPlan {
   end_date        DateTime? @db.Timestamptz
   auto_renew      Boolean   @default(true) // true = continuous payment, false = stop payment
   slots_purchased Int       @default(0)
+  
+  // Customized limits captured at checkout
+  max_students    Int?
+  max_teachers    Int?
+  max_lessons     Int?
+  max_templates   Int?
+  max_grades      Int?
+  max_subjects    Int?
+
   effect_from     DateTime  @default(now()) @db.Timestamptz
   effect_to       DateTime? @db.Timestamptz
   created_at      DateTime  @default(now()) @db.Timestamptz

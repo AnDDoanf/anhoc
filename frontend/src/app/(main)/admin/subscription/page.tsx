@@ -23,7 +23,7 @@ import {
   Calendar,
   AlertCircle,
 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/redux/store";
@@ -67,6 +67,8 @@ interface SupervisorMember {
 interface Plan {
   id: number;
   name: string;
+  vi_name?: string;
+  en_name?: string;
   description: string;
   price_monthly: number;
   price_annually: number;
@@ -88,6 +90,7 @@ interface SubscriptionDetails {
     end_date: string | null;
     auto_renew: boolean;
     plan: Plan;
+    calculatedPrice?: number;
   } | null;
   invoices: Array<{
     id: string;
@@ -103,6 +106,7 @@ export default function AdminSubscriptionPage() {
   const tUsers = useTranslations("AdminUsers");
   const tPricing = useTranslations("Pricing");
   const tSupervisor = useTranslations("Supervisor");
+  const locale = useLocale();
   const dispatch = useDispatch();
 
   const { user } = useAuth();
@@ -442,7 +446,9 @@ export default function AdminSubscriptionPage() {
                         <Loader2 className="animate-spin text-sol-accent" size={16} /> {tPricing("supervisorBilling.retrievingPlan")}
                       </span>
                     ) : subDetails?.activeSubscription ? (
-                      tPricing(`${getPlanLocalKey(subDetails.activeSubscription.plan.name)}.title`)
+                      locale === "vi" 
+                        ? (subDetails.activeSubscription.plan.vi_name || tPricing(`${getPlanLocalKey(subDetails.activeSubscription.plan.name)}.title`))
+                        : (subDetails.activeSubscription.plan.en_name || tPricing(`${getPlanLocalKey(subDetails.activeSubscription.plan.name)}.title`))
                     ) : (
                       tPricing("supervisorBilling.freeAccount")
                     )}
@@ -453,9 +459,11 @@ export default function AdminSubscriptionPage() {
                       <p className="text-sm font-bold text-sol-muted mt-2">
                         {subDetails?.activeSubscription ? (
                           tPricing("supervisorBilling.priceDetail", {
-                            price: subDetails.activeSubscription.billing_cycle === "annually" 
-                              ? subDetails.activeSubscription.plan.price_annually 
-                              : subDetails.activeSubscription.plan.price_monthly,
+                            price: subDetails.activeSubscription.calculatedPrice !== undefined
+                              ? subDetails.activeSubscription.calculatedPrice
+                              : (subDetails.activeSubscription.billing_cycle === "annually" 
+                                  ? subDetails.activeSubscription.plan.price_annually 
+                                  : subDetails.activeSubscription.plan.price_monthly),
                             cycle: subDetails.activeSubscription.billing_cycle === "annually" 
                               ? tPricing("buttons.annually") 
                               : tPricing("buttons.monthly")
