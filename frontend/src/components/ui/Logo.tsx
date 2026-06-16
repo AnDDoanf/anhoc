@@ -1,6 +1,6 @@
 import React from 'react';
 
-interface LogoProps extends React.SVGProps<SVGSVGElement> {}
+type LogoProps = React.SVGProps<SVGSVGElement>;
 
 export default function Logo({ className, ...props }: LogoProps) {
   return (

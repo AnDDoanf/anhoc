@@ -381,6 +381,24 @@
       "keepGoing": "Keep Going"
     }
   },
+  "GradeTest": {
+    "unlocked": "Unlocked",
+    "locked": "Locked",
+    "questions": "{count, plural, one {# question} other {# questions}}",
+    "attempts": "{count, plural, one {# attempt} other {# attempts}}",
+    "progress": "Practice progress",
+    "summary": "{completed}/{required} lessons at {score}%+",
+    "ready": "You have unlocked this grade test and can start it any time.",
+    "requirement": "Practice every lesson in this grade and score at least {score}% on each one.",
+    "start": "Take grade test",
+    "starting": "Starting...",
+    "lockedButton": "Practice to unlock",
+    "lockedHint": {
+      "one": "1 lesson still needs a 70%+ practice score.",
+      "other": "{count} lessons still need 70%+ practice scores."
+    },
+    "startError": "Failed to start the grade test."
+  },
   "Learning": {
     "subjects": "Subjects",
     "subjectCatalogTitle": "Subject Catalog",

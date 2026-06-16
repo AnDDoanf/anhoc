@@ -2,7 +2,7 @@
 
 import { isAxiosError } from "axios";
 import { ArrowRight, CheckCircle2, Loader2, Lock, Medal } from "lucide-react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { GradeTest, testService } from "@/services/testService";
@@ -13,6 +13,7 @@ interface GradeTestEntryProps {
 }
 
 export default function GradeTestEntry({ test, className = "" }: GradeTestEntryProps) {
+  const t = useTranslations("GradeTest");
   const locale = useLocale();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -24,41 +25,10 @@ export default function GradeTestEntry({ test, className = "" }: GradeTestEntryP
   const requiredLessons = Math.max(eligibility.requiredLessonCount, 1);
   const remainingLessons = Math.max(eligibility.requiredLessonCount - completedLessons, 0);
   const progressWidth = Math.min((completedLessons / requiredLessons) * 100, 100);
-  const labels = locale === "vi"
-    ? {
-        unlocked: "Da mo khoa",
-        locked: "Chua mo khoa",
-        questions: `${test.questionCount} cau hoi`,
-        attempts: `${attemptCount} luot lam`,
-        progress: "Tien do luyen tap",
-        summary: `${completedLessons}/${eligibility.requiredLessonCount} bai hoc dat ${eligibility.minimumScore}%+`,
-        ready: "Ban da du dieu kien de lam bai kiem tra tong hop cho lop nay.",
-        requirement: `Can luyen tap tat ca bai hoc trong lop nay va dat it nhat ${eligibility.minimumScore}% moi bai.`,
-        start: "Lam bai kiem tra",
-        starting: "Dang vao bai...",
-        lockedButton: "Luyen tap de mo khoa",
-        lockedHint: remainingLessons === 1
-          ? "Con 1 bai hoc chua dat yeu cau."
-          : `Con ${remainingLessons} bai hoc chua dat yeu cau.`,
-        startError: "Khong the bat dau bai kiem tra.",
-      }
-    : {
-        unlocked: "Unlocked",
-        locked: "Locked",
-        questions: `${test.questionCount} questions`,
-        attempts: `${attemptCount} attempts`,
-        progress: "Practice progress",
-        summary: `${completedLessons}/${eligibility.requiredLessonCount} lessons at ${eligibility.minimumScore}%+`,
-        ready: "You have unlocked this grade test and can start it any time.",
-        requirement: `Practice every lesson in this grade and score at least ${eligibility.minimumScore}% on each one.`,
-        start: "Take grade test",
-        starting: "Starting...",
-        lockedButton: "Practice to unlock",
-        lockedHint: remainingLessons === 1
-          ? "1 lesson still needs a 70%+ practice score."
-          : `${remainingLessons} lessons still need 70%+ practice scores.`,
-        startError: "Failed to start the grade test.",
-      };
+
+  const lockedHint = remainingLessons === 1
+    ? t("lockedHint.one")
+    : t("lockedHint.other", { count: remainingLessons });
 
   const handleStart = async () => {
     if (!eligibility.eligible) return;
@@ -69,7 +39,7 @@ export default function GradeTestEntry({ test, className = "" }: GradeTestEntryP
       router.push(`/student/practice/${attempt.id}`);
     } catch (error) {
       console.error("Failed to start grade test:", error);
-      alert(isAxiosError(error) ? error.response?.data?.error || labels.startError : labels.startError);
+      alert(isAxiosError(error) ? error.response?.data?.error || t("startError") : t("startError"));
     } finally {
       setLoading(false);
     }
@@ -90,14 +60,14 @@ export default function GradeTestEntry({ test, className = "" }: GradeTestEntryP
                   : "bg-sol-orange/10 text-sol-orange"
               }`}
             >
-              {eligibility.eligible ? labels.unlocked : labels.locked}
+              {eligibility.eligible ? t("unlocked") : t("locked")}
             </span>
             <span className="rounded-full border border-sol-border/20 bg-sol-surface px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-sol-muted">
-              {labels.questions}
+              {t("questions", { count: test.questionCount })}
             </span>
             {attemptCount > 0 && (
               <span className="rounded-full border border-sol-border/20 bg-sol-surface px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-sol-muted">
-                {labels.attempts}
+                {t("attempts", { count: attemptCount })}
               </span>
             )}
           </div>
@@ -105,14 +75,14 @@ export default function GradeTestEntry({ test, className = "" }: GradeTestEntryP
           <div>
             <h4 className="text-lg font-black text-sol-text md:text-xl">{title}</h4>
             <p className="mt-1 text-sm font-medium text-sol-muted">
-              {eligibility.eligible ? labels.ready : labels.requirement}
+              {eligibility.eligible ? t("ready") : t("requirement", { score: eligibility.minimumScore })}
             </p>
           </div>
 
           <div className="rounded-2xl border border-sol-border/20 bg-sol-surface/70 p-4">
             <div className="flex items-center justify-between gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-sol-muted">
-              <span>{labels.progress}</span>
-              <span>{labels.summary}</span>
+              <span>{t("progress")}</span>
+              <span>{t("summary", { completed: completedLessons, required: eligibility.requiredLessonCount, score: eligibility.minimumScore })}</span>
             </div>
             <div className="mt-3 h-2 overflow-hidden rounded-full bg-sol-border/15">
               <div
@@ -130,13 +100,13 @@ export default function GradeTestEntry({ test, className = "" }: GradeTestEntryP
             type="button"
             onClick={handleStart}
             disabled={!eligibility.eligible || loading}
-            className={`inline-flex items-center justify-between gap-3 rounded-2xl px-5 py-3 text-sm font-black transition-all ${
+            className={`inline-flex items-center justify-between gap-3 rounded-2xl px-5 py-3 text-sm font-black transition-all border ${
               eligibility.eligible
-                ? "bg-sol-text text-sol-bg hover:bg-sol-accent"
-                : "cursor-not-allowed bg-sol-border/15 text-sol-muted"
+                ? "bg-sol-accent/10 text-sol-accent border-sol-accent/25 hover:bg-sol-accent hover:text-sol-bg hover:border-sol-accent"
+                : "cursor-not-allowed bg-sol-border/15 border-transparent text-sol-muted"
             } disabled:opacity-70`}
           >
-            <span>{loading ? labels.starting : eligibility.eligible ? labels.start : labels.lockedButton}</span>
+            <span>{loading ? t("starting") : eligibility.eligible ? t("start") : t("lockedButton")}</span>
             {loading ? (
               <Loader2 size={18} className="animate-spin" />
             ) : eligibility.eligible ? (
@@ -148,7 +118,7 @@ export default function GradeTestEntry({ test, className = "" }: GradeTestEntryP
 
           <div className="flex items-start gap-2 rounded-2xl bg-sol-accent/8 px-3 py-2 text-xs font-medium text-sol-muted">
             <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-sol-accent" />
-            <span>{eligibility.eligible ? labels.ready : labels.lockedHint}</span>
+            <span>{eligibility.eligible ? t("ready") : lockedHint}</span>
           </div>
         </div>
       </div>

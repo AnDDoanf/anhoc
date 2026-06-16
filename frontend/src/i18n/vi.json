@@ -347,6 +347,24 @@
       "keepGoing": "Tiếp tục"
     }
   },
+  "GradeTest": {
+    "unlocked": "Đã mở khóa",
+    "locked": "Chưa mở khóa",
+    "questions": "{count} câu hỏi",
+    "attempts": "{count} lượt làm",
+    "progress": "Tiến độ luyện tập",
+    "summary": "{completed}/{required} bài học đạt {score}%+",
+    "ready": "Bạn đã đủ điều kiện để làm bài kiểm tra tổng hợp cho lớp này.",
+    "requirement": "Cần luyện tập tất cả bài học trong lớp này và đạt ít nhất {score}% mỗi bài.",
+    "start": "Làm bài kiểm tra",
+    "starting": "Đang vào bài...",
+    "lockedButton": "Luyện tập để mở khóa",
+    "lockedHint": {
+      "one": "Còn 1 bài học chưa đạt yêu cầu.",
+      "other": "Còn {count} bài học chưa đạt yêu cầu."
+    },
+    "startError": "Không thể bắt đầu bài kiểm tra."
+  },
   "Learning": {
     "subjects": "Môn học",
     "subjectCatalogTitle": "Danh mục môn học",
