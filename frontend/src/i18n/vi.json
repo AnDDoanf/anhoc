@@ -176,7 +176,7 @@
   },
   "Login": {
     "title": "Chào mừng trở lại",
-    "email_placeholder": "Địa chỉ Email",
+    "email_placeholder": "Email hoặc mã đăng nhập",
     "password_placeholder": "Mật khẩu",
     "remember_me": "Ghi nhớ trong 30 ngày",
     "forgot_password": "Quên mật khẩu?",
@@ -189,7 +189,7 @@
     "use_learn_unit_code": "Đăng nhập bằng mã đơn vị",
     "hide_learn_unit_code": "Ẩn tùy chọn đăng nhập này",
     "errors": {
-      "invalid_email": "Địa chỉ email không hợp lệ",
+      "identifier_required": "Vui lòng nhập email hoặc mã đăng nhập",
       "password_too_short": "Mật khẩu phải có ít nhất 6 ký tự"
     },
     "activation_hint": "Hãy mở email kích hoạt trước"
@@ -1126,17 +1126,56 @@
   "Signup": {
     "title": "Tạo tài khoản",
     "subtitle": "Dùng email của bạn trước. Hệ thống sẽ gửi liên kết kích hoạt trước lần đăng nhập đầu tiên.",
+    "first_name_placeholder": "Tên",
+    "last_name_placeholder": "Họ",
+    "full_name_placeholder": "Họ và tên",
+    "login_id_placeholder": "Mã đăng nhập",
+    "login_id_hint": "Tự tạo từ tên và họ của bạn.",
     "email_placeholder": "Địa chỉ Email",
     "password_placeholder": "Tạo mật khẩu",
+    "confirm_password_placeholder": "Xác nhận mật khẩu",
+    "choose_plan": "Chọn gói học",
+    "add_info": "Nhập thông tin",
+    "verify_email": "Xác nhận email",
+    "mailhog_button": "Mở Hộp thư Mailhog",
+    "mailhog_hint": "Hệ thống đã gửi email xác thực. Nhấp vào nút bên dưới để mở Mailhog (http://localhost:8025) và xác nhận email của bạn.",
+    "next": "Tiếp theo",
+    "back": "Quay lại",
+    "tooltips": {
+      "firstName": "Vui lòng nhập tên.",
+      "lastName": "Vui lòng nhập họ.",
+      "fullName": "Vui lòng nhập họ và tên.",
+      "email": "Phải là địa chỉ email hợp lệ (vd. user@example.com).",
+      "confirmPassword": "Mật khẩu xác nhận phải trùng khớp với mật khẩu đã nhập.",
+      "passwordTitle": "Yêu cầu mật khẩu:",
+      "passwordLowercase": "Có ít nhất một chữ thường",
+      "passwordUppercase": "Có ít nhất một chữ hoa",
+      "passwordDigit": "Có ít nhất một chữ số",
+      "passwordSpecialChar": "Có ít nhất một ký tự đặc biệt",
+      "passwordEnglishOnly": "Chỉ dùng chữ cái tiếng Anh và ký hiệu",
+      "passwordMinLength": "Độ dài mật khẩu tối thiểu là 8 ký tự",
+      "passwordMaxLength": "Độ dài mật khẩu tối đa là 40 ký tự"
+    },
     "submit": "Tạo tài khoản",
     "submitting": "Đang tạo tài khoản...",
     "success": "Đăng ký thành công. Hãy kiểm tra email để kích hoạt tài khoản.",
+    "loginIdSuccess": "Mã đăng nhập của bạn là",
     "fallbackError": "Đăng ký thất bại",
     "hasAccount": "Đã có tài khoản?",
     "signIn": "Đăng nhập",
     "errors": {
+      "first_name_required": "Vui lòng nhập tên",
+      "last_name_required": "Vui lòng nhập họ",
+      "full_name_required": "Vui lòng nhập họ và tên",
+      "login_id_required": "Mã đăng nhập là bắt buộc",
       "invalid_email": "Địa chỉ email không hợp lệ",
-      "password_too_short": "Mật khẩu phải có ít nhất 6 ký tự"
+      "password_too_short": "Mật khẩu phải có ít nhất 8 ký tự",
+      "password_uppercase": "Mật khẩu phải chứa ít nhất 1 chữ cái viết hoa",
+      "password_lowercase": "Mật khẩu phải chứa ít nhất 1 chữ cái viết thường",
+      "password_number": "Mật khẩu phải chứa ít nhất 1 chữ số",
+      "password_special": "Mật khẩu phải chứa ít nhất 1 ký tự đặc biệt",
+      "confirm_password_required": "Vui lòng xác nhận mật khẩu",
+      "confirm_password_mismatch": "Mật khẩu xác nhận không khớp"
     }
   },
   "Activate": {

@@ -1,6 +1,7 @@
 import axios from "axios";
 
 const LOCAL_API_URL = "http://127.0.0.1:5001/api/v1";
+const BROWSER_API_URL = "/api/v1";
 
 const normalizeApiBaseUrl = (value: string) => {
   const normalized = value.replace(/\/+$/, "");
@@ -10,7 +11,10 @@ const normalizeApiBaseUrl = (value: string) => {
 const publicApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
 const internalApiUrl = process.env.INTERNAL_API_URL?.trim() || process.env.API_URL?.trim();
 
-export const API_BASE_URL = normalizeApiBaseUrl(publicApiUrl || "/api/v1");
+// Browser requests should stay same-origin so local signup/login flows work through Next rewrites.
+export const API_BASE_URL = normalizeApiBaseUrl(
+  typeof window === "undefined" ? publicApiUrl || BROWSER_API_URL : BROWSER_API_URL
+);
 export const SERVER_API_BASE_URL = normalizeApiBaseUrl(
   internalApiUrl || publicApiUrl || LOCAL_API_URL
 );
@@ -34,7 +38,7 @@ const decodeJwt = (token: string) => {
         .join("")
     );
     return JSON.parse(jsonPayload);
-  } catch (e) {
+  } catch {
     return null;
   }
 };

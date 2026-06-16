@@ -9,6 +9,8 @@ import { z } from "zod";
 import Logo from "@/components/ui/Logo";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
+import LanguageToggle from "@/components/ui/LanguageToggle";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 
 export default function LoginPage() {
   const t = useTranslations("Login");
@@ -50,7 +52,16 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex w-full flex-col items-center justify-center px-4 py-8">
+    <div className="flex w-full flex-col items-center justify-center px-4 py-8 relative min-h-screen">
+      {/* Floating Toggles */}
+      <div className="absolute top-6 right-6 flex items-center gap-2 z-40 bg-sol-surface/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-sol-border/30 shadow-lg">
+        <LanguageToggle />
+        <span className="text-sol-border/20 select-none">|</span>
+        <div className="px-2">
+          <ThemeToggle />
+        </div>
+      </div>
+
       <div className="w-full max-w-[440px]">
         <div className="rounded-xl border border-sol-border/30 bg-sol-surface p-10 shadow-sm">
           <div className="mb-4 flex flex-col items-center">

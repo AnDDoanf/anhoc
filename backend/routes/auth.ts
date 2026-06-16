@@ -9,6 +9,16 @@ import { computeInactiveCleanupDeadline } from "../services/accountLifecycleServ
 import { createEmailVerificationToken, sendActivationEmail, sendPasswordResetEmail } from "../services/mailerService.ts";
 import { createNotification, NotificationType } from "../services/notificationService.ts";
 import { createDefaultLearnUnitName, createLearnUnitForSupervisor, normalizeLearnUnitCode } from "../services/learnUnitService.ts";
+import {
+  buildFullName,
+  createUniqueDisplayName,
+  createUniqueLoginId,
+  findUserIdByIdentifier,
+  getUserIdentity,
+  normalizeHumanName,
+  normalizeLoginIdValue,
+  saveUserIdentity,
+} from "../services/userIdentityService.ts";
 import { createRateLimiter } from "../middleware/rateLimiter.ts";
 
 const router = Router();
@@ -62,22 +72,6 @@ const formatPermissions = (permissions: PermissionRow[]) => {
     acc[resource].push(action);
     return acc;
   }, {} as Record<string, string[]>);
-};
-
-const createUniqueUsername = async (email: string, requestedUsername?: string) => {
-  const base = (requestedUsername?.trim() || email.split("@")[0] || "student")
-    .toLowerCase()
-    .replace(/[^a-z0-9_]+/g, "_")
-    .replace(/^_+|_+$/g, "")
-    .slice(0, 30) || "student";
-
-  for (let suffix = 0; suffix < 200; suffix += 1) {
-    const candidate = suffix === 0 ? base : `${base}_${suffix}`;
-    const existing = await prisma.user.findUnique({ where: { username: candidate } });
-    if (!existing) return candidate;
-  }
-
-  return `${base}_${Date.now()}`;
 };
 
 const resolveSignupRole = async (requestedRoleName?: string) => {
@@ -166,6 +160,7 @@ const createAuthPayload = async (user: {
   const preferred_subject_id = user.learning_profile?.preferred_subject_id ?? null;
   const requiresSubjectSelection = !preferred_subject_id;
   const learnUnit = serializeLearnUnit(user.learn_unit || user.supervised_learn_unit);
+  const identity = await getUserIdentity(user.id, user.username);
 
   const token = jwt.sign(
     {
@@ -201,6 +196,10 @@ const createAuthPayload = async (user: {
       id: user.id,
       email: user.email,
       username: user.username,
+      full_name: identity.full_name,
+      first_name: identity.first_name,
+      last_name: identity.last_name,
+      login_id: identity.login_id,
       country: user.country ?? null,
       role: user.role.name,
       account_status: user.account_status,
@@ -220,16 +219,32 @@ router.post("/register", registerLimiter, async (req: Request, res: Response) =>
     const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
     const password = typeof req.body.password === "string" ? req.body.password : "";
     const country = typeof req.body.country === "string" ? req.body.country.trim() : "";
-    const requestedUsername = typeof req.body.username === "string" ? req.body.username : "";
+    const firstName = normalizeHumanName(typeof req.body.first_name === "string" ? req.body.first_name : "");
+    const lastName = normalizeHumanName(typeof req.body.last_name === "string" ? req.body.last_name : "");
+    const requestedFullName = typeof req.body.full_name === "string"
+      ? req.body.full_name
+      : typeof req.body.username === "string"
+      ? req.body.username
+      : "";
     const roleName = typeof req.body.role_name === "string" ? req.body.role_name : undefined;
     const learnUnitName = typeof req.body.learn_unit_name === "string" ? req.body.learn_unit_name.trim() : "";
+    const requestedLoginId = typeof req.body.login_id === "string" ? req.body.login_id.trim() : "";
 
     if (!email || !email.includes("@")) {
       return res.status(400).json({ error: "A valid email is required" });
     }
 
-    if (password.length < 6) {
-      return res.status(400).json({ error: "Password must be at least 6 characters" });
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/;
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({
+        error: "Password must be at least 8 characters and contain at least one lowercase letter, one uppercase letter, one number, and one special character"
+      });
+    }
+    if (!firstName) {
+      return res.status(400).json({ error: "First name is required" });
+    }
+    if (!lastName) {
+      return res.status(400).json({ error: "Last name is required" });
     }
 
     const [existingUser, roleRecord] = await Promise.all([
@@ -248,10 +263,30 @@ router.post("/register", registerLimiter, async (req: Request, res: Response) =>
       return res.status(400).json({ error: "Learn unit name is required for supervisor registration" });
     }
 
-    const username = await createUniqueUsername(email, requestedUsername);
+    const fullName = buildFullName(firstName, lastName, requestedFullName);
+    if (!fullName) {
+      return res.status(400).json({ error: "Full name is required" });
+    }
+
+    const username = await createUniqueDisplayName(fullName, email.split("@")[0] || "Student");
     const passwordHash = await bcrypt.hash(password, 10);
     const verificationToken = createEmailVerificationToken();
     const now = new Date();
+
+    let loginId = "";
+    if (requestedLoginId) {
+      const normalizedLoginId = normalizeLoginIdValue(requestedLoginId);
+      const existing = await prisma.$queryRaw<Array<{ id: string }>>`
+        SELECT id FROM users WHERE LOWER(login_id) = LOWER(${normalizedLoginId}) LIMIT 1
+      `;
+      if (existing.length > 0) {
+        loginId = await createUniqueLoginId(firstName, lastName, normalizedLoginId);
+      } else {
+        loginId = normalizedLoginId;
+      }
+    } else {
+      loginId = await createUniqueLoginId(firstName, lastName, username);
+    }
 
     const registration = await prisma.$transaction(async (tx) => {
       const newUser = await tx.user.create({
@@ -274,6 +309,12 @@ router.post("/register", registerLimiter, async (req: Request, res: Response) =>
             create: {}
           }
         },
+      });
+
+      await saveUserIdentity(tx as typeof prisma, newUser.id, {
+        firstName,
+        lastName,
+        loginId,
       });
 
       await tx.studentStats.create({
@@ -299,11 +340,14 @@ router.post("/register", registerLimiter, async (req: Request, res: Response) =>
       return { newUser, learnUnit };
     });
 
-    await sendActivationEmail(email, verificationToken);
+    const learnUnitCode = registration.learnUnit?.code ?? undefined;
+    await sendActivationEmail(email, verificationToken, loginId, password, learnUnitCode);
 
     res.status(201).json({
       message: "Registration successful. Check your email to activate the account.",
       userId: registration.newUser.id,
+      fullName: username,
+      loginId,
       learnUnit: serializeLearnUnit(registration.learnUnit),
     });
   } catch (error) {
@@ -328,31 +372,8 @@ router.post("/activate", async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Activation token is invalid or expired" });
     }
 
-    if (!security.email_verified_at) {
-      await prisma.userSecurity.update({
-        where: { user_id: security.user_id },
-        data: {
-          email_verified_at: new Date(),
-          email_verification_token: null,
-        },
-      });
-    }
-
-    res.json({ message: "Email verified. You can now log in." });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Activation failed" });
-  }
-});
-
-router.post("/login", loginLimiter, async (req: Request, res: Response) => {
-  try {
-    const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
-    const password = typeof req.body.password === "string" ? req.body.password : "";
-    const learnUnitCode = normalizeLearnUnitCode(req.body.learn_unit_code);
-
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { id: security.user_id },
       include: {
         role: {
           include: {
@@ -370,6 +391,96 @@ router.post("/login", loginLimiter, async (req: Request, res: Response) => {
         learning_profile: true,
       },
     });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const now = new Date();
+    const isAlreadyVerified = !!user.security?.email_verified_at;
+
+    const updatedUser = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        account_status: "active",
+        security: {
+          update: {
+            email_verified_at: user.security?.email_verified_at || now,
+            email_verification_token: null,
+            first_login_at: user.security?.first_login_at || now,
+            inactive_cleanup_at: null,
+            failed_login_attempts: 0,
+            lockout_until: null,
+          }
+        },
+        ...(!isAlreadyVerified ? {
+          audit_logs: {
+            create: {
+              event_type: "FIRST_LOGIN",
+              metadata: { email_verified: true },
+            },
+          },
+        } : {})
+      },
+      include: {
+        role: {
+          include: {
+            permissions: {
+              include: {
+                action: true,
+                resource: true,
+              },
+            },
+          },
+        },
+        learn_unit: true,
+        supervised_learn_unit: true,
+        learning_profile: true,
+        security: true,
+      },
+    });
+
+    const authPayload = await createAuthPayload(updatedUser);
+    res.json({
+      message: "Email verified successfully.",
+      ...authPayload,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Activation failed" });
+  }
+});
+
+router.post("/login", loginLimiter, async (req: Request, res: Response) => {
+  try {
+    const identifier = typeof req.body.identifier === "string"
+      ? req.body.identifier.trim().toLowerCase()
+      : typeof req.body.email === "string"
+      ? req.body.email.trim().toLowerCase()
+      : "";
+    const password = typeof req.body.password === "string" ? req.body.password : "";
+    const learnUnitCode = normalizeLearnUnitCode(req.body.learn_unit_code);
+    const userId = await findUserIdByIdentifier(identifier);
+
+    const user = userId ? await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        role: {
+          include: {
+            permissions: {
+              include: {
+                action: true,
+                resource: true,
+              },
+            },
+          },
+        },
+        learn_unit: true,
+        supervised_learn_unit: true,
+        security: true,
+        learning_profile: true,
+      },
+    }) : null;
 
     if (!user) {
       return res.status(401).json({ error: "Invalid credentials" });
@@ -636,6 +747,7 @@ router.get("/profile", authenticate, async (req: Request, res: Response) => {
       id: user.id,
       email: user.email,
       username: user.username,
+      ...(await getUserIdentity(user.id, user.username)),
       country: user.country,
       account_status: user.account_status,
       preferred_subject_id: user.learning_profile?.preferred_subject_id ?? null,

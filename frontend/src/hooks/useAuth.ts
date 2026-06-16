@@ -83,5 +83,6 @@ export const useAuth = () => {
     login,
     updateSession,
     logout,
+    persistSession,
   };
 };

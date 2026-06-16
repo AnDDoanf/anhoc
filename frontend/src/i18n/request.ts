@@ -1,6 +1,7 @@
 import { getRequestConfig } from 'next-intl/server';
 import { cookies } from 'next/headers';
 
+// Trigger next-intl translation messages reload
 export default getRequestConfig(async () => {
   const cookieStore = await cookies();
   // Read the locale from the cookie, default to 'en'

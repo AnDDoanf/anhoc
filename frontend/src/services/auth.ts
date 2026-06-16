@@ -17,6 +17,10 @@ export interface AuthUser {
   id: string;
   email: string;
   username?: string;
+  full_name?: string;
+  first_name?: string;
+  last_name?: string;
+  login_id?: string;
   country?: string | null;
   role: string;
   account_status?: string;
@@ -58,6 +62,10 @@ export interface RegisterRequest {
   email: string;
   password: string;
   username?: string;
+  first_name?: string;
+  last_name?: string;
+  full_name?: string;
+  login_id?: string;
   country?: string;
   role_name?: string;
   learn_unit_name?: string;
@@ -66,6 +74,8 @@ export interface RegisterRequest {
 export interface RegisterResponse {
   message: string;
   userId: string;
+  fullName?: string;
+  loginId?: string;
   learnUnit?: LearnUnitSummary | null;
 }
 

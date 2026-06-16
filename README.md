@@ -183,6 +183,10 @@ NODE_ENV=development
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/anhoc?sslmode=disable
 JWT_SECRET=this-is-a-long-development-only-jwt-secret-key-32-chars
 CORS_ORIGINS=http://localhost:5000
+FRONTEND_URL=http://localhost:5000
+SMTP_HOST=localhost
+SMTP_PORT=1025
+SMTP_FROM=no-reply@anhoc.local
 AUTO_SEED_ACHIEVEMENTS=true
 ```
 
@@ -215,6 +219,7 @@ This spins up the entire application, databases, and network routing in a single
    - **Frontend App**: `http://localhost:5000`
    - **Backend API Docs**: `http://localhost:5000/api/docs` (proxied)
    - **Chatbot Health**: `http://localhost:5000/health` (proxied)
+   - **MailHog Inbox**: `http://localhost:8025`
 4. Check running status using:
    ```bash
    docker compose ps
@@ -248,6 +253,23 @@ If you prefer to start them in separate terminals:
 - **Backend**: `cd backend && npm install && npm run dev`
 - **Frontend**: `cd frontend && npm install && npm run dev`
 - **Chatbot**: `cd chatbot && python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt && uvicorn main:app --port 5002 --reload`
+
+### 4. Run MailHog Only for Local Email Testing
+If your backend is running directly on your machine and you only want the email test inbox, start just MailHog from the repo root:
+
+```bash
+docker compose up -d mailhog
+```
+
+Then open:
+- **MailHog Web UI**: `http://localhost:8025`
+- **SMTP Endpoint for local backend**: `localhost:1025`
+
+To stop it later:
+
+```bash
+docker compose stop mailhog
+```
 
 ---
 

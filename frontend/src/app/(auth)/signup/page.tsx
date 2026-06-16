@@ -26,6 +26,8 @@ import {
 } from "lucide-react";
 import { authService } from "@/services/auth";
 import { api } from "@/services/api";
+import LanguageToggle from "@/components/ui/LanguageToggle";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 
 type PlanType = "free_student" | "sub_student" | "supervisor" | "learning_center";
 
@@ -142,6 +144,8 @@ const planDetailsContent = {
   }
 };
 
+
+
 export default function SignupPage() {
   const t = useTranslations("Signup");
   const tPricing = useTranslations("Pricing");
@@ -164,6 +168,9 @@ export default function SignupPage() {
   }
 
   const [plans, setPlans] = useState<Plan[]>([]);
+  const [step, setStep] = useState(1);
+  const [isFullNameDirty, setIsFullNameDirty] = useState(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -182,10 +189,10 @@ export default function SignupPage() {
       planType === "free_student"
         ? "free"
         : planType === "sub_student"
-        ? "pro"
-        : planType === "supervisor"
-        ? "family"
-        : "learning_center";
+          ? "pro"
+          : planType === "supervisor"
+            ? "family"
+            : "learning_center";
     const matchedPlan = plans.find(p => p.name === dbName);
     if (matchedPlan) {
       return locale === "vi" ? matchedPlan.vi_name : matchedPlan.en_name;
@@ -242,7 +249,6 @@ export default function SignupPage() {
 
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Subscription Plan State
@@ -255,13 +261,13 @@ export default function SignupPage() {
       (selectedPlan === "free_student"
         ? "free"
         : selectedPlan === "sub_student"
-        ? "pro"
-        : selectedPlan === "supervisor"
-        ? "family"
-        : "learning_center")
+          ? "pro"
+          : selectedPlan === "supervisor"
+            ? "family"
+            : "learning_center")
   );
   const [learnUnitName, setLearnUnitName] = useState("");
-  
+
   // Checkout Form State
   const [cardName, setCardName] = useState("");
   const [cardNumber, setCardNumber] = useState("");
@@ -271,8 +277,21 @@ export default function SignupPage() {
   const [checkoutError, setCheckoutError] = useState("");
 
   const schema = z.object({
+    firstName: z.string().min(1, t("errors.first_name_required")),
+    lastName: z.string().min(1, t("errors.last_name_required")),
+    fullName: z.string().min(1, t("errors.full_name_required")),
     email: z.string().email(t("errors.invalid_email")),
-    password: z.string().min(6, t("errors.password_too_short")),
+    password: z
+      .string()
+      .min(8, t("errors.password_too_short"))
+      .regex(/[A-Z]/, t("errors.password_uppercase"))
+      .regex(/[a-z]/, t("errors.password_lowercase"))
+      .regex(/[0-9]/, t("errors.password_number"))
+      .regex(/[^a-zA-Z0-9]/, t("errors.password_special")),
+    confirmPassword: z.string().min(1, t("errors.confirm_password_required")),
+  }).refine((data) => data.password === data.confirmPassword, {
+    message: t("errors.confirm_password_mismatch"),
+    path: ["confirmPassword"],
   });
 
   type FormValues = z.infer<typeof schema>;
@@ -281,10 +300,76 @@ export default function SignupPage() {
     register,
     handleSubmit,
     getValues,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      fullName: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    }
   });
+
+  const firstNameVal = watch("firstName") || "";
+  const lastNameVal = watch("lastName") || "";
+  const passwordVal = watch("password") || "";
+
+  const { onBlur: firstNameOnBlur, ...firstNameReg } = register("firstName");
+  const { onBlur: lastNameOnBlur, ...lastNameReg } = register("lastName");
+  const { onBlur: fullNameOnBlur, ...fullNameReg } = register("fullName");
+  const { onBlur: emailOnBlur, ...emailReg } = register("email");
+  const { onBlur: passwordOnBlur, ...passwordReg } = register("password");
+  const { onBlur: confirmPasswordOnBlur, ...confirmPasswordReg } = register("confirmPassword");
+
+  const passwordChecks = [
+    {
+      key: "lowercase",
+      label: t("tooltips.passwordLowercase"),
+      isValid: /[a-z]/.test(passwordVal),
+    },
+    {
+      key: "uppercase",
+      label: t("tooltips.passwordUppercase"),
+      isValid: /[A-Z]/.test(passwordVal),
+    },
+    {
+      key: "digit",
+      label: t("tooltips.passwordDigit"),
+      isValid: /\d/.test(passwordVal),
+    },
+    {
+      key: "specialChar",
+      label: t("tooltips.passwordSpecialChar"),
+      isValid: /[!@#$%^&*()\-=_+\[\]{}?\/|]/.test(passwordVal),
+    },
+    {
+      key: "englishOnly",
+      label: t("tooltips.passwordEnglishOnly"),
+      isValid: passwordVal.length > 0 && /^[a-zA-Z0-9!@#$%^&*()\-=_+\[\]{}?\/|]*$/.test(passwordVal),
+    },
+    {
+      key: "minLength",
+      label: t("tooltips.passwordMinLength"),
+      isValid: passwordVal.length >= 8,
+    },
+    {
+      key: "maxLength",
+      label: t("tooltips.passwordMaxLength"),
+      isValid: passwordVal.length >= 1 && passwordVal.length <= 40,
+    },
+  ];
+
+  useEffect(() => {
+    if (!isFullNameDirty) {
+      const computedFullName = [firstNameVal, lastNameVal].filter(Boolean).join(" ");
+      setValue("fullName", computedFullName);
+    }
+  }, [firstNameVal, lastNameVal, isFullNameDirty, setValue]);
 
   const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/\D/g, "");
@@ -318,16 +403,16 @@ export default function SignupPage() {
   // Perform the actual signup registration API call
   const performRegistration = async (values: FormValues) => {
     try {
-      const response = await authService.register({
+      await authService.register({
         email: values.email,
         password: values.password,
+        first_name: values.firstName,
+        last_name: values.lastName,
+        full_name: values.fullName,
         role_name: selectedPlan === "learning_center" ? "supervisor" : selectedPlan,
         learn_unit_name: (selectedPlan === "supervisor" || selectedPlan === "learning_center") ? learnUnitName.trim() : undefined,
       });
-      const codeMessage = response.learnUnit?.code
-        ? `Learn unit code: ${response.learnUnit.code}`
-        : "";
-      setSuccessMessage([response.message || t("success"), codeMessage].filter(Boolean).join(" "));
+      setStep(3);
       setIsCheckoutOpen(false);
     } catch (error: unknown) {
       const message =
@@ -344,10 +429,9 @@ export default function SignupPage() {
 
   const onSubmit = async (values: FormValues) => {
     setErrorMessage(null);
-    setSuccessMessage(null);
 
     if ((selectedPlan === "supervisor" || selectedPlan === "learning_center") && !learnUnitName.trim()) {
-      setErrorMessage("Learn unit name is required for the supervisor plan.");
+      setErrorMessage(locale === "vi" ? "Tên nhóm học là bắt buộc đối với gói Giám hộ." : "Learn unit name is required for the supervisor plan.");
       return;
     }
 
@@ -380,7 +464,7 @@ export default function SignupPage() {
     try {
       // Simulate Stripe API transaction latency
       await new Promise((resolve) => setTimeout(resolve, 2000));
-      
+
       const values = getValues();
       await performRegistration(values);
     } catch {
@@ -391,181 +475,340 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex w-full flex-col items-center justify-center px-4 py-8 relative">
+    <div className="flex w-full flex-col items-center justify-center px-4 py-8 relative min-h-screen">
+      {/* Floating Toggles */}
+      <div className="absolute top-6 right-6 flex items-center gap-2 z-40 bg-sol-surface/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-sol-border/30 shadow-lg">
+        <LanguageToggle />
+        <span className="text-sol-border/20 select-none">|</span>
+        <div className="px-2">
+          <ThemeToggle />
+        </div>
+      </div>
       {/* Background decorations */}
       <div className="absolute top-[10%] left-[5%] h-56 w-56 rounded-full bg-sol-accent/5 blur-3xl pointer-events-none" />
       <div className="absolute bottom-[10%] right-[5%] h-72 w-72 rounded-full bg-sol-orange/5 blur-3xl pointer-events-none" />
 
       <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        {/* Left Column: Signup Form Card */}
+        {/* Left Column: Signup Step Card */}
         <div className="lg:col-span-7 w-full max-w-[500px] lg:max-w-none mx-auto flex lg:h-[720px]">
-          <div className="w-full rounded-[2rem] border border-sol-border/30 bg-sol-surface/85 backdrop-blur-md p-8 sm:p-10 shadow-2xl relative flex flex-col justify-between overflow-y-auto">
-          <div className="mb-6 flex flex-col items-center">
-            <div className="mb-2">
-              <Logo className="h-32 w-auto" />
-            </div>
-            <h2 className="text-center text-2xl sm:text-3xl font-black tracking-tight text-sol-text">{t("title")}</h2>
-            <p className="mt-2 text-center text-xs sm:text-sm text-sol-muted leading-relaxed">{t("subtitle")}</p>
-          </div>
+          <div className="w-full rounded-[2rem] border border-sol-border/30 bg-sol-surface/85 backdrop-blur-md p-8 sm:p-10 shadow-2xl relative flex flex-col justify-between overflow-visible">
 
-          {/* Plan Choice Selector */}
-          <div className="mb-6 space-y-2.5">
-            <span className="block text-xs font-black uppercase tracking-wider text-sol-muted">Select Learning Plan</span>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-              {/* Free Student Option */}
-              <button
-                type="button"
-                onClick={() => setSelectedPlan("free_student")}
-                className={`flex flex-col items-center justify-between p-3 rounded-2xl border text-center transition-all hover:cursor-pointer ${
-                  selectedPlan === "free_student"
-                    ? "border-sol-accent bg-sol-accent/5 ring-1 ring-sol-accent/20"
-                    : "border-sol-border/30 bg-sol-bg/20 hover:border-sol-accent/30"
-                }`}
-              >
-                <GraduationCap size={16} className={selectedPlan === "free_student" ? "text-sol-accent" : "text-sol-muted"} />
-                <span className="text-xs font-extrabold text-sol-text mt-1.5">{getPlanDisplayName("free_student")}</span>
-                <span className="text-[10px] font-black text-sol-accent mt-0.5">{tPricing("freeStudent.price")}</span>
-              </button>
-
-              {/* Premium Student Option */}
-              <button
-                type="button"
-                onClick={() => setSelectedPlan("sub_student")}
-                className={`flex flex-col items-center justify-between p-3 rounded-2xl border text-center transition-all hover:cursor-pointer relative ${
-                  selectedPlan === "sub_student"
-                    ? "border-sol-accent bg-sol-accent/5 ring-1 ring-sol-accent/20"
-                    : "border-sol-border/30 bg-sol-bg/20 hover:border-sol-accent/30"
-                }`}
-              >
-                <div className="absolute top-0 right-3 -translate-y-1/2 rounded-full bg-sol-orange px-1.5 py-0.5 text-[7px] font-black uppercase tracking-widest text-sol-bg">
-                  Hot
+            {/* Step 1: Choose Plan screen */}
+            {step === 1 && (
+              <div className="w-full flex flex-col justify-between h-full">
+                <div className="mb-6 flex flex-col items-center">
+                  <div className="mb-2">
+                    <Logo className="h-32 w-auto" />
+                  </div>
+                  <h2 className="text-center text-2xl sm:text-3xl font-black tracking-tight text-sol-text">{t("choose_plan")}</h2>
+                  <p className="mt-2 text-center text-xs sm:text-sm text-sol-muted leading-relaxed">{t("subtitle")}</p>
                 </div>
-                <Sparkles size={16} className={selectedPlan === "sub_student" ? "text-sol-accent animate-pulse" : "text-sol-muted"} />
-                <span className="text-xs font-extrabold text-sol-text mt-1.5">{getPlanDisplayName("sub_student")}</span>
-                <span className="text-[10px] font-black text-sol-accent mt-0.5">{tPricing("subStudent.price")}</span>
-              </button>
 
-              {/* Supervisor Option */}
-              <button
-                type="button"
-                onClick={() => setSelectedPlan("supervisor")}
-                className={`flex flex-col items-center justify-between p-3 rounded-2xl border text-center transition-all hover:cursor-pointer ${
-                  selectedPlan === "supervisor"
-                    ? "border-sol-accent bg-sol-accent/5 ring-1 ring-sol-accent/20"
-                    : "border-sol-border/30 bg-sol-bg/20 hover:border-sol-accent/30"
-                }`}
-              >
-                <Users size={16} className={selectedPlan === "supervisor" ? "text-sol-accent" : "text-sol-muted"} />
-                <span className="text-xs font-extrabold text-sol-text mt-1.5">{getPlanDisplayName("supervisor")}</span>
-                <span className="text-[10px] font-black text-sol-accent mt-0.5">{tPricing("supervisor.price")}</span>
-              </button>
+                {/* Plan Choice Selector */}
+                <div className="mb-6 space-y-2.5">
+                  <span className="block text-xs font-black uppercase tracking-wider text-sol-muted">Select Learning Plan</span>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+                    {/* Free Student Option */}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPlan("free_student")}
+                      className={`flex flex-col items-center justify-between p-3 rounded-2xl border text-center transition-all hover:cursor-pointer ${selectedPlan === "free_student"
+                          ? "border-sol-accent bg-sol-accent/5 ring-1 ring-sol-accent/20"
+                          : "border-sol-border/30 bg-sol-bg/20 hover:border-sol-accent/30"
+                        }`}
+                    >
+                      <GraduationCap size={16} className={selectedPlan === "free_student" ? "text-sol-accent" : "text-sol-muted"} />
+                      <span className="text-xs font-extrabold text-sol-text mt-1.5">{getPlanDisplayName("free_student")}</span>
+                      <span className="text-[10px] font-black text-sol-accent mt-0.5">{tPricing("freeStudent.price")}</span>
+                    </button>
 
-              {/* Learning Center Option */}
-              <button
-                type="button"
-                onClick={() => setSelectedPlan("learning_center")}
-                className={`flex flex-col items-center justify-between p-3 rounded-2xl border text-center transition-all hover:cursor-pointer ${
-                  selectedPlan === "learning_center"
-                    ? "border-sol-accent bg-sol-accent/5 ring-1 ring-sol-accent/20"
-                    : "border-sol-border/30 bg-sol-bg/20 hover:border-sol-accent/30"
-                }`}
-              >
-                <BookOpen size={16} className={selectedPlan === "learning_center" ? "text-sol-accent" : "text-sol-muted"} />
-                <span className="text-xs font-extrabold text-sol-text mt-1.5">{getPlanDisplayName("learning_center")}</span>
-                <span className="text-[10px] font-black text-sol-accent mt-0.5">
-                  {locale === "vi" ? "Từ 1.249.000đ" : "From $49.99"}
-                </span>
-              </button>
-            </div>
+                    {/* Premium Student Option */}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPlan("sub_student")}
+                      className={`flex flex-col items-center justify-between p-3 rounded-2xl border text-center transition-all hover:cursor-pointer relative ${selectedPlan === "sub_student"
+                          ? "border-sol-accent bg-sol-accent/5 ring-1 ring-sol-accent/20"
+                          : "border-sol-border/30 bg-sol-bg/20 hover:border-sol-accent/30"
+                        }`}
+                    >
+                      <div className="absolute top-0 right-3 -translate-y-1/2 rounded-full bg-sol-orange px-1.5 py-0.5 text-[7px] font-black uppercase tracking-widest text-sol-bg">
+                        Hot
+                      </div>
+                      <Sparkles size={16} className={selectedPlan === "sub_student" ? "text-sol-accent animate-pulse" : "text-sol-muted"} />
+                      <span className="text-xs font-extrabold text-sol-text mt-1.5">{getPlanDisplayName("sub_student")}</span>
+                      <span className="text-[10px] font-black text-sol-accent mt-0.5">{tPricing("subStudent.price")}</span>
+                    </button>
 
-            {selectedPlan !== "free_student" && (
-              <p className="text-[10px] font-medium text-sol-muted text-center pt-1 animate-pulse-glow">
-                ✨ {tPricing("checkout.pendingTitle")}: You will be prompted with a payment simulation.
-              </p>
+                    {/* Supervisor Option */}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPlan("supervisor")}
+                      className={`flex flex-col items-center justify-between p-3 rounded-2xl border text-center transition-all hover:cursor-pointer ${selectedPlan === "supervisor"
+                          ? "border-sol-accent bg-sol-accent/5 ring-1 ring-sol-accent/20"
+                          : "border-sol-border/30 bg-sol-bg/20 hover:border-sol-accent/30"
+                        }`}
+                    >
+                      <Users size={16} className={selectedPlan === "supervisor" ? "text-sol-accent" : "text-sol-muted"} />
+                      <span className="text-xs font-extrabold text-sol-text mt-1.5">{getPlanDisplayName("supervisor")}</span>
+                      <span className="text-[10px] font-black text-sol-accent mt-0.5">{tPricing("supervisor.price")}</span>
+                    </button>
+
+                    {/* Learning Center Option */}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPlan("learning_center")}
+                      className={`flex flex-col items-center justify-between p-3 rounded-2xl border text-center transition-all hover:cursor-pointer ${selectedPlan === "learning_center"
+                          ? "border-sol-accent bg-sol-accent/5 ring-1 ring-sol-accent/20"
+                          : "border-sol-border/30 bg-sol-bg/20 hover:border-sol-accent/30"
+                        }`}
+                    >
+                      <BookOpen size={16} className={selectedPlan === "learning_center" ? "text-sol-accent" : "text-sol-muted"} />
+                      <span className="text-xs font-extrabold text-sol-text mt-1.5">{getPlanDisplayName("learning_center")}</span>
+                      <span className="text-[10px] font-black text-sol-accent mt-0.5">
+                        {locale === "vi" ? "Từ 1.249.000đ" : "From $49.99"}
+                      </span>
+                    </button>
+                  </div>
+
+                  {selectedPlan !== "free_student" && (
+                    <p className="text-[10px] font-medium text-sol-muted text-center pt-1 animate-pulse-glow">
+                      ✨ {tPricing("checkout.pendingTitle")}: You will be prompted with a payment simulation.
+                    </p>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setStep(2)}
+                  className="w-full mt-6 rounded-xl bg-sol-accent py-4 text-sm font-black uppercase tracking-wider text-sol-bg hover:cursor-pointer hover:opacity-95 transition-all transform hover:scale-[1.01] active:scale-95 shadow-md shadow-sol-accent/15"
+                >
+                  {t("next")}
+                </button>
+
+                <p className="mt-8 text-center text-sm text-sol-muted">
+                  {t("hasAccount")}{" "}
+                  <Link href="/login" className="font-bold text-sol-accent hover:underline">
+                    {t("signIn")}
+                  </Link>
+                </p>
+              </div>
             )}
-          </div>
 
-          {(selectedPlan === "supervisor" || selectedPlan === "learning_center") && (
-            <div className="mb-6 space-y-2">
-              <label className="block text-xs font-black uppercase tracking-wider text-sol-muted">
-                Learn unit name
-              </label>
-              <input
-                type="text"
-                required
-                value={learnUnitName}
-                onChange={(e) => setLearnUnitName(e.target.value)}
-                placeholder="e.g. Sunrise Learning Center"
-                className="w-full rounded-xl border border-sol-border/50 bg-sol-bg/40 px-4 py-3.5 text-sm font-bold text-sol-text placeholder-sol-muted/50 transition-all focus:border-sol-accent focus:outline-none"
-              />
-              <p className="text-[11px] text-sol-muted">
-                Supervisor registration creates a learn unit and generates a login code for your members.
-              </p>
-            </div>
-          )}
+            {/* Step 2: Information form */}
+            {step === 2 && (
+              <div className="w-full flex flex-col justify-between h-full">
+                <div className="mb-4 flex flex-col items-center">
+                  <div className="mb-2">
+                    <Logo className="h-24 w-auto" />
+                  </div>
+                  <h2 className="text-center text-xl sm:text-2xl font-black tracking-tight text-sol-text">{t("add_info")}</h2>
+                  <p className="mt-1 text-center text-xs text-sol-muted leading-relaxed">
+                    {locale === "vi" ? "Gói đăng ký: " : "Plan selected: "}
+                    <span className="font-bold text-sol-accent">{getPlanDisplayName(selectedPlan)}</span>
+                  </p>
+                </div>
 
-          {successMessage && (
-            <div className="mb-6 rounded-2xl border border-sol-green/20 bg-sol-green/10 p-4 text-xs font-bold text-sol-green leading-relaxed">
-              {successMessage}
-            </div>
-          )}
+                {(selectedPlan === "supervisor" || selectedPlan === "learning_center") && (
+                  <div className="mb-4 space-y-1.5">
+                    <label className="block text-xs font-black uppercase tracking-wider text-sol-muted">
+                      {locale === "vi" ? "Tên nhóm học" : "Learn unit name"}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={learnUnitName}
+                      onChange={(e) => setLearnUnitName(e.target.value)}
+                      placeholder="e.g. Sunrise Learning Center"
+                      className="w-full rounded-xl border border-sol-border/50 bg-sol-bg/40 px-4 py-3 text-sm font-bold text-sol-text placeholder-sol-muted/50 transition-all focus:border-sol-accent focus:outline-none"
+                    />
+                    <p className="text-[10px] text-sol-muted">
+                      {locale === "vi" ? "Khởi tạo nhóm học và tạo mã đăng nhập cho các thành viên." : "Supervisor registration creates a learn unit and generates a login code for your members."}
+                    </p>
+                  </div>
+                )}
 
-          {errorMessage && (
-            <div className="mb-6 rounded-2xl border border-sol-red/25 bg-sol-red/5 p-4 text-xs font-bold text-sol-red leading-relaxed">
-              {errorMessage}
-            </div>
-          )}
+                {errorMessage && (
+                  <div className="mb-4 rounded-2xl border border-sol-red/25 bg-sol-red/5 p-3 text-xs font-bold text-sol-red leading-relaxed">
+                    {errorMessage}
+                  </div>
+                )}
 
-          <form id="signup-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div>
-              <input
-                {...register("email")}
-                type="email"
-                placeholder={t("email_placeholder")}
-                className="w-full rounded-xl border border-sol-border/50 bg-sol-bg/40 px-4 py-3.5 text-sm font-bold text-sol-text placeholder-sol-muted/50 transition-all focus:border-sol-accent focus:outline-none"
-              />
-              {errors.email && <p className="mt-1.5 text-xs text-sol-orange font-bold">{errors.email.message}</p>}
-            </div>
+                <form id="signup-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3.5">
+                    <div className="relative">
+                      <input
+                        {...firstNameReg}
+                        onBlur={firstNameOnBlur}
+                        type="text"
+                        placeholder={t("first_name_placeholder")}
+                        className="w-full rounded-xl border border-sol-border/50 bg-sol-bg/40 px-4 py-3.5 text-sm font-bold text-sol-text placeholder-sol-muted/50 transition-all focus:border-sol-accent focus:outline-none"
+                      />
+                      {errors.firstName && <p className="mt-1 text-[11px] text-sol-orange font-bold">{errors.firstName.message}</p>}
+                    </div>
 
-            <div className="relative">
-              <input
-                {...register("password")}
-                type={showPassword ? "text" : "password"}
-                placeholder={t("password_placeholder")}
-                className="w-full rounded-xl border border-sol-border/50 bg-sol-bg/40 px-4 py-3.5 pr-12 text-sm font-bold text-sol-text placeholder-sol-muted/50 transition-all focus:border-sol-accent focus:outline-none"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((current) => !current)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1.5 text-sol-muted transition-colors duration-200 hover:text-sol-accent hover:cursor-pointer"
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-              {errors.password && <p className="mt-1.5 text-xs text-sol-orange font-bold">{errors.password.message}</p>}
-            </div>
+                    <div className="relative">
+                      <input
+                        {...lastNameReg}
+                        onBlur={lastNameOnBlur}
+                        type="text"
+                        placeholder={t("last_name_placeholder")}
+                        className="w-full rounded-xl border border-sol-border/50 bg-sol-bg/40 px-4 py-3.5 text-sm font-bold text-sol-text placeholder-sol-muted/50 transition-all focus:border-sol-accent focus:outline-none"
+                      />
+                      {errors.lastName && <p className="mt-1 text-[11px] text-sol-orange font-bold">{errors.lastName.message}</p>}
+                    </div>
+                  </div>
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full mt-6 rounded-xl bg-sol-accent py-4 text-sm font-black uppercase tracking-wider text-sol-bg hover:cursor-pointer hover:opacity-95 transition-all transform hover:scale-[1.01] active:scale-95 disabled:opacity-50"
-            >
-              {isLoading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <Loader2 className="animate-spin" size={16} />
-                  <span>{t("submitting")}</span>
-                </span>
-              ) : (
-                <span>{selectedPlan === "free_student" ? t("submit") : "Checkout & Create Account"}</span>
-              )}
-            </button>
-          </form>
+                  <div className="relative">
+                    <input
+                      {...fullNameReg}
+                      onBlur={fullNameOnBlur}
+                      type="text"
+                      onChange={(e) => {
+                        fullNameReg.onChange(e);
+                        setIsFullNameDirty(true);
+                      }}
+                      placeholder={t("full_name_placeholder")}
+                      className="w-full rounded-xl border border-sol-border/50 bg-sol-bg/40 px-4 py-3.5 text-sm font-bold text-sol-text placeholder-sol-muted/50 transition-all focus:border-sol-accent focus:outline-none"
+                    />
+                    {errors.fullName && <p className="mt-1.5 text-xs text-sol-orange font-bold">{errors.fullName.message}</p>}
+                  </div>
 
-          <p className="mt-8 text-center text-sm text-sol-muted">
-            {t("hasAccount")}{" "}
-            <Link href="/login" className="font-bold text-sol-accent hover:underline">
-              {t("signIn")}
-            </Link>
-          </p>
+                  <div className="relative">
+                    <input
+                      {...emailReg}
+                      onBlur={emailOnBlur}
+                      type="email"
+                      placeholder={t("email_placeholder")}
+                      className="w-full rounded-xl border border-sol-border/50 bg-sol-bg/40 px-4 py-3.5 text-sm font-bold text-sol-text placeholder-sol-muted/50 transition-all focus:border-sol-accent focus:outline-none"
+                    />
+                    {errors.email && <p className="mt-1.5 text-xs text-sol-orange font-bold">{errors.email.message}</p>}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3.5">
+                    <div className="relative">
+                      <input
+                        {...passwordReg}
+                        onFocus={() => setFocusedField("password")}
+                        onBlur={(e) => {
+                          passwordOnBlur(e);
+                          setFocusedField(null);
+                        }}
+                        type={showPassword ? "text" : "password"}
+                        placeholder={t("password_placeholder")}
+                        className="w-full rounded-xl border border-sol-border/50 bg-sol-bg/40 px-4 py-3.5 pr-12 text-sm font-bold text-sol-text placeholder-sol-muted/50 transition-all focus:border-sol-accent focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((current) => !current)}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1.5 text-sol-muted transition-colors duration-200 hover:text-sol-accent hover:cursor-pointer z-30"
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                      {focusedField === "password" && (
+                        <div className="absolute z-20 left-0 top-full mt-1.5 w-[340px] rounded-xl border border-sol-border/50 bg-sol-surface/95 backdrop-blur-md p-4 shadow-xl text-left text-xs space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                          <p className="font-bold text-sol-text">{t("tooltips.passwordTitle")}</p>
+                          <ul className="space-y-1.5 text-[11px] font-semibold text-sol-muted">
+                            {passwordChecks.map((check) => (
+                              <li key={check.key} className="flex items-start gap-2">
+                                {check.isValid ? (
+                                  <Check className="text-[#10b981] shrink-0 mt-0.5" size={14} />
+                                ) : (
+                                  <X className="text-[#dc322f] opacity-60 shrink-0 mt-0.5" size={14} />
+                                )}
+                                <span className={check.isValid ? "text-sol-text font-bold" : "text-sol-muted"}>
+                                  {check.label}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {errors.password && <p className="mt-1 text-[11px] text-sol-orange font-bold">{errors.password.message}</p>}
+                    </div>
+
+                    <div className="relative">
+                      <input
+                        {...confirmPasswordReg}
+                        onBlur={confirmPasswordOnBlur}
+                        type={showPassword ? "text" : "password"}
+                        placeholder={t("confirm_password_placeholder")}
+                        className="w-full rounded-xl border border-sol-border/50 bg-sol-bg/40 px-4 py-3.5 text-sm font-bold text-sol-text placeholder-sol-muted/50 transition-all focus:border-sol-accent focus:outline-none"
+                      />
+                      {errors.confirmPassword && <p className="mt-1 text-[11px] text-sol-orange font-bold">{errors.confirmPassword.message}</p>}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4 mt-6">
+                    <button
+                      type="button"
+                      onClick={() => setStep(1)}
+                      className="w-1/3 rounded-xl border border-sol-border/30 bg-sol-bg/10 py-4 text-sm font-black uppercase tracking-wider text-sol-text hover:cursor-pointer hover:bg-sol-bg/20 transition-all"
+                    >
+                      {t("back")}
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isLoading}
+                      className="w-2/3 rounded-xl bg-sol-accent py-4 text-sm font-black uppercase tracking-wider text-sol-bg hover:cursor-pointer hover:opacity-95 transition-all transform hover:scale-[1.01] active:scale-95 disabled:opacity-50"
+                    >
+                      {isLoading ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <Loader2 className="animate-spin" size={16} />
+                          <span>{t("submitting")}</span>
+                        </span>
+                      ) : (
+                        <span>{selectedPlan === "free_student" ? t("submit") : "Checkout & Create Account"}</span>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Step 3: Verify Email screen */}
+            {step === 3 && (
+              <div className="w-full flex flex-col justify-between h-full py-4 text-center">
+                <div>
+                  <div className="mb-6 flex flex-col items-center">
+                    <Logo className="h-28 w-auto mb-4" />
+                    <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-sol-text">{t("verify_email")}</h2>
+                  </div>
+
+                  <div className="rounded-2xl border border-sol-accent/20 bg-sol-accent/5 p-6 mb-8 text-sm font-semibold text-sol-text leading-relaxed">
+                    <p className="mb-3 text-base text-sol-accent font-black">
+                      {locale === "vi" ? "Chúc mừng! Đăng ký thành công." : "Congratulations! Registration successful."}
+                    </p>
+                    <p className="mb-2 text-sol-text font-bold">{t("success")}</p>
+                    <p className="text-xs text-sol-muted mt-2">
+                      {locale === "vi" ? "Email nhận kích hoạt: " : "Sent to: "}
+                      <span className="font-bold text-sol-text">{getValues().email}</span>
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-sol-orange/20 bg-sol-bg/40 p-6 space-y-4 max-w-md mx-auto">
+                    <p className="text-xs text-sol-muted leading-relaxed font-bold">
+                      {t("mailhog_hint")}
+                    </p>
+                    <a
+                      href="http://localhost:8025/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-sol-orange py-4 text-sm font-black uppercase tracking-wider text-sol-bg hover:cursor-pointer hover:opacity-95 transition-all shadow-md shadow-sol-orange/15 transform hover:scale-[1.01] active:scale-95"
+                    >
+                      {t("mailhog_button")}
+                    </a>
+                  </div>
+                </div>
+
+                <p className="mt-8 text-sm text-sol-muted">
+                  {t("hasAccount")}{" "}
+                  <Link href="/login" className="font-bold text-sol-accent hover:underline">
+                    {t("signIn")}
+                  </Link>
+                </p>
+              </div>
+            )}
+
           </div>
         </div>
 
@@ -667,7 +910,7 @@ export default function SignupPage() {
       {/* Stripe checkout simulation Modal */}
       {isCheckoutOpen && selectedPlan !== "free_student" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-sol-bg/50 backdrop-blur-sm p-4 overflow-y-auto animate-in fade-in duration-200">
-          <div 
+          <div
             className="absolute inset-0"
             onClick={() => {
               if (!checkoutPending) setIsCheckoutOpen(false);
