@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import random
 from dataclasses import asdict, dataclass
 from datetime import date, datetime
 from typing import AsyncIterator
@@ -213,6 +214,16 @@ async def build_tutor_context(request: TutorChatRequest) -> TutorContext:
     )
 
 
+def calculate_confidence_score(intent: str, tool_result: MathToolResult | None) -> float:
+    if tool_result and tool_result.final_answer:
+        return 1.0
+    if intent == "solve_problem":
+        return 0.60
+    if intent in {"check_answer", "give_hint", "generate_practice", "explain_concept", "prove_statement"}:
+        return 0.90
+    return 0.80
+
+
 def _extract_context_metadata(context: TutorContext) -> dict:
     return make_json_safe({
         "language": context.answer_language,
@@ -222,6 +233,7 @@ def _extract_context_metadata(context: TutorContext) -> dict:
         "memory": context.conversation.memory,
         "lesson_sources": context.lesson.sources,
         "tool_result": asdict(context.tool_result) if context.tool_result else None,
+        "confidence_score": calculate_confidence_score(context.intent, context.tool_result),
         "provider_debug": {
             "requested": context.request.provider or "ollama",
             "effective": "ollama",
@@ -314,21 +326,27 @@ async def handle_check_answer(request: CheckAnswerRequest) -> CheckAnswerRespons
     is_correct, correct_answer = check_student_answer(request.question, request.student_answer)
     if is_correct:
         feedback = "Em lam dung roi. Tot lam!" if language == "vi" else "That is correct. Nice work!"
+        mistake_desc = None
     else:
         feedback = (
             "Em lam gan dung roi, nhung bi nham o buoc cuoi."
             if language == "vi"
             else "You are close, but there is a mistake in the final step."
         )
+        mistake_desc = "Incorrect calculation or solution step"
+
+    tool_result = solve_with_tools(request.question)
+    topic = tool_result.topic if tool_result else "answer-check"
 
     await update_student_memory(
         request.user_id,
         language=language,
         grade=None,
         mode="check",
-        topic="answer-check",
+        topic=topic,
         easier_requested=False,
         was_correct=is_correct,
+        mistake=mistake_desc,
     )
 
     return CheckAnswerResponse(
@@ -341,24 +359,46 @@ async def handle_check_answer(request: CheckAnswerRequest) -> CheckAnswerRespons
 
 def _build_practice_payload(topic: str, difficulty: str, language: str) -> tuple[str, str, str, list[str]]:
     topic_lower = (topic or "").lower()
+
     if "distributive" in topic_lower or "phan phoi" in topic_lower:
-        question = "37 * 25 + 63 * 25"
-        hint = "Hai hang tu cung co thua so 25." if language == "vi" else "Both terms share the factor 25."
-        answer = "2500"
-        solution = ["(37 + 63) * 25", "100 * 25", "2500"]
+        c = random.randint(11, 89)
+        a = random.choice([15, 25, 35, 45, 55, 65, 75, 85])
+        b = 100 - a
+        question = f"{a} * {c} + {b} * {c}"
+        hint = f"Hai hang tu cung co thua so {c}." if language == "vi" else f"Both terms share the factor {c}."
+        ans_val = 100 * c
+        answer = str(ans_val)
+        solution = [f"({a} + {b}) * {c}", f"100 * {c}", f"{ans_val}"]
         return question, hint, answer, solution
 
     if "equation" in topic_lower or "phuong trinh" in topic_lower:
-        question = "3x + 7 = 22"
-        hint = "Tru 7 o ca hai ve truoc." if language == "vi" else "Subtract 7 from both sides first."
-        answer = "x = 5"
-        solution = ["3x = 15", "x = 5"]
+        x_val = random.randint(2, 9)
+        a = random.randint(2, 8)
+        b = random.randint(2, 20)
+        c = a * x_val + b
+        question = f"{a}x + {b} = {c}"
+        hint = f"Tru {b} o ca hai ve truoc." if language == "vi" else f"Subtract {b} from both sides first."
+        answer = f"x = {x_val}"
+        solution = [f"{a}x = {c - b}", f"x = {x_val}"]
         return question, hint, answer, solution
 
-    question = "46 * 9 + 54 * 9" if difficulty == "easy" else "125 * 48 - 25 * 48"
-    hint = "Tim thua so chung." if language == "vi" else "Look for a common factor."
-    answer = "900" if difficulty == "easy" else "4800"
-    solution = ["(46 + 54) * 9", "100 * 9", "900"] if difficulty == "easy" else ["(125 - 25) * 48", "100 * 48", "4800"]
+    c = random.randint(3, 9)
+    if difficulty == "easy":
+        a = random.randint(10, 49)
+        b = 100 - a
+        question = f"{a} * {c} + {b} * {c}"
+        hint = f"Tim thua so chung la {c}." if language == "vi" else f"Look for a common factor {c}."
+        ans_val = 100 * c
+        answer = str(ans_val)
+        solution = [f"({a} + {b}) * {c}", f"100 * {c}", f"{ans_val}"]
+    else:
+        b = random.randint(10, 50)
+        a = 100 + b
+        question = f"{a} * {c} - {b} * {c}"
+        hint = f"Tim thua so chung la {c}." if language == "vi" else f"Look for a common factor {c}."
+        ans_val = 100 * c
+        answer = str(ans_val)
+        solution = [f"({a} - {b}) * {c}", f"100 * {c}", f"{ans_val}"]
     return question, hint, answer, solution
 
 

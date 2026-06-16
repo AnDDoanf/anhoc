@@ -112,10 +112,95 @@ const shuffle = <T>(items: T[]): T[] => {
   const next = [...items];
   for (let i = next.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [next[i], next[j]] = [next[j], next[i]];
+    const current = next[i]!;
+    next[i] = next[j]!;
+    next[j] = current;
   }
   return next;
 };
+
+const GRADE_TEST_MIN_SCORE = 70;
+
+const buildGradeTestEligibility = async (
+  userId: string,
+  grades: Array<{ id: number; lessons: Array<{ id: string }> }>
+) => {
+  const lessonIds = Array.from(new Set(grades.flatMap((grade) => grade.lessons.map((lesson) => lesson.id))));
+  const masteryRecords = lessonIds.length === 0
+    ? []
+    : await prisma.userLessonMastery.findMany({
+        where: {
+          user_id: userId,
+          lesson_id: { in: lessonIds }
+        },
+        select: {
+          lesson_id: true,
+          mastery_score: true
+        }
+      });
+
+  const masteryByLesson = new Map(
+    masteryRecords.map((record) => [record.lesson_id, Number(record.mastery_score || 0)])
+  );
+
+  return new Map(
+    grades.map((grade) => {
+      const requiredLessonIds = Array.from(new Set(grade.lessons.map((lesson) => lesson.id)));
+      const completedLessonCount = requiredLessonIds.filter(
+        (lessonId) => (masteryByLesson.get(lessonId) ?? 0) >= GRADE_TEST_MIN_SCORE
+      ).length;
+
+      return [
+        grade.id,
+        {
+          eligible: requiredLessonIds.length > 0 && completedLessonCount === requiredLessonIds.length,
+          requiredLessonCount: requiredLessonIds.length,
+          completedLessonCount,
+          minimumScore: GRADE_TEST_MIN_SCORE
+        }
+      ] as const;
+    })
+  );
+};
+
+const getGradeTestEligibilityForViewer = async (
+  viewer: any,
+  userId: string,
+  gradeId: number
+) => {
+  const gradeWhere = await getVisibleGradeWhereForViewer(viewer);
+  const lessonWhere = await getVisibleLessonWhereForViewer(viewer);
+  const templateWhere = await getVisibleTemplateWhereForViewer(viewer);
+  const grade = await prisma.grade.findFirst({
+    where: {
+      AND: [gradeWhere, { id: gradeId }]
+    },
+    include: {
+      lessons: {
+        where: {
+          AND: [
+            lessonWhere,
+            {
+              templates: { some: templateWhere }
+            }
+          ]
+        },
+        select: { id: true }
+      }
+    }
+  });
+
+  if (!grade) return null;
+
+  return (await buildGradeTestEligibility(userId, [grade])).get(grade.id) ?? {
+    eligible: false,
+    requiredLessonCount: grade.lessons.length,
+    completedLessonCount: 0,
+    minimumScore: GRADE_TEST_MIN_SCORE
+  };
+};
+
+type NormalizedTemplatePayload = ReturnType<typeof normalizeTemplatePayload>;
 
 const buildQuestionSnapshots = (attemptId: string, templates: any[], targetCount: number) => {
   const repeatsPerTemplate = Math.ceil(targetCount / templates.length);
@@ -190,6 +275,7 @@ router.get('/grade-tests', authenticate, async (req, res) => {
       },
       orderBy: { id: "asc" }
     });
+    const eligibilityByGrade = await buildGradeTestEligibility(userId, grades);
 
     const recentAttempts = await prisma.testAttempt.findMany({
       where: {
@@ -240,7 +326,7 @@ router.get('/grade-tests', authenticate, async (req, res) => {
     }[]>();
 
     for (const attempt of recentAttempts) {
-      const gradeId = attempt.snapshots[0]?.template.lesson?.grade_id;
+      const gradeId = attempt.snapshots[0]?.template?.lesson?.grade_id;
       if (!gradeId) continue;
 
       const gradeAttempts = attemptsByGrade.get(gradeId) ?? [];
@@ -259,6 +345,12 @@ router.get('/grade-tests', authenticate, async (req, res) => {
 
     const gradeTests = grades.map((grade) => {
       const questionCount = grade.lessons.reduce((total, lesson) => total + lesson._count.templates, 0);
+      const eligibility = eligibilityByGrade.get(grade.id) ?? {
+        eligible: false,
+        requiredLessonCount: grade.lessons.length,
+        completedLessonCount: 0,
+        minimumScore: GRADE_TEST_MIN_SCORE
+      };
 
       return {
         id: `grade-${grade.id}-test`,
@@ -272,6 +364,7 @@ router.get('/grade-tests', authenticate, async (req, res) => {
         availableTemplateCount: questionCount,
         lessonCount: grade.lessons.length,
         attempts: attemptsByGrade.get(grade.id) ?? [],
+        eligibility,
         difficulty: "Intermediate",
         iconType: "medal",
         grade,
@@ -385,10 +478,10 @@ router.get('/grade-tests/:gradeId/export-questions', optionalAuthenticate, async
   }
 });
 
-router.post('/grade-tests/:gradeId/start', optionalAuthenticate, async (req, res) => {
+router.post('/grade-tests/:gradeId/start', authenticate, async (req, res) => {
   try {
     const gradeId = Number(req.params.gradeId);
-    const userId = (req as any).user?.id || null;
+    const userId = (req as any).user.id as string;
 
     if (!Number.isInteger(gradeId)) {
       return res.status(400).json({ error: "Invalid grade id" });
@@ -402,7 +495,12 @@ router.post('/grade-tests/:gradeId/start', optionalAuthenticate, async (req, res
       include: {
         lessons: {
           where: {
-            AND: [lessonWhere],
+            AND: [
+              lessonWhere,
+              {
+                templates: { some: templateVisibilityWhere }
+              }
+            ],
           },
           select: { id: true, subject_id: true }
         }
@@ -426,6 +524,14 @@ router.post('/grade-tests/:gradeId/start', optionalAuthenticate, async (req, res
     const lessonIds = grade.lessons.map((lesson) => lesson.id);
     if (lessonIds.length === 0) {
       return res.status(404).json({ error: "No lessons found for this grade." });
+    }
+
+    const eligibility = (await buildGradeTestEligibility(userId, [{ id: grade.id, lessons: grade.lessons }])).get(grade.id);
+    if (!eligibility?.eligible) {
+      return res.status(403).json({
+        error: `Complete practice for all lessons in this grade with at least ${GRADE_TEST_MIN_SCORE}% before taking the test.`,
+        eligibility
+      });
     }
 
     const isFreeOrGuest = !(req as any).user || (req as any).user.role === 'free_student';
@@ -504,6 +610,18 @@ router.get('/attempts/:id', optionalAuthenticate, async (req, res) => {
   if (!canAccessAttempt(req, attempt.user_id)) {
     return res.status(403).json({ error: "You can only access your own attempts" });
   }
+  if (!attempt.is_practice && attempt.user_id && (req as any).user) {
+    const gradeId = attempt.snapshots[0]?.template?.lesson?.grade_id;
+    if (gradeId) {
+      const eligibility = await getGradeTestEligibilityForViewer((req as any).user, attempt.user_id, gradeId);
+      if (!eligibility?.eligible) {
+        return res.status(403).json({
+          error: `Complete practice for all lessons in this grade with at least ${GRADE_TEST_MIN_SCORE}% before taking the test.`,
+          eligibility
+        });
+      }
+    }
+  }
 
   // Filter out premium snapshots for guest/free students
   const isFreeOrGuest = !(req as any).user || (req as any).user.role === 'free_student';
@@ -521,7 +639,13 @@ router.post('/submit-answer', optionalAuthenticate, async (req, res) => {
   const snapshot = await prisma.questionSnapshot.findUnique({
     where: { id: snapshotId },
     include: {
-      template: true,
+      template: {
+        include: {
+          lesson: {
+            select: { grade_id: true }
+          }
+        }
+      },
       attempt: {
         select: {
           id: true,
@@ -540,6 +664,18 @@ router.post('/submit-answer', optionalAuthenticate, async (req, res) => {
   }
   if (snapshot.attempt?.is_completed) {
     return res.status(400).json({ error: "Attempt already completed" });
+  }
+  if (!snapshot.attempt?.is_practice && snapshot.attempt?.user_id && (req as any).user) {
+    const gradeId = snapshot.template.lesson?.grade_id;
+    if (gradeId) {
+      const eligibility = await getGradeTestEligibilityForViewer((req as any).user, snapshot.attempt.user_id, gradeId);
+      if (!eligibility?.eligible) {
+        return res.status(403).json({
+          error: `Complete practice for all lessons in this grade with at least ${GRADE_TEST_MIN_SCORE}% before taking the test.`,
+          eligibility
+        });
+      }
+    }
   }
 
   // Check if template is premium
@@ -615,7 +751,7 @@ router.post('/submit-answer', optionalAuthenticate, async (req, res) => {
           medium: ["easy", "hard"],
           easy: ["medium", "hard"]
         };
-        for (const fbDifficulty of fallbacks[targetDifficulty]) {
+        for (const fbDifficulty of fallbacks[targetDifficulty] ?? []) {
           candidateTemplates = await prisma.questionTemplate.findMany({
             where: {
               AND: [
@@ -647,7 +783,7 @@ router.post('/submit-answer', optionalAuthenticate, async (req, res) => {
 
       // 3. Randomly pick one template from candidates and generate variables
       if (candidateTemplates.length > 0) {
-        const nextTemplate = candidateTemplates[Math.floor(Math.random() * candidateTemplates.length)];
+        const nextTemplate = candidateTemplates[Math.floor(Math.random() * candidateTemplates.length)]!;
         const isTheoretical = nextTemplate.template_type === "theoretical_question";
         const nextVars = isTheoretical ? {} : MathService.generateVars(nextTemplate.logic_config);
         const nextRightAnswers = isTheoretical
@@ -694,13 +830,29 @@ router.post('/submit-answer', optionalAuthenticate, async (req, res) => {
 
 // 3. Finish or Abandon a Test Attempt
 router.post('/attempts/:id/finish', authenticate, async (req, res) => {
-  const attemptId = req.params.id;
+  const attemptId = req.params.id as string;
 
   try {
     // Prevent double finish
     const existing = await prisma.testAttempt.findUnique({
       where: { id: attemptId },
-      select: { is_completed: true, user_id: true }
+      select: {
+        is_completed: true,
+        user_id: true,
+        is_practice: true,
+        snapshots: {
+          take: 1,
+          select: {
+            template: {
+              select: {
+                lesson: {
+                  select: { grade_id: true }
+                }
+              }
+            }
+          }
+        }
+      }
     });
 
     if (!existing) {
@@ -711,6 +863,18 @@ router.post('/attempts/:id/finish', authenticate, async (req, res) => {
     }
     if (existing?.is_completed) {
       return res.status(400).json({ error: "Attempt already completed" });
+    }
+    if (!existing.is_practice && existing.user_id) {
+      const gradeId = existing.snapshots[0]?.template?.lesson?.grade_id;
+      if (gradeId) {
+        const eligibility = await getGradeTestEligibilityForViewer((req as any).user, existing.user_id, gradeId);
+        if (!eligibility?.eligible) {
+          return res.status(403).json({
+            error: `Complete practice for all lessons in this grade with at least ${GRADE_TEST_MIN_SCORE}% before taking the test.`,
+            eligibility
+          });
+        }
+      }
     }
 
     const completedAt = new Date();
@@ -763,7 +927,7 @@ router.post('/attempts/:id/finish', authenticate, async (req, res) => {
     try {
       if (attempt.user_id && attempt.lesson_id) {
         const timeSpentSeconds = Math.floor((completedAt.getTime() - new Date(attempt.started_at).getTime()) / 1000);
-        await masteryService.updateMastery(attempt.user_id, attempt.lesson_id, attempt.total_score, timeSpentSeconds);
+        await masteryService.updateMastery(attempt.user_id, attempt.lesson_id, Number(attempt.total_score ?? 0), timeSpentSeconds);
       }
     } catch (e) {
       console.error("Mastery Service Error:", e); // This won't crash the request anymore
@@ -844,8 +1008,8 @@ router.post('/templates', authenticate, authorize('manage', 'test'), async (req,
     const requesterRole = (req as any).user.role;
     const requesterId = (req as any).user.id as string;
     const templates = requestedTemplates
-      .map(normalizeTemplatePayload)
-      .map((template) => ({
+      .map((template: any) => normalizeTemplatePayload(template))
+      .map((template: NormalizedTemplatePayload) => ({
         ...template,
         created_by: requesterId,
         is_premium: requesterRole === "admin" ? template.is_premium : false,
@@ -881,7 +1045,7 @@ router.post('/templates', authenticate, authorize('manage', 'test'), async (req,
     }
 
     const createdTemplates = await prisma.$transaction(
-      templates.map((template) => prisma.questionTemplate.create({ data: template }))
+      templates.map((template: NormalizedTemplatePayload & { created_by: string }) => prisma.questionTemplate.create({ data: template }))
     );
 
     res.json(Array.isArray(req.body) || Array.isArray(req.body?.templates) ? createdTemplates : createdTemplates[0]);

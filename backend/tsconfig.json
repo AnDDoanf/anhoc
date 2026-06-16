@@ -2,13 +2,15 @@
   "compilerOptions": {
     /* Target & Module System */
     "target": "ESNext",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "moduleDetection": "force",
     
     /* File Layout */
     // "rootDir": "./src",
     "outDir": "./dist",
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
 
     /* Basic Support */
     "lib": ["ESNext"],
@@ -31,6 +33,17 @@
     /* Prisma & Bundler compatibility */
     "resolveJsonModule": true
   },
-  "include": ["src/**/*", "prisma.config.ts"],
+  "include": [
+    "server.ts",
+    "prisma.config.ts",
+    "check_lessons.ts",
+    "check_plans.ts",
+    "routes/**/*",
+    "middleware/**/*",
+    "services/**/*",
+    "types/**/*",
+    "lib/**/*",
+    "constants/**/*"
+  ],
   "exclude": ["node_modules", "dist"]
 }

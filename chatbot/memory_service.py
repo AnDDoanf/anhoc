@@ -234,6 +234,7 @@ async def update_student_memory(
     topic: str | None,
     easier_requested: bool,
     was_correct: bool | None = None,
+    mistake: str | None = None,
 ):
     if await is_mongo_available():
         memory = await db_mongo.student_memories.find_one({"userId": user_id}) or default_student_memory(user_id)
@@ -255,6 +256,15 @@ async def update_student_memory(
             weak_topics.append(topic)
         if was_correct is True and topic not in strong_topics:
             strong_topics.append(topic)
+
+    if was_correct is False and topic:
+        recent_mistakes = memory.setdefault("recentMistakes", [])
+        recent_mistakes.append({
+            "topic": topic,
+            "mistake": mistake or f"Incorrect answer in {topic}",
+            "createdAt": utcnow(),
+        })
+        memory["recentMistakes"] = recent_mistakes[-5:]
 
     memory["updatedAt"] = utcnow()
 

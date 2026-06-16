@@ -62,14 +62,14 @@
 * [x] CRUD questions
 * [x] Question categories
 * [x] Question difficulty levels
-* [ ] Question tagging
-* [ ] Question import/export
+* [x] Question tagging
+* [x] Question import/export
 
 ### Practice Engine
 
 * [x] Generate practice sets
 * [x] Random question selection
-* [ ] Adaptive difficulty
+* [x] Adaptive difficulty
 * [x] Instant feedback
 * [x] Answer explanations
 
@@ -82,34 +82,34 @@
 
 ---
 
-# Phase 2 — Math Tutor Chatbot
+# Phase 2 — Tutor Chatbot
 
 ## Chatbot Core
 
 ### FastAPI Service
 
-* [ ] Create chatbot service
-* [ ] Chat session management
-* [ ] Conversation persistence
-* [ ] Streaming responses
-* [ ] Conversation history API
+* [x] Create chatbot service
+* [x] Chat session management
+* [x] Conversation persistence
+* [x] Streaming responses
+* [x] Conversation history API
 
 ### Ollama Integration
 
-* [ ] Deploy Ollama server
-* [ ] Integrate Qwen model
-* [ ] Prompt management system
-* [ ] Response post-processing
+* [x] Deploy Ollama server
+* [x] Integrate Qwen model
+* [x] Prompt management system
+* [x] Response post-processing
 
 ### SymPy Integration
 
-* [ ] Expression parser
-* [ ] Calculation engine
-* [ ] Equation solver
-* [ ] Algebra simplification
-* [ ] Fraction support
-* [ ] Geometry helper
-* [ ] Validation layer
+* [x] Expression parser
+* [x] Calculation engine
+* [x] Equation solver
+* [x] Algebra simplification
+* [x] Fraction support
+* [x] Geometry helper
+* [x] Validation layer
 
 ---
 
@@ -117,18 +117,18 @@
 
 ### Intent Routing
 
-* [ ] Detect calculation requests
-* [ ] Detect explanation requests
-* [ ] Detect hint requests
-* [ ] Detect proof requests
-* [ ] Detect word problems
+* [x] Detect calculation requests
+* [x] Detect explanation requests
+* [x] Detect hint requests
+* [x] Detect proof requests
+* [x] Detect word problems
 
 ### Tool Calling
 
-* [ ] Route calculations to SymPy
-* [ ] Route explanations to LLM
-* [ ] Merge tool outputs
-* [ ] Confidence scoring
+* [x] Route calculations to SymPy
+* [x] Route explanations to LLM
+* [x] Merge tool outputs
+* [x] Confidence scoring
 
 ---
 
@@ -136,15 +136,15 @@
 
 ### Language Detection
 
-* [ ] Vietnamese detection
-* [ ] English detection
-* [ ] Mixed-language detection
+* [x] Vietnamese detection
+* [x] English detection
+* [x] Mixed-language detection
 
 ### Prompt Routing
 
-* [ ] Vietnamese prompt templates
-* [ ] English prompt templates
-* [ ] Bilingual explanations
+* [x] Vietnamese prompt templates
+* [x] English prompt templates
+* [x] Bilingual explanations
 
 ---
 
@@ -154,24 +154,24 @@
 
 ### Profile Tracking
 
-* [ ] Store learning history
-* [ ] Store weak topics
-* [ ] Store strengths
-* [ ] Store preferred language
+* [x] Store learning history
+* [x] Store weak topics
+* [x] Store strengths
+* [x] Store preferred language
 
 ### Mistake Tracking
 
-* [ ] Record wrong answers
-* [ ] Categorize mistakes
-* [ ] Frequency analysis
-* [ ] Improvement tracking
+* [x] Record wrong answers
+* [x] Categorize mistakes
+* [x] Frequency analysis
+* [x] Improvement tracking
 
 ### Adaptive Responses
 
-* [ ] Hint-first mode
-* [ ] Step-by-step mode
-* [ ] Full solution mode
-* [ ] Personalized recommendations
+* [x] Hint-first mode
+* [x] Step-by-step mode
+* [x] Full solution mode
+* [x] Personalized recommendations
 
 ---
 
@@ -427,12 +427,12 @@
 
 The minimum thesis-worthy version would be:
 
-* [ ] Learning platform
-* [ ] Question bank
-* [ ] FastAPI chatbot
-* [ ] Ollama integration
-* [ ] SymPy integration
-* [ ] MongoDB memory
+* [x] Learning platform
+* [x] Question bank
+* [x] FastAPI chatbot
+* [x] Ollama integration
+* [x] SymPy integration
+* [x] MongoDB memory
 * [ ] RAG retrieval
 * [ ] Gamification basics
 * [ ] Redis cache

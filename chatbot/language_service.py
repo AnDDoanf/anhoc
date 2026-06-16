@@ -9,9 +9,13 @@ except Exception:
 VIETNAMESE_MARKERS = set("ăâđêôơưáàảãạấầẩẫậắằẳẵặéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ")
 VI_KEYWORDS = {
     "giai", "tinh", "so sanh", "goi y", "dap an", "bai", "phan so", "phuong trinh", "vi sao", "dung khong",
+    "dien tich", "chu vi", "hinh tron", "ban kinh", "duong kinh", "hinh vuong", "canh", "hinh chu nhat",
+    "chieu dai", "chieu rong", "tam giac", "chieu cao", "day"
 }
 EN_KEYWORDS = {
     "solve", "calculate", "compare", "hint", "answer", "fraction", "equation", "why", "check", "practice",
+    "area", "perimeter", "circumference", "circle", "radius", "diameter", "square", "side", "rectangle",
+    "length", "width", "triangle", "height", "base"
 }
 
 

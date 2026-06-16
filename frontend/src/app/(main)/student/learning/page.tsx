@@ -3,11 +3,13 @@
 import { useTranslations, useLocale } from "next-intl";
 import Link from "next/link";
 import Can from "@/components/auth/Can";
+import GradeTestEntry from "@/components/feature/GradeTestEntry";
 import { GraduationCap, Library, Globe, ArrowUpRight, PlusCircle, Layers, BookMarked, ChevronRight, ChevronLeft, BookOpen, PlayCircle, Loader2, Pencil, Trash2, Flame, Users, Sparkles, TrendingUp, ShieldAlert, CheckCircle2, Clock, Lock } from "lucide-react";
 import CreateLessonModal from "@/components/feature/CreateLessonModal";
 import Hero from "@/components/ui/Hero";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Lesson, LessonMastery, Subject, lessonService } from "@/services/lessonService";
+import { GradeTest, testService } from "@/services/testService";
 import { isAxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import { ActivityPoint, authService, NearbyLearner } from "@/services/auth";
@@ -48,6 +50,7 @@ export default function LearningDashboard() {
   const [metaModal, setMetaModal] = useState<"subject" | "grade" | "subjectAccess" | "subjectsList" | null>(null);
   const [editLessonId, setEditLessonId] = useState<string | null>(null);
   const [lessonGroups, setLessonGroups] = useState<LessonSubjectGroup[]>([]);
+  const [gradeTests, setGradeTests] = useState<GradeTest[]>([]);
   const [masteryData, setMasteryData] = useState<Record<string, LessonMastery>>({});
   const [expandedGrades, setExpandedGrades] = useState<Record<string, boolean>>({});
   const [startingPracticeId, setStartingPracticeId] = useState<string | null>(null);
@@ -56,7 +59,6 @@ export default function LearningDashboard() {
   const [recommendedUser, setRecommendedUser] = useState<NearbyLearner | null>(null);
   const [socialSummary, setSocialSummary] = useState({ followers: 0, following: 0 });
   const [followLoadingId, setFollowLoadingId] = useState<string | null>(null);
-  const [lockedSubjects, setLockedSubjects] = useState<Subject[]>([]);
   const [subjectCatalog, setSubjectCatalog] = useState<Subject[]>([]);
   const [requestingSubjectId, setRequestingSubjectId] = useState<number | null>(null);
   const [learnerPage, setLearnerPage] = useState(0);
@@ -64,12 +66,16 @@ export default function LearningDashboard() {
 
   const fetchDisplayData = useCallback(async () => {
     try {
-      const [lessons, mastery, activityData, socializingData, catalog] = await Promise.all([
+      const [lessons, mastery, activityData, socializingData, catalog, tests] = await Promise.all([
         lessonService.list(),
         lessonService.getMasteryAll(),
         authService.getActivity(),
         authService.getSocializing(),
-        lessonService.getSubjectCatalog()
+        lessonService.getSubjectCatalog(),
+        testService.listGradeTests().catch((error) => {
+          console.error("Failed to load grade tests:", error);
+          return [] as GradeTest[];
+        })
       ]);
 
       // Map mastery by lesson_id for easy lookup
@@ -110,11 +116,16 @@ export default function LearningDashboard() {
       setRecommendedUser(socializingData.recommendedUser);
       setSocialSummary(socializingData.summary);
       setSubjectCatalog(catalog);
-      setLockedSubjects(catalog.filter((subject) => subject.is_classified && subject.role_visible && !subject.has_access));
+      setGradeTests(tests);
     } catch (err) {
       console.error("Failed to load dashboard lessons:", err);
     }
   }, [locale]);
+
+  const gradeTestsById = useMemo(
+    () => new Map(gradeTests.map((test) => [String(test.grade_id), test])),
+    [gradeTests]
+  );
 
   const currentStreak = useMemo(() => {
     let streak = 0;
@@ -305,56 +316,61 @@ export default function LearningDashboard() {
                 </div>
               </div>
 
-              {subject.grades.map((group) => (
-                <div
-                  key={`${subject.subject}-${group.grade}`}
-                  className="rounded-3xl border border-sol-border/30 bg-sol-surface p-5 shadow-sm transition-all hover:border-sol-accent/40 hover:bg-sol-surface md:p-6"
-                >
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => toggleGrade(subject.subject, group.grade)}
-                      aria-expanded={Boolean(expandedGrades[getGradeKey(subject.subject, group.grade)])}
-                      className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left"
-                    >
-                      <div>
-                        <h3 className="text-xl font-black uppercase tracking-tight text-sol-text">{group.label}</h3>
-                        <p className="text-sm font-bold text-sol-text/75">
-                          {t("lessonCount", { count: group.lessons.length })}
-                        </p>
-                      </div>
-                      <ChevronRight
-                        size={22}
-                        className={`shrink-0 text-sol-accent transition-transform ${expandedGrades[getGradeKey(subject.subject, group.grade)] ? "rotate-90" : ""}`}
-                      />
-                    </button>
-                    <Link
-                      href={`/student/learning/${group.grade}`}
-                      prefetch={false}
-                      className="group/link inline-flex shrink-0 items-center gap-2 rounded-2xl border border-sol-accent/35 bg-sol-accent/12 px-4 py-2.5 text-sm font-black text-sol-accent transition-all hover:bg-sol-accent hover:text-sol-bg"
-                    >
-                      {t("viewPath")} <ArrowUpRight size={16} className="group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />
-                    </Link>
-                  </div>
+              {subject.grades.map((group) => {
+                const gradeTest = gradeTestsById.get(String(group.lessons[0]?.grade_id ?? ""));
 
+                return (
                   <div
-                    className={`grid transition-all duration-300 ease-out ${
-                      expandedGrades[getGradeKey(subject.subject, group.grade)]
-                        ? "mt-5 grid-rows-[1fr] border-t border-sol-border/20 pt-5 opacity-100"
-                        : "grid-rows-[0fr] opacity-0"
-                    }`}
+                    key={`${subject.subject}-${group.grade}`}
+                    className="rounded-3xl border border-sol-border/30 bg-sol-surface p-5 shadow-sm transition-all hover:border-sol-accent/40 hover:bg-sol-surface md:p-6"
                   >
-                    <div className="min-h-0 overflow-hidden">
-                      <div className="scrollbar-theme -mx-1 overflow-x-auto pb-2">
-                        <div className="flex min-w-full gap-4 px-1">
-                        {group.lessons.map((lesson, idx) => {
-                          const title = locale === "vi" ? lesson.title_vi : lesson.title_en;
-                          const mastery = masteryData[lesson.id];
-                          return (
-                            <article
-                              key={lesson.id}
-                              className="flex w-80 shrink-0 snap-start flex-col rounded-[2rem] border border-sol-border/30 bg-sol-bg p-5 shadow-md transition-all hover:border-sol-accent/35 hover:shadow-xl"
-                            >
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => toggleGrade(subject.subject, group.grade)}
+                        aria-expanded={Boolean(expandedGrades[getGradeKey(subject.subject, group.grade)])}
+                        className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left"
+                      >
+                        <div>
+                          <h3 className="text-xl font-black uppercase tracking-tight text-sol-text">{group.label}</h3>
+                          <p className="text-sm font-bold text-sol-text/75">
+                            {t("lessonCount", { count: group.lessons.length })}
+                          </p>
+                        </div>
+                        <ChevronRight
+                          size={22}
+                          className={`shrink-0 text-sol-accent transition-transform ${expandedGrades[getGradeKey(subject.subject, group.grade)] ? "rotate-90" : ""}`}
+                        />
+                      </button>
+                      <Link
+                        href={`/student/learning/${group.grade}`}
+                        prefetch={false}
+                        className="group/link inline-flex shrink-0 items-center gap-2 rounded-2xl border border-sol-accent/35 bg-sol-accent/12 px-4 py-2.5 text-sm font-black text-sol-accent transition-all hover:bg-sol-accent hover:text-sol-bg"
+                      >
+                        {t("viewPath")} <ArrowUpRight size={16} className="group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />
+                      </Link>
+                    </div>
+
+                    {gradeTest && <GradeTestEntry test={gradeTest} className="mt-5" />}
+
+                    <div
+                      className={`grid transition-all duration-300 ease-out ${
+                        expandedGrades[getGradeKey(subject.subject, group.grade)]
+                          ? "mt-5 grid-rows-[1fr] border-t border-sol-border/20 pt-5 opacity-100"
+                          : "grid-rows-[0fr] opacity-0"
+                      }`}
+                    >
+                      <div className="min-h-0 overflow-hidden">
+                        <div className="scrollbar-theme -mx-1 overflow-x-auto pb-2">
+                          <div className="flex min-w-full gap-4 px-1">
+                          {group.lessons.map((lesson, idx) => {
+                            const title = locale === "vi" ? lesson.title_vi : lesson.title_en;
+                            const mastery = masteryData[lesson.id];
+                            return (
+                              <article
+                                key={lesson.id}
+                                className="flex w-80 shrink-0 snap-start flex-col rounded-[2rem] border border-sol-border/30 bg-sol-bg p-5 shadow-md transition-all hover:border-sol-accent/35 hover:shadow-xl"
+                              >
                               <div className="flex items-start justify-between gap-3">
                                 <div className="space-y-2">
                                   <div className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-sol-accent/30 bg-sol-accent/12 text-sm font-black text-sol-accent">
@@ -433,15 +449,16 @@ export default function LearningDashboard() {
                                   </span>
                                 </button>
                               </div>
-                            </article>
-                          );
-                        })}
+                              </article>
+                            );
+                          })}
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </section>
           ))}
         </div>

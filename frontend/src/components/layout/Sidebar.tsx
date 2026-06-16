@@ -4,7 +4,6 @@ import {
   BookOpen,
   ChevronLeft,
   ChevronRight,
-  FlaskConical,
   Flag,
   PencilLine,
   Database,
@@ -293,14 +292,6 @@ export default function Sidebar() {
                   pathname={pathname}
                   isCollapsed={isCollapsed}
                 />
-                <NavItem
-                  href="/student/test"
-                  label={t("test")}
-                  icon={<FlaskConical size={18} />}
-                  pathname={pathname}
-                  isCollapsed={isCollapsed}
-                />
-
               </section>
             </div>
           </div>

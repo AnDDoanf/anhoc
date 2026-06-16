@@ -2,8 +2,9 @@
 
 import { useTranslations, useLocale } from "next-intl";
 import { useState, useEffect, useMemo } from "react";
-import { lessonService } from "@/services/lessonService";
-import { testService } from "@/services/testService";
+import { LessonMastery, lessonService } from "@/services/lessonService";
+import GradeTestEntry from "@/components/feature/GradeTestEntry";
+import { GradeTest, testService } from "@/services/testService";
 import PracticeCard from "@/components/feature/PracticeCard";
 import PracticeResultModal from "@/components/feature/PracticeResultModal";
 import Hero from "@/components/ui/Hero";
@@ -47,6 +48,8 @@ export default function PracticePage() {
   const [loading, setLoading] = useState(true);
   const [availableLessons, setAvailableLessons] = useState<AvailableLesson[]>([]);
   const [history, setHistory] = useState<PracticeHistory[]>([]);
+  const [gradeTests, setGradeTests] = useState<GradeTest[]>([]);
+  const [masteryData, setMasteryData] = useState<Record<string, LessonMastery>>({});
   const [selectedAttemptId, setSelectedAttemptId] = useState<string | null>(null);
 
   // Filter States
@@ -61,18 +64,38 @@ export default function PracticePage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [lessons, practiceHistory] = await Promise.all([
+      const [lessons, practiceHistory, tests, mastery] = await Promise.all([
         lessonService.getAvailablePractices(),
-        testService.getPracticeHistory()
+        testService.getPracticeHistory(),
+        testService.listGradeTests().catch((error) => {
+          console.error("Failed to fetch grade tests:", error);
+          return [] as GradeTest[];
+        }),
+        lessonService.getMasteryAll().catch((error) => {
+          console.error("Failed to fetch mastery data:", error);
+          return [] as LessonMastery[];
+        }),
       ]);
       setAvailableLessons(lessons);
       setHistory(practiceHistory);
+      setGradeTests(tests);
+      setMasteryData(
+        mastery.reduce<Record<string, LessonMastery>>((acc, record) => {
+          acc[record.lesson_id] = record;
+          return acc;
+        }, {})
+      );
     } catch (error) {
       console.error("Failed to fetch practice data:", error);
     } finally {
       setLoading(false);
     }
   };
+
+  const gradeTestsById = useMemo(
+    () => new Map(gradeTests.map((test) => [String(test.grade_id), test])),
+    [gradeTests]
+  );
 
   // Derive Options
   const gradeOptions = useMemo(() => {
@@ -246,27 +269,33 @@ export default function PracticePage() {
 
         {/* Available Practices List (3/4 on large screens) */}
         <div className="space-y-10 xl:col-span-3 xl:space-y-20">
-          {Object.entries(groupedData).map(([gradeId, group]) => (
-            <section key={gradeId} className="space-y-5 md:space-y-8">
-              <div className="flex items-center gap-3 md:gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-sol-border/30 bg-sol-surface text-sol-accent shadow-sm md:h-12 md:w-12 md:rounded-2xl">
-                  <BookOpen size={20} className="md:h-6 md:w-6" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-black uppercase tracking-tight text-sol-text md:text-2xl">
-                    {group.title || gradeId}
-                  </h2>
-                  <div className="h-1 w-12 bg-sol-accent rounded-full mt-1" />
-                </div>
-              </div>
+          {Object.entries(groupedData).map(([gradeId, group]) => {
+            const gradeTest = gradeTestsById.get(gradeId);
 
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-8">
-                {group.lessons.map((lesson) => (
-                  <PracticeCard key={lesson.id} lesson={lesson} />
-                ))}
-              </div>
-            </section>
-          ))}
+            return (
+              <section key={gradeId} className="space-y-5 md:space-y-8">
+                <div className="flex items-center gap-3 md:gap-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-sol-border/30 bg-sol-surface text-sol-accent shadow-sm md:h-12 md:w-12 md:rounded-2xl">
+                    <BookOpen size={20} className="md:h-6 md:w-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black uppercase tracking-tight text-sol-text md:text-2xl">
+                      {group.title || gradeId}
+                    </h2>
+                    <div className="mt-1 h-1 w-12 rounded-full bg-sol-accent" />
+                  </div>
+                </div>
+
+                {gradeTest && <GradeTestEntry test={gradeTest} />}
+
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-8">
+                  {group.lessons.map((lesson) => (
+                    <PracticeCard key={lesson.id} lesson={lesson} mastery={masteryData[lesson.id]} />
+                  ))}
+                </div>
+              </section>
+            );
+          })}
         </div>
 
         {/* Sidebar: Practice History */}

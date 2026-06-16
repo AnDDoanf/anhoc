@@ -51,11 +51,10 @@ if (closePortsResult.status !== 0) {
 }
 
 const commands = [
-  "npm run dev --prefix frontend",
   "npm run dev --prefix backend",
 ];
-const names = ["frontend", "backend"];
-const colors = ["cyan", "green"];
+const names = ["backend"];
+const colors = ["green"];
 
 if (getListeningPidCount(5002) === 0) {
   commands.push("cd chatbot && .\\.venv\\Scripts\\python.exe -m uvicorn main:app --port 5002 --reload");
@@ -64,6 +63,10 @@ if (getListeningPidCount(5002) === 0) {
 } else {
   console.log("Port 5002 is already in use. Skipping chatbot startup and keeping the existing listener.");
 }
+
+commands.push("npm run dev --prefix frontend");
+names.push("frontend");
+colors.push("cyan");
 
 const escapeForShell = (value) => `"${value.replace(/"/g, '\\"')}"`;
 const concurrentlyCommand = [

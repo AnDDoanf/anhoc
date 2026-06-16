@@ -44,6 +44,55 @@ export interface TemplateFilterMetadata {
   difficulties: string[];
 }
 
+export interface GradeTestEligibility {
+  eligible: boolean;
+  requiredLessonCount: number;
+  completedLessonCount: number;
+  minimumScore: number;
+}
+
+export interface GradeTestAttemptSummary {
+  id: string;
+  total_score: number | null;
+  is_completed: boolean | null;
+  started_at: string;
+  completed_at?: string | null;
+  questionCount: number;
+}
+
+export interface GradeTestLessonSummary {
+  id: string;
+  slug: string;
+  title_en: string;
+  title_vi: string;
+}
+
+export interface GradeTestGradeSummary {
+  id: number;
+  slug: string;
+  title_en: string;
+  title_vi: string;
+  lessons?: GradeTestLessonSummary[];
+}
+
+export interface GradeTest {
+  id: string;
+  grade_id: number;
+  grade_slug: string;
+  title_en: string;
+  title_vi: string;
+  description_en: string;
+  description_vi: string;
+  questionCount: number;
+  availableTemplateCount: number;
+  lessonCount: number;
+  difficulty: "Beginner" | "Intermediate" | "Advanced";
+  iconType: "timer" | "medal" | "target";
+  attempts?: GradeTestAttemptSummary[];
+  eligibility: GradeTestEligibility;
+  grade?: GradeTestGradeSummary;
+}
+
 export const testService = {
   createTemplate: async (data: CreateTemplateDTO) => {
     const response = await api.post('/tests/templates', data);
@@ -103,11 +152,11 @@ export const testService = {
     const response = await api.patch(`/tests/question-reports/${id}`, { status });
     return response.data;
   },
-  listGradeTests: async () => {
+  listGradeTests: async (): Promise<GradeTest[]> => {
     const response = await api.get('/tests/grade-tests');
     return response.data;
   },
-  startGradeTest: async (gradeId: number) => {
+  startGradeTest: async (gradeId: number): Promise<{ id: string }> => {
     const response = await api.post(`/tests/grade-tests/${gradeId}/start`);
     return response.data;
   },

@@ -13,9 +13,10 @@ interface LessonPracticeButtonProps {
     title_en: string;
     title_vi: string;
   };
+  passed70?: boolean;
 }
 
-export default function LessonPracticeButton({ lesson }: LessonPracticeButtonProps) {
+export default function LessonPracticeButton({ lesson, passed70 = false }: LessonPracticeButtonProps) {
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [difficulty, setDifficulty] = useState("all");
@@ -81,7 +82,12 @@ export default function LessonPracticeButton({ lesson }: LessonPracticeButtonPro
         <button
           onClick={handleStartPractice}
           disabled={loading || exporting}
-          className="w-full flex items-center justify-center gap-3 px-6 py-5 bg-sol-accent text-sol-bg rounded-[1.5rem] font-black text-base hover:bg-sol-accent/90 transition-all shadow-xl shadow-sol-accent/20 hover:shadow-sol-accent/30 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed group overflow-hidden relative"
+          className={`w-full flex items-center justify-center gap-3 px-6 py-5 rounded-[1.5rem] font-black text-base transition-all shadow-xl active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed group overflow-hidden relative ${
+            passed70
+              ? "border text-white shadow-[0_18px_40px_rgba(47,158,68,0.24)] hover:shadow-[0_20px_44px_rgba(47,158,68,0.32)]"
+              : "bg-sol-accent text-sol-bg hover:bg-sol-accent/90 shadow-sol-accent/20 hover:shadow-sol-accent/30"
+          }`}
+          style={passed70 ? { backgroundColor: "#2f9e44", borderColor: "rgba(47, 158, 68, 0.45)" } : undefined}
         >
           <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
           <div className="relative flex items-center gap-3">
@@ -90,7 +96,7 @@ export default function LessonPracticeButton({ lesson }: LessonPracticeButtonPro
             ) : (
               <PlayCircle size={22} className="group-hover:scale-110 transition-transform duration-500" />
             )}
-            <span>{loading ? t("starting") : t("startPractice")}</span>
+            <span>{loading ? t("starting") : passed70 ? t("reviewBtn") : t("startPractice")}</span>
           </div>
         </button>
 

@@ -12,6 +12,8 @@ def detect_intent(message: str) -> str:
         return "generate_practice"
     if any(x in msg for x in ["giải thích", "giai thich", "explain", "why"]):
         return "explain_concept"
+    if any(x in msg for x in ["chứng minh", "chung minh", "proof", "prove"]):
+        return "prove_statement"
     if any(x in msg for x in ["giải", "giai", "tính", "tinh", "solve", "calculate", "compare", "so sánh", "so sanh"]):
         return "solve_problem"
     return "general_tutor_chat"
@@ -27,6 +29,7 @@ def detect_mode(message: str, requested_mode: TutorMode | None) -> TutorMode:
         "check_answer": "check",
         "generate_practice": "practice",
         "explain_concept": "explain",
+        "prove_statement": "explain",
         "solve_problem": "solve",
         "general_tutor_chat": "review",
     }

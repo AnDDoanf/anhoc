@@ -2,6 +2,7 @@
 "use client";
 
 import { useTranslations, useLocale } from "next-intl";
+import { LessonMastery } from "@/services/lessonService";
 import {
   BarChart2,
   Calculator,
@@ -20,9 +21,10 @@ interface PracticeCardProps {
       templates: number;
     }
   };
+  mastery?: LessonMastery;
 }
 
-export default function PracticeCard({ lesson }: PracticeCardProps) {
+export default function PracticeCard({ lesson, mastery }: PracticeCardProps) {
   const t = useTranslations("Practice");
   const locale = useLocale();
 
@@ -35,6 +37,7 @@ export default function PracticeCard({ lesson }: PracticeCardProps) {
 
   const title = locale === "vi" ? lesson.title_vi : lesson.title_en;
   const exerciseCount = lesson._count?.templates || 0;
+  const passed70 = Number(mastery?.mastery_score ?? 0) >= 70;
 
   return (
     <div className="group relative bg-sol-surface rounded-3xl p-6 border border-sol-border/30 shadow-sm hover:shadow-2xl hover:bg-sol-surface transition-all duration-500 hover:-translate-y-1 overflow-hidden flex flex-col h-full">
@@ -66,7 +69,7 @@ export default function PracticeCard({ lesson }: PracticeCardProps) {
       </div>
 
       <div className="relative z-10">
-        <LessonPracticeButton lesson={lesson} />
+        <LessonPracticeButton lesson={lesson} passed70={passed70} />
       </div>
     </div>
   );

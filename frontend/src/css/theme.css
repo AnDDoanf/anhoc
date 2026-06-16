@@ -8,6 +8,7 @@
   --color-sol-muted: var(--text-secondary);
   --color-sol-accent: var(--accent);
   --color-sol-border: var(--border);
+  --color-sol-green: var(--sol-green);
   --color-sol-red: var(--sol-red);
   --color-sol-orange: var(--sol-orange);
 }
