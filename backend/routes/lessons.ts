@@ -14,6 +14,7 @@ import {
   getVisibleTemplateWhereForViewer,
 } from '../services/contentAccessService.ts';
 import { getLearnUnitMemberIds, getLearnUnitForUser } from '../services/learnUnitService.ts';
+import { economyService } from '../services/economyService.ts';
 
 const router = Router();
 
@@ -461,6 +462,13 @@ router.post('/:id/practice', optionalAuthenticate, async (req, res) => {
   const difficulty = normalizeDifficulty(req.body?.difficulty);
 
   try {
+    if ((req as any).user) {
+      try {
+        await economyService.consumeLife((req as any).user.id);
+      } catch (lifeError: any) {
+        return res.status(403).json({ error: lifeError.message });
+      }
+    }
     const lesson = await prisma.lesson.findUnique({
       where: { id: lesson_id },
       select: { subject_id: true, is_premium: true }

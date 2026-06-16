@@ -46,11 +46,19 @@ export const levelService = {
     const currentXp = stats.total_xp || 0;
     let xpToAdd = amount;
 
+    // Apply XP bonus pct from upgrades if active
+    const statsAny = stats as any;
+    const upgrades = statsAny.upgrades && typeof statsAny.upgrades === 'object' ? statsAny.upgrades : {};
+    const xpBonusPct = Number((upgrades as any).xp_bonus_pct || 0);
+    if (xpBonusPct > 0) {
+      xpToAdd = Math.floor(xpToAdd * (1 + xpBonusPct / 100));
+    }
+
     if (isFreeStudent) {
       if (currentXp >= 500) {
         return stats;
       }
-      if (currentXp + amount > 500) {
+      if (currentXp + xpToAdd > 500) {
         xpToAdd = 500 - currentXp;
       }
     }
@@ -65,6 +73,8 @@ export const levelService = {
     // 3. Recompute level from cumulative XP total
     const nextTotalXp = currentXp + xpToAdd;
     const nextLevel = levelService.getLevelFromTotalXp(nextTotalXp);
+    const levelDiff = nextLevel - stats.level;
+    const levelPointsAwarded = levelDiff > 0 ? levelDiff * 2 : 0;
 
     // 4. Update stats
     return await prisma.studentStats.update({
@@ -72,8 +82,9 @@ export const levelService = {
       data: {
         total_xp: nextTotalXp,
         level: nextLevel,
+        level_points: { increment: levelPointsAwarded },
         last_active: new Date()
-      }
+      } as any
     });
   }
 };

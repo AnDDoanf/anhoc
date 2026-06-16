@@ -5,6 +5,7 @@ import { authenticate, authorize, optionalAuthenticate } from '../middleware/aut
 import { masteryService } from '../services/masteryService';
 import { levelService } from '../services/levelService';
 import { createNotification, NotificationType, notifyAdmins } from '../services/notificationService.ts';
+import { economyService } from '../services/economyService.ts';
 import {
   canAccessLessonForViewer,
   canAccessStandaloneTemplate,
@@ -939,6 +940,27 @@ router.post('/attempts/:id/finish', authenticate, async (req, res) => {
       }
     } catch (e) {
       console.error("XP Service Error:", e);
+    }
+
+    try {
+      if (attempt.user_id && existing?.is_practice) {
+        const baseCoins = 10;
+        const scoreBonus = Math.floor(Number(attempt.total_score || 0) / 10);
+        let coinsEarned = baseCoins + scoreBonus;
+
+        const stats = (await prisma.studentStats.findUnique({
+          where: { user_id: attempt.user_id }
+        })) as any;
+        const upgrades = stats?.upgrades && typeof stats.upgrades === 'object' ? stats.upgrades : {};
+        const coinBonusPct = Number((upgrades as any).coin_bonus_pct || 0);
+        if (coinBonusPct > 0) {
+          coinsEarned = Math.floor(coinsEarned * (1 + coinBonusPct / 100));
+        }
+
+        await economyService.addCoins(attempt.user_id, coinsEarned, "practice_completion");
+      }
+    } catch (e) {
+      console.error("Ancoin Reward Service Error:", e);
     }
 
     try {
