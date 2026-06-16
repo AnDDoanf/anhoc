@@ -36,7 +36,7 @@ export const economyService = {
   // Compute max lives based on user level and spent talent points
   getMaxLives: (level: number, extraLivesFromPoints: number): number => {
     const baseMax = 6 + Math.floor(level / 10);
-    return Math.min(12, baseMax + extraLivesFromPoints);
+    return Math.min(12, baseMax) + extraLivesFromPoints;
   },
 
   // Dynamically restore lives based on hours passed
@@ -96,6 +96,24 @@ export const economyService = {
           equipped_items: {},
           upgrades: {}
         }
+      });
+    }
+
+    // Dynamic level points synchronization
+    const upgrades = stats.upgrades && typeof stats.upgrades === 'object' ? (stats.upgrades as any) : {};
+    const xpBonusPoints = Math.floor((upgrades.xp_bonus_pct || 0) / 5);
+    const coinBonusPoints = Math.floor((upgrades.coin_bonus_pct || 0) / 5);
+    const gameDurationPoints = Math.floor((upgrades.game_duration_bonus || 0) / 5);
+    const extraLivesPoints = (upgrades.extra_lives_from_points || 0) * 10;
+    const extraAttemptsPoints = (upgrades.extra_game_attempts || 0) * 10;
+    
+    const totalSpent = xpBonusPoints + coinBonusPoints + gameDurationPoints + extraLivesPoints + extraAttemptsPoints;
+    const expectedCurrent = Math.max(0, (stats.level - 1) * 2 - totalSpent);
+    
+    if (stats.level_points < expectedCurrent) {
+      stats = await prisma.studentStats.update({
+        where: { user_id: userId },
+        data: { level_points: expectedCurrent }
       });
     }
 
@@ -185,6 +203,9 @@ export const economyService = {
       (upgrades as any).xp_bonus_pct = current + 5; // Add 5% XP bonus
     } else if (upgradeType === 'extra_attempts') {
       const current = Number((upgrades as any).extra_game_attempts || 0);
+      if (current >= 5) {
+        throw new Error("Maximum extra game attempts upgrade (5) reached");
+      }
       (upgrades as any).extra_game_attempts = current + 1; // Add 1 game attempt
     } else {
       throw new Error("Invalid upgrade type");

@@ -291,6 +291,7 @@
     "roles": "Roles",
     "reports": "Reports",
     "games": "Games",
+    "shop": "Shop",
     "pricing": "Subscription",
     "members": "Members"
   },
@@ -781,6 +782,13 @@
     "filters": {
       "searchPlaceholder": "Search username or email",
       "allRoles": "All roles"
+    },
+    "pagination": {
+      "show": "Show",
+      "perPage": "per page",
+      "pageOf": "Page {page} of {totalPages}",
+      "previous": "Previous",
+      "next": "Next"
     },
     "table": {
       "account": "Account",

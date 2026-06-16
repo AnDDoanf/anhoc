@@ -6,7 +6,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { authService } from "@/services/auth";
 import { gameService, type PersonalGameLists } from "@/services/gameService";
 import ProtectedRoute from "@/components/guard/ProtectedRoute";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { 
   Trophy, 
   Flame, 
@@ -17,7 +17,9 @@ import {
   ChevronRight,
   Sparkles,
   Gamepad2,
-  Archive
+  Archive,
+  Heart,
+  Coins
 } from "lucide-react";
 import {
   AreaChart,
@@ -35,6 +37,7 @@ export default function UserHomePage() {
   const { theme } = useTheme();
   const t = useTranslations("Common");
   const dt = useTranslations("Dashboard");
+  const locale = useLocale();
   const DEFAULT_PAGE_SIZE = 5;
   const [profile, setProfile] = useState<any>(null);
   const [activity, setActivity] = useState<any[]>([]);
@@ -56,11 +59,18 @@ export default function UserHomePage() {
         setMyGames(gameData);
       } catch (err) {
         console.error("Failed to fetch dashboard data:", err);
-      } finally {
-        // no-op
       }
     };
     fetchData();
+
+    const handleStatsUpdated = () => {
+      fetchData();
+    };
+
+    window.addEventListener("student-stats-updated", handleStatsUpdated);
+    return () => {
+      window.removeEventListener("student-stats-updated", handleStatsUpdated);
+    };
   }, [createdPage, participatedPage]);
 
   const refreshGames = async () => {
@@ -121,6 +131,36 @@ export default function UserHomePage() {
   return (
     <ProtectedRoute requiredRole="student">
       <div className="mx-auto max-w-7xl space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        
+        {/* Unspent Level Points Notification */}
+        {profile?.student_stats?.level_points > 0 && (
+          <div className="flex items-center justify-between gap-4 p-5 rounded-[2rem] bg-amber-500/10 border border-amber-500/20 text-sol-text shadow-xl animate-in slide-in-from-top duration-500">
+            <div className="flex items-center gap-3.5">
+              <div className="p-2.5 rounded-2xl bg-amber-500/20 text-amber-500 animate-bounce">
+                <Sparkles size={22} />
+              </div>
+              <div className="space-y-0.5">
+                <p className="font-black text-sm">
+                  {locale === "vi" 
+                    ? `Bạn đang có ${profile.student_stats.level_points} điểm thiên phú chưa sử dụng!` 
+                    : `You have ${profile.student_stats.level_points} of level points haven't spent`}
+                </p>
+                <p className="text-xs text-sol-muted font-bold">
+                  {locale === "vi"
+                    ? "Hãy nâng cấp các thiên phú trong trang cài đặt để tăng tim tối đa, thưởng XP hoặc thưởng Ancoin."
+                    : "Go to settings to upgrade your max lives, XP multipliers, or coin bonuses."}
+                </p>
+              </div>
+            </div>
+            <Link 
+              href="/student/settings"
+              className="px-5 py-2.5 bg-sol-bg hover:bg-sol-surface text-amber-600 border border-sol-border/30 rounded-xl text-xs font-black uppercase tracking-wider transition-all"
+            >
+              {locale === "vi" ? "Nâng cấp ngay" : "Upgrade Now"}
+            </Link>
+          </div>
+        )}
+
         {/* Hero Section */}
         <div className="relative overflow-hidden rounded-[2.5rem] bg-sol-surface border border-sol-border/30 p-8 md:p-12 shadow-2xl shadow-sol-accent/5">
           <div className="absolute top-0 right-0 w-96 h-96 bg-sol-accent/10 rounded-full -mr-32 -mt-32 blur-3xl animate-pulse" />
@@ -175,6 +215,21 @@ export default function UserHomePage() {
                   className="h-full bg-sol-accent transition-all duration-1000" 
                   style={{ width: `${(profile?.student_stats?.total_xp % 1000) / 10}%` }} 
                 />
+              </div>
+
+              <div className="pt-4 border-t border-sol-border/20 grid grid-cols-3 gap-2">
+                <div className="flex flex-col items-center" title="Lives">
+                  <Heart className="text-sol-orange fill-sol-orange" size={18} />
+                  <span className="text-sm font-black text-sol-text mt-1">{profile?.student_stats?.lives ?? 6}</span>
+                </div>
+                <div className="flex flex-col items-center" title="Ancoins">
+                  <Coins className="text-sol-accent" size={18} />
+                  <span className="text-sm font-black text-sol-text mt-1">{profile?.student_stats?.coins ?? 0}</span>
+                </div>
+                <div className="flex flex-col items-center font-bold" title="Level Up Points">
+                  <Sparkles className="text-sol-yellow text-amber-500" size={18} />
+                  <span className="text-sm font-black text-sol-text mt-1">{profile?.student_stats?.level_points ?? 0}</span>
+                </div>
               </div>
             </div>
           </div>

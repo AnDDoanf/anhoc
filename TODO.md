@@ -239,42 +239,42 @@ Status: partially implemented in the app. Core XP, achievements, daily streak UI
 
 ### Lives Mechanism
 
-* [ ] Consume 1 life per practice attempt
-* [ ] Restore 1 life every hour
-* [ ] Start each user with 6 lives
-* [ ] Increase max lives by 1 every 10 levels
-* [ ] Cap max lives at 12
+* [x] Consume 1 life per practice attempt
+* [x] Restore 1 life every hour
+* [x] Start each user with 6 lives
+* [x] Increase max lives by 1 every 10 levels
+* [x] Cap max lives at 12
 
 ### Ancoin Rewards
 
-* [ ] Reward `ancoin` for completed practice attempts
-* [ ] Ancoin wallet balance
-* [ ] Ancoin transaction history
+* [x] Reward `ancoin` for completed practice attempts
+* [x] Ancoin wallet balance
+* [x] Ancoin transaction history
 
 ### Shop Features
 
-* [ ] Avatar packs
-* [ ] Profile frames
-* [ ] Titles
-* [ ] Profile backgrounds
-* [ ] App themes
-* [ ] Study pets
-* [ ] Skip Guard (skip question with correct mark)
-* [ ] Pet eggs
-* [ ] Pet food and boosts
-* [ ] Streak shield
-* [ ] XP booster
-* [ ] Challenge tickets
-* [ ] AI tutor credits
+* [x] Avatar packs
+* [x] Profile frames
+* [x] Titles
+* [x] Profile backgrounds
+* [x] App themes
+* [x] Study pets
+* [x] Skip Guard (skip question with correct mark)
+* [x] Pet eggs
+* [x] Pet food and boosts
+* [x] Streak shield
+* [x] XP booster
+* [x] Challenge tickets
+* [x] AI tutor credits
 
 ### Level-Up Points
 
-* [ ] Award level points on level up
-* [ ] Spend 1 point to add 2 or 5 seconds to a game mode duration limit
-* [ ] Spend 10 points to add 1 total life, up to 3 extra lives
-* [ ] Spend 1 point to add 5% coin reward bonus to future rewards
-* [ ] Spend 1 point to add 5% XP reward bonus to future rewards
-* [ ] Spend 10 points to buy 1 extra game attempt (total 5)
+* [x] Award level points on level up
+* [x] Spend 1 point to add 2 or 5 seconds to a game mode duration limit
+* [x] Spend 10 points to add 1 total life, up to 3 extra lives
+* [x] Spend 1 point to add 5% coin reward bonus to future rewards
+* [x] Spend 1 point to add 5% XP reward bonus to future rewards
+* [x] Spend 10 points to buy 1 extra game attempt (total 5)
 
 ---
 

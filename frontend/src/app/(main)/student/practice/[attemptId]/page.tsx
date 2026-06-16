@@ -5,7 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { testService } from "@/services/testService";
 import { achievementService } from "@/services/achievementService";
-import { Loader2, ArrowRight, ArrowLeft, Send, CheckCircle2, XCircle, Award, Flag } from "lucide-react";
+import { Loader2, ArrowRight, ArrowLeft, Send, CheckCircle2, XCircle, Award, Flag, Heart, Coins, Sparkles, SkipForward } from "lucide-react";
+import { economyService, type StudentStats } from "@/services/economyService";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
@@ -48,6 +49,20 @@ export default function PracticeRunnerPage() {
   const [reportReason, setReportReason] = useState("");
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [reportedSnapshotIds, setReportedSnapshotIds] = useState<string[]>([]);
+  const [stats, setStats] = useState<StudentStats | null>(null);
+
+  const fetchEconomy = useCallback(async () => {
+    try {
+      const data = await economyService.getStatus();
+      setStats(data.stats);
+    } catch (err) {
+      console.error("Failed to load economy status:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchEconomy();
+  }, [fetchEconomy]);
 
   const fetchAttempt = useCallback(async () => {
     try {
@@ -169,6 +184,34 @@ export default function PracticeRunnerPage() {
       });
     } catch (error) {
       console.error("Failed to skip question:", error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleUseSkipGuard = async () => {
+    if (isAlreadyAnswered || submitting || !currentSnapshot?.id) return;
+
+    setSubmitting(true);
+    try {
+      const res = await economyService.useSkipGuard(currentSnapshot.id);
+      if (res.success) {
+        setStatus("correct");
+        setAttempt((prev: any) => {
+          const newSnapshots = [...prev.snapshots];
+          newSnapshots[currentIndex] = {
+            ...newSnapshots[currentIndex],
+            student_answer: "Skip Guard",
+            is_correct: true,
+            points_earned: 10
+          };
+          return { ...prev, snapshots: newSnapshots };
+        });
+        window.dispatchEvent(new Event("student-stats-updated"));
+        await fetchEconomy();
+      }
+    } catch (error: any) {
+      alert(error.response?.data?.error || "Failed to use Skip Guard");
     } finally {
       setSubmitting(false);
     }
@@ -432,6 +475,12 @@ export default function PracticeRunnerPage() {
             <Flag size={15} />
             {reportedSnapshotIds.includes(currentSnapshot?.id) ? t("reportedQuestion") : t("reportQuestion")}
           </button>
+          {stats && (
+            <div className="flex items-center gap-1.5 px-4 py-2 bg-sol-surface rounded-full border border-sol-border/10 text-sm font-bold text-sol-text" title={locale === "vi" ? "Số tim hiện tại" : "Current lives"}>
+              <Heart className="text-sol-orange fill-sol-orange" size={16} />
+              <span>{stats.lives}</span>
+            </div>
+          )}
           <div className="flex items-center gap-2 px-4 py-2 bg-sol-surface rounded-full border border-sol-border/10 text-sm font-bold text-sol-muted">
             {t("questionInfo", { current: currentIndex + 1, total: attempt.snapshots.length })}
           </div>
@@ -603,7 +652,7 @@ export default function PracticeRunnerPage() {
                 </form>
               )}
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-4">
                 <button
                   type="button"
                   onClick={handleSkip}
@@ -612,6 +661,18 @@ export default function PracticeRunnerPage() {
                 >
                   {t("skipQuestion")}
                 </button>
+
+                {stats && (stats.inventory as any)?.['skip_guard'] > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleUseSkipGuard}
+                    disabled={submitting}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-sol-green/10 border border-sol-green/20 rounded-xl text-xs font-black uppercase text-sol-green hover:bg-sol-green/20 transition-all"
+                  >
+                    <SkipForward size={14} />
+                    <span>{locale === "vi" ? `Dùng Skip Guard (Còn ${stats.inventory['skip_guard']})` : `Use Skip Guard (${stats.inventory['skip_guard']} Left)`}</span>
+                  </button>
+                )}
               </div>
 
               {status === "correct" && (
