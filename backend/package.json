@@ -10,6 +10,7 @@
     "dev": "node ./node_modules/tsx/dist/cli.mjs watch server.ts",
     "prisma:generate": "node ./node_modules/prisma/build/index.js generate",
     "prisma:migrate": "node ./node_modules/prisma/build/index.js migrate dev",
+    "prisma:migrate:deploy": "node ./node_modules/prisma/build/index.js migrate deploy",
     "prisma:reset": "node ./node_modules/prisma/build/index.js migrate reset",
     "prisma:seed": "node ./node_modules/prisma/build/index.js db seed"
   },

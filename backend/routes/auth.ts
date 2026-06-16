@@ -444,14 +444,24 @@ router.post("/activate", async (req: Request, res: Response) => {
       data: {
         account_status: "active",
         security: {
-          update: {
-            email_verified_at: user.security?.email_verified_at || now,
-            email_verification_token: null,
-            first_login_at: user.security?.first_login_at || now,
-            inactive_cleanup_at: null,
-            failed_login_attempts: 0,
-            lockout_until: null,
-          }
+          upsert: {
+            update: {
+              email_verified_at: user.security?.email_verified_at || now,
+              email_verification_token: null,
+              first_login_at: user.security?.first_login_at || now,
+              inactive_cleanup_at: null,
+              failed_login_attempts: 0,
+              lockout_until: null,
+            },
+            create: {
+              email_verified_at: user.security?.email_verified_at || now,
+              email_verification_token: null,
+              first_login_at: user.security?.first_login_at || now,
+              inactive_cleanup_at: null,
+              failed_login_attempts: 0,
+              lockout_until: null,
+            },
+          },
         },
         ...(!isAlreadyVerified ? {
           audit_logs: {
@@ -544,9 +554,14 @@ router.post("/login", loginLimiter, async (req: Request, res: Response) => {
         dataToUpdate.lockout_until = new Date(Date.now() + 15 * 60 * 1000);
       }
 
-      await prisma.userSecurity.update({
+      await prisma.userSecurity.upsert({
         where: { user_id: user.id },
-        data: dataToUpdate,
+        update: dataToUpdate,
+        create: {
+          user_id: user.id,
+          failed_login_attempts: newAttempts,
+          lockout_until: dataToUpdate.lockout_until ?? null,
+        },
       });
 
       if (newAttempts >= 5) {
@@ -581,12 +596,20 @@ router.post("/login", loginLimiter, async (req: Request, res: Response) => {
           data: {
             account_status: "active",
             security: {
-              update: {
-                first_login_at: user.security?.first_login_at || now,
-                inactive_cleanup_at: null,
-                failed_login_attempts: 0,
-                lockout_until: null,
-              }
+              upsert: {
+                update: {
+                  first_login_at: user.security?.first_login_at || now,
+                  inactive_cleanup_at: null,
+                  failed_login_attempts: 0,
+                  lockout_until: null,
+                },
+                create: {
+                  first_login_at: user.security?.first_login_at || now,
+                  inactive_cleanup_at: null,
+                  failed_login_attempts: 0,
+                  lockout_until: null,
+                },
+              },
             },
             audit_logs: {
               create: {
@@ -616,10 +639,16 @@ router.post("/login", loginLimiter, async (req: Request, res: Response) => {
           where: { id: user.id },
           data: {
             security: {
-              update: {
-                failed_login_attempts: 0,
-                lockout_until: null,
-              }
+              upsert: {
+                update: {
+                  failed_login_attempts: 0,
+                  lockout_until: null,
+                },
+                create: {
+                  failed_login_attempts: 0,
+                  lockout_until: null,
+                },
+              },
             },
             audit_logs: {
               create: {
@@ -1333,9 +1362,14 @@ router.post("/forgot-password", forgotPasswordLimiter, async (req: Request, res:
 
     if (user) {
       const resetToken = crypto.randomBytes(32).toString("hex");
-      await prisma.userSecurity.update({
+      await prisma.userSecurity.upsert({
         where: { user_id: user.id },
-        data: {
+        update: {
+          password_reset_token: resetToken,
+          password_reset_sent_at: new Date(),
+        },
+        create: {
+          user_id: user.id,
           password_reset_token: resetToken,
           password_reset_sent_at: new Date(),
         },
@@ -1386,9 +1420,16 @@ router.post("/reset-password", resetPasswordLimiter, async (req: Request, res: R
         where: { id: security.user_id },
         data: { password_hash: passwordHash },
       }),
-      prisma.userSecurity.update({
+      prisma.userSecurity.upsert({
         where: { user_id: security.user_id },
-        data: {
+        update: {
+          password_reset_token: null,
+          password_reset_sent_at: null,
+          failed_login_attempts: 0,
+          lockout_until: null,
+        },
+        create: {
+          user_id: security.user_id,
           password_reset_token: null,
           password_reset_sent_at: null,
           failed_login_attempts: 0,
