@@ -1,6 +1,8 @@
 import crypto from "node:crypto";
 import type { Transporter } from "nodemailer";
 import nodemailer from "nodemailer";
+import { emailQueue } from "../lib/queue.ts";
+import { isCacheAlive } from "../lib/redis.ts";
 
 let transporterPromise: Promise<Transporter | null> | null = null;
 
@@ -31,6 +33,33 @@ const getTransporter = async () => {
 
 export const createEmailVerificationToken = () => crypto.randomBytes(32).toString("hex");
 
+export const sendMailPayload = async (payload: { to: string; subject: string; text: string; html: string }) => {
+  const transporter = await getTransporter();
+  const from = process.env.SMTP_FROM?.trim() || process.env.SMTP_USER?.trim() || "no-reply@anhoc.local";
+
+  if (!transporter) {
+    console.log(`[Email Direct/Fallback Log] To: ${payload.to}\nSubject: ${payload.subject}\nText: ${payload.text}`);
+    return;
+  }
+
+  await transporter.sendMail({
+    from,
+    ...payload,
+  });
+};
+
+export const enqueueEmail = async (payload: { to: string; subject: string; text: string; html: string }) => {
+  if (isCacheAlive()) {
+    try {
+      await emailQueue.add("send-email", payload);
+      return;
+    } catch (err) {
+      console.warn("⚠️ Failed to enqueue email job, falling back to synchronous sending:", err);
+    }
+  }
+  await sendMailPayload(payload);
+};
+
 export const sendActivationEmail = async (
   email: string,
   token: string,
@@ -40,8 +69,6 @@ export const sendActivationEmail = async (
 ) => {
   const frontendBase = (process.env.FRONTEND_URL || "http://localhost:5000").replace(/\/+$/, "");
   const activationUrl = `${frontendBase}/activate?token=${encodeURIComponent(token)}`;
-  const transporter = await getTransporter();
-  const from = process.env.SMTP_FROM?.trim() || process.env.SMTP_USER?.trim() || "no-reply@anhoc.local";
 
   const detailsText = `
 Your Account Details:
@@ -77,14 +104,7 @@ ${learnUnitCode ? `- Learning Unit Code: ${learnUnitCode}\n` : ""}
     </div>
   `;
 
-  if (!transporter) {
-    console.log(`Activation link for ${email}: ${activationUrl}`);
-    console.log(detailsText);
-    return;
-  }
-
-  await transporter.sendMail({
-    from,
+  await enqueueEmail({
     to: email,
     subject: "Activate your Anhoc account",
     text: `Activate your Anhoc account by opening this link: ${activationUrl}\n\n${detailsText}`,
@@ -105,16 +125,8 @@ ${learnUnitCode ? `- Learning Unit Code: ${learnUnitCode}\n` : ""}
 export const sendPasswordResetEmail = async (email: string, token: string) => {
   const frontendBase = (process.env.FRONTEND_URL || "http://localhost:5000").replace(/\/+$/, "");
   const resetUrl = `${frontendBase}/reset-password?token=${encodeURIComponent(token)}`;
-  const transporter = await getTransporter();
-  const from = process.env.SMTP_FROM?.trim() || process.env.SMTP_USER?.trim() || "no-reply@anhoc.local";
 
-  if (!transporter) {
-    console.log(`Password reset link for ${email}: ${resetUrl}`);
-    return;
-  }
-
-  await transporter.sendMail({
-    from,
+  await enqueueEmail({
     to: email,
     subject: "Reset your Anhoc account password",
     text: `Reset your Anhoc account password by opening this link: ${resetUrl}`,
@@ -127,4 +139,5 @@ export const sendPasswordResetEmail = async (email: string, token: string) => {
     `,
   });
 };
+
 

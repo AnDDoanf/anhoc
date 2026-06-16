@@ -1,4 +1,6 @@
 import prisma from "../lib/db.ts";
+import { notificationQueue } from "../lib/queue.ts";
+import { isCacheAlive } from "../lib/redis.ts";
 
 type NotificationPayload = Record<string, unknown>;
 
@@ -38,7 +40,7 @@ export const serializeNotification = (notification: any) => ({
     : null,
 });
 
-export const createNotification = async ({
+export const createNotificationDirect = async ({
   recipientId,
   actorId,
   type,
@@ -62,13 +64,13 @@ export const createNotification = async ({
       type,
       entity_type: entityType || null,
       entity_id: entityId || null,
-      payload: payload || {},
+      payload: (payload as any) || {},
     },
     include: notificationInclude,
   });
 };
 
-export const notifyAdmins = async ({
+export const notifyAdminsDirect = async ({
   actorId,
   type,
   entityType,
@@ -105,9 +107,10 @@ export const notifyAdmins = async ({
       type,
       entity_type: entityType || null,
       entity_id: entityId || null,
-      payload: payload || {},
+      payload: (payload as any) || {},
     })),
   });
+
 
   return prisma.notification.findMany({
     where: {
@@ -120,6 +123,30 @@ export const notifyAdmins = async ({
     orderBy: { created_at: "desc" },
     take: recipientIds.length,
   });
+};
+
+export const createNotification = async (args: Parameters<typeof createNotificationDirect>[0]) => {
+  if (isCacheAlive()) {
+    try {
+      await notificationQueue.add("create-notification", args);
+      return null;
+    } catch (err) {
+      console.warn("⚠️ Failed to enqueue notification job, falling back to direct db write:", err);
+    }
+  }
+  return createNotificationDirect(args);
+};
+
+export const notifyAdmins = async (args: Parameters<typeof notifyAdminsDirect>[0]) => {
+  if (isCacheAlive()) {
+    try {
+      await notificationQueue.add("notify-admins", args);
+      return [];
+    } catch (err) {
+      console.warn("⚠️ Failed to enqueue notify-admins job, falling back to direct db write:", err);
+    }
+  }
+  return notifyAdminsDirect(args);
 };
 
 export const getNotificationFeed = async ({
@@ -160,3 +187,4 @@ export const getNotificationFeed = async ({
     },
   };
 };
+

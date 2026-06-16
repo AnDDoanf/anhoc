@@ -1,11 +1,14 @@
 import { Router } from 'express';
 import prisma from '../lib/db';
+import { cacheGet, cacheSet, cacheInvalidateQuestion, isCacheAlive } from '../lib/redis';
 import * as MathService from '../services/mathService';
 import { authenticate, authorize, optionalAuthenticate } from '../middleware/auth';
 import { masteryService } from '../services/masteryService';
 import { levelService } from '../services/levelService';
 import { createNotification, NotificationType, notifyAdmins } from '../services/notificationService.ts';
 import { economyService } from '../services/economyService.ts';
+import { achievementQueue } from '../lib/queue.ts';
+import { checkAndAwardAchievements } from '../services/achievementService.ts';
 import {
   canAccessLessonForViewer,
   canAccessStandaloneTemplate,
@@ -1003,6 +1006,24 @@ router.post('/attempts/:id/finish', authenticate, async (req, res) => {
       console.error("Student Stats Service Error:", e);
     }
 
+    // Enqueue background achievements evaluation
+    if (attempt.user_id) {
+      if (isCacheAlive()) {
+        try {
+          await achievementQueue.add("check-achievements", { userId: attempt.user_id });
+        } catch (err) {
+          console.warn("⚠️ Failed to enqueue achievements check, falling back to check in place:", err);
+          checkAndAwardAchievements(attempt.user_id).catch(err => {
+            console.error("Failed to run fallback achievements check:", err);
+          });
+        }
+      } else {
+        checkAndAwardAchievements(attempt.user_id).catch(err => {
+          console.error("Failed to run fallback achievements check:", err);
+        });
+      }
+    }
+
     res.json({
       ...attempt,
       newlyEarned: []
@@ -1390,18 +1411,27 @@ router.get('/templates', authenticate, async (req, res) => {
 router.get('/templates/:id', authenticate, async (req, res) => {
   try {
     const id = req.params.id as string;
-    const template = await prisma.questionTemplate.findUnique({
-      where: { id },
-      include: {
-        lesson: true,
-        creator: {
-          select: {
-            learn_unit_id: true,
-            role: { select: { name: true } }
+    const cacheKey = `question:template:${id}`;
+    let template = await cacheGet<any>(cacheKey);
+
+    if (!template) {
+      template = await prisma.questionTemplate.findUnique({
+        where: { id },
+        include: {
+          lesson: true,
+          creator: {
+            select: {
+              learn_unit_id: true,
+              role: { select: { name: true } }
+            }
           }
         }
+      });
+
+      if (template) {
+        await cacheSet(cacheKey, template, 3600);
       }
-    });
+    }
 
     if (!template) {
       return res.status(404).json({ error: "Template not found" });
@@ -1496,6 +1526,8 @@ router.put('/templates/:id', authenticate, authorize('manage', 'test'), async (r
       }
     });
 
+    await cacheInvalidateQuestion(id);
+
     res.json(template);
   } catch (error: any) {
     console.error("Failed to update template:", error);
@@ -1542,6 +1574,9 @@ router.delete('/templates/:id', authenticate, authorize('manage', 'test'), async
     }
 
     await prisma.questionTemplate.delete({ where: { id } });
+
+    await cacheInvalidateQuestion(id);
+
     res.json({ success: true });
   } catch (error: any) {
     res.status(500).json({ error: "Failed to delete template" });

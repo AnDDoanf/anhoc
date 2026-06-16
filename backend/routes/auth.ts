@@ -6,6 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import prisma from "../lib/db.ts";
+import { cacheGet, cacheSet, cacheInvalidateUser, cacheDel } from "../lib/redis.ts";
 import { authenticate } from "../middleware/auth.ts";
 import { STUDENT_ROLE_NAMES, isStudentRoleName } from "../constants/roles.ts";
 import { computeInactiveCleanupDeadline } from "../services/accountLifecycleService.ts";
@@ -77,6 +78,18 @@ const formatPermissions = (permissions: PermissionRow[]) => {
   }, {} as Record<string, string[]>);
 };
 
+const getRoleRecordCached = async (roleName: string) => {
+  const cacheKey = `role:record:${roleName}`;
+  let role = await cacheGet<any>(cacheKey);
+  if (!role) {
+    role = await prisma.role.findUnique({ where: { name: roleName } });
+    if (role) {
+      await cacheSet(cacheKey, role, 86400); // 24 hours
+    }
+  }
+  return role;
+};
+
 const resolveSignupRole = async (requestedRoleName?: string) => {
   const normalizedRequestedRole = requestedRoleName?.trim().toLowerCase();
 
@@ -85,10 +98,10 @@ const resolveSignupRole = async (requestedRoleName?: string) => {
       return null;
     }
 
-    return prisma.role.findUnique({ where: { name: normalizedRequestedRole } });
+    return getRoleRecordCached(normalizedRequestedRole);
   }
 
-  return prisma.role.findUnique({ where: { name: "free_student" } });
+  return getRoleRecordCached("free_student");
 };
 
 const serializeLearnUnit = (learnUnit?: {
@@ -185,13 +198,35 @@ const createAuthPayload = async (user: {
   const refreshTokenString = crypto.randomBytes(40).toString("hex");
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
-  await prisma.refreshToken.create({
+  const tokenRecord = await prisma.refreshToken.create({
     data: {
       token: refreshTokenString,
       user_id: user.id,
       expires_at: expiresAt,
     },
+    include: {
+      user: {
+        include: {
+          role: {
+            include: {
+              permissions: {
+                include: {
+                  action: true,
+                  resource: true,
+                },
+              },
+            },
+          },
+          learn_unit: true,
+          supervised_learn_unit: true,
+          learning_profile: true,
+          security: true,
+        },
+      },
+    },
   });
+
+  await cacheSet(`session:token:${refreshTokenString}`, tokenRecord, 7 * 24 * 3600);
 
   return {
     token,
@@ -713,6 +748,12 @@ router.get("/permissions/:userId", async (req: Request, res: Response) => {
 router.get("/profile", authenticate, async (req: Request, res: Response) => {
   try {
     const userId = (req as Request & { user: { id: string } }).user.id;
+    const cacheKey = `user:profile:${userId}`;
+    const cachedProfile = await cacheGet<any>(cacheKey);
+    if (cachedProfile) {
+      return res.json(cachedProfile);
+    }
+
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
@@ -748,7 +789,7 @@ router.get("/profile", authenticate, async (req: Request, res: Response) => {
       studentStats = await economyService.getStats(user.id);
     }
 
-    res.json({
+    const profilePayload = {
       id: user.id,
       email: user.email,
       username: user.username,
@@ -769,7 +810,10 @@ router.get("/profile", authenticate, async (req: Request, res: Response) => {
       learn_unit_id: user.learn_unit_id,
       learn_unit: serializeLearnUnit(user.learn_unit || user.supervised_learn_unit),
       slots_purchased: user.slots_purchased,
-    });
+    };
+
+    await cacheSet(cacheKey, profilePayload, 3600);
+    res.json(profilePayload);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Failed to fetch profile" });
@@ -783,29 +827,38 @@ router.post("/refresh", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Refresh token is required" });
     }
 
-    const storedToken = await prisma.refreshToken.findUnique({
-      where: { token: refreshToken },
-      include: {
-        user: {
-          include: {
-            role: {
-              include: {
-                permissions: {
-                  include: {
-                    action: true,
-                    resource: true,
+    const cacheKey = `session:token:${refreshToken}`;
+    let storedToken = await cacheGet<any>(cacheKey);
+
+    if (!storedToken) {
+      storedToken = await prisma.refreshToken.findUnique({
+        where: { token: refreshToken },
+        include: {
+          user: {
+            include: {
+              role: {
+                include: {
+                  permissions: {
+                    include: {
+                      action: true,
+                      resource: true,
+                    },
                   },
                 },
               },
+              learn_unit: true,
+              supervised_learn_unit: true,
+              learning_profile: true,
+              security: true,
             },
-            learn_unit: true,
-            supervised_learn_unit: true,
-            learning_profile: true,
-            security: true,
           },
         },
-      },
-    });
+      });
+
+      if (storedToken) {
+        await cacheSet(cacheKey, storedToken, 7 * 24 * 3600);
+      }
+    }
 
     if (!storedToken) {
       return res.status(401).json({ error: "Invalid refresh token" });
@@ -816,10 +869,13 @@ router.post("/refresh", async (req: Request, res: Response) => {
         where: { user_id: storedToken.user_id },
         data: { revoked_at: new Date() },
       });
+      await cacheDel(cacheKey);
       return res.status(403).json({ error: "Compromised refresh token. All sessions revoked." });
     }
 
-    if (storedToken.expires_at < new Date()) {
+    const expiresAt = new Date(storedToken.expires_at);
+    if (expiresAt < new Date()) {
+      await cacheDel(cacheKey);
       return res.status(401).json({ error: "Refresh token expired. Please log in again." });
     }
 
@@ -827,6 +883,8 @@ router.post("/refresh", async (req: Request, res: Response) => {
       where: { id: storedToken.id },
       data: { revoked_at: new Date() },
     });
+
+    await cacheDel(cacheKey);
 
     const payload = await createAuthPayload(storedToken.user);
     res.json(payload);
@@ -847,9 +905,7 @@ router.post("/upgrade-role", authenticate, async (req: Request, res: Response) =
     }
 
     const [roleRecord, existingUser] = await Promise.all([
-      prisma.role.findUnique({
-        where: { name: roleName }
-      }),
+      getRoleRecordCached(roleName),
       prisma.user.findUnique({
         where: { id: userId },
         include: { learn_unit: true }
@@ -938,6 +994,8 @@ router.patch("/password", authenticate, async (req: Request, res: Response) => {
       data: { password_hash: passwordHash },
     });
 
+    await cacheInvalidateUser(userId);
+
     res.json({ message: "Password updated successfully" });
   } catch (error) {
     console.error(error);
@@ -972,6 +1030,8 @@ router.patch("/username", authenticate, async (req: Request, res: Response) => {
       where: { id: userId },
       data: { username: normalized },
     });
+
+    await cacheInvalidateUser(userId);
 
     res.json({ message: "Username updated successfully", username: normalized });
   } catch (error) {
@@ -1036,6 +1096,8 @@ router.post("/avatar", authenticate, async (req: Request, res: Response) => {
       where: { id: userId },
       data: { avatar_url: avatarUrl },
     });
+
+    await cacheInvalidateUser(userId);
 
     res.json({ message: "Avatar updated successfully", avatar_url: avatarUrl });
   } catch (error) {

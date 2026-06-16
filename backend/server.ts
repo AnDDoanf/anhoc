@@ -15,6 +15,7 @@ import subscriptionRoutes from './routes/subscription.ts';
 import studentEconomyRoutes from './routes/studentEconomy.ts';
 import { seedAchievements } from './services/achievementService.ts';
 import { scheduleInactiveAccountCleanup } from './services/accountLifecycleService.ts';
+import { startQueueWorkers } from './workers/index.ts';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './swagger.ts';
 import helmet from 'helmet';
@@ -98,6 +99,7 @@ async function main() {
     console.log(`Connected to PostgreSQL via Prisma (${dbTarget.via})`);
     console.log(`Database target: host=${dbTarget.host} db=${dbTarget.database}`);
     scheduleInactiveAccountCleanup();
+    startQueueWorkers();
 
     if (String(process.env.AUTO_SEED_ACHIEVEMENTS || '').toLowerCase() === 'true') {
       await seedAchievements();

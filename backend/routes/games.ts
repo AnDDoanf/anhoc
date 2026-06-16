@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import prisma from '../lib/db';
+import { cacheGet, cacheSet, cacheDel } from '../lib/redis';
 import { authenticate, optionalAuthenticate } from '../middleware/auth';
 import * as MathService from '../services/mathService';
 import { levelService } from '../services/levelService';
@@ -490,6 +491,8 @@ router.post('/attempts', optionalAuthenticate, async (req, res) => {
       await levelService.addXp(userId, xpEarned, logReason);
     }
 
+    await cacheDel('leaderboard:global');
+
     res.json({ attempt: toAttemptView(attempt), xpEarned, isGuest: !userId });
   } catch (error: any) {
     if (error?.code === 'P2002') {
@@ -502,6 +505,12 @@ router.post('/attempts', optionalAuthenticate, async (req, res) => {
 // 5. Global Leaderboards
 router.get('/global-leaderboard', authenticate, async (req, res) => {
   try {
+    const cacheKey = 'leaderboard:global';
+    const cachedData = await cacheGet<any>(cacheKey);
+    if (cachedData) {
+      return res.json(cachedData);
+    }
+
     const fetchTopAttempts = async (gameType: string) => {
       return await prisma.gameAttempt.findMany({
         where: { challenge: { game_type: gameType } },
@@ -528,7 +537,10 @@ router.get('/global-leaderboard', authenticate, async (req, res) => {
     const climb = await fetchTopAttempts('climb');
     const match = await fetchTopAttempts('match');
 
-    res.json({ speed, climb, match });
+    const leaderboardData = { speed, climb, match };
+    await cacheSet(cacheKey, leaderboardData, 300); // 5 minutes cache
+
+    res.json(leaderboardData);
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to fetch global leaderboard', details: error.message });
   }

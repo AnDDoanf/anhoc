@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import prisma from '../lib/db';
+import { cacheGet, cacheSet, cacheInvalidateLesson } from '../lib/redis';
 import { authenticate, authorize, optionalAuthenticate } from '../middleware/auth';
 import * as MathService from '../services/mathService';
 import { masteryService } from '../services/masteryService';
@@ -669,13 +670,22 @@ router.get('/:id/export-questions', optionalAuthenticate, async (req, res) => {
 router.get('/:id', optionalAuthenticate, async (req, res) => {
   const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   try {
-    const lesson = await prisma.lesson.findUnique({
-      where: { id },
-      include: {
-        grade: true,
-        subject: true
+    const cacheKey = `lesson:detail:${id}`;
+    let lesson = await cacheGet<any>(cacheKey);
+
+    if (!lesson) {
+      lesson = await prisma.lesson.findUnique({
+        where: { id },
+        include: {
+          grade: true,
+          subject: true
+        }
+      });
+
+      if (lesson) {
+        await cacheSet(cacheKey, lesson, 3600);
       }
-    });
+    }
 
     if (!lesson) {
       return res.status(404).json({ error: "Lesson not found" });
@@ -739,6 +749,9 @@ router.put('/:id', authenticate, authorize('manage', 'lesson'), async (req, res)
         is_premium: nextPremiumValue,
       }
     });
+
+    await cacheInvalidateLesson(id);
+
     res.json(lesson);
   } catch (error) {
     res.status(500).json({ error: "Failed to update lesson" });
@@ -810,6 +823,9 @@ router.delete('/:id', authenticate, authorize('manage', 'lesson'), async (req, r
     }
 
     await prisma.lesson.delete({ where: { id } });
+
+    await cacheInvalidateLesson(id);
+
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: "Failed to delete lesson" });

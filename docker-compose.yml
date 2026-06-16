@@ -39,6 +39,15 @@ services:
       - "8025:8025"
     restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    container_name: anhoc-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
   backend:
     build:
       context: ./backend
@@ -56,11 +65,14 @@ services:
       SMTP_HOST: ${SMTP_HOST:-mailhog}
       SMTP_PORT: ${SMTP_PORT:-1025}
       SMTP_FROM: ${SMTP_FROM:-no-reply@anhoc.local}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
     depends_on:
       mailhog:
         condition: service_started
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_started
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:5001/api/v1/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"]
       interval: 15s
@@ -123,3 +135,4 @@ services:
 volumes:
   postgres_data:
   mongodb_data:
+  redis_data:

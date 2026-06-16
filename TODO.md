@@ -340,15 +340,15 @@ Status: partially implemented in the app. Core XP, achievements, daily streak UI
 
 ### Caching
 
-* [ ] User profile cache
-* [ ] Lesson cache
-* [ ] Question cache
-* [ ] Permission cache
+* [x] User profile cache
+* [x] Lesson cache
+* [x] Question cache
+* [x] Permission cache
 
 ### Session Storage
 
 * [ ] Chat sessions
-* [ ] Authentication sessions
+* [x] Authentication sessions
 
 ---
 
@@ -356,10 +356,10 @@ Status: partially implemented in the app. Core XP, achievements, daily streak UI
 
 ### Background Jobs
 
-* [ ] Email jobs
-* [ ] Notification jobs
-* [ ] Achievement jobs
-* [ ] Analytics jobs
+* [x] Email jobs
+* [x] Notification jobs
+* [x] Achievement jobs
+* [x] Analytics jobs
 
 ### Chatbot Jobs
 
