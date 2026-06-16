@@ -1,9 +1,11 @@
 // frontend/src/app/(main)/student/settings/page.tsx
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { authService } from "@/services/auth";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   KeyRound, 
   ShieldCheck, 
@@ -13,7 +15,9 @@ import {
   Eye, 
   EyeOff, 
   User,
-  AtSign
+  AtSign,
+  Camera,
+  Upload
 } from "lucide-react";
 import ProtectedRoute from "@/components/guard/ProtectedRoute";
 import Hero from "@/components/ui/Hero";
@@ -22,7 +26,14 @@ type Feedback = { type: "success" | "error"; text: string } | null;
 
 export default function SettingsPage() {
   const t = useTranslations("Settings");
+  const { user, updateUser } = useAuth();
   
+  // ── Avatar state ────────────────────────────────────────────
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [avatarLoading, setAvatarLoading] = useState(false);
+  const [avatarFeedback, setAvatarFeedback] = useState<Feedback>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
   // ── Username state ──────────────────────────────────────────
   const [username, setUsername] = useState("");
   const [usernameLoading, setUsernameLoading] = useState(false);
@@ -45,6 +56,79 @@ export default function SettingsPage() {
     }).catch(() => {});
   }, []);
 
+  const getInitials = () => {
+    const name = user?.full_name || user?.username || "";
+    if (!name) return "?";
+    const parts = name.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  };
+
+  const processFile = async (file: File) => {
+    const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      setAvatarFeedback({ type: "error", text: t("avatarTypeLimit") });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setAvatarFeedback({ type: "error", text: t("avatarSizeLimit") });
+      return;
+    }
+
+    setAvatarLoading(true);
+    setAvatarFeedback(null);
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const base64 = reader.result as string;
+        const res = await authService.updateAvatar(base64);
+        if (user) {
+          updateUser({ ...user, avatar_url: res.avatar_url });
+        }
+        setAvatarFeedback({ type: "success", text: t("avatarSuccess") });
+      } catch {
+        setAvatarFeedback({ type: "error", text: t("avatarError") });
+      } finally {
+        setAvatarLoading(false);
+      }
+    };
+    reader.onerror = () => {
+      setAvatarFeedback({ type: "error", text: t("avatarError") });
+      setAvatarLoading(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      void processFile(file);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      void processFile(file);
+    }
+  };
+
   // ── Handlers ────────────────────────────────────────────────
   const handleUsernameSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,6 +137,9 @@ export default function SettingsPage() {
     try {
       const res = await authService.updateUsername(username);
       setUsername(res.username);
+      if (user) {
+        updateUser({ ...user, username: res.username });
+      }
       setUsernameFeedback({ type: "success", text: t("usernameSuccess") });
     } catch (err: any) {
       const status = err?.response?.status;
@@ -112,6 +199,100 @@ export default function SettingsPage() {
         </Hero>
 
         <div className="max-w-2xl mx-auto w-full space-y-6">
+
+          {/* ── Avatar Settings Card ─────────────────────────── */}
+          <div className={`bg-sol-surface border ${isDragging ? "border-sol-accent shadow-sol-accent/5" : "border-sol-border/30"} rounded-3xl p-8 shadow-xl relative overflow-hidden group transition-all duration-300`}
+               onDragOver={handleDragOver}
+               onDragLeave={handleDragLeave}
+               onDrop={handleDrop}
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-sol-accent/5 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-sol-accent/10 transition-colors duration-500" />
+            
+            <div className="space-y-6 relative z-10 flex flex-col items-center sm:items-start">
+              <h2 className="text-lg font-black text-sol-text flex items-center gap-2 self-start">
+                <Camera size={18} className="text-sol-accent" />
+                {t("avatar")}
+              </h2>
+
+              <div className="flex flex-col sm:flex-row items-center gap-6 w-full">
+                {/* Image circle with overlay */}
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="relative w-28 h-28 rounded-full cursor-pointer overflow-hidden border-2 border-sol-border/30 bg-sol-bg/50 hover:border-sol-accent group/avatar shadow-inner transition-all duration-300 flex items-center justify-center shrink-0"
+                >
+                  {user?.avatar_url ? (
+                    <img 
+                      src={user.avatar_url.startsWith("http") ? user.avatar_url : `http://localhost:5001${user.avatar_url}`}
+                      alt={user.username || "Avatar"} 
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover/avatar:scale-110"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-sol-accent/20 to-sol-accent/5 flex items-center justify-center text-sol-accent font-black text-3xl">
+                      {getInitials()}
+                    </div>
+                  )}
+
+                  {/* Hover overlay */}
+                  <div className="absolute inset-0 bg-sol-bg/60 opacity-0 group-hover/avatar:opacity-100 flex flex-col items-center justify-center gap-1 transition-all duration-300">
+                    <Camera size={20} className="text-sol-accent animate-bounce" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-sol-text">{t("avatarPlaceholder")}</span>
+                  </div>
+
+                  {/* Uploading loading spinner */}
+                  {avatarLoading && (
+                    <div className="absolute inset-0 bg-sol-bg/85 flex items-center justify-center z-10 backdrop-blur-[2px]">
+                      <Loader2 className="animate-spin text-sol-accent" size={28} />
+                    </div>
+                  )}
+                </div>
+
+                {/* Details & Button */}
+                <div className="flex-1 text-center sm:text-left space-y-3 w-full">
+                  <p className="text-sm font-medium text-sol-muted leading-relaxed">
+                    {t("avatarDragDrop")}
+                  </p>
+                  <p className="text-[11px] text-sol-muted font-bold">
+                    {t("avatarTypeLimit")} • {t("avatarSizeLimit")}
+                  </p>
+                  
+                  <input 
+                    type="file" 
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    accept="image/png, image/jpeg, image/jpg, image/webp"
+                    className="hidden"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={avatarLoading}
+                    className="inline-flex items-center gap-2 bg-sol-accent/10 hover:bg-sol-accent text-sol-accent hover:text-sol-bg border border-sol-accent/20 hover:border-transparent font-black px-5 py-2.5 rounded-xl transition-all duration-300 hover:cursor-pointer text-xs uppercase tracking-wider"
+                  >
+                    <Upload size={14} />
+                    {t("avatarUploadButton")}
+                  </button>
+                </div>
+              </div>
+
+              {avatarFeedback && (
+                <div
+                  className={`w-full p-4 rounded-2xl flex items-center gap-3 animate-in zoom-in-95 duration-300 ${
+                    avatarFeedback.type === "success"
+                      ? "bg-sol-accent/10 border border-sol-accent/20 text-sol-accent"
+                      : "bg-sol-orange/10 border border-sol-orange/20 text-sol-orange"
+                  }`}
+                >
+                  {avatarFeedback.type === "success" ? (
+                    <CheckCircle2 size={18} className="shrink-0" />
+                  ) : (
+                    <AlertCircle size={18} className="shrink-0" />
+                  )}
+                  <p className="text-sm font-bold">{avatarFeedback.text}</p>
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* ── Username Card ─────────────────────────────────── */}
           <div className="bg-sol-surface border border-sol-border/30 rounded-3xl p-8 shadow-xl relative overflow-hidden group">

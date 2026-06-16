@@ -190,11 +190,20 @@
     "hide_learn_unit_code": "Ẩn tùy chọn đăng nhập này",
     "errors": {
       "identifier_required": "Vui lòng nhập email hoặc mã đăng nhập",
+      "invalid_email": "Địa chỉ email không hợp lệ",
       "password_too_short": "Mật khẩu phải có ít nhất 6 ký tự"
     },
     "activation_hint": "Hãy mở email kích hoạt trước"
   },
   "Settings": {
+    "avatar": "Ảnh đại diện",
+    "avatarSuccess": "Cập nhật ảnh đại diện thành công",
+    "avatarError": "Cập nhật ảnh đại diện thất bại",
+    "avatarSizeLimit": "Kích thước ảnh phải nhỏ hơn 5MB",
+    "avatarTypeLimit": "Chỉ hỗ trợ định dạng PNG, JPEG, JPG, và WEBP",
+    "avatarDragDrop": "Nhấp hoặc kéo thả ảnh để tải lên ảnh đại diện",
+    "avatarUploadButton": "Tải ảnh lên",
+    "avatarPlaceholder": "Chọn ảnh",
     "appearance": "Giao diện",
     "accountSettings": "Cài đặt tài khoản",
     "signOut": "Đăng xuất",

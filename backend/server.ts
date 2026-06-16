@@ -18,12 +18,17 @@ import { scheduleInactiveAccountCleanup } from './services/accountLifecycleServi
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './swagger.ts';
 import helmet from 'helmet';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { correlationId } from './middleware/correlation.ts';
 import { requestTimeout } from './middleware/timeout.ts';
 import { requestLogger } from './middleware/logging.ts';
 import { errorHandler } from './middleware/errorHandler.ts';
 
 const app: Application = express();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Set correlation ID header for request tracing
 app.use(correlationId);
@@ -34,8 +39,10 @@ app.use(requestLogger);
 // Request timeouts (15 seconds)
 app.use(requestTimeout(15000));
 
-// Secure Express apps by setting various HTTP headers
-app.use(helmet());
+// Secure Express apps by setting various HTTP headers (allowing cross-origin for static assets)
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
 
 const PORT = process.env.SERVER_PORT || process.env.PORT || 5001;
 const normalizeOrigin = (origin: string) => origin.replace(/\/+$/, '');
@@ -57,8 +64,11 @@ app.use(cors({
   credentials: true,
 }));
 
-// Apply body size limits (1mb is standard security limit for JSON requests)
-app.use(express.json({ limit: '1mb' }));
+// Apply body size limits (5mb for base64 uploads)
+app.use(express.json({ limit: '5mb' }));
+
+// Serve static uploaded files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Serve Swagger API Documentation at /api/docs
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));

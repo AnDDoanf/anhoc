@@ -2,6 +2,9 @@ import { Router, type Request, type Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import prisma from "../lib/db.ts";
 import { authenticate } from "../middleware/auth.ts";
 import { STUDENT_ROLE_NAMES, isStudentRoleName } from "../constants/roles.ts";
@@ -122,6 +125,7 @@ const createAuthPayload = async (user: {
   username: string;
   country?: string | null;
   account_status: string;
+  avatar_url?: string | null;
   learning_profile?: {
     preferred_subject_id?: number | null;
   } | null;
@@ -196,6 +200,7 @@ const createAuthPayload = async (user: {
       id: user.id,
       email: user.email,
       username: user.username,
+      avatar_url: user.avatar_url ?? null,
       full_name: identity.full_name,
       first_name: identity.first_name,
       last_name: identity.last_name,
@@ -747,6 +752,7 @@ router.get("/profile", authenticate, async (req: Request, res: Response) => {
       id: user.id,
       email: user.email,
       username: user.username,
+      avatar_url: user.avatar_url ?? null,
       ...(await getUserIdentity(user.id, user.username)),
       country: user.country,
       account_status: user.account_status,
@@ -974,6 +980,70 @@ router.patch("/username", authenticate, async (req: Request, res: Response) => {
   }
 });
 
+router.post("/avatar", authenticate, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as Request & { user: { id: string } }).user.id;
+    const { avatar } = req.body;
+
+    if (!avatar || typeof avatar !== "string") {
+      return res.status(400).json({ error: "Avatar image data is required" });
+    }
+
+    const matches = avatar.match(/^data:image\/([a-zA-Z+]+);base64,(.+)$/);
+    if (!matches || !matches[1] || !matches[2]) {
+      return res.status(400).json({ error: "Invalid image format. Only PNG, JPEG, JPG, and WEBP are supported." });
+    }
+
+    const ext = matches[1].toLowerCase();
+    const base64Data = matches[2];
+
+    const allowedExtensions = ["png", "jpeg", "jpg", "webp"];
+    if (!allowedExtensions.includes(ext)) {
+      return res.status(400).json({ error: `Unsupported image type: ${ext}` });
+    }
+
+    const buffer = Buffer.from(base64Data, "base64");
+    if (buffer.length > 5 * 1024 * 1024) {
+      return res.status(400).json({ error: "Image size must be less than 5MB" });
+    }
+
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    const uploadsDir = path.join(__dirname, "..", "uploads", "avatars");
+
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    try {
+      const files = fs.readdirSync(uploadsDir);
+      for (const file of files) {
+        if (file.startsWith(userId)) {
+          fs.unlinkSync(path.join(uploadsDir, file));
+        }
+      }
+    } catch (err) {
+      console.error("Failed to delete old avatar files:", err);
+    }
+
+    const fileName = `${userId}.${ext}`;
+    const filePath = path.join(uploadsDir, fileName);
+    fs.writeFileSync(filePath, buffer);
+
+    const avatarUrl = `/uploads/avatars/${fileName}`;
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { avatar_url: avatarUrl },
+    });
+
+    res.json({ message: "Avatar updated successfully", avatar_url: avatarUrl });
+  } catch (error) {
+    console.error("Failed to upload avatar:", error);
+    res.status(500).json({ error: "Failed to upload avatar" });
+  }
+});
+
 router.get("/activity", authenticate, async (req: Request, res: Response) => {
   try {
     const userId = (req as Request & { user: { id: string } }).user.id;
@@ -990,7 +1060,9 @@ router.get("/activity", authenticate, async (req: Request, res: Response) => {
 
     const activity = xpLogs.reduce((acc: Record<string, number>, log) => {
       const date = log.occurred_at.toISOString().split("T")[0];
-      acc[date] = (acc[date] || 0) + log.amount;
+      if (date) {
+        acc[date] = (acc[date] || 0) + log.amount;
+      }
       return acc;
     }, {});
 
@@ -998,7 +1070,7 @@ router.get("/activity", authenticate, async (req: Request, res: Response) => {
     for (let i = 6; i >= 0; i -= 1) {
       const date = new Date();
       date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split("T")[0];
+      const dateStr = date.toISOString().split("T")[0] || "";
       result.push({
         date: dateStr,
         xp: activity[dateStr] || 0,

@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
@@ -233,13 +234,21 @@ export default function SettingBar() {
             }`}
         >
           <div
-            className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-300
+            className={`w-8 h-8 rounded-full overflow-hidden flex items-center justify-center transition-colors duration-300
             ${isSettingsOpen
                 ? "bg-sol-accent text-sol-bg"
                 : "bg-sol-accent/10 text-sol-accent"
               }`}
           >
-            <UserCog size={18} />
+            {user?.avatar_url ? (
+              <img
+                src={user.avatar_url.startsWith("http") ? user.avatar_url : `http://localhost:5001${user.avatar_url}`}
+                alt={displayName}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <UserCog size={18} />
+            )}
           </div>
 
           <div className="flex flex-col items-start mr-1">

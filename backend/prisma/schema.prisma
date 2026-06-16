@@ -25,6 +25,10 @@ model User {
   learn_unit    LearnUnit?    @relation("LearnUnitMembers", fields: [learn_unit_id], references: [id], onDelete: SetNull)
   supervised_learn_unit LearnUnit? @relation("LearnUnitSupervisor")
   created_at    DateTime      @default(now()) @db.Timestamptz
+  first_name    String?       @db.VarChar(100)
+  last_name     String?       @db.VarChar(100)
+  login_id      String?       @db.VarChar(80)
+  avatar_url    String?       @db.VarChar(255)
   
   // Relations to content & tracking
   subjects_created  Subject[]           @relation("SubjectsCreated")

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 // Update imports to match the fixed slice actions and paths
 import { setCredentials, logout as logoutAction } from "@/redux/slices/authSlice";
 import { setPermissions, clearPermissions } from "@/redux/slices/permissionSlice";
-import { authService, LoginRequest } from "@/services/auth";
+import { authService, LoginRequest, AuthUser } from "@/services/auth";
 import { RootState } from "@/redux/store";
 import { useState } from "react";
 
@@ -57,6 +57,12 @@ export const useAuth = () => {
     persistSession(response);
   };
 
+  const updateUser = (updatedUser: AuthUser) => {
+    localStorage.setItem("user", JSON.stringify(updatedUser));
+    const token = localStorage.getItem("token") || "";
+    dispatch(setCredentials({ user: updatedUser, token }));
+  };
+
   const logout = () => {
     // Clear Cookies and Axios Headers via service
     authService.logout();
@@ -84,5 +90,6 @@ export const useAuth = () => {
     updateSession,
     logout,
     persistSession,
+    updateUser,
   };
 };

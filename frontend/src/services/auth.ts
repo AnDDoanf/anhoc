@@ -17,6 +17,7 @@ export interface AuthUser {
   id: string;
   email: string;
   username?: string;
+  avatar_url?: string | null;
   full_name?: string;
   first_name?: string;
   last_name?: string;
@@ -200,6 +201,11 @@ export const authService = {
 
   updateUsername: async (username: string) => {
     const response = await api.patch("/auth/username", { username });
+    return response.data;
+  },
+
+  updateAvatar: async (avatar: string): Promise<{ message: string; avatar_url: string }> => {
+    const response = await api.post<{ message: string; avatar_url: string }>("/auth/avatar", { avatar });
     return response.data;
   }
 };

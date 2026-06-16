@@ -191,6 +191,7 @@
     "hide_learn_unit_code": "Hide this login option",
     "errors": {
       "identifier_required": "Email or login ID is required",
+      "invalid_email": "Invalid email address",
       "password_too_short": "Password must be at least 6 characters"
     }
   },
@@ -268,6 +269,14 @@
     "saveError": "Failed to save your subject."
   },
   "Settings": {
+    "avatar": "Avatar Image",
+    "avatarSuccess": "Avatar updated successfully",
+    "avatarError": "Failed to update avatar",
+    "avatarSizeLimit": "Image size must be less than 5MB",
+    "avatarTypeLimit": "Only PNG, JPEG, JPG, and WEBP images are supported",
+    "avatarDragDrop": "Click or drag to upload avatar",
+    "avatarUploadButton": "Upload Avatar",
+    "avatarPlaceholder": "Select image",
     "appearance": "Appearance",
     "accountSettings": "Account Settings",
     "signOut": "Sign Out",
