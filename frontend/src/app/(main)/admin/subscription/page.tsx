@@ -387,28 +387,34 @@ export default function AdminSubscriptionPage() {
       const progress = isUnlimited ? 0 : Math.min(100, Math.round(((Number(current) || 0) / max) * 100));
 
       return (
-        <div className="bg-sol-surface border border-sol-border/10 rounded-2xl p-6 hover:border-sol-accent/30 transition-all duration-300 shadow-sm relative group overflow-hidden">
-          <div className="flex items-center justify-between mb-4">
-            <div className={`p-3 rounded-xl ${bgClass} ${colorClass}`}>
-              {icon}
+        <div className="bg-sol-surface border border-sol-border/10 rounded-xl p-3.5 sm:p-4 hover:border-sol-accent/30 transition-all duration-300 shadow-sm relative group overflow-hidden flex flex-col justify-between gap-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className={`p-2 rounded-lg shrink-0 ${bgClass} ${colorClass}`}>
+                {icon}
+              </div>
+              <div className="min-w-0">
+                <div className="text-[10px] font-black text-sol-muted uppercase tracking-wider truncate">
+                  {title}
+                </div>
+                <div className="flex items-baseline gap-1 mt-0.5">
+                  <span className="text-xl font-black text-sol-text group-hover:text-sol-accent transition-colors">
+                    {current}
+                  </span>
+                  <span className="text-xs font-bold text-sol-muted">
+                    / {isUnlimited ? "∞" : max}
+                  </span>
+                </div>
+              </div>
             </div>
-            <span className="text-[10px] font-black px-2 py-1 rounded-full bg-sol-bg text-sol-muted uppercase tracking-wider">
-              {isUnlimited ? t("unlimited") : `${progress}% Used`}
+            
+            <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-sol-bg text-sol-muted uppercase tracking-wider shrink-0">
+              {isUnlimited ? t("unlimited") : `${progress}%`}
             </span>
           </div>
-          <div className="text-xs font-black text-sol-muted uppercase tracking-widest mb-1">
-            {title}
-          </div>
-          <div className="flex items-baseline gap-1 mb-3">
-            <span className="text-3xl font-black text-sol-text group-hover:text-sol-accent transition-colors">
-              {current}
-            </span>
-            <span className="text-sm font-bold text-sol-muted">
-              / {isUnlimited ? "∞" : max}
-            </span>
-          </div>
+
           {!isUnlimited && (
-            <div className="w-full bg-sol-bg h-2 rounded-full overflow-hidden">
+            <div className="w-full bg-sol-bg h-1.5 rounded-full overflow-hidden">
               <div 
                 className={`h-full rounded-full transition-all duration-1000 ${
                   progress >= 90 ? "bg-red-500" : progress >= 70 ? "bg-sol-orange" : "bg-sol-accent"
@@ -425,25 +431,32 @@ export default function AdminSubscriptionPage() {
       <ProtectedRoute requiredRole="supervisor">
         <div className="mx-auto max-w-7xl space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
           {/* Header */}
-          <section className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <PillBadge label={tPricing("supervisorBilling.roleSupervisor")} icon={<Sparkles size={16} />} className="mb-3" />
-              <h1 className="text-3xl font-black uppercase tracking-tight text-sol-text sm:text-4xl">
+          <Hero
+            icon={<CreditCard size={112} className="text-sol-accent md:h-40 md:w-40" />}
+            className="md:rounded-[3rem]"
+            containerClassName="relative z-10 flex w-full flex-col items-start gap-4 lg:max-w-4xl lg:flex-row lg:justify-between"
+          >
+            <div className="space-y-3 md:space-y-6">
+              <div className="inline-flex items-center gap-2 rounded-full border border-sol-accent/20 bg-sol-accent/10 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-sol-accent sm:px-3 sm:py-1.5 md:text-xs">
+                <Sparkles size={11} className="md:h-3.5 md:w-3.5" />
+                <span>{tPricing("supervisorBilling.roleSupervisor")}</span>
+              </div>
+              <h1 className="max-w-[11ch] text-[1.75rem] font-black leading-[1.05] tracking-tight text-sol-text sm:text-4xl md:max-w-none md:text-6xl">
                 {tSupervisor("title")}
               </h1>
-              <p className="mt-2 max-w-2xl font-bold text-sol-muted text-sm md:text-base">
+              <p className="max-w-xl text-[13px] leading-relaxed text-sol-muted sm:text-sm md:text-xl">
                 {tSupervisor("subtitle")}
               </p>
             </div>
             <button
               onClick={fetchSupervisorData}
               disabled={isLoading}
-              className="inline-flex items-center justify-center gap-2 rounded-lg border border-sol-border/30 bg-sol-surface px-4 py-2.5 text-sm font-black text-sol-text transition hover:border-sol-accent/50 hover:text-sol-accent disabled:opacity-60"
+              className="flex items-center gap-2 rounded-2xl bg-sol-accent px-4 py-2.5 text-sm font-bold text-sol-bg shadow-lg shadow-sol-accent/20 transition-transform hover:scale-105 cursor-pointer md:px-6 md:py-3 disabled:opacity-60"
             >
-              <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />
-              {tUsers("actions.refresh")}
+              <RefreshCw size={18} className={`md:h-5 md:w-5 ${isLoading ? "animate-spin" : ""}`} />
+              <span>{tUsers("actions.refresh")}</span>
             </button>
-          </section>
+          </Hero>
 
           {/* Supervisor Dashboard Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -570,7 +583,7 @@ export default function AdminSubscriptionPage() {
                     <p className="font-black text-sol-muted">{t("loading")}</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
                     {renderLimitCard(
                       t("table.students"),
                       activeStudents,

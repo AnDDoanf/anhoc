@@ -160,6 +160,7 @@ export type PaginatedItems<T> = {
     total: number;
     admins?: number;
     students?: number;
+    teachers?: number;
   };
   pagination: PaginationMeta;
 };

@@ -197,7 +197,7 @@ router.get('/users', authenticate, isAdmin, async (req, res) => {
       ...(role ? { role: { name: role } } : {})
     };
 
-    const [total, users, totalAdmins, totalStudents] = await Promise.all([
+    const [total, users, totalAdmins, totalStudents, totalTeachers] = await Promise.all([
       prisma.user.count({ where }),
       prisma.user.findMany({
         where,
@@ -208,6 +208,7 @@ router.get('/users', authenticate, isAdmin, async (req, res) => {
       }),
       prisma.user.count({ where: { ...where, role: { name: 'admin' } } }),
       prisma.user.count({ where: { ...where, role: { name: { in: [...STUDENT_ROLE_NAMES] } } } }),
+      prisma.user.count({ where: { ...where, role: { name: 'teacher' } } }),
     ]);
 
     res.json({
@@ -216,6 +217,7 @@ router.get('/users', authenticate, isAdmin, async (req, res) => {
         total,
         admins: totalAdmins,
         students: totalStudents,
+        teachers: totalTeachers,
       },
       pagination: {
         page,

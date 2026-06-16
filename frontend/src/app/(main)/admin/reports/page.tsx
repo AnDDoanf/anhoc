@@ -4,10 +4,12 @@ import ProtectedRoute from "@/components/guard/ProtectedRoute";
 import CreateTemplateModal from "@/components/feature/CreateTemplateModal";
 import { testService } from "@/services/testService";
 import { formatTemplate } from "@/utils/mathService";
-import { AlertTriangle, CheckCircle2, Clock3, Flag, Loader2, Pencil, RefreshCw, Search } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock3, Flag, Loader2, Pencil, RefreshCw, Search, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import FilterBar from "@/components/ui/FilterBar";
+import Hero from "@/components/ui/Hero";
+import MetricCard from "@/components/ui/MetricCard";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -126,6 +128,7 @@ export default function AdminReportsPage() {
       all: reports.length,
       active: reports.filter((report) => ["open", "reviewing"].includes(report.status)).length,
       resolved: reports.filter((report) => report.status === "resolved").length,
+      dismissed: reports.filter((report) => report.status === "dismissed").length,
     };
   }, [reports]);
 
@@ -171,31 +174,42 @@ export default function AdminReportsPage() {
   return (
     <ProtectedRoute requiredRole="admin">
       <div className="mx-auto max-w-7xl space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <section className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <div className="mb-2 inline-flex items-center gap-2 rounded-lg border border-sol-border/20 bg-sol-surface px-3 py-1 text-[10px] font-black uppercase tracking-widest text-sol-accent">
-              <Flag size={13} />
-              {t("eyebrow")}
+        <Hero
+          icon={<Flag size={112} className="text-sol-accent md:h-40 md:w-40" />}
+          className="md:rounded-[3rem]"
+          containerClassName="relative z-10 flex w-full flex-col items-start gap-4 lg:max-w-4xl lg:flex-row lg:justify-between"
+        >
+          <div className="space-y-3 md:space-y-6">
+            <div className="inline-flex items-center gap-2 rounded-full border border-sol-accent/20 bg-sol-accent/10 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-sol-accent sm:px-3 sm:py-1.5 md:text-xs">
+              <Flag size={11} className="md:h-3.5 md:w-3.5" />
+              <span>{t("eyebrow")}</span>
             </div>
-            <h1 className="text-4xl font-black uppercase tracking-tight text-sol-text">{t("title")}</h1>
-            <p className="mt-2 max-w-2xl font-bold text-sol-muted">{t("subtitle")}</p>
+            <h1 className="max-w-[11ch] text-[1.75rem] font-black leading-[1.05] tracking-tight text-sol-text sm:text-4xl md:max-w-none md:text-6xl">
+              {t("title")}
+            </h1>
+            <p className="max-w-xl text-[13px] leading-relaxed text-sol-muted sm:text-sm md:text-xl">
+              {t("subtitle")}
+            </p>
           </div>
-
           <button
-            type="button"
             onClick={loadReports}
             disabled={loading}
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-sol-border/20 bg-sol-surface px-4 py-3 text-sm font-black text-sol-text transition-colors hover:border-sol-accent/40 hover:text-sol-accent disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex items-center gap-2 rounded-2xl bg-sol-accent px-4 py-2.5 text-sm font-bold text-sol-bg shadow-lg shadow-sol-accent/20 transition-transform hover:scale-105 cursor-pointer md:px-6 md:py-3 disabled:opacity-75"
           >
-            {loading ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
-            {t("refresh")}
+            {loading ? (
+              <Loader2 size={18} className="animate-spin md:h-5 md:w-5" />
+            ) : (
+              <RefreshCw size={18} className="md:h-5 md:w-5" />
+            )}
+            <span>{t("refresh")}</span>
           </button>
-        </section>
+        </Hero>
 
-        <div className="grid gap-4 md:grid-cols-3">
-          <MetricCard label={t("metrics.current")} value={totals.all} icon={<Flag size={20} />} />
-          <MetricCard label={t("metrics.active")} value={totals.active} icon={<Clock3 size={20} />} />
-          <MetricCard label={t("metrics.resolved")} value={totals.resolved} icon={<CheckCircle2 size={20} />} />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
+          <MetricCard label={t("metrics.current")} value={totals.all} icon={<Flag size={20} />} iconBg="bg-sol-orange/10" iconColor="text-sol-orange" />
+          <MetricCard label={t("metrics.active")} value={totals.active} icon={<Clock3 size={20} />} iconBg="bg-blue-500/10" iconColor="text-blue-500" />
+          <MetricCard label={t("metrics.resolved")} value={totals.resolved} icon={<CheckCircle2 size={20} />} iconBg="bg-sol-green/10" iconColor="text-sol-green" />
+          <MetricCard label={t("metrics.dismissed")} value={totals.dismissed} icon={<X size={20} />} iconBg="bg-sol-muted/10" iconColor="text-sol-muted" />
         </div>
 
         <FilterBar className="p-4 shadow-sm" gridClassName="grid gap-3 lg:grid-cols-[220px_1fr]">
@@ -328,17 +342,7 @@ export default function AdminReportsPage() {
   );
 }
 
-function MetricCard({ label, value, icon }: { label: string; value: number; icon: ReactNode }) {
-  return (
-    <div className="rounded-lg border border-sol-border/10 bg-sol-surface p-5 shadow-sm">
-      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-sol-accent/10 text-sol-accent">
-        {icon}
-      </div>
-      <div className="text-[10px] font-black uppercase tracking-widest text-sol-muted">{label}</div>
-      <div className="text-3xl font-black text-sol-text">{value}</div>
-    </div>
-  );
-}
+
 
 function StatusBadge({ status, label }: { status: string; label: string }) {
   const className = status === "resolved"
