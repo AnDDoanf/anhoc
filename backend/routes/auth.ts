@@ -626,6 +626,12 @@ router.get("/profile", authenticate, async (req: Request, res: Response) => {
       return res.status(404).json({ error: "User not found" });
     }
 
+    let studentStats = user.student_stats;
+    if (studentStats) {
+      const { economyService } = await import("../services/economyService.ts");
+      studentStats = await economyService.getStats(user.id);
+    }
+
     res.json({
       id: user.id,
       email: user.email,
@@ -637,7 +643,7 @@ router.get("/profile", authenticate, async (req: Request, res: Response) => {
       role: user.role.name,
       permissions: formatPermissions(user.role.permissions),
       preferred_subject: user.learning_profile?.preferred_subject ?? null,
-      student_stats: user.student_stats,
+      student_stats: studentStats,
       created_at: user.created_at,
       email_verified_at: user.security?.email_verified_at ?? null,
       first_login_at: user.security?.first_login_at ?? null,
