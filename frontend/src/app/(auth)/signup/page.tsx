@@ -16,7 +16,6 @@ import {
   Lock,
   Calendar,
   ShieldAlert,
-  Loader2,
   GraduationCap,
   Users,
   BookOpen,
@@ -28,6 +27,8 @@ import { authService } from "@/services/auth";
 import { api } from "@/services/api";
 import LanguageToggle from "@/components/ui/LanguageToggle";
 import ThemeToggle from "@/components/ui/ThemeToggle";
+import LoadingOverlayWrapper from "@/components/ui/LoadingOverlayWrapper";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 type PlanType = "free_student" | "sub_student" | "supervisor" | "learning_center";
 
@@ -168,17 +169,21 @@ export default function SignupPage() {
   }
 
   const [plans, setPlans] = useState<Plan[]>([]);
+  const [isPlansLoading, setIsPlansLoading] = useState(true);
   const [step, setStep] = useState(1);
   const [isFullNameDirty, setIsFullNameDirty] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPlans = async () => {
+      setIsPlansLoading(true);
       try {
         const res = await api.get("/subscription/plans");
         setPlans(res.data);
       } catch (err) {
         console.error("Failed to fetch plans on signup", err);
+      } finally {
+        setIsPlansLoading(false);
       }
     };
     fetchPlans();
@@ -488,6 +493,12 @@ export default function SignupPage() {
       <div className="absolute top-[10%] left-[5%] h-56 w-56 rounded-full bg-sol-accent/5 blur-3xl pointer-events-none" />
       <div className="absolute bottom-[10%] right-[5%] h-72 w-72 rounded-full bg-sol-orange/5 blur-3xl pointer-events-none" />
 
+      <LoadingOverlayWrapper
+        isLoading={isPlansLoading || isLoading}
+        title={isPlansLoading ? tPricing("loadingPlans") : t("submitting")}
+        description={isPlansLoading ? undefined : t("success")}
+        className="w-full max-w-5xl"
+      >
       <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
         {/* Left Column: Signup Step Card */}
         <div className="lg:col-span-7 w-full max-w-[500px] lg:max-w-none mx-auto flex lg:h-[720px]">
@@ -753,7 +764,7 @@ export default function SignupPage() {
                     >
                       {isLoading ? (
                         <span className="flex items-center justify-center gap-2">
-                          <Loader2 className="animate-spin" size={16} />
+                          <LoadingSpinner size={16} />
                           <span>{t("submitting")}</span>
                         </span>
                       ) : (
@@ -896,7 +907,9 @@ export default function SignupPage() {
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-60 gap-3">
-                <Loader2 className="animate-spin text-sol-accent" size={32} />
+                <div className="text-sol-accent">
+                  <LoadingSpinner size={32} />
+                </div>
                 <p className="text-xs font-bold text-sol-muted">
                   {locale === "vi" ? "Đang tải thông tin gói học..." : "Loading plan details..."}
                 </p>
@@ -906,6 +919,7 @@ export default function SignupPage() {
 
         </div>
       </div>
+      </LoadingOverlayWrapper>
 
       {/* Stripe checkout simulation Modal */}
       {isCheckoutOpen && selectedPlan !== "free_student" && (
@@ -1064,7 +1078,7 @@ export default function SignupPage() {
                 >
                   {checkoutPending ? (
                     <>
-                      <Loader2 className="animate-spin" size={16} />
+                      <LoadingSpinner size={16} />
                       <span>{tPricing("checkout.processing")}</span>
                     </>
                   ) : (

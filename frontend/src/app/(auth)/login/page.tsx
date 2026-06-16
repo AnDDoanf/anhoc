@@ -11,6 +11,8 @@ import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
 import LanguageToggle from "@/components/ui/LanguageToggle";
 import ThemeToggle from "@/components/ui/ThemeToggle";
+import LoadingOverlayWrapper from "@/components/ui/LoadingOverlayWrapper";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 export default function LoginPage() {
   const t = useTranslations("Login");
@@ -63,6 +65,11 @@ export default function LoginPage() {
       </div>
 
       <div className="w-full max-w-[440px]">
+        <LoadingOverlayWrapper
+          isLoading={isLoading}
+          title={t("signing_in")}
+          className="rounded-xl"
+        >
         <div className="rounded-xl border border-sol-border/30 bg-sol-surface p-10 shadow-sm">
           <div className="mb-4 flex flex-col items-center">
             <div className="mb-2">
@@ -132,7 +139,6 @@ export default function LoginPage() {
                 <input type="checkbox" className="rounded border-sol-border bg-sol-bg text-sol-accent focus:ring-sol-accent" />
                 <span>{t("remember_me")}</span>
               </label>
-              <span className="font-semibold text-sol-muted">{t("activation_hint")}</span>
             </div>
 
             <button
@@ -140,7 +146,12 @@ export default function LoginPage() {
               disabled={isLoading}
               className="w-full rounded-lg bg-sol-accent py-3 font-bold text-sol-bg transition-all hover:opacity-90 active:scale-[0.99] disabled:opacity-50"
             >
-              {isLoading ? t("signing_in") : t("sign_in")}
+              {isLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <LoadingSpinner size={16} />
+                  <span>{t("signing_in")}</span>
+                </span>
+              ) : t("sign_in")}
             </button>
           </form>
 
@@ -151,6 +162,7 @@ export default function LoginPage() {
             </Link>
           </p>
         </div>
+        </LoadingOverlayWrapper>
       </div>
     </div>
   );

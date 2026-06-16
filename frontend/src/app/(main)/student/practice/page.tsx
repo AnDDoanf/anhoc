@@ -9,7 +9,8 @@ import PracticeCard from "@/components/feature/PracticeCard";
 import PracticeResultModal from "@/components/feature/PracticeResultModal";
 import Hero from "@/components/ui/Hero";
 import FilterBar from "@/components/ui/FilterBar";
-import { Sparkles, Trophy, BookOpen, Clock, Award, History as HistoryIcon, ArrowRight, Brain, Search } from "lucide-react";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { Sparkles, Trophy, BookOpen, Award, History as HistoryIcon, ArrowRight, Brain, Search } from "lucide-react";
 import { format } from "date-fns";
 import { vi, enUS } from "date-fns/locale";
 
@@ -168,7 +169,9 @@ export default function PracticePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Clock className="animate-spin text-sol-accent" size={48} />
+        <div className="text-sol-accent">
+          <LoadingSpinner size={48} />
+        </div>
       </div>
     );
   }
