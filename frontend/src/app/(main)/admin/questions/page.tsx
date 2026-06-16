@@ -172,6 +172,7 @@ export default function QuestionsAdminPage() {
       const gradeTitle = template.lesson?.grade
         ? (locale === "vi" ? template.lesson.grade.title_vi : template.lesson.grade.title_en)
         : "";
+      const tagsString = Array.isArray(template.tags) ? template.tags.join(" ") : "";
       const searchHaystack = [
         template.template_type,
         template.difficulty,
@@ -180,6 +181,7 @@ export default function QuestionsAdminPage() {
         template.body_template_vi,
         lessonTitle,
         gradeTitle,
+        tagsString,
       ]
         .filter(Boolean)
         .join(" ")

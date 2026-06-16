@@ -63,6 +63,17 @@ export default function TemplateCard({ tmpl, onEdit, onDelete, onPreview }: Temp
         <p className="text-sol-muted text-sm italic leading-relaxed font-light">
           {locale === "vi" ? tmpl.body_template_en : tmpl.body_template_vi}
         </p>
+
+        {/* Tags list */}
+        {tmpl.tags && tmpl.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 pt-3">
+            {tmpl.tags.map((tag: string, i: number) => (
+              <span key={i} className="text-[10px] font-black uppercase tracking-wider bg-sol-accent/10 text-sol-accent px-2 py-0.5 rounded-full">
+                #{tag}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Bottom Metadata Block */}

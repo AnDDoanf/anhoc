@@ -67,7 +67,7 @@ const normalizeTemplatePayload = (payload: any) => {
     lesson_id, template_type, difficulty,
     body_template_en, body_template_vi,
     explanation_template_en, explanation_template_vi,
-    logic_config, accepted_formulas, is_premium
+    logic_config, accepted_formulas, is_premium, tags
   } = payload || {};
 
   return {
@@ -80,7 +80,8 @@ const normalizeTemplatePayload = (payload: any) => {
     explanation_template_vi,
     is_premium: normalizeBooleanFlag(is_premium),
     logic_config: logic_config || {},
-    accepted_formulas: Array.isArray(accepted_formulas) ? accepted_formulas : []
+    accepted_formulas: Array.isArray(accepted_formulas) ? accepted_formulas : [],
+    tags: Array.isArray(tags) ? tags.map((t: any) => String(t || "").trim()).filter(Boolean) : []
   };
 };
 
@@ -423,8 +424,11 @@ router.post('/submit-answer', optionalAuthenticate, async (req, res) => {
       template: true,
       attempt: {
         select: {
+          id: true,
           user_id: true,
-          is_completed: true
+          is_completed: true,
+          is_practice: true,
+          lesson_id: true
         }
       }
     }
@@ -466,10 +470,125 @@ router.post('/submit-answer', optionalAuthenticate, async (req, res) => {
     }
   });
 
+  let updatedNextSnapshot = null;
+  if (snapshot.attempt?.is_practice && snapshot.attempt_id) {
+    const nextSnapshot = await prisma.questionSnapshot.findFirst({
+      where: {
+        attempt_id: snapshot.attempt_id,
+        id: { gt: snapshotId }
+      },
+      orderBy: { id: 'asc' }
+    });
+
+    if (nextSnapshot) {
+      // 1. Calculate target difficulty
+      const currentDifficulty = snapshot.template.difficulty || "medium";
+      let targetDifficulty = currentDifficulty;
+      if (isCorrect) {
+        if (currentDifficulty === "easy") targetDifficulty = "medium";
+        else if (currentDifficulty === "medium") targetDifficulty = "hard";
+      } else {
+        if (currentDifficulty === "hard") targetDifficulty = "medium";
+        else if (currentDifficulty === "medium") targetDifficulty = "easy";
+      }
+
+      // 2. Query matching templates
+      const lessonId = snapshot.attempt.lesson_id;
+      const isFreeOrGuest = !(req as any).user || (req as any).user.role === 'free_student';
+      const templateVisibilityWhere = await getVisibleTemplateWhereForViewer((req as any).user);
+      
+      let candidateTemplates = await prisma.questionTemplate.findMany({
+        where: {
+          AND: [
+            templateVisibilityWhere,
+            { lesson_id: lessonId },
+            { difficulty: targetDifficulty }
+          ],
+          ...(isFreeOrGuest ? { is_premium: false } : {})
+        }
+      });
+
+      // Fallback difficulty progression
+      if (candidateTemplates.length === 0) {
+        const fallbacks: Record<string, string[]> = {
+          hard: ["medium", "easy"],
+          medium: ["easy", "hard"],
+          easy: ["medium", "hard"]
+        };
+        for (const fbDifficulty of fallbacks[targetDifficulty]) {
+          candidateTemplates = await prisma.questionTemplate.findMany({
+            where: {
+              AND: [
+                templateVisibilityWhere,
+                { lesson_id: lessonId },
+                { difficulty: fbDifficulty }
+              ],
+              ...(isFreeOrGuest ? { is_premium: false } : {})
+            }
+          });
+          if (candidateTemplates.length > 0) {
+            break;
+          }
+        }
+      }
+
+      // If we still found nothing, fall back to any templates at all for the lesson
+      if (candidateTemplates.length === 0) {
+        candidateTemplates = await prisma.questionTemplate.findMany({
+          where: {
+            AND: [
+              templateVisibilityWhere,
+              { lesson_id: lessonId }
+            ],
+            ...(isFreeOrGuest ? { is_premium: false } : {})
+          }
+        });
+      }
+
+      // 3. Randomly pick one template from candidates and generate variables
+      if (candidateTemplates.length > 0) {
+        const nextTemplate = candidateTemplates[Math.floor(Math.random() * candidateTemplates.length)];
+        const isTheoretical = nextTemplate.template_type === "theoretical_question";
+        const nextVars = isTheoretical ? {} : MathService.generateVars(nextTemplate.logic_config);
+        const nextRightAnswers = isTheoretical
+          ? nextTemplate.accepted_formulas.slice(0, 1).filter(Boolean)
+          : nextTemplate.accepted_formulas
+              .map(f => {
+                const evalVal = MathService.evaluateFormula(f, nextVars);
+                return evalVal !== null ? String(evalVal) : null;
+              })
+              .filter((ans): ans is string => ans !== null);
+
+        // Update the next snapshot in DB
+        updatedNextSnapshot = await prisma.questionSnapshot.update({
+          where: { id: nextSnapshot.id },
+          data: {
+            template_id: nextTemplate.id,
+            generated_variables: nextVars,
+            right_answers: nextRightAnswers,
+            student_answer: null,
+            is_correct: false,
+            points_earned: 0
+          },
+          include: {
+            template: {
+              include: {
+                lesson: {
+                  include: { grade: true }
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+  }
+
   res.json({
     isCorrect,
     rightAnswers: snapshot.right_answers,
-    explanation: snapshot.template.explanation_template_vi
+    explanation: snapshot.template.explanation_template_vi,
+    nextSnapshot: updatedNextSnapshot
   });
 });
 
@@ -927,11 +1046,13 @@ router.get('/templates', authenticate, async (req, res) => {
     const difficulty = rawDifficulty && rawDifficulty !== 'all' ? normalizeDifficulty(rawDifficulty) : '';
     const lessonId = typeof req.query.lessonId === 'string' ? req.query.lessonId.trim() : '';
     const gradeId = Number(req.query.gradeId);
+    const tag = typeof req.query.tag === 'string' ? req.query.tag.trim() : '';
     const filters = {
       ...(templateType && templateType !== 'all' ? { template_type: templateType } : {}),
       ...(difficulty && difficulty !== 'all' ? { difficulty } : {}),
       ...(lessonId && lessonId !== 'all' ? { lesson_id: lessonId } : {}),
       ...(Number.isInteger(gradeId) ? { lesson: { grade_id: gradeId } } : {}),
+      ...(tag ? { tags: { has: tag } } : {}),
     } as any;
     const searchFilter = search
       ? {
@@ -942,6 +1063,7 @@ router.get('/templates', authenticate, async (req, res) => {
             { lesson_id: { contains: search, mode: 'insensitive' as const } },
             { lesson: { title_en: { contains: search, mode: 'insensitive' as const } } },
             { lesson: { title_vi: { contains: search, mode: 'insensitive' as const } } },
+            { tags: { hasSome: [search] } }
           ]
         }
       : {};
@@ -1020,7 +1142,7 @@ router.put('/templates/:id', authenticate, authorize('manage', 'test'), async (r
       lesson_id, template_type, difficulty,
       body_template_en, body_template_vi,
       explanation_template_en, explanation_template_vi,
-      logic_config, accepted_formulas, is_premium
+      logic_config, accepted_formulas, is_premium, tags
     } = req.body;
 
     const userRole = (req as any).user.role;
@@ -1083,7 +1205,8 @@ router.put('/templates/:id', authenticate, authorize('manage', 'test'), async (r
         created_by: existingTemplate.created_by,
         is_premium: userRole === "admin" ? normalizeBooleanFlag(is_premium) : existingTemplate.is_premium,
         logic_config: logic_config || {},
-        accepted_formulas: Array.isArray(accepted_formulas) ? accepted_formulas : []
+        accepted_formulas: Array.isArray(accepted_formulas) ? accepted_formulas : [],
+        tags: Array.isArray(tags) ? tags.map((t: any) => String(t || "").trim()).filter(Boolean) : []
       }
     });
 

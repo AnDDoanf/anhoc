@@ -134,6 +134,9 @@ export default function PracticeRunnerPage() {
           is_correct: res.isCorrect,
           right_answers: res.rightAnswers || newSnapshots[currentIndex].right_answers
         };
+        if (res.nextSnapshot && currentIndex + 1 < newSnapshots.length) {
+          newSnapshots[currentIndex + 1] = res.nextSnapshot;
+        }
         return { ...prev, snapshots: newSnapshots };
       });
     } catch (error) {
@@ -159,6 +162,9 @@ export default function PracticeRunnerPage() {
           is_correct: false,
           right_answers: res.rightAnswers || newSnapshots[currentIndex].right_answers
         };
+        if (res.nextSnapshot && currentIndex + 1 < newSnapshots.length) {
+          newSnapshots[currentIndex + 1] = res.nextSnapshot;
+        }
         return { ...prev, snapshots: newSnapshots };
       });
     } catch (error) {

@@ -38,20 +38,20 @@
 
 ### Lesson Management
 
-* [ ] CRUD lessons
-* [ ] CRUD chapters
-* [ ] CRUD topics
-* [ ] Markdown lesson editor
-* [ ] KaTeX rendering support
-* [ ] Lesson versioning
+* [x] CRUD lessons
+* [x] CRUD chapters
+* [x] CRUD topics
+* [x] Markdown lesson editor
+* [x] KaTeX rendering support
+* [/] Lesson versioning
 
 ### Student Learning
 
-* [ ] Lesson viewer
-* [ ] Progress tracking
-* [ ] Lesson completion tracking
-* [ ] Resume last lesson
-* [ ] Learning streak tracking
+* [x] Lesson viewer
+* [x] Progress tracking
+* [x] Lesson completion tracking
+* [x] Resume last lesson
+* [x] Learning streak tracking
 
 ---
 
@@ -59,26 +59,26 @@
 
 ### Question Management
 
-* [ ] CRUD questions
-* [ ] Question categories
-* [ ] Question difficulty levels
+* [x] CRUD questions
+* [x] Question categories
+* [x] Question difficulty levels
 * [ ] Question tagging
 * [ ] Question import/export
 
 ### Practice Engine
 
-* [ ] Generate practice sets
-* [ ] Random question selection
+* [x] Generate practice sets
+* [x] Random question selection
 * [ ] Adaptive difficulty
-* [ ] Instant feedback
-* [ ] Answer explanations
+* [x] Instant feedback
+* [x] Answer explanations
 
 ### Testing Engine
 
-* [ ] Timed tests
-* [ ] Auto grading
-* [ ] Test history
-* [ ] Performance analytics
+* [x] Timed tests
+* [x] Auto grading
+* [x] Test history
+* [x] Performance analytics
 
 ---
 

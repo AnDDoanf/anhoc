@@ -11,6 +11,7 @@ export interface CreateTemplateDTO {
   is_premium?: boolean;
   logic_config?: unknown;
   accepted_formulas?: string[];
+  tags?: string[];
 }
 
 export interface PaginationMeta {
@@ -60,6 +61,7 @@ export const testService = {
     gradeId?: string;
     lessonId?: string;
     difficulty?: string;
+    tag?: string;
   }): Promise<PaginatedResponse<any>> => {
     const response = await api.get('/tests/templates', { params });
     return response.data;
