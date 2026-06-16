@@ -186,5 +186,10 @@ export const authService = {
   unfollowUser: async (targetUserId: string) => {
     const response = await api.delete(`/auth/follow/${targetUserId}`);
     return response.data;
+  },
+
+  updateUsername: async (username: string) => {
+    const response = await api.patch("/auth/username", { username });
+    return response.data;
   }
 };
