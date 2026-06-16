@@ -7,6 +7,7 @@ import StudyTimer from "@/components/feature/StudyTimer";
 import { getLocale, getTranslations } from "next-intl/server";
 import { GraduationCap, ArrowLeft, MoreVertical } from "lucide-react";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
 type Props = {
   params: Promise<{
@@ -21,6 +22,10 @@ export default async function LessonPage({ params }: Props) {
   const t = await getTranslations("Learning");
   const lesson = await getLesson(lessonId, locale);
 
+  if (!lesson) {
+    notFound();
+  }
+
   // Split content by thematic breaks (---) which become <hr> in HTML
   // Using regex to catch various formats of <hr>
   const sections = lesson.contentHtml.split(/<hr\s*\/?>/i);
@@ -28,7 +33,7 @@ export default async function LessonPage({ params }: Props) {
   const sidebarContent = (
     <>
       <TableOfContents toc={lesson.toc} />
-      <LessonPracticeButton lessonId={lessonId} />
+      <LessonPracticeButton lesson={{ id: lessonId, title_en: lesson.meta.title, title_vi: lesson.meta.title }} />
 
       <div className="mt-12 group/tip">
         <div className="p-6 rounded-[2rem] bg-sol-accent/10 border border-sol-accent/20 transition-all hover:bg-sol-accent/20">
@@ -58,9 +63,6 @@ export default async function LessonPage({ params }: Props) {
             <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
             <span>{t("backToGrade")}</span>
           </Link>
-          <div className="flex items-center gap-4">
-            <button className="p-2 text-sol-muted hover:text-sol-text"><MoreVertical size={20} /></button>
-          </div>
         </nav>
 
         {/* Main Header Block */}

@@ -11,12 +11,14 @@ import {
   HelpCircle,
   History,
   Loader2,
-  Trophy
+  Trophy,
+  Download
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { testService } from "@/services/testService";
 import { format } from "date-fns";
+import { exportWorksheetPDF } from "@/utils/pdfExporter";
 
 interface TestCardProps {
   test: {
@@ -48,6 +50,7 @@ export default function TestCard({ test }: TestCardProps) {
   const locale = useLocale();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -78,6 +81,22 @@ export default function TestCard({ test }: TestCardProps) {
       alert(error.response?.data?.error || t("startError"));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    setExporting(true);
+    try {
+      const questions = await testService.exportGradeTestQuestions(test.grade_id);
+      const docTitle = locale === "vi"
+        ? `Đề thi: ${test.title_vi}`
+        : `Exam: ${test.title_en}`;
+      await exportWorksheetPDF(docTitle, questions, locale, true);
+    } catch (error: any) {
+      console.error("Failed to export PDF exam:", error);
+      alert(error.response?.data?.error || "Failed to export PDF exam.");
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -115,7 +134,7 @@ export default function TestCard({ test }: TestCardProps) {
         <button
           type="button"
           onClick={handleStart}
-          disabled={loading}
+          disabled={loading || exporting}
           className="flex items-center justify-between w-full mt-4 px-6 py-3 bg-sol-text text-sol-bg rounded-2xl font-bold text-sm hover:bg-sol-accent hover:text-sol-bg transition-all group/btn shadow-md hover:shadow-sol-accent/20 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <span>{loading ? t("starting") : t("startBtn")}</span>
@@ -124,6 +143,20 @@ export default function TestCard({ test }: TestCardProps) {
           ) : (
             <ArrowRight size={18} className="transition-transform group-hover/btn:translate-x-1" />
           )}
+        </button>
+
+        <button
+          type="button"
+          onClick={handleExportPDF}
+          disabled={loading || exporting}
+          className="flex items-center justify-center gap-3 w-full mt-2 px-6 py-3 border border-sol-accent/20 hover:border-sol-accent/40 text-sol-accent rounded-2xl font-bold text-sm hover:bg-sol-accent/5 transition-all shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {exporting ? (
+            <Loader2 size={18} className="animate-spin" />
+          ) : (
+            <Download size={18} />
+          )}
+          <span>{exporting ? t("exporting") : t("exportPDF")}</span>
         </button>
 
         <div className="border-t border-sol-border/20 pt-4">

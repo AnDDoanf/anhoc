@@ -151,5 +151,10 @@ export const lessonService = {
   trackStudyTime: async (id: string, seconds: number) => {
     const response = await api.post(`/lessons/${id}/study-time`, { seconds });
     return response.data;
+  },
+
+  exportQuestions: async (id: string): Promise<any[]> => {
+    const response = await api.get(`/lessons/${id}/export-questions`);
+    return response.data;
   }
 };

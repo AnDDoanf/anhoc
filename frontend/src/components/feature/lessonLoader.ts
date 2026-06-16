@@ -23,7 +23,7 @@ export async function getLesson(lessonId: string, locale: string = "vi") {
   });
 
   if (!response.ok) {
-    throw new Error("Failed to load lesson");
+    return null;
   }
 
   const lesson = (await response.json()) as LessonApiResponse;

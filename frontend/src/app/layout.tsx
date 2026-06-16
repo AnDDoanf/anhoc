@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import ReduxProvider from "@/redux/provider";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
+import Script from "next/script";
 import "../css/theme.css";
 import "katex/dist/katex.min.css";
 
@@ -18,8 +19,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <head>
         <link rel="icon" href="/anhoc.svg" />
         <link rel="stylesheet" href="https://tikzjax.com/v1/fonts.css" />
-        <script src="https://tikzjax.com/v1/tikzjax.js" async></script>
-        <script
+      </head>
+      <body className="bg-sol-bg h-full">
+        <Script src="https://tikzjax.com/v1/tikzjax.js" strategy="afterInteractive" />
+        <Script
+          id="theme-initializer"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
@@ -52,8 +57,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             `,
           }}
         />
-      </head>
-      <body className="bg-sol-bg h-full">
         <NextIntlClientProvider messages={messages}>
           <ReduxProvider>
             {children}

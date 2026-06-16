@@ -575,6 +575,88 @@ router.post('/:id/practice', optionalAuthenticate, async (req, res) => {
   }
 });
 
+// Export lesson questions on the fly (no DB attempt created)
+router.get('/:id/export-questions', optionalAuthenticate, async (req, res) => {
+  const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  try {
+    const lesson = await prisma.lesson.findUnique({
+      where: { id },
+      select: { id: true, is_premium: true }
+    });
+
+    if (!lesson) {
+      return res.status(404).json({ error: "Lesson not found" });
+    }
+    if (!(await canAccessLessonForViewer((req as any).user, id))) {
+      return res.status(403).json({ error: "You do not have access to this subject" });
+    }
+
+    // Access check for premium lesson
+    if (lesson.is_premium) {
+      if (!(req as any).user || (req as any).user.role === 'free_student') {
+        return res.status(403).json({ error: "Access denied: this is a premium lesson." });
+      }
+    }
+
+    const isFreeOrGuest = !(req as any).user || (req as any).user.role === 'free_student';
+    const templateVisibilityWhere = await getVisibleTemplateWhereForViewer((req as any).user);
+    const templates = await prisma.questionTemplate.findMany({
+      where: {
+        AND: [
+          templateVisibilityWhere,
+          { lesson_id: id },
+        ],
+        ...(isFreeOrGuest ? { is_premium: false } : {})
+      }
+    });
+
+    if (templates.length === 0) {
+      return res.status(404).json({ error: "No templates found for this lesson to export." });
+    }
+
+    // Generate questions on the fly (limit to 15)
+    const targetCount = 15;
+    const repeatsPerTemplate = Math.ceil(targetCount / templates.length);
+    let templatePool: any[] = [];
+    for (let i = 0; i < repeatsPerTemplate; i++) {
+      templatePool = templatePool.concat(templates);
+    }
+
+    // Shuffle and slice
+    const shuffledTemplates = templatePool.sort(() => Math.random() - 0.5).slice(0, targetCount);
+
+    const questions = shuffledTemplates.map((template) => {
+      const isTheoretical = template.template_type === "theoretical_question";
+      const vars = isTheoretical ? {} : MathService.generateVars(template.logic_config);
+      const right_answers = isTheoretical
+        ? template.accepted_formulas.slice(0, 1).filter(Boolean)
+        : template.accepted_formulas
+          .map((formula: string) => MathService.evaluateFormula(formula, vars))
+          .filter((answer: unknown) => answer !== null);
+
+      return {
+        template: {
+          id: template.id,
+          template_type: template.template_type,
+          difficulty: template.difficulty,
+          body_template_en: template.body_template_en,
+          body_template_vi: template.body_template_vi,
+          explanation_template_en: template.explanation_template_en,
+          explanation_template_vi: template.explanation_template_vi,
+          logic_config: template.logic_config,
+          accepted_formulas: template.accepted_formulas,
+        },
+        generated_variables: vars,
+        right_answers
+      };
+    });
+
+    res.json(questions);
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to export questions", details: error.message });
+  }
+});
+
 // Get single lesson by ID
 router.get('/:id', optionalAuthenticate, async (req, res) => {
   const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;

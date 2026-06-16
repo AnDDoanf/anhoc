@@ -119,5 +119,10 @@ export const testService = {
   getPracticeHistory: async () => {
     const response = await api.get('/tests/my-practice-history');
     return response.data;
+  },
+
+  exportGradeTestQuestions: async (gradeId: number): Promise<any[]> => {
+    const response = await api.get(`/tests/grade-tests/${gradeId}/export-questions`);
+    return response.data;
   }
 };

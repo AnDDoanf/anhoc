@@ -506,6 +506,8 @@
     "completedAttempt": "Completed",
     "inProgressAttempt": "In progress",
     "resumeAttempt": "Resume",
+    "exportPDF": "Export PDF Exam",
+    "exporting": "Exporting...",
     "filters": {
       "grade": "Grade",
       "lesson": "Lesson",

@@ -1,25 +1,32 @@
 "use client";
 
 import { useState } from "react";
-import { PlayCircle, Loader2, ChevronDown } from "lucide-react";
+import { PlayCircle, Loader2, ChevronDown, Download } from "lucide-react";
 import { lessonService } from "@/services/lessonService";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
+import { exportWorksheetPDF } from "@/utils/pdfExporter";
 
 interface LessonPracticeButtonProps {
-  lessonId: string;
+  lesson: {
+    id: string;
+    title_en: string;
+    title_vi: string;
+  };
 }
 
-export default function LessonPracticeButton({ lessonId }: LessonPracticeButtonProps) {
+export default function LessonPracticeButton({ lesson }: LessonPracticeButtonProps) {
   const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [difficulty, setDifficulty] = useState("all");
   const router = useRouter();
+  const locale = useLocale();
   const t = useTranslations("Practice"); // Will map to Practice/Test dictionary
 
   const handleStartPractice = async () => {
     setLoading(true);
     try {
-      const attempt = await lessonService.startPractice(lessonId, difficulty);
+      const attempt = await lessonService.startPractice(lesson.id, difficulty);
       // Route to the new attempt runner page
       router.push(`/student/practice/${attempt.id}`);
     } catch (error: any) {
@@ -27,6 +34,22 @@ export default function LessonPracticeButton({ lessonId }: LessonPracticeButtonP
       alert(error.response?.data?.error || "Failed to start practice session.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    setExporting(true);
+    try {
+      const questions = await lessonService.exportQuestions(lesson.id);
+      const docTitle = locale === "vi"
+        ? `Bảng bài tập: ${lesson.title_vi}`
+        : `Worksheet: ${lesson.title_en}`;
+      await exportWorksheetPDF(docTitle, questions, locale, false);
+    } catch (error: any) {
+      console.error("Failed to export PDF:", error);
+      alert(error.response?.data?.error || "Failed to export PDF worksheet.");
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -54,21 +77,38 @@ export default function LessonPracticeButton({ lessonId }: LessonPracticeButtonP
         </div>
       </div>
 
-      <button
-        onClick={handleStartPractice}
-        disabled={loading}
-        className="w-full flex items-center justify-center gap-3 px-6 py-5 bg-sol-accent text-sol-bg rounded-[1.5rem] font-black text-base hover:bg-sol-accent/90 transition-all shadow-xl shadow-sol-accent/20 hover:shadow-sol-accent/30 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed group overflow-hidden relative"
-      >
-        <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
-        <div className="relative flex items-center gap-3">
-          {loading ? (
-            <Loader2 size={20} className="animate-spin" />
-          ) : (
-            <PlayCircle size={22} className="group-hover:scale-110 transition-transform duration-500" />
-          )}
-          <span>{loading ? t("starting") : t("startPractice")}</span>
-        </div>
-      </button>
+      <div className="space-y-3">
+        <button
+          onClick={handleStartPractice}
+          disabled={loading || exporting}
+          className="w-full flex items-center justify-center gap-3 px-6 py-5 bg-sol-accent text-sol-bg rounded-[1.5rem] font-black text-base hover:bg-sol-accent/90 transition-all shadow-xl shadow-sol-accent/20 hover:shadow-sol-accent/30 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed group overflow-hidden relative"
+        >
+          <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
+          <div className="relative flex items-center gap-3">
+            {loading ? (
+              <Loader2 size={20} className="animate-spin" />
+            ) : (
+              <PlayCircle size={22} className="group-hover:scale-110 transition-transform duration-500" />
+            )}
+            <span>{loading ? t("starting") : t("startPractice")}</span>
+          </div>
+        </button>
+
+        <button
+          onClick={handleExportPDF}
+          disabled={loading || exporting}
+          className="w-full flex items-center justify-center gap-3 px-6 py-4 border border-sol-accent/20 hover:border-sol-accent/40 text-sol-accent rounded-[1.5rem] font-bold text-sm hover:bg-sol-accent/5 transition-all shadow-md active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed group overflow-hidden relative"
+        >
+          <div className="relative flex items-center gap-3">
+            {exporting ? (
+              <Loader2 size={20} className="animate-spin" />
+            ) : (
+              <Download size={20} />
+            )}
+            <span>{exporting ? t("exporting") : t("exportPDF")}</span>
+          </div>
+        </button>
+      </div>
     </div>
   );
 }

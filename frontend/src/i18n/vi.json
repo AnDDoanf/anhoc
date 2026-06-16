@@ -480,6 +480,8 @@
     "completedAttempt": "Đã hoàn thành",
     "inProgressAttempt": "Đang làm",
     "resumeAttempt": "Tiếp tục",
+    "exportPDF": "Xuất Đề thi PDF",
+    "exporting": "Đang xuất...",
     "filters": {
       "grade": "Khối lớp",
       "lesson": "Bài học",

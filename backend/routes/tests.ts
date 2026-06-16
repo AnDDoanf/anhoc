@@ -285,6 +285,106 @@ router.get('/grade-tests', authenticate, async (req, res) => {
   }
 });
 
+// Export grade test questions on the fly (no DB attempt created)
+router.get('/grade-tests/:gradeId/export-questions', optionalAuthenticate, async (req, res) => {
+  try {
+    const gradeId = Number(req.params.gradeId);
+    if (!Number.isInteger(gradeId)) {
+      return res.status(400).json({ error: "Invalid grade id" });
+    }
+
+    const gradeWhere = await getVisibleGradeWhereForViewer((req as any).user);
+    const lessonWhere = await getVisibleLessonWhereForViewer((req as any).user);
+    const templateVisibilityWhere = await getVisibleTemplateWhereForViewer((req as any).user);
+    const grade = await prisma.grade.findUnique({
+      where: { id: gradeId },
+      include: {
+        lessons: {
+          where: {
+            AND: [lessonWhere],
+          },
+          select: { id: true, subject_id: true }
+        }
+      }
+    });
+
+    if (!grade) return res.status(404).json({ error: "Grade not found" });
+    const accessibleGrade = await prisma.grade.findFirst({
+      where: {
+        AND: [
+          gradeWhere,
+          { id: gradeId },
+        ],
+      },
+      select: { id: true },
+    });
+    if (!accessibleGrade) {
+      return res.status(403).json({ error: "You do not have access to this subject" });
+    }
+
+    const lessonIds = grade.lessons.map((lesson) => lesson.id);
+    if (lessonIds.length === 0) {
+      return res.status(404).json({ error: "No lessons found for this grade." });
+    }
+
+    const isFreeOrGuest = !(req as any).user || (req as any).user.role === 'free_student';
+    const templates = await prisma.questionTemplate.findMany({
+      where: {
+        AND: [
+          templateVisibilityWhere,
+          { lesson_id: { in: lessonIds } },
+        ],
+        ...(isFreeOrGuest ? { is_premium: false } : {})
+      }
+    });
+
+    if (templates.length === 0) {
+      return res.status(404).json({ error: "No question templates found for this grade test." });
+    }
+
+    // Generate up to 50 questions
+    const targetCount = 50;
+    const repeatsPerTemplate = Math.ceil(targetCount / templates.length);
+    let templatePool: any[] = [];
+    for (let i = 0; i < repeatsPerTemplate; i++) {
+      templatePool = templatePool.concat(templates);
+    }
+
+    // Shuffle and slice
+    const shuffledTemplates = templatePool.sort(() => Math.random() - 0.5).slice(0, targetCount);
+
+    const questions = shuffledTemplates.map((template) => {
+      const isTheoretical = template.template_type === "theoretical_question";
+      const vars = isTheoretical ? {} : MathService.generateVars(template.logic_config);
+      const right_answers = isTheoretical
+        ? template.accepted_formulas.slice(0, 1).filter(Boolean)
+        : template.accepted_formulas
+          .map((formula: string) => MathService.evaluateFormula(formula, vars))
+          .filter((answer: unknown) => answer !== null);
+
+      return {
+        template: {
+          id: template.id,
+          template_type: template.template_type,
+          difficulty: template.difficulty,
+          body_template_en: template.body_template_en,
+          body_template_vi: template.body_template_vi,
+          explanation_template_en: template.explanation_template_en,
+          explanation_template_vi: template.explanation_template_vi,
+          logic_config: template.logic_config,
+          accepted_formulas: template.accepted_formulas,
+        },
+        generated_variables: vars,
+        right_answers
+      };
+    });
+
+    res.json(questions);
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to export grade test questions", details: error.message });
+  }
+});
+
 router.post('/grade-tests/:gradeId/start', optionalAuthenticate, async (req, res) => {
   try {
     const gradeId = Number(req.params.gradeId);

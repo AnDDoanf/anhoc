@@ -66,7 +66,7 @@ export default function PracticeCard({ lesson }: PracticeCardProps) {
       </div>
 
       <div className="relative z-10">
-        <LessonPracticeButton lessonId={lesson.id} />
+        <LessonPracticeButton lesson={lesson} />
       </div>
     </div>
   );
