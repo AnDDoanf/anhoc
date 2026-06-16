@@ -827,6 +827,41 @@ router.patch("/password", authenticate, async (req: Request, res: Response) => {
   }
 });
 
+router.patch("/username", authenticate, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as Request & { user: { id: string } }).user.id;
+    const { username } = req.body;
+
+    if (!username || typeof username !== "string") {
+      return res.status(400).json({ error: "Username is required" });
+    }
+
+    const normalized = username.trim().toLowerCase().replace(/[^a-z0-9_]+/g, "_").replace(/^_+|_+$/g, "");
+
+    if (normalized.length < 3) {
+      return res.status(400).json({ error: "Username must be at least 3 characters" });
+    }
+    if (normalized.length > 30) {
+      return res.status(400).json({ error: "Username must be at most 30 characters" });
+    }
+
+    const existing = await prisma.user.findUnique({ where: { username: normalized } });
+    if (existing && existing.id !== userId) {
+      return res.status(409).json({ error: "Username is already taken" });
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { username: normalized },
+    });
+
+    res.json({ message: "Username updated successfully", username: normalized });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to update username" });
+  }
+});
+
 router.get("/activity", authenticate, async (req: Request, res: Response) => {
   try {
     const userId = (req as Request & { user: { id: string } }).user.id;

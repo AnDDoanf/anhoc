@@ -245,6 +245,13 @@
     "passwordMismatch": "New passwords do not match",
     "passwordSuccess": "Password updated successfully",
     "passwordError": "Failed to update password. Check your current password.",
+    "username": "Username",
+    "usernamePlaceholder": "e.g. cool_student_123",
+    "usernameHint": "Lowercase letters, numbers and underscores only (3–30 characters)",
+    "updateUsername": "Update Username",
+    "usernameSuccess": "Username updated successfully",
+    "usernameTaken": "This username is already taken",
+    "usernameError": "Failed to update username. Please try again.",
     "notifications": {
       "title": "Notifications",
       "subtitle": "{count} unread",
@@ -276,11 +283,11 @@
     }
   },
   "Sidebar": {
-      "administrator": "Administrator",
-      "learningMaterial": "Learning material",
-      "learning": "Learning",
-      "practice": "Practice",
-      "achievements": "Achievements",
+    "administrator": "Administrator",
+    "learningMaterial": "Learning material",
+    "learning": "Learning",
+    "practice": "Practice",
+    "achievements": "Achievements",
     "test": "Test",
     "grade1": "Grade 1",
     "grade6": "Grade 6",
@@ -292,6 +299,7 @@
     "reports": "Reports",
     "games": "Games",
     "shop": "Shop",
+    "upgrade": "Talents",
     "pricing": "Subscription",
     "members": "Members"
   },
@@ -620,20 +628,20 @@
       "unassignedGrade": "Unassigned Grade",
       "templateType": "Template Type",
       "difficulty": "Difficulty",
-        "questionTypes": {
-          "numeric_input": "Numeric input",
-          "math_addition": "Addition",
-          "math_subtraction": "Subtraction",
-          "math_multiplication": "Multiplication",
-          "math_exact_division": "Exact division",
-          "math_missing_addend": "Missing addend",
-          "math_difference_compare": "Difference comparison",
-          "geometry_rectangle_perimeter": "Rectangle perimeter",
-          "true_false": "True / false",
-          "multiple_choices": "Multiple choices",
-          "ordering": "Ordering",
-          "theoretical_question": "Theoretical question"
-        },
+      "questionTypes": {
+        "numeric_input": "Numeric input",
+        "math_addition": "Addition",
+        "math_subtraction": "Subtraction",
+        "math_multiplication": "Multiplication",
+        "math_exact_division": "Exact division",
+        "math_missing_addend": "Missing addend",
+        "math_difference_compare": "Difference comparison",
+        "geometry_rectangle_perimeter": "Rectangle perimeter",
+        "true_false": "True / false",
+        "multiple_choices": "Multiple choices",
+        "ordering": "Ordering",
+        "theoretical_question": "Theoretical question"
+      },
       "difficultyOptions": {
         "easy": "Easy",
         "medium": "Medium",
@@ -789,14 +797,14 @@
       "newPassword": "New Password",
       "passwordPlaceholder": "At least 6 characters",
       "optionalPassword": "Optional",
-        "role": "Role",
-        "slotsPurchased": "Supervisor Seats",
-        "maxSubjects": "Max Subjects",
-        "maxGrades": "Max Grades",
-        "maxLessons": "Max Lessons",
-        "maxTemplates": "Max Templates",
-        "maxTeachers": "Max Teachers",
-        "maxStudents": "Max Students",
+      "role": "Role",
+      "slotsPurchased": "Supervisor Seats",
+      "maxSubjects": "Max Subjects",
+      "maxGrades": "Max Grades",
+      "maxLessons": "Max Lessons",
+      "maxTemplates": "Max Templates",
+      "maxTeachers": "Max Teachers",
+      "maxStudents": "Max Students",
       "unlimitedPlaceholder": "Unlimited"
     },
     "filters": {
@@ -1030,15 +1038,15 @@
     "subtitle": "Challenge yourself, earn XP, and compete against friends in competitive mini-games.",
     "playNow": "Play Game",
     "createChallenge": "Create Duel Challenge",
-      "inviteTitle": "You Have Been Challenged!",
-      "inviteSubtitle": "Accept the duel, face identical questions, and top the leaderboard.",
-      "ownChallengeTitle": "Your Duel Challenge!",
-      "ownChallengeSubtitle": "Share this link or code to invite friends and compete on the leaderboard.",
-      "ownChallengeAction": "Open My Challenge",
-      "acceptChallenge": "Accept Challenge",
-      "archivedChallengeNotice": "This game has been archived. You can still view the leaderboard, but new plays are disabled.",
-      "challengeClosed": "Challenge Closed",
-      "activeChallenges": "Your active challenges",
+    "inviteTitle": "You Have Been Challenged!",
+    "inviteSubtitle": "Accept the duel, face identical questions, and top the leaderboard.",
+    "ownChallengeTitle": "Your Duel Challenge!",
+    "ownChallengeSubtitle": "Share this link or code to invite friends and compete on the leaderboard.",
+    "ownChallengeAction": "Open My Challenge",
+    "acceptChallenge": "Accept Challenge",
+    "archivedChallengeNotice": "This game has been archived. You can still view the leaderboard, but new plays are disabled.",
+    "challengeClosed": "Challenge Closed",
+    "activeChallenges": "Your active challenges",
     "leaderboard": "Leaderboard",
     "globalHighscores": "Global Top Players",
     "timeSpent": "Time spent",
@@ -1099,11 +1107,11 @@
     "trueOption": "True",
     "falseOption": "False",
     "getReady": "Get Ready!",
-      "timeLeft": "Time Left",
-      "towerTimer": "Torch Time",
-      "memoryTimer": "Memory Time",
-      "fuel": "Fuel",
-      "hearts": "Hearts",
+    "timeLeft": "Time Left",
+    "towerTimer": "Torch Time",
+    "memoryTimer": "Memory Time",
+    "fuel": "Fuel",
+    "hearts": "Hearts",
     "keepItUp": "Keep It Up!",
     "currentFloor": "Current Floor",
     "floorShort": "Flr {n}",
@@ -1356,15 +1364,15 @@
     },
     "table": {
       "title": "Supervisor Subscriptions",
-        "hint": "Click Edit on a row to adjust capacity limits inline. Leave a limit blank for unlimited.",
-        "account": "Account",
-        "seats": "Seats",
-        "subjects": "Subjects",
-        "grades": "Grades",
-        "lessons": "Lessons",
-        "templates": "Templates",
-        "teachers": "Teachers",
-        "students": "Students",
+      "hint": "Click Edit on a row to adjust capacity limits inline. Leave a limit blank for unlimited.",
+      "account": "Account",
+      "seats": "Seats",
+      "subjects": "Subjects",
+      "grades": "Grades",
+      "lessons": "Lessons",
+      "templates": "Templates",
+      "teachers": "Teachers",
+      "students": "Students",
       "actions": "Actions"
     },
     "unlimited": "Unlimited",
@@ -1375,23 +1383,23 @@
       "title": "No supervisor accounts found.",
       "subtitle": "Create a supervisor account in the Users page first."
     },
-      "legend": {
-        "title": "Limit Reference",
-        "blankHint": "Leave blank = unlimited",
-        "subjects": {
-          "label": "Subjects",
-          "desc": "Max subjects the supervisor can create."
-        },
-        "grades": {
-          "label": "Grades",
-          "desc": "Max grades the supervisor can create."
-        },
-        "lessons": {
-          "label": "Lessons",
-          "desc": "Max lessons the supervisor can create."
-        },
-        "templates": {
-          "label": "Templates",
+    "legend": {
+      "title": "Limit Reference",
+      "blankHint": "Leave blank = unlimited",
+      "subjects": {
+        "label": "Subjects",
+        "desc": "Max subjects the supervisor can create."
+      },
+      "grades": {
+        "label": "Grades",
+        "desc": "Max grades the supervisor can create."
+      },
+      "lessons": {
+        "label": "Lessons",
+        "desc": "Max lessons the supervisor can create."
+      },
+      "templates": {
+        "label": "Templates",
         "desc": "Max question templates the supervisor can create."
       },
       "teachers": {
