@@ -3,6 +3,8 @@
 import ProtectedRoute from "@/components/guard/ProtectedRoute";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import PillBadge from "@/components/ui/PillBadge";
+import Hero from "@/components/ui/Hero";
+import MetricCard from "@/components/ui/MetricCard";
 import { useAuth } from "@/hooks/useAuth";
 import {
   adminService,
@@ -117,7 +119,7 @@ export default function AdminUsersPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [hasMore, setHasMore] = useState(false);
-  const [summary, setSummary] = useState({ total: 0, admins: 0, students: 0 });
+  const [summary, setSummary] = useState({ total: 0, admins: 0, students: 0, teachers: 0 });
   const [subjectAccessRequests, setSubjectAccessRequests] = useState<SubjectAccessRequest[]>([]);
   const [reviewingRequestId, setReviewingRequestId] = useState<number | null>(null);
 
@@ -142,6 +144,7 @@ export default function AdminUsersPage() {
           total: data.summary.total,
           admins: data.summary.admins || 0,
           students: data.summary.students || 0,
+          teachers: data.summary.teachers || 0,
         });
       }
       setPage(data.pagination.page);
@@ -216,6 +219,7 @@ export default function AdminUsersPage() {
       users: summary.total,
       admins: summary.admins,
       students: summary.students,
+      teachers: summary.teachers,
     };
   }, [summary]);
 
@@ -352,30 +356,38 @@ export default function AdminUsersPage() {
   return (
     <ProtectedRoute requiredRole="admin">
       <div className="mx-auto max-w-7xl space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <section className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <PillBadge label={t("eyebrow")} icon={<Sparkles size={16} />} className="mb-3" />
-            <h1 className="text-3xl font-black uppercase tracking-tight text-sol-text sm:text-4xl">
+        <Hero
+          icon={<Users size={112} className="text-sol-accent md:h-40 md:w-40" />}
+          className="md:rounded-[3rem]"
+          containerClassName="relative z-10 flex w-full flex-col items-start gap-4 lg:max-w-4xl lg:flex-row lg:justify-between"
+        >
+          <div className="space-y-3 md:space-y-6">
+            <div className="inline-flex items-center gap-2 rounded-full border border-sol-accent/20 bg-sol-accent/10 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-sol-accent sm:px-3 sm:py-1.5 md:text-xs">
+              <Sparkles size={11} className="md:h-3.5 md:w-3.5" />
+              <span>{t("eyebrow")}</span>
+            </div>
+            <h1 className="max-w-[11ch] text-[1.75rem] font-black leading-[1.05] tracking-tight text-sol-text sm:text-4xl md:max-w-none md:text-6xl">
               {t("title")}
             </h1>
-            <p className="mt-2 max-w-2xl font-bold text-sol-muted">
+            <p className="max-w-xl text-[13px] leading-relaxed text-sol-muted sm:text-sm md:text-xl">
               {t("subtitle")}
             </p>
           </div>
           <button
             onClick={loadInitialData}
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-sol-border/30 bg-sol-surface px-4 py-2.5 text-sm font-black text-sol-text transition hover:border-sol-accent/50 hover:text-sol-accent"
+            className="flex items-center gap-2 rounded-2xl bg-sol-accent px-4 py-2.5 text-sm font-bold text-sol-bg shadow-lg shadow-sol-accent/20 transition-transform hover:scale-105 cursor-pointer md:px-6 md:py-3"
           >
-            <RefreshCw size={16} />
-            {t("actions.refresh")}
+            <RefreshCw size={18} className="md:h-5 md:w-5" />
+            <span>{t("actions.refresh")}</span>
           </button>
-        </section>
+        </Hero>
 
-        <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <Metric label={t("metrics.accounts")} value={totals.users} icon={<Users size={20} />} />
-          <Metric label={t("metrics.admins")} value={totals.admins} icon={<Shield size={20} />} />
-          <Metric label={t("metrics.students")} value={totals.students} icon={<UserPlus size={20} />} />
-        </section>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
+          <MetricCard label={t("metrics.accounts")} value={totals.users} icon={<Users size={20} />} iconBg="bg-blue-500/10" iconColor="text-blue-500" />
+          <MetricCard label={t("metrics.admins")} value={totals.admins} icon={<Shield size={20} />} iconBg="bg-red-500/10" iconColor="text-red-500" />
+          <MetricCard label={t("metrics.teachers")} value={totals.teachers} icon={<Shield size={20} />} iconBg="bg-purple-500/10" iconColor="text-purple-500" />
+          <MetricCard label={t("metrics.students")} value={totals.students} icon={<UserPlus size={20} />} iconBg="bg-green-500/10" iconColor="text-green-500" />
+        </div>
 
         {subjectAccessRequests.length > 0 && (
           <section id="subject-access-requests" className="rounded-lg border border-sol-border/20 bg-sol-surface shadow-sm">
@@ -825,25 +837,7 @@ export default function AdminUsersPage() {
   );
 }
 
-function Metric({
-  label,
-  value,
-  icon,
-}: {
-  label: string;
-  value: number;
-  icon: ReactNode;
-}) {
-  return (
-    <div className="rounded-lg border border-sol-border/20 bg-sol-surface p-5 shadow-sm">
-      <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-sol-accent/10 text-sol-accent">
-        {icon}
-      </div>
-      <div className="text-xs font-black uppercase tracking-widest text-sol-muted">{label}</div>
-      <div className="mt-1 text-3xl font-black text-sol-text">{value}</div>
-    </div>
-  );
-}
+
 
 
 

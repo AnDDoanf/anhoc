@@ -651,6 +651,7 @@
     }
   },
   "Admin": {
+    "eyebrow": "Công cụ quản trị",
     "title": "Tổng quan hệ thống",
     "gatheringIntelligence": "Đang thu thập dữ liệu...",
     "subtitle": "Tổng quan về hiệu suất ứng dụng và hoạt động của người dùng.",
@@ -726,6 +727,7 @@
     "metrics": {
       "accounts": "Tài khoản",
       "admins": "Quản trị viên",
+      "teachers": "Giáo viên",
       "students": "Học sinh"
     },
     "roles": {
@@ -910,7 +912,8 @@
     "metrics": {
       "current": "Danh sách hiện tại",
       "active": "Đang xử lý",
-      "resolved": "Đã xử lý"
+      "resolved": "Đã xử lý",
+      "dismissed": "Đã bỏ qua"
     },
     "statuses": {
       "all": "Tất cả",

@@ -2,6 +2,9 @@
 
 import { useTranslations, useLocale } from "next-intl";
 import Link from "next/link";
+import ProtectedRoute from "@/components/guard/ProtectedRoute";
+import Hero from "@/components/ui/Hero";
+import MetricCard from "@/components/ui/MetricCard";
 import { useEffect, useState } from "react";
 import { adminService, type AdminLessonRef } from "@/services/adminService";
 import { useTheme } from "@/hooks/useTheme";
@@ -155,33 +158,39 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
-      <section>
-        <h1 className="text-4xl font-black text-sol-text tracking-tight uppercase">
-          {t("title")}
-        </h1>
-        <p className="text-sol-muted font-bold max-w-2xl mt-2">{t("subtitle")}</p>
-      </section>
+    <ProtectedRoute requiredRole={["admin", "supervisor", "teacher"]}>
+      <div className="mx-auto max-w-7xl space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
+        <Hero
+          icon={<BarChart3 size={112} className="text-sol-accent md:h-40 md:w-40" />}
+          className="md:rounded-[3rem]"
+          containerClassName="relative z-10 flex w-full flex-col items-start gap-4 lg:max-w-4xl lg:flex-row lg:justify-between"
+        >
+          <div className="space-y-3 md:space-y-6">
+            <div className="inline-flex items-center gap-2 rounded-full border border-sol-accent/20 bg-sol-accent/10 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-sol-accent sm:px-3 sm:py-1.5 md:text-xs">
+              <Activity size={11} className="md:h-3.5 md:w-3.5" />
+              <span>{t("eyebrow")}</span>
+            </div>
+            <h1 className="max-w-[11ch] text-[1.75rem] font-black leading-[1.05] tracking-tight text-sol-text sm:text-4xl md:max-w-none md:text-6xl">
+              {t("title")}
+            </h1>
+            <p className="max-w-xl text-[13px] leading-relaxed text-sol-muted sm:text-sm md:text-xl">
+              {t("subtitle")}
+            </p>
+          </div>
+        </Hero>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
         {summaryCards.map((card) => (
-          <div key={card.label} className="group bg-sol-surface border border-sol-border/10 rounded-2xl p-6 hover:border-sol-accent/30 transition-all duration-300 shadow-sm hover:shadow-xl hover:shadow-sol-accent/5">
-            <div className="flex items-center justify-between mb-4">
-              <div className={`p-4 rounded-2xl ${card.bg}`}>
-                <card.icon className={card.color} size={24} />
-              </div>
-              <span className="text-[10px] font-black px-2 py-1 rounded-full bg-sol-bg text-sol-muted uppercase tracking-wider">
-                {card.trend}
-              </span>
-            </div>
-            <div className="text-xs font-black text-sol-muted uppercase tracking-widest mb-1">
-              {card.label}
-            </div>
-            <div className="text-4xl font-black text-sol-text group-hover:text-sol-accent transition-colors">
-              {card.value}
-            </div>
-          </div>
+          <MetricCard
+            key={card.label}
+            label={card.label}
+            value={card.value}
+            icon={<card.icon size={24} />}
+            iconBg={card.bg}
+            iconColor={card.color}
+            trend={card.trend}
+          />
         ))}
       </div>
 
@@ -376,6 +385,7 @@ export default function AdminDashboard() {
         </section>
       </div>
     </div>
+    </ProtectedRoute>
   );
 }
 

@@ -677,6 +677,7 @@
     }
   },
   "Admin": {
+    "eyebrow": "Admin Toolbox",
     "title": "Admin Dashboard",
     "gatheringIntelligence": "Gathering intelligence...",
     "subtitle": "Overview of application performance and user engagement.",
@@ -752,6 +753,7 @@
     "metrics": {
       "accounts": "Accounts",
       "admins": "Admins",
+      "teachers": "Teachers",
       "students": "Students"
     },
     "roles": {
@@ -936,7 +938,8 @@
     "metrics": {
       "current": "Current List",
       "active": "Active",
-      "resolved": "Resolved"
+      "resolved": "Resolved",
+      "dismissed": "Dismissed"
     },
     "statuses": {
       "all": "All",
