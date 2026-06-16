@@ -187,7 +187,7 @@
     "learn_unit_code_placeholder": "Mã đơn vị học tập",
     "learn_unit_code_hint": "Bắt buộc nếu tài khoản của bạn thuộc về một đơn vị học tập.",
     "use_learn_unit_code": "Đăng nhập bằng mã đơn vị",
-    "hide_learn_unit_code": "Ẩn tùy chọn đăng nhập tổ chức",
+    "hide_learn_unit_code": "Ẩn tùy chọn đăng nhập này",
     "errors": {
       "invalid_email": "Địa chỉ email không hợp lệ",
       "password_too_short": "Mật khẩu phải có ít nhất 6 ký tự"

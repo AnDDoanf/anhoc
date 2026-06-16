@@ -203,48 +203,90 @@
 
 # Phase 5 — Gamification
 
+Status: partially implemented in the app. Core XP, achievements, daily streak UI, lesson/grade duel challenges, and a global games leaderboard are live; XP leaderboards, rating/matchmaking, enforced 1v1, live scoring, and school/class leaderboards are not.
+
 ## Experience System
 
 ### XP Engine
 
-* [ ] Award XP
-* [ ] XP history
+* [x] Award XP
+* [x] XP history
 * [ ] XP leaderboard
 
 ### Achievement System
 
-* [ ] Achievement definitions
-* [ ] Achievement unlock logic
-* [ ] Achievement notifications
+* [x] Achievement definitions
+* [x] Achievement unlock logic
+* [x] Achievement notifications
 
 ### Streak System
 
-* [ ] Daily streak
+* [x] Daily streak
 * [ ] Weekly streak
 * [ ] Recovery mechanics
+* [ ] Daily login reward calendar
+* [ ] One reward claim per day
+* [ ] Consecutive login tracking
+* [ ] Missed-day reset or recovery rule
+* [ ] Milestone login rewards with bigger prizes
+* [ ] Support milestone rewards with `ancoin`
+* [ ] Support milestone rewards with shop items
+* [ ] Daily reward notification and claim UI
+
+---
+
+## Student Economy
+
+### Lives Mechanism
+
+* [ ] Consume 1 life per practice attempt
+* [ ] Restore 1 life every hour
+* [ ] Start each user with 6 lives
+* [ ] Increase max lives by 1 every 10 levels
+* [ ] Cap max lives at 12
+
+### Ancoin Rewards
+
+* [ ] Reward `ancoin` for completed practice attempts
+* [ ] Ancoin wallet balance
+* [ ] Ancoin transaction history
+
+### Shop Features
+
+* [ ] Avatar packs
+* [ ] Profile frames
+* [ ] Titles
+* [ ] Profile backgrounds
+* [ ] App themes
+* [ ] Study pets
+* [ ] Skip Guard (skip question with correct mark)
+* [ ] Pet eggs
+* [ ] Pet food and boosts
+* [ ] Streak shield
+* [ ] XP booster
+* [ ] Challenge tickets
+* [ ] AI tutor credits
+
+### Level-Up Points
+
+* [ ] Award level points on level up
+* [ ] Spend 1 point to add 2 or 5 seconds to a game mode duration limit
+* [ ] Spend 10 points to add 1 total life, up to 3 extra lives
+* [ ] Spend 1 point to add 5% coin reward bonus to future rewards
+* [ ] Spend 1 point to add 5% XP reward bonus to future rewards
+* [ ] Spend 10 points to buy 1 extra game attempt (total 5)
 
 ---
 
 ## Competitive Learning
 
-### Matchmaking
-
-* [ ] Rating system
-* [ ] Glicko-2 implementation
-* [ ] Student matchmaking
-
 ### Battle Mode
-
-* [ ] 1v1 challenges
-* [ ] Topic battles
-* [ ] Live scoring
+* [x] Topic battles
 
 ### Leaderboards
 
-* [ ] Global leaderboard
-* [ ] School leaderboard
-* [ ] Class leaderboard
-
+* [x] Global leaderboard
+* [ ] Learning Unit leaderboard
 ---
 
 # Phase 6 — Advanced Research Features
@@ -434,7 +476,7 @@ The minimum thesis-worthy version would be:
 * [x] SymPy integration
 * [x] MongoDB memory
 * [ ] RAG retrieval
-* [ ] Gamification basics
+* [x] Gamification basics
 * [ ] Redis cache
 * [ ] Rate limiting
 * [ ] Queue workers

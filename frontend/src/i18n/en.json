@@ -185,6 +185,10 @@
     "signing_in": "Signing in...",
     "no_account": "Do not have an account?",
     "sign_up": "Sign up",
+    "learn_unit_code_placeholder": "Learning unit code",
+    "learn_unit_code_hint": "Required if your account belongs to a learning unit.",
+    "use_learn_unit_code": "Log in with unit code",
+    "hide_learn_unit_code": "Hide this login option",
     "errors": {
       "invalid_email": "Invalid email address",
       "password_too_short": "Password must be at least 6 characters"
