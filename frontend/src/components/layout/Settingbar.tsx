@@ -22,11 +22,16 @@ export default function SettingBar() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [markingAllRead, setMarkingAllRead] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const isGuest = !user;
   const roleLabel = user?.role || t("guestRole");
   const displayName = user?.username || user?.email?.split("@")[0] || t("guestName");
   const isSettingsOpen = activePanel === "settings";
   const isNotificationsOpen = activePanel === "notifications";
+
+  useEffect(() => {
+    setImageError(false);
+  }, [user?.avatar_url]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -240,11 +245,12 @@ export default function SettingBar() {
                 : "bg-sol-accent/10 text-sol-accent"
               }`}
           >
-            {user?.avatar_url ? (
+            {user?.avatar_url && !imageError ? (
               <img
                 src={user.avatar_url.startsWith("http") ? user.avatar_url : `http://localhost:5001${user.avatar_url}`}
                 alt={displayName}
                 className="w-full h-full object-cover"
+                onError={() => setImageError(true)}
               />
             ) : (
               <UserCog size={18} />

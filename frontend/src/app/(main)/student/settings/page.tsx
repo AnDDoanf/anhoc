@@ -33,6 +33,7 @@ export default function SettingsPage() {
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [avatarFeedback, setAvatarFeedback] = useState<Feedback>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   // ── Username state ──────────────────────────────────────────
   const [username, setUsername] = useState("");
@@ -55,6 +56,10 @@ export default function SettingsPage() {
       setUsername(profile.username ?? "");
     }).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    setImageError(false);
+  }, [user?.avatar_url]);
 
   const getInitials = () => {
     const name = user?.full_name || user?.username || "";
@@ -198,9 +203,9 @@ export default function SettingsPage() {
           </div>
         </Hero>
 
-        <div className="max-w-2xl mx-auto w-full space-y-6">
+        <div className="max-w-4xl mx-auto w-full space-y-6">
 
-          {/* ── Avatar Settings Card ─────────────────────────── */}
+          {/* ── Profile Settings Card (Avatar + Username side-by-side) ── */}
           <div className={`bg-sol-surface border ${isDragging ? "border-sol-accent shadow-sol-accent/5" : "border-sol-border/30"} rounded-3xl p-8 shadow-xl relative overflow-hidden group transition-all duration-300`}
                onDragOver={handleDragOver}
                onDragLeave={handleDragLeave}
@@ -208,152 +213,148 @@ export default function SettingsPage() {
           >
             <div className="absolute top-0 right-0 w-32 h-32 bg-sol-accent/5 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-sol-accent/10 transition-colors duration-500" />
             
-            <div className="space-y-6 relative z-10 flex flex-col items-center sm:items-start">
-              <h2 className="text-lg font-black text-sol-text flex items-center gap-2 self-start">
-                <Camera size={18} className="text-sol-accent" />
-                {t("avatar")}
+            <div className="space-y-6 relative z-10">
+              <h2 className="text-lg font-black text-sol-text flex items-center gap-2">
+                <User size={18} className="text-sol-accent" />
+                {t("accountSettings")}
               </h2>
 
-              <div className="flex flex-col sm:flex-row items-center gap-6 w-full">
-                {/* Image circle with overlay */}
-                <div 
-                  onClick={() => fileInputRef.current?.click()}
-                  className="relative w-28 h-28 rounded-full cursor-pointer overflow-hidden border-2 border-sol-border/30 bg-sol-bg/50 hover:border-sol-accent group/avatar shadow-inner transition-all duration-300 flex items-center justify-center shrink-0"
-                >
-                  {user?.avatar_url ? (
-                    <img 
-                      src={user.avatar_url.startsWith("http") ? user.avatar_url : `http://localhost:5001${user.avatar_url}`}
-                      alt={user.username || "Avatar"} 
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover/avatar:scale-110"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-sol-accent/20 to-sol-accent/5 flex items-center justify-center text-sol-accent font-black text-3xl">
-                      {getInitials()}
-                    </div>
-                  )}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+                
+                {/* Left side: Avatar details */}
+                <div className="md:col-span-5 flex flex-col items-center p-6 bg-sol-bg/20 rounded-2xl border border-sol-border/10 space-y-4 w-full">
+                  <div 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="relative w-28 h-28 rounded-full cursor-pointer overflow-hidden border-2 border-sol-border/30 bg-sol-bg/50 hover:border-sol-accent group/avatar shadow-inner transition-all duration-300 flex items-center justify-center shrink-0"
+                  >
+                    {user?.avatar_url && !imageError ? (
+                      <img 
+                        src={user.avatar_url.startsWith("http") ? user.avatar_url : `http://localhost:5001${user.avatar_url}`}
+                        alt={user.username || "Avatar"} 
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover/avatar:scale-110"
+                        onError={() => setImageError(true)}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-sol-accent/20 to-sol-accent/5 flex items-center justify-center text-sol-accent font-black text-3xl">
+                        {getInitials()}
+                      </div>
+                    )}
 
-                  {/* Hover overlay */}
-                  <div className="absolute inset-0 bg-sol-bg/60 opacity-0 group-hover/avatar:opacity-100 flex flex-col items-center justify-center gap-1 transition-all duration-300">
-                    <Camera size={20} className="text-sol-accent animate-bounce" />
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-sol-text">{t("avatarPlaceholder")}</span>
+                    <div className="absolute inset-0 bg-sol-bg/60 opacity-0 group-hover/avatar:opacity-100 flex flex-col items-center justify-center gap-1 transition-all duration-300">
+                      <Camera size={20} className="text-sol-accent animate-bounce" />
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-sol-text">{t("avatarPlaceholder")}</span>
+                    </div>
+
+                    {avatarLoading && (
+                      <div className="absolute inset-0 bg-sol-bg/85 flex items-center justify-center z-10 backdrop-blur-[2px]">
+                        <Loader2 className="animate-spin text-sol-accent" size={28} />
+                      </div>
+                    )}
                   </div>
 
-                  {/* Uploading loading spinner */}
-                  {avatarLoading && (
-                    <div className="absolute inset-0 bg-sol-bg/85 flex items-center justify-center z-10 backdrop-blur-[2px]">
-                      <Loader2 className="animate-spin text-sol-accent" size={28} />
+                  <div className="text-center space-y-2 w-full">
+                    <p className="text-xs font-bold text-sol-text">{t("avatar")}</p>
+                    <p className="text-[11px] text-sol-muted leading-relaxed">
+                      {t("avatarDragDrop")}
+                    </p>
+                    <p className="text-[10px] text-sol-muted/80 font-semibold">
+                      {t("avatarTypeLimit")}
+                    </p>
+                    
+                    <input 
+                      type="file" 
+                      ref={fileInputRef}
+                      onChange={handleFileChange}
+                      accept="image/png, image/jpeg, image/jpg, image/webp"
+                      className="hidden"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={avatarLoading}
+                      className="inline-flex items-center gap-2 bg-sol-accent/10 hover:bg-sol-accent text-sol-accent hover:text-sol-bg border border-sol-accent/20 hover:border-transparent font-black px-4 py-2 rounded-xl transition-all duration-300 hover:cursor-pointer text-[10px] uppercase tracking-wider mt-1"
+                    >
+                      <Upload size={12} />
+                      {t("avatarUploadButton")}
+                    </button>
+                  </div>
+
+                  {avatarFeedback && (
+                    <div
+                      className={`w-full p-3 rounded-xl flex items-center gap-2 animate-in zoom-in-95 duration-300 ${
+                        avatarFeedback.type === "success"
+                          ? "bg-sol-accent/10 border border-sol-accent/20 text-sol-accent"
+                          : "bg-sol-orange/10 border border-sol-orange/20 text-sol-orange"
+                      }`}
+                    >
+                      {avatarFeedback.type === "success" ? (
+                        <CheckCircle2 size={14} className="shrink-0" />
+                      ) : (
+                        <AlertCircle size={14} className="shrink-0" />
+                      )}
+                      <p className="text-[11px] font-bold">{avatarFeedback.text}</p>
                     </div>
                   )}
                 </div>
 
-                {/* Details & Button */}
-                <div className="flex-1 text-center sm:text-left space-y-3 w-full">
-                  <p className="text-sm font-medium text-sol-muted leading-relaxed">
-                    {t("avatarDragDrop")}
-                  </p>
-                  <p className="text-[11px] text-sol-muted font-bold">
-                    {t("avatarTypeLimit")} • {t("avatarSizeLimit")}
-                  </p>
-                  
-                  <input 
-                    type="file" 
-                    ref={fileInputRef}
-                    onChange={handleFileChange}
-                    accept="image/png, image/jpeg, image/jpg, image/webp"
-                    className="hidden"
-                  />
+                {/* Right side: Username details */}
+                <form onSubmit={handleUsernameSubmit} className="md:col-span-7 space-y-5 h-full flex flex-col justify-between w-full">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-sol-muted px-1 flex items-center gap-2">
+                        <AtSign size={14} className="text-sol-accent" />
+                        {t("username")}
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        minLength={3}
+                        maxLength={30}
+                        className="w-full bg-sol-bg/50 border border-sol-border/30 rounded-2xl px-4 py-3 text-sol-text focus:outline-none focus:ring-2 focus:ring-sol-accent/20 focus:border-sol-accent transition-all duration-300"
+                        placeholder={t("usernamePlaceholder")}
+                      />
+                      <p className="text-[11px] text-sol-muted px-1 font-medium">{t("usernameHint")}</p>
+                    </div>
+
+                    {usernameFeedback && (
+                      <div
+                        className={`p-4 rounded-2xl flex items-center gap-3 animate-in zoom-in-95 duration-300 ${
+                          usernameFeedback.type === "success"
+                            ? "bg-sol-accent/10 border border-sol-accent/20 text-sol-accent"
+                            : "bg-sol-orange/10 border border-sol-orange/20 text-sol-orange"
+                        }`}
+                      >
+                        {usernameFeedback.type === "success" ? (
+                          <CheckCircle2 size={18} className="shrink-0" />
+                        ) : (
+                          <AlertCircle size={18} className="shrink-0" />
+                        )}
+                        <p className="text-sm font-bold">{usernameFeedback.text}</p>
+                      </div>
+                    )}
+                  </div>
 
                   <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={avatarLoading}
-                    className="inline-flex items-center gap-2 bg-sol-accent/10 hover:bg-sol-accent text-sol-accent hover:text-sol-bg border border-sol-accent/20 hover:border-transparent font-black px-5 py-2.5 rounded-xl transition-all duration-300 hover:cursor-pointer text-xs uppercase tracking-wider"
+                    type="submit"
+                    disabled={usernameLoading}
+                    className="w-full bg-sol-accent text-sol-bg font-black py-4 rounded-2xl hover:opacity-90 active:scale-[0.98] transition-all duration-300 shadow-lg shadow-sol-accent/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:cursor-pointer mt-4"
                   >
-                    <Upload size={14} />
-                    {t("avatarUploadButton")}
+                    {usernameLoading ? (
+                      <>
+                        <Loader2 className="animate-spin" size={20} />
+                        {t("updating")}
+                      </>
+                    ) : (
+                      t("updateUsername")
+                    )}
                   </button>
-                </div>
-              </div>
+                </form>
 
-              {avatarFeedback && (
-                <div
-                  className={`w-full p-4 rounded-2xl flex items-center gap-3 animate-in zoom-in-95 duration-300 ${
-                    avatarFeedback.type === "success"
-                      ? "bg-sol-accent/10 border border-sol-accent/20 text-sol-accent"
-                      : "bg-sol-orange/10 border border-sol-orange/20 text-sol-orange"
-                  }`}
-                >
-                  {avatarFeedback.type === "success" ? (
-                    <CheckCircle2 size={18} className="shrink-0" />
-                  ) : (
-                    <AlertCircle size={18} className="shrink-0" />
-                  )}
-                  <p className="text-sm font-bold">{avatarFeedback.text}</p>
-                </div>
-              )}
+              </div>
             </div>
-          </div>
-
-          {/* ── Username Card ─────────────────────────────────── */}
-          <div className="bg-sol-surface border border-sol-border/30 rounded-3xl p-8 shadow-xl relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-sol-accent/5 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-sol-accent/10 transition-colors duration-500" />
-
-            <form onSubmit={handleUsernameSubmit} className="space-y-5 relative z-10">
-              <h2 className="text-lg font-black text-sol-text flex items-center gap-2">
-                <AtSign size={18} className="text-sol-accent" />
-                {t("username")}
-              </h2>
-
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-sol-muted px-1 flex items-center gap-2">
-                  <User size={14} />
-                  {t("username")}
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  minLength={3}
-                  maxLength={30}
-                  className="w-full bg-sol-bg/50 border border-sol-border/30 rounded-2xl px-4 py-3 text-sol-text focus:outline-none focus:ring-2 focus:ring-sol-accent/20 focus:border-sol-accent transition-all duration-300"
-                  placeholder={t("usernamePlaceholder")}
-                />
-                <p className="text-[11px] text-sol-muted px-1 font-medium">{t("usernameHint")}</p>
-              </div>
-
-              {usernameFeedback && (
-                <div
-                  className={`p-4 rounded-2xl flex items-center gap-3 animate-in zoom-in-95 duration-300 ${
-                    usernameFeedback.type === "success"
-                      ? "bg-sol-accent/10 border border-sol-accent/20 text-sol-accent"
-                      : "bg-sol-orange/10 border border-sol-orange/20 text-sol-orange"
-                  }`}
-                >
-                  {usernameFeedback.type === "success" ? (
-                    <CheckCircle2 size={18} className="shrink-0" />
-                  ) : (
-                    <AlertCircle size={18} className="shrink-0" />
-                  )}
-                  <p className="text-sm font-bold">{usernameFeedback.text}</p>
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={usernameLoading}
-                className="w-full bg-sol-accent text-sol-bg font-black py-4 rounded-2xl hover:opacity-90 active:scale-[0.98] transition-all duration-300 shadow-lg shadow-sol-accent/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:cursor-pointer"
-              >
-                {usernameLoading ? (
-                  <>
-                    <Loader2 className="animate-spin" size={20} />
-                    {t("updating")}
-                  </>
-                ) : (
-                  t("updateUsername")
-                )}
-              </button>
-            </form>
           </div>
 
           {/* ── Password Card ─────────────────────────────────── */}
