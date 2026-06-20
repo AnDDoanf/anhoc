@@ -745,49 +745,56 @@ router.get('/stats', authenticate, async (req, res) => {
       })
     ]);
 
-    // Get activity history for the last 14 days
+    // Get activity history for the last 14 days using DATE_TRUNC for efficient DB-level aggregation
     const fourteenDaysAgo = new Date();
     fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
 
+    // Build user ID filter clause for raw SQL
+    const memberIdFilter = userRole === 'supervisor' && attemptWhere.user_id?.in
+      ? attemptWhere.user_id.in as string[]
+      : null;
+
     const [dailyRegistrations, dailyAttempts] = await Promise.all([
-      prisma.user.groupBy({
-        by: ['created_at'],
-        where: {
-          ...userWhere,
-          created_at: { gte: fourteenDaysAgo }
-        },
-        _count: { id: true }
-      }),
-      prisma.testAttempt.groupBy({
-        by: ['started_at'],
-        where: {
-          ...attemptWhere,
-          started_at: { gte: fourteenDaysAgo }
-        },
-        _count: { id: true }
-      })
+      prisma.$queryRawUnsafe<Array<{ day: Date; count: bigint }>>(
+        `SELECT DATE_TRUNC('day', created_at) AS day, COUNT(*) AS count
+         FROM users
+         WHERE created_at >= $1
+         ${memberIdFilter ? `AND learn_unit_id = $2` : ''}
+         GROUP BY day ORDER BY day`,
+        fourteenDaysAgo,
+        ...(userRole === 'supervisor' && userWhere.learn_unit_id ? [userWhere.learn_unit_id] : [])
+      ),
+      prisma.$queryRawUnsafe<Array<{ day: Date; count: bigint }>>(
+        `SELECT DATE_TRUNC('day', started_at) AS day, COUNT(*) AS count
+         FROM test_attempts
+         WHERE started_at >= $1
+         ${memberIdFilter ? `AND user_id = ANY($2::uuid[])` : ''}
+         GROUP BY day ORDER BY day`,
+        fourteenDaysAgo,
+        ...(memberIdFilter ? [memberIdFilter] : [])
+      )
     ]);
 
-    // Aggregate by day
-    const historyMap = new Map();
+    // Build history map for the last 14 days
+    const historyMap = new Map<string, { date: string; users: number; attempts: number }>();
     for (let i = 0; i < 14; i++) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().split('T')[0];
+      const dateStr = d.toISOString().split('T')[0]!;
       historyMap.set(dateStr, { date: dateStr, users: 0, attempts: 0 });
     }
 
-    dailyRegistrations.forEach(reg => {
-      const dateStr = reg.created_at.toISOString().split('T')[0];
+    dailyRegistrations.forEach(row => {
+      const dateStr = row.day.toISOString().split('T')[0]!;
       if (historyMap.has(dateStr)) {
-        historyMap.get(dateStr).users += reg._count.id;
+        historyMap.get(dateStr)!.users += Number(row.count);
       }
     });
 
-    dailyAttempts.forEach(att => {
-      const dateStr = att.started_at.toISOString().split('T')[0];
+    dailyAttempts.forEach(row => {
+      const dateStr = row.day.toISOString().split('T')[0]!;
       if (historyMap.has(dateStr)) {
-        historyMap.get(dateStr).attempts += att._count.id;
+        historyMap.get(dateStr)!.attempts += Number(row.count);
       }
     });
 

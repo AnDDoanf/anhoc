@@ -732,57 +732,38 @@ router.post('/submit-answer', optionalAuthenticate, async (req, res) => {
         else if (currentDifficulty === "medium") targetDifficulty = "easy";
       }
 
-      // 2. Query matching templates
+      // 2. Fetch ALL candidate templates for this lesson in a single query,
+      //    then pick from the preferred difficulty client-side.
       const lessonId = snapshot.attempt.lesson_id;
       const isFreeOrGuest = !(req as any).user || (req as any).user.role === 'free_student';
       const templateVisibilityWhere = await getVisibleTemplateWhereForViewer((req as any).user);
-      
-      let candidateTemplates = await prisma.questionTemplate.findMany({
+
+      const allTemplates = await prisma.questionTemplate.findMany({
         where: {
           AND: [
             templateVisibilityWhere,
             { lesson_id: lessonId },
-            { difficulty: targetDifficulty }
           ],
           ...(isFreeOrGuest ? { is_premium: false } : {})
         }
       });
 
-      // Fallback difficulty progression
-      if (candidateTemplates.length === 0) {
-        const fallbacks: Record<string, string[]> = {
-          hard: ["medium", "easy"],
-          medium: ["easy", "hard"],
-          easy: ["medium", "hard"]
-        };
-        for (const fbDifficulty of fallbacks[targetDifficulty] ?? []) {
-          candidateTemplates = await prisma.questionTemplate.findMany({
-            where: {
-              AND: [
-                templateVisibilityWhere,
-                { lesson_id: lessonId },
-                { difficulty: fbDifficulty }
-              ],
-              ...(isFreeOrGuest ? { is_premium: false } : {})
-            }
-          });
-          if (candidateTemplates.length > 0) {
-            break;
-          }
-        }
-      }
+      // Prioritize by difficulty: target first, then fallbacks, then any
+      const difficultyOrder: Record<string, string[]> = {
+        hard: ["hard", "medium", "easy"],
+        medium: [targetDifficulty, ...(targetDifficulty === "medium" ? ["easy", "hard"] : ["medium", "hard"])],
+        easy: ["easy", "medium", "hard"],
+      };
+      const priorities = difficultyOrder[targetDifficulty] ?? [targetDifficulty, "easy", "medium", "hard"];
 
-      // If we still found nothing, fall back to any templates at all for the lesson
+      let candidateTemplates: typeof allTemplates = [];
+      for (const diff of priorities) {
+        candidateTemplates = allTemplates.filter(t => t.difficulty === diff);
+        if (candidateTemplates.length > 0) break;
+      }
+      // Ultimate fallback: use any available template
       if (candidateTemplates.length === 0) {
-        candidateTemplates = await prisma.questionTemplate.findMany({
-          where: {
-            AND: [
-              templateVisibilityWhere,
-              { lesson_id: lessonId }
-            ],
-            ...(isFreeOrGuest ? { is_premium: false } : {})
-          }
-        });
+        candidateTemplates = allTemplates;
       }
 
       // 3. Randomly pick one template from candidates and generate variables

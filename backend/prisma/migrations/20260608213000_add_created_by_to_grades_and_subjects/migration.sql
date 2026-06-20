@@ -1,0 +1,2 @@
+ALTER TABLE "grades" ADD COLUMN IF NOT EXISTS "created_by" UUID;
+ALTER TABLE "subjects" ADD COLUMN IF NOT EXISTS "created_by" UUID;

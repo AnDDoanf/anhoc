@@ -46,28 +46,33 @@ export const masteryService = {
   },
 
   /**
-   * Tracks study time (when user just reads the lesson content)
+   * Tracks study time (when user just reads the lesson content).
+   * Pre-fetches current status to avoid a nested read inside the upsert write.
    */
   trackStudyTime: async (userId: string, lessonId: string, seconds: number) => {
+    const current = await prisma.userLessonMastery.findUnique({
+      where: { user_id_lesson_id: { user_id: userId, lesson_id: lessonId } },
+      select: { completion_status: true },
+    });
+
+    const nextStatus = current?.completion_status === "completed"
+      ? "completed"
+      : "in_progress";
+
     await prisma.userLessonMastery.upsert({
       where: { user_id_lesson_id: { user_id: userId, lesson_id: lessonId } },
       update: {
         total_study_time: { increment: seconds },
-        completion_status: {
-           // If not completed yet, mark as in_progress
-           set: (await prisma.userLessonMastery.findUnique({ 
-             where: { user_id_lesson_id: { user_id: userId, lesson_id: lessonId } } 
-           }))?.completion_status === "completed" ? "completed" : "in_progress"
-        },
-        last_activity_at: new Date()
+        completion_status: nextStatus,
+        last_activity_at: new Date(),
       },
       create: {
         user_id: userId,
         lesson_id: lessonId,
         total_study_time: seconds,
         completion_status: "in_progress",
-        last_activity_at: new Date()
-      }
+        last_activity_at: new Date(),
+      },
     });
   }
 };

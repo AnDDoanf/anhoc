@@ -1,0 +1,5 @@
+ALTER TABLE "users"
+  ADD COLUMN IF NOT EXISTS "supervisor_id" UUID,
+  ADD COLUMN IF NOT EXISTS "max_templates" INTEGER,
+  ADD COLUMN IF NOT EXISTS "max_teachers" INTEGER,
+  ADD COLUMN IF NOT EXISTS "max_students" INTEGER;

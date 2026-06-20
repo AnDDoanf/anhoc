@@ -5,6 +5,7 @@ export default defineConfig({
   schema: './prisma/schema.prisma',
   datasource: {
     url: env('DATABASE_URL'),
+    shadowDatabaseUrl: process.env.SHADOW_DATABASE_URL || undefined,
   },
   migrations: {
     seed: 'tsx prisma/seed.ts',

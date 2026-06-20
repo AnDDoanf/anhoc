@@ -1,7 +1,7 @@
 import './lib/env.ts';
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import cors from 'cors';
-import prisma, { describeDatabaseTarget } from './lib/db.ts';
+import prisma, { describeDatabaseTarget, shutdownPool, getPoolStats } from './lib/db.ts';
 
 import authRoutes from './routes/auth.ts';
 import lessonRoutes from './routes/lessons.ts';
@@ -96,8 +96,10 @@ async function main() {
   try {
     await prisma.$connect();
     const dbTarget = describeDatabaseTarget();
+    const poolStats = getPoolStats();
     console.log(`Connected to PostgreSQL via Prisma (${dbTarget.via})`);
     console.log(`Database target: host=${dbTarget.host} db=${dbTarget.database}`);
+    console.log(`Pool stats: total=${poolStats.totalCount} idle=${poolStats.idleCount} waiting=${poolStats.waitingCount}`);
     scheduleInactiveAccountCleanup();
     startQueueWorkers();
 
@@ -106,9 +108,27 @@ async function main() {
       console.log('Achievements seeded');
     }
 
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`Server is running at http://localhost:${PORT}`);
     });
+
+    // ── Graceful Shutdown ──────────────────────────────────────────
+    const shutdown = async (signal: string) => {
+      console.log(`\n${signal} received — shutting down gracefully…`);
+      server.close(async () => {
+        await shutdownPool();
+        console.log('Server closed.');
+        process.exit(0);
+      });
+      // Force exit after 10 seconds if graceful shutdown stalls
+      setTimeout(() => {
+        console.error('Graceful shutdown timed out — forcing exit');
+        process.exit(1);
+      }, 10_000);
+    };
+
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
   } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);

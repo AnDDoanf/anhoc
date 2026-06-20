@@ -373,10 +373,10 @@ Status: partially implemented in the app. Core XP, achievements, daily streak UI
 
 ### PostgreSQL
 
-* [ ] Connection pooling
-* [ ] Index audit
-* [ ] Query optimization
-* [ ] Slow query logging
+* [x] Connection pooling
+* [x] Index audit
+* [x] Query optimization
+* [x] Slow query logging
 
 ### MongoDB
 
