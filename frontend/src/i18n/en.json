@@ -15,6 +15,7 @@
     "confirm": "Confirm",
     "cancel": "Cancel",
     "syncingProfile": "Syncing your profile...",
+    "syncingProfileDesc": "Please wait while we set up your secure session.",
     "accessDenied": "Access Denied",
     "requiredFound": "Required: {required} | Found: {found}",
     "backToHome": "Back to Home",
@@ -189,6 +190,12 @@
     "learn_unit_code_hint": "Required if your account belongs to a learning unit.",
     "use_learn_unit_code": "Log in with unit code",
     "hide_learn_unit_code": "Hide this login option",
+    "google_sign_in": "Continue with Google",
+    "facebook_sign_in": "Continue with Facebook",
+    "microsoft_sign_in": "Continue with Microsoft Outlook",
+    "or_continue_with": "Or continue with",
+    "facebook": "Facebook",
+    "outlook": "Outlook",
     "errors": {
       "identifier_required": "Email or login ID is required",
       "invalid_email": "Invalid email address",
@@ -281,6 +288,7 @@
     "accountSettings": "Account Settings",
     "signOut": "Sign Out",
     "signUp": "Sign Up",
+    "signIn": "Sign In",
     "guestRole": "Guest",
     "guestName": "guest",
     "userSettings": "User Settings",
@@ -328,7 +336,17 @@
         "newFollowerTitle": "New follower",
         "newFollowerBody": "{actor} started following you."
       }
-    }
+    },
+    "linkedAccounts": "Linked Accounts",
+    "linkedAccountsDesc": "Manage your external logins and bind them to your account.",
+    "linkAccount": "Link",
+    "unlinkAccount": "Unlink",
+    "linkSuccess": "Account linked successfully!",
+    "unlinkSuccess": "Account unlinked successfully!",
+    "alreadyLinked": "This account is already linked to another user.",
+    "oauthError": "An error occurred during social account verification.",
+    "connected": "Connected",
+    "notConnected": "Not connected"
   },
   "Sidebar": {
     "administrator": "Administrator",

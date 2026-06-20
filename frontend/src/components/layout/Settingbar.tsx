@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
 import LanguageToggle from "../ui/LanguageToggle";
 import ThemeToggle from "../ui/ThemeToggle";
-import { Settings, LogOut, ChevronDown, UserCog, Bell, CheckCheck } from "lucide-react";
+import { Settings, LogOut, LogIn, ChevronDown, UserCog, Bell, CheckCheck } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { AppNotification, notificationService } from "@/services/notificationService";
 
@@ -381,18 +381,33 @@ export default function SettingBar() {
 
               <div className="space-y-1">
                 {isGuest ? (
-                  <Link
-                    prefetch={false}
-                    href="/signup"
-                    className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-sol-text transition-all hover:bg-sol-bg group/item"
-                    onClick={() => setActivePanel(null)}
-                  >
-                    <UserCog
-                      size={18}
-                      className="text-sol-muted transition-colors group-hover/item:text-sol-accent"
-                    />
-                    <span className="flex-1 font-bold">{t("signUp")}</span>
-                  </Link>
+                  <>
+                    <Link
+                      prefetch={false}
+                      href="/login"
+                      className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-sol-text transition-all hover:bg-sol-bg group/item"
+                      onClick={() => setActivePanel(null)}
+                    >
+                      <LogIn
+                        size={18}
+                        className="text-sol-muted transition-colors group-hover/item:text-sol-accent"
+                      />
+                      <span className="flex-1 font-bold">{t("signIn")}</span>
+                    </Link>
+
+                    <Link
+                      prefetch={false}
+                      href="/signup"
+                      className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-sol-text transition-all hover:bg-sol-bg group/item"
+                      onClick={() => setActivePanel(null)}
+                    >
+                      <UserCog
+                        size={18}
+                        className="text-sol-muted transition-colors group-hover/item:text-sol-accent"
+                      />
+                      <span className="flex-1 font-bold">{t("signUp")}</span>
+                    </Link>
+                  </>
                 ) : (
                   <>
                     <Link

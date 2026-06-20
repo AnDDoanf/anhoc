@@ -15,6 +15,7 @@
     "confirm": "Xác nhận",
     "cancel": "Hủy",
     "syncingProfile": "Đang đồng bộ hồ sơ...",
+    "syncingProfileDesc": "Vui lòng chờ trong khi chúng tôi thiết lập phiên làm việc an toàn của bạn.",
     "accessDenied": "Không có quyền truy cập",
     "requiredFound": "Yêu cầu: {required} | Hiện tại: {found}",
     "backToHome": "Quay về trang chủ",
@@ -188,6 +189,12 @@
     "learn_unit_code_hint": "Bắt buộc nếu tài khoản của bạn thuộc về một đơn vị học tập.",
     "use_learn_unit_code": "Đăng nhập bằng mã đơn vị",
     "hide_learn_unit_code": "Ẩn tùy chọn đăng nhập này",
+    "google_sign_in": "Tiếp tục với Google",
+    "facebook_sign_in": "Tiếp tục với Facebook",
+    "microsoft_sign_in": "Tiếp tục với Microsoft Outlook",
+    "or_continue_with": "Hoặc tiếp tục bằng",
+    "facebook": "Facebook",
+    "outlook": "Outlook",
     "errors": {
       "identifier_required": "Vui lòng nhập email hoặc mã đăng nhập",
       "invalid_email": "Địa chỉ email không hợp lệ",
@@ -254,8 +261,19 @@
       }
     },
     "signUp": "Đăng ký",
+    "signIn": "Đăng nhập",
     "guestRole": "Khách",
-    "guestName": "guest"
+    "guestName": "guest",
+    "linkedAccounts": "Tài khoản liên kết",
+    "linkedAccountsDesc": "Quản lý các tài khoản liên kết và đăng nhập bằng tài khoản mạng xã hội của bạn.",
+    "linkAccount": "Liên kết",
+    "unlinkAccount": "Hủy liên kết",
+    "linkSuccess": "Liên kết tài khoản thành công!",
+    "unlinkSuccess": "Hủy liên kết tài khoản thành công!",
+    "alreadyLinked": "Tài khoản mạng xã hội này đã được liên kết với người dùng khác.",
+    "oauthError": "Đã xảy ra lỗi khi xác thực tài khoản mạng xã hội.",
+    "connected": "Đã kết nối",
+    "notConnected": "Chưa kết nối"
   },
   "Sidebar": {
     "administrator": "Quản trị",

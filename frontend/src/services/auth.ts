@@ -32,6 +32,12 @@ export interface AuthUser {
   learn_unit_id?: string | null;
   learn_unit?: LearnUnitSummary | null;
   slots_purchased?: number;
+  oauth_accounts?: Array<{
+    id: string;
+    provider: string;
+    provider_user_id: string;
+    created_at: string;
+  }>;
 }
 
 export interface AuthProfile extends AuthUser {
@@ -206,6 +212,11 @@ export const authService = {
 
   updateAvatar: async (avatar: string): Promise<{ message: string; avatar_url: string }> => {
     const response = await api.post<{ message: string; avatar_url: string }>("/auth/avatar", { avatar });
+    return response.data;
+  },
+
+  unlinkProvider: async (provider: string): Promise<{ message: string }> => {
+    const response = await api.delete<{ message: string }>(`/auth/oauth/${provider}`);
     return response.data;
   }
 };

@@ -24,6 +24,14 @@ import {
   saveUserIdentity,
 } from "../services/userIdentityService.ts";
 import { createRateLimiter } from "../middleware/rateLimiter.ts";
+import {
+  getGoogleAuthUrl,
+  getGoogleProfile,
+  getFacebookAuthUrl,
+  getFacebookProfile,
+  getMicrosoftAuthUrl,
+  getMicrosoftProfile,
+} from "../services/oauthService.ts";
 
 const router = Router();
 const SELF_SERVICE_SIGNUP_ROLE_NAMES = ["free_student", "sub_student", "supervisor"] as const;
@@ -682,6 +690,389 @@ router.post("/login", loginLimiter, async (req: Request, res: Response) => {
   }
 });
 
+// Helper for handling OAuth login/registration
+const handleOAuthUserLogin = async (
+  profile: { id: string; email: string; name: string; avatarUrl?: string },
+  provider: "google" | "facebook" | "microsoft"
+) => {
+  const email = profile.email.toLowerCase().trim();
+
+  const userIncludes = {
+    role: {
+      include: {
+        permissions: {
+          include: {
+            action: true,
+            resource: true,
+          },
+        },
+      },
+    },
+    learn_unit: true,
+    supervised_learn_unit: true,
+    learning_profile: true,
+    security: true,
+    oauth_accounts: true,
+  };
+
+  // Prioritize finding user by explicit OAuth account link
+  let user = await prisma.user.findFirst({
+    where: {
+      oauth_accounts: {
+        some: { provider, provider_user_id: profile.id }
+      }
+    },
+    include: userIncludes
+  });
+
+  // Fallback to finding user by matching email if no direct link exists yet
+  if (!user) {
+    user = await prisma.user.findFirst({
+      where: { email },
+      include: userIncludes
+    });
+  }
+
+  const now = new Date();
+
+  if (user) {
+    // User exists. Update avatar if missing.
+    const updates: any = {};
+    if (!user.avatar_url && profile.avatarUrl) {
+      updates.avatar_url = profile.avatarUrl;
+    }
+
+    // Link this provider if not already linked
+    const alreadyLinked = user.oauth_accounts.some(acc => acc.provider === provider && acc.provider_user_id === profile.id);
+    if (!alreadyLinked) {
+      updates.oauth_accounts = {
+        create: {
+          provider,
+          provider_user_id: profile.id
+        }
+      };
+    }
+
+    if (user.account_status === "inactive") {
+      updates.account_status = "active";
+      if (!user.security?.email_verified_at) {
+        updates.security = {
+          update: {
+            email_verified_at: now,
+            first_login_at: now,
+            inactive_cleanup_at: null,
+          }
+        };
+      }
+    }
+
+    let updatedUser = user;
+    if (Object.keys(updates).length > 0) {
+      updatedUser = await prisma.user.update({
+        where: { id: user.id },
+        data: updates,
+        include: {
+          role: {
+            include: {
+              permissions: {
+                include: {
+                  action: true,
+                  resource: true,
+                },
+              },
+            },
+          },
+          learn_unit: true,
+          supervised_learn_unit: true,
+          learning_profile: true,
+          security: true,
+          oauth_accounts: true,
+        }
+      });
+    }
+
+    await prisma.auditLog.create({
+      data: {
+        user_id: user.id,
+        event_type: "LOGIN",
+        metadata: { oauth_provider: provider },
+      }
+    });
+
+    return await createAuthPayload(updatedUser);
+  } else {
+    // New user registration
+    const roleRecord = await prisma.role.findUnique({
+      where: { name: "free_student" }
+    });
+
+    if (!roleRecord) {
+      throw new Error("Default role 'free_student' not found in database");
+    }
+
+    const firstName = profile.name.split(" ")[0] || "Student";
+    const lastName = profile.name.split(" ").slice(1).join(" ") || "User";
+    const username = await createUniqueDisplayName(profile.name, email.split("@")[0]);
+    const loginId = await createUniqueLoginId(firstName, lastName, username);
+
+    const randomPassword = crypto.randomBytes(32).toString("hex");
+    const passwordHash = await bcrypt.hash(randomPassword, 10);
+
+    const newUser = await prisma.$transaction(async (tx) => {
+      const createdUser = await tx.user.create({
+        data: {
+          username,
+          email,
+          password_hash: passwordHash,
+          role_id: roleRecord.id,
+          account_status: "active",
+          avatar_url: profile.avatarUrl || null,
+          oauth_accounts: {
+            create: {
+              provider,
+              provider_user_id: profile.id
+            }
+          },
+          security: {
+            create: {
+              email_verified_at: now,
+              first_login_at: now,
+              inactive_cleanup_at: null,
+            }
+          },
+          learning_profile: {
+            create: {}
+          }
+        }
+      });
+
+      await saveUserIdentity(tx as typeof prisma, createdUser.id, {
+        firstName,
+        lastName,
+        loginId,
+      });
+
+      await tx.studentStats.create({
+        data: { user_id: createdUser.id },
+      });
+
+      return createdUser;
+    });
+
+    const userWithRelations = await prisma.user.findUnique({
+      where: { id: newUser.id },
+      include: {
+        role: {
+          include: {
+            permissions: {
+              include: {
+                action: true,
+                resource: true,
+              },
+            },
+          },
+        },
+        learn_unit: true,
+        supervised_learn_unit: true,
+        learning_profile: true,
+        security: true,
+        oauth_accounts: true,
+      }
+    });
+
+    if (!userWithRelations) {
+      throw new Error("Failed to load newly created OAuth user");
+    }
+
+    await prisma.auditLog.create({
+      data: {
+        user_id: userWithRelations.id,
+        event_type: "FIRST_LOGIN",
+        metadata: { oauth_provider: provider, register: true },
+      }
+    });
+
+    return await createAuthPayload(userWithRelations);
+  }
+};
+
+// OAuth redirect endpoints
+router.get("/google", (req: Request, res: Response) => {
+  const backendUrl = process.env.BACKEND_URL || "http://localhost:5001";
+  const redirectUri = `${backendUrl}/api/v1/auth/google/callback`;
+  const state = (req.query.state as string) || "login";
+  
+  if (!process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID === "your_google_client_id") {
+    return res.redirect(`${redirectUri}?code=mock_code&state=${state}`);
+  }
+
+  const url = getGoogleAuthUrl(redirectUri, state);
+  res.redirect(url);
+});
+
+router.get("/facebook", (req: Request, res: Response) => {
+  const backendUrl = process.env.BACKEND_URL || "http://localhost:5001";
+  const redirectUri = `${backendUrl}/api/v1/auth/facebook/callback`;
+  const state = (req.query.state as string) || "login";
+
+  if (!process.env.FACEBOOK_CLIENT_ID || process.env.FACEBOOK_CLIENT_ID === "your_facebook_client_id") {
+    return res.redirect(`${redirectUri}?code=mock_code&state=${state}`);
+  }
+
+  const url = getFacebookAuthUrl(redirectUri, state);
+  res.redirect(url);
+});
+
+router.get("/microsoft", (req: Request, res: Response) => {
+  const backendUrl = process.env.BACKEND_URL || "http://localhost:5001";
+  const redirectUri = `${backendUrl}/api/v1/auth/microsoft/callback`;
+  const state = (req.query.state as string) || "login";
+
+  if (!process.env.MICROSOFT_CLIENT_ID || process.env.MICROSOFT_CLIENT_ID === "your_microsoft_client_id") {
+    return res.redirect(`${redirectUri}?code=mock_code&state=${state}`);
+  }
+
+  const url = getMicrosoftAuthUrl(redirectUri, state);
+  res.redirect(url);
+});
+
+// Common logic to handle linked accounts flow vs login flow
+const handleOAuthCallback = async (
+  req: Request,
+  res: Response,
+  provider: "google" | "facebook" | "microsoft",
+  profile: { id: string; email: string; name: string; avatarUrl?: string }
+) => {
+  const state = req.query.state as string;
+  const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5000").replace(/\/+$/, "");
+
+  let linkUserId: string | null = null;
+  if (state && state !== "login") {
+    try {
+      const decoded = jwt.verify(state, JWT_SECRET!) as { id: string };
+      linkUserId = decoded.id;
+    } catch (err) {
+      console.warn("Invalid JWT in OAuth state parameter, ignoring linking:", err);
+    }
+  }
+
+  if (linkUserId) {
+    // linking flow
+    const existingLink = await prisma.oAuthAccount.findUnique({
+      where: {
+        provider_provider_user_id: {
+          provider,
+          provider_user_id: profile.id
+        }
+      }
+    });
+
+    if (existingLink) {
+      if (existingLink.user_id === linkUserId) {
+        return res.redirect(`${frontendUrl}/student/settings?success=linked`);
+      } else {
+        return res.redirect(`${frontendUrl}/student/settings?error=already_linked_to_other`);
+      }
+    }
+
+    await prisma.oAuthAccount.create({
+      data: {
+        user_id: linkUserId,
+        provider,
+        provider_user_id: profile.id
+      }
+    });
+
+    await cacheDel(`user:profile:${linkUserId}`);
+    return res.redirect(`${frontendUrl}/student/settings?success=linked`);
+  } else {
+    // normal login/signup flow
+    const authPayload = await handleOAuthUserLogin(profile, provider);
+    return res.redirect(
+      `${frontendUrl}/oauth-success?token=${authPayload.token}&refreshToken=${authPayload.refreshToken}`
+    );
+  }
+};
+
+// OAuth callback endpoints
+router.get("/google/callback", async (req: Request, res: Response) => {
+  const code = req.query.code as string;
+  const backendUrl = process.env.BACKEND_URL || "http://localhost:5001";
+  const redirectUri = `${backendUrl}/api/v1/auth/google/callback`;
+  const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5000").replace(/\/+$/, "");
+
+  if (!code) {
+    return res.redirect(`${frontendUrl}/login?error=no_code_provided`);
+  }
+
+  try {
+    const profile = await getGoogleProfile(code, redirectUri);
+    await handleOAuthCallback(req, res, "google", profile);
+  } catch (error) {
+    console.error("Google OAuth Callback Error:", error);
+    return res.redirect(`${frontendUrl}/login?error=google_oauth_failed`);
+  }
+});
+
+router.get("/facebook/callback", async (req: Request, res: Response) => {
+  const code = req.query.code as string;
+  const backendUrl = process.env.BACKEND_URL || "http://localhost:5001";
+  const redirectUri = `${backendUrl}/api/v1/auth/facebook/callback`;
+  const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5000").replace(/\/+$/, "");
+
+  if (!code) {
+    return res.redirect(`${frontendUrl}/login?error=no_code_provided`);
+  }
+
+  try {
+    const profile = await getFacebookProfile(code, redirectUri);
+    await handleOAuthCallback(req, res, "facebook", profile);
+  } catch (error) {
+    console.error("Facebook OAuth Callback Error:", error);
+    return res.redirect(`${frontendUrl}/login?error=facebook_oauth_failed`);
+  }
+});
+
+router.get("/microsoft/callback", async (req: Request, res: Response) => {
+  const code = req.query.code as string;
+  const backendUrl = process.env.BACKEND_URL || "http://localhost:5001";
+  const redirectUri = `${backendUrl}/api/v1/auth/microsoft/callback`;
+  const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5000").replace(/\/+$/, "");
+
+  if (!code) {
+    return res.redirect(`${frontendUrl}/login?error=no_code_provided`);
+  }
+
+  try {
+    const profile = await getMicrosoftProfile(code, redirectUri);
+    await handleOAuthCallback(req, res, "microsoft", profile);
+  } catch (error) {
+    console.error("Microsoft OAuth Callback Error:", error);
+    return res.redirect(`${frontendUrl}/login?error=microsoft_oauth_failed`);
+  }
+});
+
+// OAuth unlink endpoint
+router.delete("/oauth/:provider", authenticate, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as Request & { user: { id: string } }).user.id;
+    const provider = String(req.params.provider);
+
+    await prisma.oAuthAccount.deleteMany({
+      where: {
+        user_id: userId,
+        provider: provider
+      }
+    });
+
+    await cacheDel(`user:profile:${userId}`);
+    res.json({ message: `Successfully unlinked ${provider} account.` });
+  } catch (error) {
+    console.error("Unlink OAuth account error:", error);
+    res.status(500).json({ error: "Failed to unlink account" });
+  }
+});
+
 router.patch("/subject-preference", authenticate, async (req: Request, res: Response) => {
   try {
     const userId = (req as Request & { user: { id: string } }).user.id;
@@ -805,6 +1196,7 @@ router.get("/profile", authenticate, async (req: Request, res: Response) => {
         security: true,
         learn_unit: true,
         supervised_learn_unit: true,
+        oauth_accounts: true,
       },
     });
 
@@ -839,6 +1231,12 @@ router.get("/profile", authenticate, async (req: Request, res: Response) => {
       learn_unit_id: user.learn_unit_id,
       learn_unit: serializeLearnUnit(user.learn_unit || user.supervised_learn_unit),
       slots_purchased: user.slots_purchased,
+      oauth_accounts: user.oauth_accounts.map(acc => ({
+        id: acc.id,
+        provider: acc.provider,
+        provider_user_id: acc.provider_user_id,
+        created_at: acc.created_at,
+      })),
     };
 
     await cacheSet(cacheKey, profilePayload, 3600);
