@@ -966,15 +966,61 @@ router.get("/microsoft", (req: Request, res: Response) => {
   res.redirect(url);
 });
 
+// Deduplication helper to prevent concurrent/duplicate OAuth requests (e.g., from browser double-requests)
+const oauthPendingRequests = new Map<string, Promise<string>>();
+
+async function deduplicateOAuth(
+  code: string,
+  execute: () => Promise<string>
+): Promise<string> {
+  // 1. Check in-memory map first (covers concurrent requests on the same instance)
+  if (oauthPendingRequests.has(code)) {
+    return oauthPendingRequests.get(code)!;
+  }
+
+  // 2. Check Redis cache for already processed codes (covers requests that completed, or different instances)
+  const redisKey = `oauth:code:${code}`;
+  try {
+    const cachedUrl = await cacheGet<string>(redisKey);
+    if (cachedUrl) {
+      return cachedUrl;
+    }
+  } catch (err) {
+    console.warn("Failed to read from Redis cache in oauth deduplication:", err);
+  }
+
+  const promise = (async () => {
+    const url = await execute();
+    // Cache the result in Redis for 60 seconds
+    try {
+      await cacheSet(redisKey, url, 60);
+    } catch (err) {
+      console.warn("Failed to write to Redis cache in oauth deduplication:", err);
+    }
+    return url;
+  })().catch((err) => {
+    oauthPendingRequests.delete(code);
+    throw err;
+  });
+
+  oauthPendingRequests.set(code, promise);
+
+  // Clean up in-memory map after 60 seconds to avoid memory leaks
+  setTimeout(() => {
+    oauthPendingRequests.delete(code);
+  }, 60000);
+
+  return promise;
+}
+
 // Common logic to handle linked accounts flow vs login flow
 const handleOAuthCallback = async (
   req: Request,
-  res: Response,
   provider: "google" | "facebook" | "microsoft",
   profile: { id: string; email: string; name: string; avatarUrl?: string },
   state: string,
   frontendUrl: string
-) => {
+): Promise<string> => {
   let linkUserId: string | null = null;
   if (state && state !== "login") {
     try {
@@ -1010,9 +1056,9 @@ const handleOAuthCallback = async (
 
     if (existingLink) {
       if (existingLink.user_id === linkUserId) {
-        return res.redirect(`${frontendUrl}/student/settings?success=linked`);
+        return `${frontendUrl}/student/settings?success=linked`;
       } else {
-        return res.redirect(`${frontendUrl}/student/settings?error=already_linked_to_other`);
+        return `${frontendUrl}/student/settings?error=already_linked_to_other`;
       }
     }
 
@@ -1025,13 +1071,11 @@ const handleOAuthCallback = async (
     });
 
     await cacheDel(`user:profile:${linkUserId}`);
-    return res.redirect(`${frontendUrl}/student/settings?success=linked`);
+    return `${frontendUrl}/student/settings?success=linked`;
   } else {
     // normal login/signup flow
     const authPayload = await handleOAuthUserLogin(profile, provider);
-    return res.redirect(
-      `${frontendUrl}/oauth-success?token=${authPayload.token}&refreshToken=${authPayload.refreshToken}`
-    );
+    return `${frontendUrl}/oauth-success?token=${authPayload.token}&refreshToken=${authPayload.refreshToken}`;
   }
 };
 
@@ -1062,8 +1106,11 @@ router.get("/google/callback", async (req: Request, res: Response) => {
   }
 
   try {
-    const profile = await getGoogleProfile(code, redirectUri);
-    await handleOAuthCallback(req, res, "google", profile, state, frontendUrl);
+    const redirectUrl = await deduplicateOAuth(code, async () => {
+      const profile = await getGoogleProfile(code, redirectUri);
+      return await handleOAuthCallback(req, "google", profile, state, frontendUrl);
+    });
+    return res.redirect(redirectUrl);
   } catch (error) {
     console.error("Google OAuth Callback Error:", error);
     return res.redirect(`${frontendUrl}/login?error=google_oauth_failed`);
@@ -1096,8 +1143,11 @@ router.get("/facebook/callback", async (req: Request, res: Response) => {
   }
 
   try {
-    const profile = await getFacebookProfile(code, redirectUri);
-    await handleOAuthCallback(req, res, "facebook", profile, state, frontendUrl);
+    const redirectUrl = await deduplicateOAuth(code, async () => {
+      const profile = await getFacebookProfile(code, redirectUri);
+      return await handleOAuthCallback(req, "facebook", profile, state, frontendUrl);
+    });
+    return res.redirect(redirectUrl);
   } catch (error) {
     console.error("Facebook OAuth Callback Error:", error);
     return res.redirect(`${frontendUrl}/login?error=facebook_oauth_failed`);
@@ -1130,8 +1180,11 @@ router.get("/microsoft/callback", async (req: Request, res: Response) => {
   }
 
   try {
-    const profile = await getMicrosoftProfile(code, redirectUri);
-    await handleOAuthCallback(req, res, "microsoft", profile, state, frontendUrl);
+    const redirectUrl = await deduplicateOAuth(code, async () => {
+      const profile = await getMicrosoftProfile(code, redirectUri);
+      return await handleOAuthCallback(req, "microsoft", profile, state, frontendUrl);
+    });
+    return res.redirect(redirectUrl);
   } catch (error) {
     console.error("Microsoft OAuth Callback Error:", error);
     return res.redirect(`${frontendUrl}/login?error=microsoft_oauth_failed`);
