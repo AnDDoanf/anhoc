@@ -13,9 +13,10 @@ import { getBackendUrl } from "@/services/api";
 
 type SettingBarProps = {
   scrollContainerId?: string;
+  mobileAlignment?: "center" | "right";
 };
 
-export default function SettingBar({ scrollContainerId }: SettingBarProps) {
+export default function SettingBar({ scrollContainerId, mobileAlignment }: SettingBarProps) {
   const t = useTranslations("Settings");
   const locale = useLocale();
   const [activePanel, setActivePanel] = useState<"settings" | "notifications" | null>(null);
@@ -220,10 +221,14 @@ export default function SettingBar({ scrollContainerId }: SettingBarProps) {
     }
   }, []);
 
+  const alignmentClass = mobileAlignment === "center"
+    ? "left-1/2 -translate-x-1/2 right-auto sm:left-auto sm:translate-x-0 sm:right-6"
+    : "right-3 sm:right-6";
+
   return (
     <div 
       ref={containerRef}
-      className={`fixed top-3 right-3 sm:top-4 sm:right-6 z-50 transition-all duration-300 ${isVisible || activePanel ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none"}`}
+      className={`fixed top-3 sm:top-4 z-50 transition-all duration-300 ${alignmentClass} ${isVisible || activePanel ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none"}`}
     >
       <div className="relative flex flex-col items-end">
         <div className="flex items-center gap-3">
