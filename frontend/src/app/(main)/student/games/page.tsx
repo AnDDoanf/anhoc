@@ -235,7 +235,10 @@ export default function GamesHubPage() {
                     <select
                       value={`${selectedContext.type}-${selectedContext.id}`}
                       onChange={(e) => {
-                        const [type, id] = e.target.value.split('-');
+                        const val = e.target.value;
+                        const idx = val.indexOf('-');
+                        const type = val.substring(0, idx);
+                        const id = val.substring(idx + 1);
                         setSelectedContext({
                           type: type as 'lesson' | 'grade',
                           id: type === 'grade' ? Number(id) : id
