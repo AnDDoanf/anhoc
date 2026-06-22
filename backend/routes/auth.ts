@@ -951,8 +951,20 @@ const handleOAuthCallback = async (
     try {
       const decoded = jwt.verify(state, JWT_SECRET!) as { id: string };
       linkUserId = decoded.id;
+      try {
+        fs.appendFileSync(
+          path.join(process.cwd(), "oauth_debug.log"),
+          `[${new Date().toISOString()}] Successfully decoded JWT: ${linkUserId}\n`
+        );
+      } catch {}
     } catch (err) {
       console.warn("Invalid JWT in OAuth state parameter, ignoring linking:", err);
+      try {
+        fs.appendFileSync(
+          path.join(process.cwd(), "oauth_debug.log"),
+          `[${new Date().toISOString()}] State: ${state}\nError: ${err instanceof Error ? err.stack : err}\n`
+        );
+      } catch {}
     }
   }
 
