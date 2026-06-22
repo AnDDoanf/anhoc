@@ -1107,6 +1107,7 @@
     "guestOneAttemptNote": "Khách chỉ được tham gia một lần cho mỗi trò chơi chia sẻ.",
     "guestAlreadyJoined": "Trình duyệt này đã dùng lượt tham gia khách cho trò chơi chia sẻ này.",
     "selectGame": "Chọn trò chơi",
+    "selectGameDesc": "Chọn trò chơi từ danh sách để bắt đầu luyện tập.",
     "selectArea": "Chọn bài học hoặc khối lớp",
     "globalRankings": "Bảng xếp hạng toàn cầu",
     "activeLimitStatus": "Trò chơi đang tạo: {current}/{max}",

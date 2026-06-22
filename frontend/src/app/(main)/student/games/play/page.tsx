@@ -21,6 +21,7 @@ import {
   XCircle,
   Copy,
   Check,
+  Play,
   Rocket,
   Scale,
   CircleDot
@@ -107,7 +108,9 @@ function GamePlayroomContent() {
     return getChoiceOptions(currentQuestion, currentQuestion.generated_variables, locale);
   }, [currentQuestion, locale]);
 
-  useEffect(() => {
+  const resetGameSession = useCallback(() => {
+    clearInterval(gameTimerRef.current);
+    clearInterval(countdownTimerRef.current);
     setTimeSpent(0);
     setCurrentScore(0);
     setStreak(0);
@@ -124,7 +127,11 @@ function GamePlayroomContent() {
     setCopied(false);
     setGameState("countdown");
     setCountdown(3);
-  }, [challenge?.id]);
+  }, []);
+
+  useEffect(() => {
+    resetGameSession();
+  }, [challenge?.id, resetGameSession]);
 
   // Load Challenge
   useEffect(() => {
@@ -726,7 +733,15 @@ function GamePlayroomContent() {
               ) : null}
 
               {/* Bottom Action buttons */}
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6 max-w-md mx-auto">
+              <div className="grid w-full max-w-2xl grid-cols-1 gap-4 pt-6 sm:grid-cols-3 mx-auto">
+                <button
+                  onClick={resetGameSession}
+                  className="w-full py-3.5 bg-sol-surface border border-sol-border/30 rounded-xl hover:border-sol-accent hover:text-sol-accent transition-all text-xs font-black uppercase flex items-center justify-center gap-2"
+                >
+                  <Play size={14} fill="currentColor" />
+                  {t("tryAgain")}
+                </button>
+
                 <button
                   onClick={copyLink}
                   className="w-full py-3.5 bg-sol-bg border border-sol-border/30 rounded-xl hover:border-sol-accent hover:text-sol-accent transition-all text-xs font-black uppercase flex items-center justify-center gap-2"

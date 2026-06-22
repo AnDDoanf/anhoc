@@ -19,14 +19,18 @@ import {
   Clock,
   Rocket,
   Scale,
-  CircleDot
+  CircleDot,
+  X,
+  Loader2
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function GamesHubPage() {
   const t = useTranslations("Games");
   const tc = useTranslations("Common");
   const locale = useLocale();
+  const router = useRouter();
   const DEFAULT_PAGE_SIZE = 5;
 
   const [available, setAvailable] = useState<any>({ grades: [], lessons: [] });
@@ -48,6 +52,10 @@ export default function GamesHubPage() {
   const [copied, setCopied] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [archivingChallengeId, setArchivingChallengeId] = useState<string | null>(null);
+
+  const [isGameModalOpen, setIsGameModalOpen] = useState(false);
+  const [gameModalMode, setGameModalMode] = useState<'singleplayer' | 'duel'>('singleplayer');
+  const [loadingGameId, setLoadingGameId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -81,37 +89,48 @@ export default function GamesHubPage() {
     setMyGames(mineData);
   };
 
-  const handleCreateChallenge = async () => {
-    if (!selectedContext.id) return;
-    setCreating(true);
+  const handleOpenChooseGameModal = (mode: 'singleplayer' | 'duel') => {
+    setGameModalMode(mode);
     setCreatedChallenge(null);
-    setCopied(false);
     setCreateError(null);
+    setIsGameModalOpen(true);
+  };
+
+  const handleSelectGameInModal = async (gameId: string) => {
+    if (!selectedContext.id) return;
+    setLoadingGameId(gameId);
     
     try {
-      const payload: any = { game_type: selectedGame };
+      const payload: any = { game_type: gameId };
       if (selectedContext.type === 'lesson') {
         payload.lesson_id = selectedContext.id as string;
       } else {
         payload.grade_id = Number(selectedContext.id);
       }
-
+      
       const challenge = await gameService.createChallenge(payload);
-      setCreatedChallenge(challenge);
-      await refreshMine();
-
-      // Save to local storage of active challenges
-      const stored = localStorage.getItem("active-challenges") || "[]";
-      const challenges = JSON.parse(stored);
-      if (!challenges.includes(challenge.code)) {
-        challenges.unshift(challenge.code);
-        localStorage.setItem("active-challenges", JSON.stringify(challenges.slice(0, 10)));
+      
+      if (gameModalMode === 'singleplayer') {
+        router.push(`/student/games/play?challenge=${challenge.code}`);
+      } else {
+        setCreatedChallenge(challenge);
+        await refreshMine();
+        
+        const stored = localStorage.getItem("active-challenges") || "[]";
+        const challenges = JSON.parse(stored);
+        if (!challenges.includes(challenge.code)) {
+          challenges.unshift(challenge.code);
+          localStorage.setItem("active-challenges", JSON.stringify(challenges.slice(0, 10)));
+        }
+        
+        setIsGameModalOpen(false);
+        setLoadingGameId(null);
       }
     } catch (err: any) {
-      console.error("Failed to create challenge:", err);
+      console.error("Failed to generate challenge from modal:", err);
       setCreateError(err.response?.data?.error || t("createError"));
-    } finally {
-      setCreating(false);
+      setIsGameModalOpen(false);
+      setLoadingGameId(null);
     }
   };
 
@@ -190,94 +209,19 @@ export default function GamesHubPage() {
             {/* Left Col: Setup & Play */}
             <div className="lg:col-span-2 space-y-8">
               
-              {/* Game Selection Grid */}
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
-                {[
-                  {
-                    id: "speed",
-                    title: t("speedTitle"),
-                    desc: t("speedDesc"),
-                    icon: <Zap size={24} className="text-sol-accent" />,
-                    color: "group-hover:border-sol-accent/50"
-                  },
-                  {
-                    id: "climb",
-                    title: t("climbTitle"),
-                    desc: t("climbDesc"),
-                    icon: <Layers size={24} className="text-sol-blue" />,
-                    color: "group-hover:border-sol-blue/50"
-                  },
-                  {
-                    id: "match",
-                    title: t("matchTitle"),
-                    desc: t("matchDesc"),
-                    icon: <BrainCircuit size={24} className="text-sol-orange" />,
-                    color: "group-hover:border-sol-orange/50"
-                  },
-                  {
-                    id: "shooter",
-                    title: t("shooterTitle"),
-                    desc: t("shooterDesc"),
-                    icon: <Rocket size={24} className="text-sol-red" />,
-                    color: "group-hover:border-sol-red/50"
-                  },
-                  {
-                    id: "balance",
-                    title: t("balanceTitle"),
-                    desc: t("balanceDesc"),
-                    icon: <Scale size={24} className="text-sol-cyan" />,
-                    color: "group-hover:border-sol-cyan/50"
-                  },
-                  {
-                    id: "bubbles",
-                    title: t("bubblesTitle"),
-                    desc: t("bubblesDesc"),
-                    icon: <CircleDot size={24} className="text-sol-yellow" />,
-                    color: "group-hover:border-sol-yellow/50"
-                  }
-                ].map((game) => (
-                  <button
-                    key={game.id}
-                    onClick={() => setSelectedGame(game.id)}
-                    className={`group relative overflow-hidden rounded-3xl border bg-sol-surface p-4 text-left transition-all duration-300 sm:h-64 sm:p-6
-                      ${selectedGame === game.id 
-                        ? 'border-sol-accent shadow-xl shadow-sol-accent/5 scale-[1.02]' 
-                        : 'border-sol-border/30 hover:bg-sol-bg'
-                      }
-                    `}
-                  >
-                    <div className="flex min-w-0 items-start justify-between gap-3">
-                      <div className="flex min-w-0 items-center gap-3">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-sol-border/30 bg-sol-bg transition-transform duration-300 group-hover:rotate-6 sm:h-auto sm:w-fit sm:p-3">
-                          {game.icon}
-                        </div>
-                        <h3 className="text-base font-black tracking-tight text-sol-text sm:hidden">{game.title}</h3>
-                      </div>
-                      <ChevronRight size={18} className="mt-1 shrink-0 text-sol-accent sm:hidden" />
-                    </div>
-
-                    <div className="mt-3 min-w-0 space-y-2 sm:mt-0 sm:space-y-3">
-                      <h3 className="hidden text-lg font-black tracking-tight text-sol-text sm:block">{game.title}</h3>
-                      <p className="line-clamp-2 text-xs font-bold leading-relaxed text-sol-muted sm:line-clamp-none">{game.desc}</p>
-                    </div>
-
-                    <div className="mt-3 flex items-center gap-2 text-[11px] font-black uppercase text-sol-accent transition-transform group-hover:translate-x-1 sm:mt-auto sm:pt-4 sm:text-xs">
-                      <Play size={10} fill="currentColor" className="sm:hidden" />
-                      {t("playNow")}
-                      <ChevronRight size={14} />
-                    </div>
-                  </button>
-                ))}
-              </div>
-
-              {/* Challenge Generation Panel */}
+              {/* Play & Setup Panel */}
               <div className="bg-sol-surface border border-sol-border/30 rounded-[2.5rem] p-8 shadow-xl space-y-6 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-sol-accent/5 rounded-full blur-3xl pointer-events-none" />
                 
-                <h2 className="text-xl md:text-2xl font-black text-sol-text tracking-tight flex items-center gap-2">
-                  <Sword className="text-sol-accent" size={24} />
-                  {t("createChallenge")}
-                </h2>
+                <div className="space-y-2">
+                  <h2 className="text-xl md:text-2xl font-black text-sol-text tracking-tight flex items-center gap-2">
+                    <Gamepad2 className="text-sol-accent" size={24} />
+                    {t("playStandard")}
+                  </h2>
+                  <p className="text-sm font-bold text-sol-muted leading-relaxed">
+                    {t("selectArea")}
+                  </p>
+                </div>
 
                 {myGames && (
                   <div className="rounded-2xl border border-sol-border/20 bg-sol-bg px-4 py-3 text-sm font-bold text-sol-muted">
@@ -287,8 +231,7 @@ export default function GamesHubPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
                   {/* Select Context Type */}
-                  <div className="space-y-2">
-                    <label className="text-xs font-black uppercase tracking-wider text-sol-muted">{t("selectArea")}</label>
+                  <div className="space-y-2 md:col-span-2">
                     <select
                       value={`${selectedContext.type}-${selectedContext.id}`}
                       onChange={(e) => {
@@ -317,15 +260,23 @@ export default function GamesHubPage() {
                     </select>
                   </div>
 
-                  {/* Submit Button */}
-                  <div className="flex flex-col justify-end">
+                  {/* Play Buttons */}
+                  <div className="flex flex-col sm:flex-row gap-4 md:col-span-2">
                     <button
-                      onClick={handleCreateChallenge}
-                      disabled={creating || !selectedContext.id || activeLimitReached}
-                      className="px-6 py-4 bg-sol-accent text-sol-bg text-sm font-black uppercase tracking-wider rounded-2xl hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:scale-100 transition-all flex items-center justify-center gap-2 shadow-lg shadow-sol-accent/10"
+                      onClick={() => handleOpenChooseGameModal('singleplayer')}
+                      disabled={!selectedContext.id}
+                      className="flex-grow px-6 py-4 bg-sol-accent text-sol-bg text-sm font-black uppercase tracking-wider rounded-2xl hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:scale-100 transition-all flex items-center justify-center gap-2 shadow-lg shadow-sol-accent/10 cursor-pointer animate-pulse-glow"
                     >
-                      {creating ? t("createBtn") + "..." : t("createBtn")}
+                      <span>{t("playNow")}</span>
                       <Play size={16} fill="currentColor" />
+                    </button>
+                    <button
+                      onClick={() => handleOpenChooseGameModal('duel')}
+                      disabled={!selectedContext.id || activeLimitReached}
+                      className="flex-grow px-6 py-4 bg-sol-surface border border-sol-border/35 text-sol-text text-sm font-black uppercase tracking-wider rounded-2xl hover:border-sol-accent hover:text-sol-accent active:scale-95 disabled:opacity-50 disabled:scale-100 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <span>{t("createChallenge")}</span>
+                      <Sword size={16} />
                     </button>
                   </div>
                 </div>
@@ -552,7 +503,140 @@ export default function GamesHubPage() {
 
           </div>
         )}
+        
+        <ChooseGameModal
+          isOpen={isGameModalOpen}
+          onClose={() => setIsGameModalOpen(false)}
+          onSelectGame={handleSelectGameInModal}
+          loadingGameId={loadingGameId}
+        />
       </div>
     </ProtectedRoute>
+  );
+}
+
+interface ChooseGameModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSelectGame: (gameId: string) => void;
+  loadingGameId: string | null;
+}
+
+function ChooseGameModal({ isOpen, onClose, onSelectGame, loadingGameId }: ChooseGameModalProps) {
+  const t = useTranslations("Games");
+  if (!isOpen) return null;
+
+  const games = [
+    {
+      id: "speed",
+      title: t("speedTitle"),
+      desc: t("speedDesc"),
+      icon: <Zap size={24} className="text-sol-accent" />,
+      color: "hover:border-sol-accent/50"
+    },
+    {
+      id: "climb",
+      title: t("climbTitle"),
+      desc: t("climbDesc"),
+      icon: <Layers size={24} className="text-sol-blue" />,
+      color: "hover:border-sol-blue/50"
+    },
+    {
+      id: "match",
+      title: t("matchTitle"),
+      desc: t("matchDesc"),
+      icon: <BrainCircuit size={24} className="text-sol-orange" />,
+      color: "hover:border-sol-orange/50"
+    },
+    {
+      id: "shooter",
+      title: t("shooterTitle"),
+      desc: t("shooterDesc"),
+      icon: <Rocket size={24} className="text-sol-red" />,
+      color: "hover:border-sol-red/50"
+    },
+    {
+      id: "balance",
+      title: t("balanceTitle"),
+      desc: t("balanceDesc"),
+      icon: <Scale size={24} className="text-sol-cyan" />,
+      color: "hover:border-sol-cyan/50"
+    },
+    {
+      id: "bubbles",
+      title: t("bubblesTitle"),
+      desc: t("bubblesDesc"),
+      icon: <CircleDot size={24} className="text-sol-yellow" />,
+      color: "hover:border-sol-yellow/50"
+    }
+  ];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-sol-bg/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col rounded-[2.5rem] border border-sol-border/30 bg-sol-surface shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+        
+        {/* Header */}
+        <div className="border-b border-sol-border/20 p-6 flex items-center justify-between">
+          <div>
+            <h3 className="text-xl md:text-2xl font-black text-sol-text tracking-tight">
+              {t("selectGame")}
+            </h3>
+            <p className="text-xs md:text-sm font-medium text-sol-muted mt-1">
+              {t("selectGameDesc")}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-xl text-sol-muted hover:text-sol-text hover:bg-sol-bg transition-all cursor-pointer"
+            aria-label="Close"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Content - Scrollable Grid */}
+        <div className="flex-1 overflow-y-auto p-6 md:p-8">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {games.map((game) => {
+              const isLoading = loadingGameId === game.id;
+              return (
+                <button
+                  key={game.id}
+                  onClick={() => onSelectGame(game.id)}
+                  disabled={!!loadingGameId}
+                  className={`group relative overflow-hidden rounded-3xl border bg-sol-bg/40 p-5 text-left transition-all duration-300 min-h-[180px] flex flex-col justify-between cursor-pointer border-sol-border/30 hover:bg-sol-surface hover:shadow-xl
+                    ${game.color}
+                    ${isLoading ? "opacity-75" : ""}
+                  `}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-sol-border/30 bg-sol-surface transition-transform duration-300 group-hover:rotate-6">
+                      {game.icon}
+                    </div>
+                    {isLoading && (
+                      <Loader2 className="animate-spin text-sol-accent" size={18} />
+                    )}
+                  </div>
+
+                  <div className="mt-4 min-w-0 space-y-1">
+                    <h4 className="text-base font-black tracking-tight text-sol-text">
+                      {game.title}
+                    </h4>
+                    <p className="line-clamp-2 text-xs font-semibold leading-relaxed text-sol-muted">
+                      {game.desc}
+                    </p>
+                  </div>
+
+                  <div className="mt-4 flex items-center gap-1.5 text-xs font-black uppercase text-sol-accent transition-transform group-hover:translate-x-1">
+                    <span>{t("playNow")}</span>
+                    <ChevronRight size={14} />
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

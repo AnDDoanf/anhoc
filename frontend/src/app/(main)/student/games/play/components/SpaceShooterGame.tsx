@@ -32,14 +32,15 @@ export default function SpaceShooterGame({
   const t = useTranslations("Games");
   const locale = useLocale();
 
-  const [rocketPos, setRocketPos] = useState({ x: 50, y: 76, rotate: 0 });
+  const [rocketPos, setRocketPos] = useState({ x: 50, y: 82, rotate: 0 });
   const [flightState, setFlightState] = useState<'idle' | 'firing' | 'warping' | 'crashing' | 're-entering'>('idle');
   const [explodedBoxIdx, setExplodedBoxIdx] = useState<number | null>(null);
-  const [laser, setLaser] = useState<{ targetIndex: number; isCorrect: boolean } | null>(null);
+  const [laser, setLaser] = useState<{ targetIndex: number; isCorrect: boolean; targetX: number; targetY: number } | null>(null);
   // High-performance refs to prevent forced reflows and excessive rendering overhead
   const cursorRef = useRef<{ x: number; y: number } | null>(null);
   const arenaRectRef = useRef<DOMRect | null>(null);
   const arenaRef = useRef<HTMLDivElement>(null);
+  const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const flightTimeRef = useRef(0);
 
   const questionType = normalizeQuestionType(question?.template_type);
@@ -61,6 +62,33 @@ export default function SpaceShooterGame({
     ) || false;
   };
 
+  const getLaserOrigin = () => {
+    const rocketNoseOffset = 7;
+    const angleInRadians = (rocketPos.rotate - 90) * (Math.PI / 180);
+
+    return {
+      x: rocketPos.x + Math.cos(angleInRadians) * rocketNoseOffset,
+      y: rocketPos.y + Math.sin(angleInRadians) * rocketNoseOffset,
+    };
+  };
+
+  const getOptionTargetPosition = (index: number) => {
+    const arenaRect = arenaRectRef.current;
+    const optionRect = optionRefs.current[index]?.getBoundingClientRect();
+
+    if (!arenaRect || !optionRect) {
+      return {
+        x: 12.5 + index * 25,
+        y: 28,
+      };
+    }
+
+    return {
+      x: ((optionRect.left + optionRect.width / 2 - arenaRect.left) / arenaRect.width) * 100,
+      y: ((optionRect.top + optionRect.height / 2 - arenaRect.top) / arenaRect.height) * 100,
+    };
+  };
+
   // Re-enter rocket flight on new question load
   useEffect(() => {
     setExplodedBoxIdx(null);
@@ -70,7 +98,7 @@ export default function SpaceShooterGame({
     setRocketPos({ x: 50, y: 120, rotate: 0 });
 
     const reEnterTimeout = setTimeout(() => {
-      setRocketPos({ x: 50, y: 76, rotate: 0 });
+      setRocketPos({ x: 50, y: 82, rotate: 0 });
       setFlightState('idle');
     }, 600);
 
@@ -128,7 +156,7 @@ export default function SpaceShooterGame({
       const driftRotate = Math.sin(nextTime * 0.04) * 8;
 
       const nextX = 50 + driftX;
-      const nextY = 76 + driftY;
+      const nextY = Math.max(72, 82 + driftY);
 
       let nextRotate = driftRotate;
 
@@ -154,16 +182,17 @@ export default function SpaceShooterGame({
     if (flightState !== 'idle' || feedback) return;
 
     const correct = isOptionCorrect(option);
+    const targetPosition = getOptionTargetPosition(index);
     
     // Compute exact aiming vector to meteor column target
-    const targetX = 12.5 + index * 25;
-    const targetY = 15;
+    const targetX = targetPosition.x;
+    const targetY = targetPosition.y;
     const dx = targetX - rocketPos.x;
     const dy = targetY - rocketPos.y;
     const targetAngle = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
 
     setFlightState('firing');
-    setLaser({ targetIndex: index, isCorrect: correct });
+    setLaser({ targetIndex: index, isCorrect: correct, targetX, targetY });
     setRocketPos((prev) => ({ ...prev, rotate: targetAngle }));
 
     if (correct) {
@@ -210,7 +239,7 @@ export default function SpaceShooterGame({
   const isShaking = !feedback && (flightState === 'crashing' || fuel <= 30);
 
   return (
-    <div className="space-y-4 py-4 z-10 flex flex-col justify-between h-full flex-1 relative min-h-[380px]">
+    <div className="space-y-4 py-4 z-10 flex flex-col justify-between h-full flex-1 relative min-h-[440px] sm:min-h-[420px]">
       
       {/* Background space element stars */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-[2rem]">
@@ -246,7 +275,7 @@ export default function SpaceShooterGame({
       {/* Interactive 2D Flight Area */}
       <div 
         ref={arenaRef}
-        className="relative w-full h-[280px] overflow-hidden bg-sol-bg/10 rounded-[2rem] border border-sol-border/10 flex flex-col justify-between p-4 z-10 cursor-crosshair"
+        className="relative w-full h-[360px] sm:h-[320px] overflow-hidden bg-sol-bg/10 rounded-[2rem] border border-sol-border/10 flex flex-col justify-start p-4 z-10 cursor-crosshair"
       >
 
         {/* Question prompt */}
@@ -262,11 +291,14 @@ export default function SpaceShooterGame({
         </div>
         
         {/* Meteor Targets (Drifting top options) */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full relative z-10">
+        <div className="absolute inset-x-4 top-20 z-10 grid grid-cols-2 gap-4 sm:inset-x-6 sm:top-auto sm:bottom-28 sm:grid-cols-4">
           {optionsToRender.map((option, index) => {
             const isExploded = explodedBoxIdx === index;
             return (
               <button
+                ref={(node) => {
+                  optionRefs.current[index] = node;
+                }}
                 key={`${option.label}-${index}`}
                 type="button"
                 onClick={() => handleShootOption(index, option)}
@@ -301,19 +333,22 @@ export default function SpaceShooterGame({
         </div>
 
         {/* Dynamic SVG laser beam line */}
-        {laser && (
+        {laser && (() => {
+          const laserOrigin = getLaserOrigin();
+          return (
           <svg className="absolute inset-0 w-full h-full pointer-events-none z-20" style={{ overflow: 'visible' }}>
             <line 
-              x1={`${rocketPos.x}%`} 
-              y1={`${rocketPos.y}%`} 
-              x2={`${12.5 + laser.targetIndex * 25}%`} 
-              y2="15%" 
+              x1={`${laserOrigin.x}%`} 
+              y1={`${laserOrigin.y}%`} 
+              x2={`${laser.targetX}%`} 
+              y2={`${laser.targetY}%`} 
               stroke="#dc322f" 
               strokeWidth="4" 
               className="animate-laser-fire drop-shadow-[0_0_8px_#dc322f]" 
             />
           </svg>
-        )}
+          );
+        })()}
 
         {/* Steering Bouncing Spaceship (2D Flight positioning) */}
         <div 

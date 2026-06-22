@@ -1172,6 +1172,7 @@
     "guestOneAttemptNote": "Guests can join one time per shared game.",
     "guestAlreadyJoined": "This browser has already used its guest attempt for this shared game.",
     "selectGame": "Select a mini-game",
+    "selectGameDesc": "Select a mini-game from our catalog to start practicing.",
     "selectArea": "Select lesson or grade context",
     "globalRankings": "Global Rankings",
     "activeLimitStatus": "Active created games: {current}/{max}",
