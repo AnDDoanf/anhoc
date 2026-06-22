@@ -196,7 +196,6 @@
     "or_continue_with": "Or continue with",
     "facebook": "Facebook",
     "outlook": "Outlook",
-    "facebookAppPrompt": "Do you want to open the Facebook app?",
     "errors": {
       "identifier_required": "Email or login ID is required",
       "invalid_email": "Invalid email address",
@@ -347,8 +346,7 @@
     "alreadyLinked": "This account is already linked to another user.",
     "oauthError": "An error occurred during social account verification.",
     "connected": "Connected",
-    "notConnected": "Not connected",
-    "facebookAppPrompt": "Do you want to open the Facebook app?"
+    "notConnected": "Not connected"
   },
   "Sidebar": {
     "administrator": "Administrator",

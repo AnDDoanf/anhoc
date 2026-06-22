@@ -189,42 +189,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => {
-                  const oauthUrl = `${API_BASE_URL}/auth/facebook?frontendUrl=${encodeURIComponent(window.location.origin)}`;
-                  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                  
-                  if (isMobile) {
-                    const confirmOpen = window.confirm(t("facebookAppPrompt") || "Do you want to open the Facebook app?");
-                    if (confirmOpen) {
-                      const deepLinkUrl = `fb://facewebmodal/f?href=${encodeURIComponent(oauthUrl)}`;
-                      let fallbackTriggered = false;
-                      
-                      const fallbackTimer = setTimeout(() => {
-                        if (!document.hidden && !fallbackTriggered) {
-                          fallbackTriggered = true;
-                          window.location.href = oauthUrl;
-                        }
-                      }, 1500);
-
-                      const handleVisibilityChange = () => {
-                        if (document.hidden) {
-                          clearTimeout(fallbackTimer);
-                        }
-                      };
-
-                      const handleBlur = () => {
-                        clearTimeout(fallbackTimer);
-                      };
-
-                      window.addEventListener("visibilitychange", handleVisibilityChange, { once: true });
-                      window.addEventListener("blur", handleBlur, { once: true });
-                      
-                      window.location.href = deepLinkUrl;
-                    } else {
-                      window.location.href = oauthUrl;
-                    }
-                  } else {
-                    window.location.href = oauthUrl;
-                  }
+                  window.location.href = `${API_BASE_URL}/auth/facebook?frontendUrl=${encodeURIComponent(window.location.origin)}`;
                 }}
                 className="flex items-center justify-center gap-2 rounded-lg border border-sol-border/50 bg-sol-bg px-3 py-3 text-xs font-semibold text-sol-text transition-all hover:bg-sol-surface hover:border-sol-accent active:scale-[0.99] hover:cursor-pointer"
               >

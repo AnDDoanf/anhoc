@@ -33,6 +33,7 @@ function SettingsPageContent() {
   const searchParams = useSearchParams();
   const [oauthActionLoading, setOauthActionLoading] = useState<string | null>(null);
   const [oauthFeedback, setOauthFeedback] = useState<Feedback>(null);
+  const [loading, setLoading] = useState(true);
   
   // ── Avatar state ────────────────────────────────────────────
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -58,10 +59,12 @@ function SettingsPageContent() {
 
   // Pre-fill username from profile
   useEffect(() => {
+    setLoading(true);
     authService.getProfile().then((profile) => {
       setUsername(profile.username ?? "");
       updateUser(profile);
-    }).catch(() => {});
+    }).catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   // Handle URL query feedback parameters
@@ -84,43 +87,7 @@ function SettingsPageContent() {
   const handleLink = (provider: string) => {
     setOauthActionLoading(provider);
     const token = localStorage.getItem("token") || "";
-    const oauthUrl = `${API_BASE_URL}/auth/${provider}?state=${token}&frontendUrl=${encodeURIComponent(window.location.origin)}`;
-
-    if (provider === "facebook") {
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      if (isMobile) {
-        const confirmOpen = window.confirm(t("facebookAppPrompt") || "Do you want to open the Facebook app?");
-        if (confirmOpen) {
-          const deepLinkUrl = `fb://facewebmodal/f?href=${encodeURIComponent(oauthUrl)}`;
-          let fallbackTriggered = false;
-
-          const fallbackTimer = setTimeout(() => {
-            if (!document.hidden && !fallbackTriggered) {
-              fallbackTriggered = true;
-              window.location.href = oauthUrl;
-            }
-          }, 1500);
-
-          const handleVisibilityChange = () => {
-            if (document.hidden) {
-              clearTimeout(fallbackTimer);
-            }
-          };
-
-          const handleBlur = () => {
-            clearTimeout(fallbackTimer);
-          };
-
-          window.addEventListener("visibilitychange", handleVisibilityChange, { once: true });
-          window.addEventListener("blur", handleBlur, { once: true });
-
-          window.location.href = deepLinkUrl;
-          return;
-        }
-      }
-    }
-
-    window.location.href = oauthUrl;
+    window.location.href = `${API_BASE_URL}/auth/${provider}?state=${token}&frontendUrl=${encodeURIComponent(window.location.origin)}`;
   };
 
   const handleUnlink = async (provider: string) => {
@@ -285,9 +252,35 @@ function SettingsPageContent() {
         </Hero>
 
         <div className="max-w-4xl mx-auto w-full space-y-6">
+          {loading && (
+            <div className="bg-sol-surface border border-sol-border/30 rounded-3xl p-8 shadow-xl space-y-8 animate-pulse">
+              {/* Top part: Square + 2 lines */}
+              <div className="flex items-center gap-6">
+                <div className="w-20 h-20 bg-sol-border/20 rounded-2xl shrink-0" />
+                <div className="flex-1 space-y-3">
+                  <div className="h-4 bg-sol-border/20 rounded-lg w-1/3" />
+                  <div className="h-4 bg-sol-border/20 rounded-lg w-2/3" />
+                </div>
+              </div>
 
-          {/* ── Profile Settings Card (Avatar + Username side-by-side) ── */}
-          <div className={`bg-sol-surface border ${isDragging ? "border-sol-accent shadow-sol-accent/5" : "border-sol-border/30"} rounded-3xl p-8 shadow-xl relative overflow-hidden group transition-all duration-300`}
+              {/* Divider */}
+              <div className="border-t border-sol-border/20" />
+
+              {/* Bottom part: Circle + 2 rounded lines */}
+              <div className="flex items-center gap-6">
+                <div className="w-20 h-20 bg-sol-border/20 rounded-full shrink-0" />
+                <div className="flex-1 space-y-3">
+                  <div className="h-4 bg-sol-border/20 rounded-full w-1/2" />
+                  <div className="h-4 bg-sol-border/20 rounded-full w-3/4" />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {!loading && (
+            <>
+              {/* ── Profile Settings Card (Avatar + Username side-by-side) ── */}
+              <div className={`bg-sol-surface border ${isDragging ? "border-sol-accent shadow-sol-accent/5" : "border-sol-border/30"} rounded-3xl p-8 shadow-xl relative overflow-hidden group transition-all duration-300`}
                onDragOver={handleDragOver}
                onDragLeave={handleDragLeave}
                onDrop={handleDrop}
@@ -675,7 +668,8 @@ function SettingsPageContent() {
               </button>
             </form>
           </div>
-
+            </>
+          )}
         </div>
 
       </div>

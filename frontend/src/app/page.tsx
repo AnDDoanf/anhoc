@@ -121,8 +121,8 @@ export default function RootPage() {
         <div className="absolute left-[-5rem] top-24 h-56 w-56 rounded-full bg-sol-accent/10 blur-3xl" />
         <div className="absolute right-[-4rem] top-32 h-72 w-72 rounded-full bg-sol-orange/10 blur-3xl" />
 
-        <div className="relative mx-auto max-w-7xl px-6 py-8 md:px-10 lg:px-12">
-          <header className="flex items-center justify-between gap-4 rounded-[1.9rem] border border-sol-border/20 bg-sol-surface/80 px-5 py-4 shadow-sm backdrop-blur">
+        <div className="relative mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-8 md:px-10 lg:px-12">
+          <header className="flex items-center justify-between gap-4 rounded-2xl sm:rounded-[1.9rem] border border-sol-border/20 bg-sol-surface/80 px-4 py-3 sm:px-5 sm:py-4 shadow-sm backdrop-blur">
             <div className="flex items-center gap-3">
               <Logo className="h-11 w-auto" />
               <div>
@@ -144,8 +144,8 @@ export default function RootPage() {
 
           </header>
 
-          <section className="snap-start snap-always flex min-h-screen items-center py-10 lg:py-14">
-            <div className="w-full space-y-8 text-center">
+          <section className="snap-start snap-always flex min-h-screen items-center py-6 sm:py-10 lg:py-14">
+            <div className="w-full space-y-6 sm:space-y-8 text-center">
               <div className="mx-auto max-w-4xl">
                 <div className="inline-flex items-center gap-2 rounded-full border border-sol-accent/25 bg-sol-accent/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.24em] text-sol-accent animate-pulse-glow sm:text-[11px]">
                   <Flame size={14} />
@@ -170,8 +170,8 @@ export default function RootPage() {
                 </div>
               </div>
 
-              <div className="rounded-[2.6rem] border border-sol-border/20 bg-sol-surface/82 p-5 shadow-2xl backdrop-blur sm:p-7">
-                <div className="relative overflow-hidden rounded-[2rem] border border-sol-border/15 bg-sol-bg/70 px-5 py-8 sm:px-8 sm:py-10">
+              <div className="rounded-3xl sm:rounded-[2.6rem] border border-sol-border/20 bg-sol-surface/82 p-3.5 sm:p-7 shadow-2xl backdrop-blur">
+                <div className="relative overflow-hidden rounded-2xl sm:rounded-[2rem] border border-sol-border/15 bg-sol-bg/70 px-4 py-6 sm:px-8 sm:py-10">
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(38,139,210,0.12),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(181,137,0,0.10),transparent_30%)]" />
                   <div className="relative grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
                     <div className="space-y-4 text-left">
@@ -240,12 +240,12 @@ export default function RootPage() {
             </div>
           </section>
 
-          <section className="snap-start border-t border-sol-border/20 py-8">
+          <section className="snap-start border-t border-sol-border/20 py-6 sm:py-8">
             <div className="grid gap-3 md:grid-cols-3">
               {trustPoints.map((item, index) => (
                 <div
                   key={item.title}
-                  className="animate-slide-in flex items-center gap-3 rounded-[1.6rem] border border-sol-border/15 bg-sol-surface/75 px-5 py-4 shadow-sm"
+                  className="animate-slide-in flex items-center gap-3 rounded-[1.6rem] border border-sol-border/15 bg-sol-surface/75 px-4 py-3 sm:px-5 sm:py-4 shadow-sm"
                   style={{ animationDelay: `${index * 120}ms` }}
                 >
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-sol-border/20 bg-sol-bg/70">
@@ -257,11 +257,11 @@ export default function RootPage() {
             </div>
           </section>
 
-          <section className="snap-start space-y-5 border-t border-sol-border/20 py-10">
+          <section className="snap-start space-y-5 border-t border-sol-border/20 py-6 sm:py-10">
             {tracks.map((track) => (
               <div
                 key={track.title}
-                className="grid gap-6 rounded-[2.4rem] border border-sol-border/20 bg-sol-surface/82 p-6 shadow-xl backdrop-blur lg:grid-cols-[0.9fr_1.1fr] lg:items-center"
+                className="grid gap-6 rounded-3xl sm:rounded-[2.4rem] border border-sol-border/20 bg-sol-surface/82 p-4 sm:p-6 shadow-xl backdrop-blur lg:grid-cols-[0.9fr_1.1fr] lg:items-center"
               >
                 <div className="space-y-4">
                   <div className="inline-flex items-center gap-3 rounded-full border border-sol-border/15 bg-sol-bg/70 px-4 py-2">
@@ -386,8 +386,8 @@ export default function RootPage() {
             ))}
           </section>
 
-          <section className="snap-start border-t border-sol-border/20 py-10">
-            <div className="rounded-[2.6rem] border border-sol-border/20 bg-sol-surface/85 px-6 py-8 text-center shadow-xl backdrop-blur">
+          <section className="snap-start border-t border-sol-border/20 py-6 sm:py-10">
+            <div className="rounded-3xl sm:rounded-[2.6rem] border border-sol-border/20 bg-sol-surface/85 px-4 py-6 sm:px-6 sm:py-8 text-center shadow-xl backdrop-blur">
               <p className="text-sm font-black uppercase tracking-[0.22em] text-sol-accent">{t("platformTitle")}</p>
               <h2 className="mx-auto mt-3 max-w-2xl text-3xl font-black tracking-tight text-sol-text">{t("platformHeadline")}</h2>
               <p className="mx-auto mt-4 max-w-2xl text-sm font-medium leading-7 text-sol-muted md:text-base">

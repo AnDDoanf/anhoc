@@ -195,7 +195,6 @@
     "or_continue_with": "Hoặc tiếp tục bằng",
     "facebook": "Facebook",
     "outlook": "Outlook",
-    "facebookAppPrompt": "Bạn có muốn mở ứng dụng Facebook để tiếp tục không?",
     "errors": {
       "identifier_required": "Vui lòng nhập email hoặc mã đăng nhập",
       "invalid_email": "Địa chỉ email không hợp lệ",
@@ -274,8 +273,7 @@
     "alreadyLinked": "Tài khoản mạng xã hội này đã được liên kết với người dùng khác.",
     "oauthError": "Đã xảy ra lỗi khi xác thực tài khoản mạng xã hội.",
     "connected": "Đã kết nối",
-    "notConnected": "Chưa kết nối",
-    "facebookAppPrompt": "Bạn có muốn mở ứng dụng Facebook để tiếp tục không?"
+    "notConnected": "Chưa kết nối"
   },
   "Sidebar": {
     "administrator": "Quản trị",

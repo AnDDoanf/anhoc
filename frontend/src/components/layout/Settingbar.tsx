@@ -208,7 +208,7 @@ export default function SettingBar() {
   return (
     <div 
       ref={containerRef}
-      className={`fixed top-4 right-6 z-50 transition-all duration-300 ${isVisible || activePanel ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none"}`}
+      className={`fixed top-3 right-3 sm:top-4 sm:right-6 z-50 transition-all duration-300 ${isVisible || activePanel ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none"}`}
     >
       <div className="relative flex flex-col items-end">
         <div className="flex items-center gap-3">
