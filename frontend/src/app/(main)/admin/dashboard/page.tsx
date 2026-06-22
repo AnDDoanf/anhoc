@@ -195,7 +195,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Charts Section */}
-      <div className="bg-sol-surface border border-sol-border/10 rounded-[2.5rem] p-8 shadow-xl relative overflow-hidden group">
+      <div className="bg-sol-surface border border-sol-border/10 rounded-3xl sm:rounded-[2.5rem] p-4 sm:p-8 shadow-xl relative overflow-hidden group">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
           <div>
             <h2 className="text-2xl font-black text-sol-text tracking-tight flex items-center gap-2 uppercase">
@@ -209,7 +209,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="h-[350px] w-full">
+        <div className="h-[250px] sm:h-[350px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={stats?.activityHistory} key={theme || 'light'}>
               <defs>
@@ -228,6 +228,7 @@ export default function AdminDashboard() {
                 axisLine={false} 
                 tickLine={false} 
                 tick={{ fill: 'var(--text-secondary)', fontSize: 11, fontWeight: 700 }}
+                minTickGap={16}
                 tickFormatter={(value) => {
                   const date = new Date(value);
                   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
@@ -283,7 +284,7 @@ export default function AdminDashboard() {
               {t("topUsers.title")}
             </h2>
           </div>
-          <div className="bg-sol-surface border border-sol-border/10 rounded-[2rem] overflow-hidden shadow-xl p-4">
+          <div className="bg-sol-surface border border-sol-border/10 rounded-3xl sm:rounded-[2rem] overflow-hidden shadow-xl p-3 sm:p-4">
             <div className="space-y-2">
               {stats?.topUsers?.map((user, i) => (
                 <Link
@@ -323,21 +324,21 @@ export default function AdminDashboard() {
               {t("recentActivity.title")}
             </h2>
           </div>
-          <div className="bg-sol-surface border border-sol-border/10 rounded-[2.5rem] overflow-hidden shadow-xl p-6">
+          <div className="bg-sol-surface border border-sol-border/10 rounded-3xl sm:rounded-[2.5rem] overflow-hidden shadow-xl p-4 sm:p-6">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-sol-border/5 bg-sol-bg/50">
-                    <th className="px-6 py-4 text-left text-[10px] font-black text-sol-muted uppercase tracking-widest rounded-tl-2xl">{t("recentActivity.student")}</th>
-                    <th className="px-6 py-4 text-left text-[10px] font-black text-sol-muted uppercase tracking-widest">{t("recentActivity.lesson")}</th>
-                    <th className="px-6 py-4 text-left text-[10px] font-black text-sol-muted uppercase tracking-widest">{t("recentActivity.score")}</th>
-                    <th className="px-6 py-4 text-left text-[10px] font-black text-sol-muted uppercase tracking-widest rounded-tr-2xl">{t("recentActivity.time")}</th>
+                    <th className="px-3 py-3 sm:px-6 sm:py-4 text-left text-[10px] font-black text-sol-muted uppercase tracking-widest rounded-tl-2xl">{t("recentActivity.student")}</th>
+                    <th className="px-3 py-3 sm:px-6 sm:py-4 text-left text-[10px] font-black text-sol-muted uppercase tracking-widest">{t("recentActivity.lesson")}</th>
+                    <th className="px-3 py-3 sm:px-6 sm:py-4 text-left text-[10px] font-black text-sol-muted uppercase tracking-widest">{t("recentActivity.score")}</th>
+                    <th className="px-3 py-3 sm:px-6 sm:py-4 text-left text-[10px] font-black text-sol-muted uppercase tracking-widest rounded-tr-2xl">{t("recentActivity.time")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-sol-border/5">
                   {stats?.recentActivity?.map((activity) => (
                     <tr key={activity.id} className="hover:bg-sol-bg/30 transition-colors group">
-                      <td className="px-6 py-4">
+                      <td className="px-3 py-3 sm:px-6 sm:py-4">
                         {activity.user?.id ? (
                           <Link
                             href={`/admin/users/${activity.user.id}`}
@@ -349,17 +350,17 @@ export default function AdminDashboard() {
                           <span className="font-black text-sol-text">{t("userDetail.unknownUser")}</span>
                         )}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-3 py-3 sm:px-6 sm:py-4">
                         <span className="font-bold text-sol-muted">
                           {getLessonTitle(activity.lesson, locale, t("userDetail.unassignedLesson"))}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className={`inline-flex items-center px-4 py-1.5 rounded-full font-black text-xs ${Number(activity.total_score) >= 80 ? "bg-green-500/10 text-green-500" : "bg-sol-orange/10 text-sol-orange"}`}>
+                      <td className="px-3 py-3 sm:px-6 sm:py-4">
+                        <div className={`inline-flex items-center px-3 py-1 sm:px-4 sm:py-1.5 rounded-full font-black text-xs ${Number(activity.total_score) >= 80 ? "bg-green-500/10 text-green-500" : "bg-sol-orange/10 text-sol-orange"}`}>
                           {Math.round(activity.total_score)}%
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-3 py-3 sm:px-6 sm:py-4">
                         <div className="flex items-center gap-2 text-xs text-sol-muted font-bold">
                           <Clock size={12} />
                           {format(new Date(activity.started_at), "HH:mm, MMM d")}

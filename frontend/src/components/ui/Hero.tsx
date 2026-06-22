@@ -16,7 +16,7 @@ export default function Hero({
   containerClassName = "relative z-10 w-full"
 }: HeroProps) {
   return (
-    <header className={`group relative overflow-hidden rounded-[2.5rem] border border-sol-border/30 bg-sol-surface p-8 md:p-12 shadow-2xl ${className}`}>
+    <header className={`group relative overflow-hidden rounded-3xl sm:rounded-[2.5rem] border border-sol-border/30 bg-sol-surface p-5 sm:p-8 md:p-12 shadow-xl sm:shadow-2xl ${className}`}>
       {/* Premium Pulsing Gradient Glows aligned with student/games */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-sol-accent/15 rounded-full -mr-32 -mt-32 blur-3xl animate-pulse pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-64 h-64 bg-sol-orange/5 rounded-full -ml-32 -mb-32 blur-3xl pointer-events-none" />
