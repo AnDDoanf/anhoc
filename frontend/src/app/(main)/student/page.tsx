@@ -345,15 +345,7 @@ export default function UserHomePage() {
                   </div>
                 ))}
               </div>
-              <div className="mt-8 pt-8 border-t border-sol-border/30">
-                <Link 
-                  href="/student/practice"
-                  className="w-full py-4 bg-sol-bg border border-sol-border/30 text-sol-text font-black rounded-2xl hover:border-sol-accent hover:text-sol-accent transition-all flex items-center justify-center gap-2 group"
-                >
-                  {dt("openPracticeHub")}
-                  <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
-                </Link>
-              </div>
+
             </div>
           </div>
         </div>

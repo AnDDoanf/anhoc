@@ -273,13 +273,7 @@ export default function Sidebar() {
                     isCollapsed={isCollapsed}
                   />
                 )}
-                <NavItem
-                  href="/student/practice"
-                  label={t("practice")}
-                  icon={<PencilLine size={18} />}
-                  pathname={pathname}
-                  isCollapsed={isCollapsed}
-                />
+
                 <NavItem
                   href="/student/games"
                   label={t("games")}
