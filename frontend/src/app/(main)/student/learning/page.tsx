@@ -222,7 +222,7 @@ export default function LearningDashboard() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="mx-auto max-w-7xl min-h-0 h-[calc(100dvh-7rem)] overflow-y-auto overscroll-y-contain space-y-6 snap-y snap-mandatory scroll-smooth touch-pan-y [-webkit-overflow-scrolling:touch] animate-in fade-in slide-in-from-bottom-4 duration-500 md:h-auto md:overflow-visible md:space-y-10 md:snap-none">
       {/* Educational Hero Header */}
       <Hero
         iconPosition="bottom-right"
@@ -302,7 +302,7 @@ export default function LearningDashboard() {
       </Can>
 
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start">
-        <div className="space-y-12 md:space-y-24">
+        <div className="space-y-12 pr-2 pb-4 md:space-y-24">
           {lessonGroups.map((subject) => (
             <section key={subject.subject} className="group/section space-y-8 md:space-y-12">
               <div className="flex flex-col gap-3 border-b border-sol-border/30 pb-4 sm:flex-row sm:items-end sm:justify-between md:pb-6">
@@ -322,7 +322,7 @@ export default function LearningDashboard() {
                 return (
                   <div
                     key={`${subject.subject}-${group.grade}`}
-                    className="rounded-3xl border border-sol-border/30 bg-sol-surface p-5 shadow-sm transition-all hover:border-sol-accent/40 hover:bg-sol-surface md:p-6"
+                    className="snap-start scroll-mt-10 rounded-3xl border border-sol-border/30 bg-sol-surface p-5 shadow-sm transition-all hover:border-sol-accent/40 hover:bg-sol-surface md:scroll-mt-6 md:p-6"
                   >
                     <div className="flex items-center gap-3">
                       <button
@@ -464,7 +464,7 @@ export default function LearningDashboard() {
         </div>
 
         <aside className="space-y-6 xl:sticky xl:top-24 xl:self-start">
-          <section className="overflow-hidden rounded-[2rem] border border-sol-border/30 bg-sol-surface shadow-sm">
+          <section className="snap-start scroll-mt-10 overflow-hidden rounded-[2rem] border border-sol-border/30 bg-sol-surface shadow-sm md:scroll-mt-0">
             <div className="border-b border-sol-border/30 p-5">
               <div className="flex items-center gap-2 text-sol-accent">
                 <Flame size={18} />
@@ -542,7 +542,7 @@ export default function LearningDashboard() {
             </div>
           </section>
 
-          <section className="rounded-[2rem] border border-sol-border/30 bg-sol-surface p-5 shadow-sm">
+          <section className="snap-start scroll-mt-10 rounded-[2rem] border border-sol-border/30 bg-sol-surface p-5 shadow-sm md:scroll-mt-0">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-sol-accent">
                 <Users size={18} />

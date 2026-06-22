@@ -129,7 +129,7 @@ export default function Sidebar() {
       {isMobile && (
         <button
           onClick={() => setIsMobileOpen(!isMobileOpen)}
-          className={`fixed top-4 left-4 z-[60] w-10 h-10 bg-sol-surface/80 backdrop-blur-md border border-sol-border/30 rounded-xl flex items-center justify-center text-sol-text shadow-lg active:scale-95 transition-all duration-300
+          className={`fixed top-4 right-4 z-[60] w-10 h-10 bg-sol-surface/80 backdrop-blur-md border border-sol-border/30 rounded-xl flex items-center justify-center text-sol-text shadow-lg active:scale-95 transition-all duration-300
             ${isVisible || isMobileOpen ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none"}
           `}
         >
@@ -147,10 +147,10 @@ export default function Sidebar() {
 
       <div className={`transition-all duration-500 ease-in-out w-0 ${isCollapsed ? "md:w-20" : "md:w-64"}`}>
         <aside
-          className={`h-screen border-r border-sol-border/30 bg-sol-surface flex flex-col transition-all duration-500 ease-in-out z-50
+          className={`h-screen bg-sol-surface flex flex-col transition-all duration-500 ease-in-out z-50
           ${isMobile
-            ? `fixed inset-y-0 left-0 w-72 shadow-2xl ${isMobileOpen ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0 pointer-events-none"}`
-            : `sticky top-0 w-full`}
+            ? `fixed inset-y-0 right-0 w-72 border-l border-sol-border/30 shadow-2xl ${isMobileOpen ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none"}`
+            : `sticky top-0 w-full border-r border-sol-border/30`}
         `}
         >
           {/* Sidebar Header */}
@@ -349,7 +349,7 @@ function NavItem({
       prefetch={false}
       href={href}
       title={isCollapsed ? label : ""}
-      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all relative group
+      className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] transition-all relative group md:gap-3 md:px-3 md:py-2.5 md:text-sm
         ${isCollapsed ? "justify-center" : ""}
         ${isActive
           ? "bg-sol-bg border border-sol-border/30 text-sol-accent font-semibold"

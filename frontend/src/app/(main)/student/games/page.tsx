@@ -191,7 +191,7 @@ export default function GamesHubPage() {
             <div className="lg:col-span-2 space-y-8">
               
               {/* Game Selection Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
                 {[
                   {
                     id: "speed",
@@ -239,22 +239,30 @@ export default function GamesHubPage() {
                   <button
                     key={game.id}
                     onClick={() => setSelectedGame(game.id)}
-                    className={`text-left rounded-3xl p-6 border transition-all duration-300 group flex flex-col justify-between h-64 relative overflow-hidden bg-sol-surface
+                    className={`group relative overflow-hidden rounded-3xl border bg-sol-surface p-4 text-left transition-all duration-300 sm:h-64 sm:p-6
                       ${selectedGame === game.id 
                         ? 'border-sol-accent shadow-xl shadow-sol-accent/5 scale-[1.02]' 
                         : 'border-sol-border/30 hover:bg-sol-bg'
                       }
                     `}
                   >
-                    <div className="space-y-3">
-                      <div className={`p-3 rounded-2xl w-fit bg-sol-bg border border-sol-border/30 group-hover:rotate-6 transition-transform duration-300`}>
-                        {game.icon}
+                    <div className="flex min-w-0 items-start justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-sol-border/30 bg-sol-bg transition-transform duration-300 group-hover:rotate-6 sm:h-auto sm:w-fit sm:p-3">
+                          {game.icon}
+                        </div>
+                        <h3 className="text-base font-black tracking-tight text-sol-text sm:hidden">{game.title}</h3>
                       </div>
-                      <h3 className="text-lg font-black text-sol-text tracking-tight">{game.title}</h3>
-                      <p className="text-xs text-sol-muted font-bold leading-relaxed">{game.desc}</p>
+                      <ChevronRight size={18} className="mt-1 shrink-0 text-sol-accent sm:hidden" />
                     </div>
-                    
-                    <div className="flex items-center gap-2 text-xs font-black uppercase text-sol-accent pt-4 mt-auto group-hover:translate-x-1 transition-transform">
+
+                    <div className="mt-3 min-w-0 space-y-2 sm:mt-0 sm:space-y-3">
+                      <h3 className="hidden text-lg font-black tracking-tight text-sol-text sm:block">{game.title}</h3>
+                      <p className="line-clamp-2 text-xs font-bold leading-relaxed text-sol-muted sm:line-clamp-none">{game.desc}</p>
+                    </div>
+
+                    <div className="mt-3 flex items-center gap-2 text-[11px] font-black uppercase text-sol-accent transition-transform group-hover:translate-x-1 sm:mt-auto sm:pt-4 sm:text-xs">
+                      <Play size={10} fill="currentColor" className="sm:hidden" />
                       {t("playNow")}
                       <ChevronRight size={14} />
                     </div>

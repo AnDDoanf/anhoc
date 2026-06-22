@@ -115,13 +115,13 @@ export default function RootPage() {
   return (
     <main id="home-scroll-root" className="h-screen snap-y snap-mandatory overflow-y-auto scroll-smooth bg-sol-bg text-sol-text">
       <div className="relative overflow-hidden">
-        <SettingBar scrollContainerId="home-scroll-root" />
+        <SettingBar scrollContainerId="home-scroll-root" mobileAlignment="center" />
         <ScrollToTop containerId="home-scroll-root" />
         <div className="absolute inset-x-0 top-0 h-[40rem] bg-[radial-gradient(circle_at_top_left,rgba(38,139,210,0.14),transparent_38%),radial-gradient(circle_at_top_right,rgba(220,50,47,0.10),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.08),transparent_72%)]" />
         <div className="absolute left-[-5rem] top-24 h-56 w-56 rounded-full bg-sol-accent/10 blur-3xl" />
         <div className="absolute right-[-4rem] top-32 h-72 w-72 rounded-full bg-sol-orange/10 blur-3xl" />
 
-        <div className="relative mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-8 md:px-10 lg:px-12">
+        <div className="relative mx-auto max-w-7xl px-3 pt-20 pb-4 sm:px-6 sm:py-8 md:px-10 lg:px-12">
           <header className="flex items-center justify-between gap-4 rounded-2xl sm:rounded-[1.9rem] border border-sol-border/20 bg-sol-surface/80 px-4 py-3 sm:px-5 sm:py-4 shadow-sm backdrop-blur">
             <div className="flex items-center gap-3">
               <Logo className="h-11 w-auto" />
@@ -144,7 +144,7 @@ export default function RootPage() {
 
           </header>
 
-          <section className="snap-start snap-always flex min-h-screen items-center py-6 sm:py-10 lg:py-14">
+          <section className="snap-start snap-always flex min-h-screen items-center pt-12 pb-6 sm:py-10 lg:py-14">
             <div className="w-full space-y-6 sm:space-y-8 text-center">
               <div className="mx-auto max-w-4xl">
                 <div className="inline-flex items-center gap-2 rounded-full border border-sol-accent/25 bg-sol-accent/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.24em] text-sol-accent animate-pulse-glow sm:text-[11px]">
