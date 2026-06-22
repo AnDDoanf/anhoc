@@ -279,14 +279,14 @@ export default function QuestionPlayer({ template }: QuestionPlayerProps) {
                   <span className="text-sol-muted shrink-0">{idx === 0 ? "*" : `+${idx}`}</span>
                   <span className="text-sol-muted/60 truncate max-w-[140px]" title={formula}>{formula}</span>
                   <span className="ml-auto text-sol-accent font-bold bg-sol-surface px-2 py-0.5 rounded-md border border-sol-border/5">
-                    {value !== null ? String(value) : "ERROR"}
+                    {value !== null ? String(value) : t("errorValue")}
                   </span>
                 </div>
               ))
             ) : (
               <div className="flex items-center gap-2 px-3 py-1 bg-sol-bg border border-sol-border/10 rounded-lg text-xs font-mono">
                 <span className="text-sol-muted">{t("expected")}:</span>
-                <span className="text-sol-accent font-bold">{revealAnswer !== null ? String(revealAnswer) : "ERROR"}</span>
+                <span className="text-sol-accent font-bold">{revealAnswer !== null ? String(revealAnswer) : t("errorValue")}</span>
               </div>
             )}
           </div>

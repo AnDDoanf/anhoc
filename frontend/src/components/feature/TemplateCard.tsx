@@ -37,17 +37,17 @@ export default function TemplateCard({ tmpl, onEdit, onDelete, onPreview }: Temp
       {/* Absolute Icon Buttons */}
       <div className="absolute top-8 right-8 flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
          {onPreview && (
-           <button onClick={(e) => { e.stopPropagation(); onPreview(tmpl); }} className="text-sol-muted hover:text-green-500 transition-colors cursor-pointer" title="Preview Live Template">
+           <button onClick={(e) => { e.stopPropagation(); onPreview(tmpl); }} className="text-sol-muted hover:text-green-500 transition-colors cursor-pointer" title={t("actions.preview")}>
              <PlayCircle size={20} strokeWidth={1.5} />
            </button>
          )}
          <Can I="manage" a="test">
-           <button onClick={(e) => { e.stopPropagation(); onEdit(tmpl.id); }} className="text-sol-muted hover:text-sol-accent transition-colors cursor-pointer" title="Edit Template">
+           <button onClick={(e) => { e.stopPropagation(); onEdit(tmpl.id); }} className="text-sol-muted hover:text-sol-accent transition-colors cursor-pointer" title={t("actions.edit")}>
              <Pencil size={20} strokeWidth={1.5} />
            </button>
          </Can>
          <Can I="manage" a="test">
-           <button onClick={(e) => { e.stopPropagation(); onDelete(tmpl.id); }} className="text-sol-muted hover:text-red-500 transition-colors cursor-pointer" title="Delete Template">
+           <button onClick={(e) => { e.stopPropagation(); onDelete(tmpl.id); }} className="text-sol-muted hover:text-red-500 transition-colors cursor-pointer" title={t("actions.delete")}>
              <Trash2 size={20} strokeWidth={1.5} />
            </button>
          </Can>

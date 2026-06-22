@@ -632,6 +632,11 @@
     "formula": "Formula",
     "ref": "Ref",
     "global": "Global",
+    "actions": {
+      "preview": "Preview Live Template",
+      "edit": "Edit Template",
+      "delete": "Delete Template"
+    },
     "filters": {
       "search": "Search",
       "searchPlaceholder": "Search by template, lesson, or content",
@@ -664,7 +669,8 @@
       "chooseItemsInOrder": "Choose items in order",
       "checkOrder": "Check order",
       "true": "True",
-      "false": "False"
+      "false": "False",
+      "errorValue": "ERROR"
     },
     "modal": {
       "createTitle": "Create Question Template",
@@ -694,6 +700,10 @@
       "unassignedGrade": "Unassigned Grade",
       "templateType": "Template Type",
       "difficulty": "Difficulty",
+      "premiumTemplate": "Premium Template",
+      "premiumTemplateHint": "Only subscribed users will receive this template in practice and tests.",
+      "premiumEnabled": "Premium enabled",
+      "premiumDisabled": "Standard access",
       "questionTypes": {
         "numeric_input": "Numeric input",
         "math_addition": "Addition",
@@ -715,6 +725,8 @@
       },
       "bodyEn": "Body Text (EN)",
       "bodyVi": "Body Text (VI)",
+      "tagsLabel": "Tags",
+      "tagsPlaceholder": "e.g. algebra, linear, math-g6",
       "logicConfig": "Logic Config (JSON)",
       "answerFormula": "Answer Formula",
       "formulaPlaceholder": "e.g. x + y",
@@ -732,6 +744,7 @@
       "varName": "Name",
       "varMin": "Min",
       "varMax": "Max",
+      "variableNamePlaceholder": "x",
       "generatedJson": "Generated logic_config JSON",
       "logicJsonHint": "Supports variables, choices, derived values, and constraints. Example: {example}",
       "acceptedFormulas": "Accepted Answer Formulas",

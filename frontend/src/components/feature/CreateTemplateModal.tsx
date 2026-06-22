@@ -1015,7 +1015,7 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
 
             {/* Row: Tags */}
             <div className="space-y-2">
-              <label className="text-xs font-black uppercase text-sol-muted pl-1">Tags</label>
+              <label className="text-xs font-black uppercase text-sol-muted pl-1">{t("tagsLabel")}</label>
               <input
                 type="text"
                 value={tagsInput}
@@ -1023,7 +1023,7 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
                   setCurrentDraftStarted(true);
                   setTagsInput(e.target.value);
                 }}
-                placeholder="e.g. algebra, linear, math-g6"
+                placeholder={t("tagsPlaceholder")}
                 className="w-full bg-sol-bg border border-sol-border/20 rounded-2xl px-6 py-4 text-sol-text focus:ring-2 focus:ring-sol-accent/30 transition-all font-medium outline-none"
               />
             </div>
@@ -1200,7 +1200,7 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, editTe
                       required
                       value={v.name}
                       onChange={(e) => handleVarChange(idx, "name", e.target.value)}
-                      placeholder="x"
+                      placeholder={t("variableNamePlaceholder")}
                       className="bg-transparent border border-sol-border/20 rounded-xl px-4 py-2 font-mono text-sm font-bold text-sol-text focus:ring-2 focus:ring-sol-accent/30 outline-none"
                     />
                     <input

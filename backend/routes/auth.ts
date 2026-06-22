@@ -1452,7 +1452,31 @@ router.post("/refresh", async (req: Request, res: Response) => {
 
     await cacheDel(cacheKey);
 
-    const payload = await createAuthPayload(storedToken.user);
+    const freshUser = await prisma.user.findUnique({
+      where: { id: storedToken.user_id },
+      include: {
+        role: {
+          include: {
+            permissions: {
+              include: {
+                action: true,
+                resource: true,
+              },
+            },
+          },
+        },
+        learn_unit: true,
+        supervised_learn_unit: true,
+        learning_profile: true,
+        security: true,
+      },
+    });
+
+    if (!freshUser) {
+      return res.status(401).json({ error: "User associated with token not found" });
+    }
+
+    const payload = await createAuthPayload(freshUser);
     res.json(payload);
   } catch (error: any) {
     console.error(error);

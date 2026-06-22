@@ -563,6 +563,11 @@
     "formula": "Công thức",
     "ref": "Tham chiếu",
     "global": "Toàn cầu",
+    "actions": {
+      "preview": "Xem thử mẫu trực tiếp",
+      "edit": "Chỉnh sửa mẫu",
+      "delete": "Xóa mẫu"
+    },
     "filters": {
       "search": "Tìm kiếm",
       "searchPlaceholder": "Tìm theo mẫu, bài học hoặc nội dung",
@@ -599,7 +604,8 @@
       "chooseItemsInOrder": "Chọn các mục theo thứ tự",
       "checkOrder": "Kiểm tra thứ tự",
       "true": "Đúng",
-      "false": "Sai"
+      "false": "Sai",
+      "errorValue": "LỖI"
     },
     "modal": {
       "createTitle": "Tạo mẫu câu hỏi",
@@ -629,6 +635,10 @@
       "unassignedGrade": "Lớp chưa xác định",
       "templateType": "Loại mẫu",
       "difficulty": "Độ khó",
+      "premiumTemplate": "Mẫu cao cấp",
+      "premiumTemplateHint": "Chỉ người dùng đã đăng ký mới nhận được mẫu này trong luyện tập và bài kiểm tra.",
+      "premiumEnabled": "Đã bật cao cấp",
+      "premiumDisabled": "Truy cập thường",
       "questionTypes": {
         "numeric_input": "Nhập số",
         "math_addition": "Phép cộng",
@@ -650,6 +660,8 @@
       },
       "bodyEn": "Nội dung (EN)",
       "bodyVi": "Nội dung (VI)",
+      "tagsLabel": "Thẻ",
+      "tagsPlaceholder": "vd. dai-so, tuyen-tinh, toan-lop-6",
       "logicConfig": "Cấu hình logic (JSON)",
       "answerFormula": "Công thức đáp án",
       "formulaPlaceholder": "vd. x + y",
@@ -667,6 +679,7 @@
       "varName": "Tên",
       "varMin": "Min",
       "varMax": "Max",
+      "variableNamePlaceholder": "x",
       "generatedJson": "JSON logic_config được tạo",
       "logicJsonHint": "Hỗ trợ biến, lựa chọn, giá trị suy ra và ràng buộc. Ví dụ: {example}",
       "acceptedFormulas": "Công thức đáp án chấp nhận",
