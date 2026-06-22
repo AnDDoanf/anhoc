@@ -1,0 +1,55 @@
+\chapter{Objectives}
+
+In this chapter, we outline the core functional requirements and design goals of the Anhoc platform. We specify the desired features across user roles and define the expected outcomes of the system implementation.
+
+\section{Desired Features}
+
+The main goal of the Anhoc project is to implement a structured, adaptive web-based mathematics learning platform with the following services:
+
+\begin{itemize}
+    \item \textbf{FEATURE 1: Authentication \& Role-Based Access Control}
+    \begin{itemize}
+        \item \textbf{SUB-FEATURE 1.1: Registration \& Login}: Allow new users to create accounts and sign in securely.
+        \item \textbf{SUB-FEATURE 1.2: Dynamic Authorization}: Restrict user actions (create, read, update, delete) based on active roles: Administrator, Supervisor, Teacher, Sub-student, and Free-student.
+    \end{itemize}
+
+    \item \textbf{FEATURE 2: Learning \& Content Management}
+    \begin{itemize}
+        \item \textbf{SUB-FEATURE 2.1: Educational Hierarchy}: Organize content by Subjects (e.g., Mathematics), Grades, and Lessons.
+        \item \textbf{SUB-FEATURE 2.2: Bilingual Material}: Support side-by-side study in English and Vietnamese for lessons and practice.
+    \end{itemize}
+
+    \item \textbf{FEATURE 3: Dynamic Question Generation \& Persisted Snapshots}
+    \begin{itemize}
+        \item \textbf{SUB-FEATURE 3.1: Question Templates}: Formulate templates with numeric variables, derived calculations, constraints, and multiple accepted answers.
+        \item \textbf{SUB-FEATURE 3.2: Attempt Snapshots}: Persist concrete variables and answers for every attempt to guarantee reproducible grading and review.
+    \end{itemize}
+
+    \item \textbf{FEATURE 4: Student Progression \& Gamification}
+    \begin{itemize}
+        \item \textbf{SUB-FEATURE 4.1: Experience Points (XP)}: Log XP rewards for practice and test submissions, updating student levels dynamically.
+        \item \textbf{SUB-FEATURE 4.2: Achievements}: Seed and unlock unique badges for completing lessons and scoring well.
+    \end{itemize}
+
+    \item \textbf{FEATURE 5: Learn Units \& Subscription Management}
+    \begin{itemize}
+        \item \textbf{SUB-FEATURE 5.1: Tenant Isolation}: Group users into Learn Units managed by a Supervisor.
+        \item \textbf{SUB-FEATURE 5.2: Subscription Control}: Limit student and teacher slots based on Supervisor plan selections (Free, Pro, Family, Learning Center).
+    \end{itemize}
+
+    \item \textbf{FEATURE 6: Interactive Tutoring Chatbot}
+    \begin{itemize}
+        \item \textbf{SUB-FEATURE 6.1: Step-by-Step AI Guidance}: Embed an AI tutor chatbot capable of parsing mathematics and suggesting solution hints.
+        \item \textbf{SUB-FEATURE 6.2: BYOK Configuration}: Allow users to supply their own API keys to query LLM APIs.
+    \end{itemize}
+\end{itemize}
+
+\section{Expected Outcome}
+
+The implementation aims to construct a production-ready mathematics education portal consisting of:
+\begin{itemize}
+    \item A modern Next.js client interface that runs responsively across standard browsers (Chrome, Firefox, Safari) and handles student study, supervisor monitoring, and admin configuration.
+    \item An Express server exposing structured REST endpoints for all data models.
+    \item A PostgreSQL database instance configured with Prisma ORM for type-safe relational schemas.
+    \item A companion Python chatbot microservice implementing conversational math tutoring.
+\end{itemize}

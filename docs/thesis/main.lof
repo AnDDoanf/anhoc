@@ -1,8 +1,24 @@
 \addvspace {10\p@ }
 \addvspace {10\p@ }
 \addvspace {10\p@ }
-\contentsline {figure}{\numberline {3.1}{\ignorespaces User-facing flow of the Anhoc platform}}{9}{figure.3.1}%
+\contentsline {figure}{\numberline {3.1}{\ignorespaces Use case diagram of the Anhoc platform}}{9}{figure.3.1}%
+\contentsline {figure}{\numberline {3.2}{\ignorespaces Architecture design of the Anhoc platform}}{16}{figure.3.2}%
+\contentsline {figure}{\numberline {3.3}{\ignorespaces Sequence diagram for registration or login}}{20}{figure.3.3}%
+\contentsline {figure}{\numberline {3.4}{\ignorespaces Sequence diagram for studying a lesson}}{20}{figure.3.4}%
+\contentsline {figure}{\numberline {3.5}{\ignorespaces Sequence diagram for completing lesson practice}}{21}{figure.3.5}%
+\contentsline {figure}{\numberline {3.6}{\ignorespaces Sequence diagram for taking a grade-level test}}{21}{figure.3.6}%
+\contentsline {figure}{\numberline {3.7}{\ignorespaces Sequence diagram for viewing progress and achievements}}{22}{figure.3.7}%
+\contentsline {figure}{\numberline {3.8}{\ignorespaces Sequence diagram for managing content and question templates}}{22}{figure.3.8}%
+\contentsline {figure}{\numberline {3.9}{\ignorespaces Sequence diagram for managing learning unit members and seats}}{23}{figure.3.9}%
+\contentsline {figure}{\numberline {3.10}{\ignorespaces Sequence diagram for managing roles, access control, and dashboard data}}{23}{figure.3.10}%
 \addvspace {10\p@ }
 \addvspace {10\p@ }
-\addvspace {10\p@ }
-\addvspace {10\p@ }
+\contentsline {figure}{\numberline {A.1}{\ignorespaces Student dashboard displaying experience points, active level, and unlocked achievements.}}{33}{figure.5.1}%
+\contentsline {figure}{\numberline {A.2}{\ignorespaces Grade-level learning pathway showing available lessons and bilingual subject content.}}{34}{figure.5.2}%
+\contentsline {figure}{\numberline {A.3}{\ignorespaces Interactive practice interface featuring a dynamically generated mathematics question and live evaluation feedback.}}{34}{figure.5.3}%
+\contentsline {figure}{\numberline {A.4}{\ignorespaces Achievements gallery displaying seeded badges and their associated experience point rewards.}}{35}{figure.5.4}%
+\contentsline {figure}{\numberline {A.5}{\ignorespaces Tutoring chatbot widget answering student queries with step-by-step mathematical reasoning.}}{35}{figure.5.5}%
+\contentsline {figure}{\numberline {A.6}{\ignorespaces Administrative overview panel showing system stats, active users, and lesson metrics.}}{36}{figure.5.6}%
+\contentsline {figure}{\numberline {A.7}{\ignorespaces Admin user management dashboard showing all registered users and their system roles.}}{36}{figure.5.7}%
+\contentsline {figure}{\numberline {A.8}{\ignorespaces Access control settings panel for configuring user seats and editing role-based permission profiles.}}{37}{figure.5.8}%
+\contentsfinish 

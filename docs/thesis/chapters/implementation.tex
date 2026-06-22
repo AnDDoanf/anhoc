@@ -1,6 +1,6 @@
-\chapter{Implementation}
+\section{System Implementation}
 
-\section{Frontend Implementation}
+\subsection{Frontend Implementation}
 
 The frontend is implemented with Next.js and TypeScript. The app-router structure separates student and administrative workflows into route segments, while service modules in \code{frontend/src/services} centralize communication with the backend.
 
@@ -15,7 +15,7 @@ Important frontend concerns include:
 
 The component structure indicates a feature-oriented approach rather than a single monolithic page design. Examples include \code{QuestionPlayer.tsx}, \code{PracticeResultModal.tsx}, \code{AchievementGallery.tsx}, and \code{CreateTemplateModal.tsx}.
 
-\section{Backend API Implementation}
+\subsection{Backend API Implementation}
 
 The backend exposes versioned REST endpoints. Table \ref{tab:api-areas} groups the major API areas.
 
@@ -38,7 +38,7 @@ The backend exposes versioned REST endpoints. Table \ref{tab:api-areas} groups t
 
 The API design is pragmatic. It is expressive enough for the frontend and explicit enough for debugging, while remaining simple to secure and deploy.
 
-\section{Question Generation and Grading}
+\subsection{Question Generation and Grading}
 
 The file \code{backend/services/mathService.ts} contains a central part of the project: logic-driven variable generation and answer evaluation. The implementation uses the \code{mathjs} expression engine for parsing and evaluating formulas, derived expressions, and constraints \cite{mathjs-docs}. The service supports several rule types:
 \begin{itemize}
@@ -69,11 +69,11 @@ Answer checking supports multiple cases:
 
 This is a stronger implementation than a naive string-equality checker because it tolerates common input variance while still grounding correctness in mathematically evaluated formulas.
 
-\section{Attempt Lifecycle}
+\subsection{Attempt Lifecycle}
 
 The implemented attempt lifecycle is one of the most important interactions in the system.
 
-\subsection*{Practice Start}
+\subsubsection*{Practice Start}
 
 When a student starts practice for a lesson:
 \begin{enumerate}
@@ -85,7 +85,7 @@ When a student starts practice for a lesson:
   \item it returns a stable attempt payload to the frontend.
 \end{enumerate}
 
-\subsection*{Answer Submission}
+\subsubsection*{Answer Submission}
 
 When a student submits an answer:
 \begin{enumerate}
@@ -95,7 +95,7 @@ When a student submits an answer:
   \item it returns correctness information and explanation content.
 \end{enumerate}
 
-\subsection*{Attempt Completion}
+\subsubsection*{Attempt Completion}
 
 When an attempt is finished:
 \begin{enumerate}
@@ -109,7 +109,7 @@ When an attempt is finished:
 
 This completion pipeline shows that the project treats scoring as part of a broader progression workflow rather than as an isolated calculation.
 
-\section{Administrative Implementation}
+\subsection{Administrative Implementation}
 
 The administrative subsystem includes user and role management, subject permission management, dashboard statistics, and question report review. The route design suggests that administrators can change both coarse and fine-grained access behavior without redeploying the application.
 
@@ -123,7 +123,7 @@ This is reinforced by the underlying data model:
 
 This structure scales better than a hard-coded permission matrix embedded directly in frontend components.
 
-\section{Configuration and Deployment}
+\subsection{Configuration and Deployment}
 
 The repository defines environment variables for both frontend and backend execution. Examples include:
 \begin{itemize}

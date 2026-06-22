@@ -1,13 +1,61 @@
-\chapter{System Design}
+\section{System Design}
 
-\section{Architectural Overview}
+\subsection{Architectural Overview}
 
 Anhoc uses a three-tier web architecture. A Next.js frontend built on React provides the user interface. An Express backend exposes REST endpoints and business logic. PostgreSQL stores content, user identities, generated snapshots, and progression data. Prisma acts as the ORM boundary between the backend and the database \cite{nextjs-docs,react-docs,express-docs,prisma-docs,postgresql-docs}.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.9\textwidth]{../../images/anhoc-user-flow.png}
-\caption{User-facing flow of the Anhoc platform}
+\resizebox{0.92\textwidth}{!}{
+\begin{tikzpicture}[font=\small, >=Latex]
+  \tikzstyle{archlayer}=[draw, rounded corners, minimum width=14.8cm, minimum height=2.1cm, align=center]
+  \tikzstyle{archnode}=[draw, rounded corners, minimum width=2.7cm, minimum height=0.95cm, align=center, fill=blue!5]
+  \tikzstyle{archservice}=[draw, rounded corners, minimum width=2.5cm, minimum height=0.9cm, align=center, fill=green!5]
+  \tikzstyle{archdata}=[draw, cylinder, shape border rotate=90, aspect=0.28, minimum height=1.6cm, minimum width=2.3cm, align=center, fill=orange!8]
+
+  \node[archlayer, fill=blue!2] (client) at (0,0) {};
+  \node[anchor=west, font=\bfseries] at ($(client.north west)+(0.25,-0.3)$) {Presentation Layer};
+  \node[archnode] (browser) at (-4.2,-0.15) {Web Browser};
+  \node[archnode] (frontend) at (0,-0.15) {Next.js Frontend};
+  \node[archnode] (intl) at (4.2,-0.15) {Redux +\\next-intl};
+
+  \node[archlayer, fill=green!2] (app) at (0,-3.0) {};
+  \node[anchor=west, font=\bfseries] at ($(app.north west)+(0.25,-0.3)$) {Application Layer};
+  \node[archnode] (api) at (-4.2,-3.15) {Express API};
+  \node[archnode] (routes) at (0,-3.15) {Route Modules\\auth, lessons, tests, admin};
+  \node[archnode] (middleware) at (4.2,-3.15) {JWT + RBAC\\Middleware};
+
+  \node[archlayer, fill=yellow!2] (service) at (0,-6.0) {};
+  \node[anchor=west, font=\bfseries] at ($(service.north west)+(0.25,-0.3)$) {Domain Service Layer};
+  \node[archservice] (content) at (-4.8,-6.15) {Content\\Services};
+  \node[archservice] (practice) at (-1.6,-6.15) {Practice/Test\\Services};
+  \node[archservice] (progress) at (1.6,-6.15) {Progression\\Services};
+  \node[archservice] (identity) at (4.8,-6.15) {Identity and\\Notification Services};
+
+  \node[archlayer, fill=orange!2, minimum height=2.5cm] (data) at (0,-9.25) {};
+  \node[anchor=west, font=\bfseries] at ($(data.north west)+(0.25,-0.3)$) {Data and Infrastructure Layer};
+  \node[archnode] (prisma) at (-4.2,-9.55) {Prisma ORM};
+  \node[archdata] (postgres) at (0,-9.55) {PostgreSQL};
+  \node[archnode] (redis) at (4.2,-9.55) {Redis Cache\\and Queues};
+
+  \draw[->, thick] (browser) -- (frontend);
+  \draw[->, thick] (frontend) -- node[right] {\code{/api/v1}} (routes);
+  \draw[->, thick] (intl) -- (frontend);
+  \draw[->, thick] (routes) -- (api);
+  \draw[->, thick] (middleware) -- (api);
+  \draw[->, thick] (api) -- (content);
+  \draw[->, thick] (api) -- (practice);
+  \draw[->, thick] (api) -- (progress);
+  \draw[->, thick] (api) -- (identity);
+  \draw[->, thick] (content.south) -- ++(0,-0.45) -| ($(prisma.north)+(-0.55,0)$);
+  \draw[->, thick] (practice.south) -- ++(0,-0.25) -| ($(prisma.north)+(-0.2,0)$);
+  \draw[->, thick] (progress.south) -- ++(0,-0.25) -| ($(prisma.north)+(0.2,0)$);
+  \draw[->, thick] (identity.south) -- ++(0,-0.45) -| ($(prisma.north)+(0.55,0)$);
+  \draw[->, thick] (prisma) -- (postgres);
+  \draw[->, thick] (api) -- (redis);
+\end{tikzpicture}
+}
+\caption{Architecture design of the Anhoc platform}
 \label{fig:user-flow}
 \end{figure}
 
@@ -20,7 +68,7 @@ At a high level, the request flow is:
   \item PostgreSQL persists authoritative state.
 \end{enumerate}
 
-\section{Deployment Design}
+\subsection{Deployment Design}
 
 The repository documents a practical deployment split:
 \begin{itemize}
@@ -31,7 +79,7 @@ The repository documents a practical deployment split:
 
 This split is appropriate for a full-stack TypeScript project because it separates the static or server-rendered frontend from the API runtime and keeps the relational database independent of either application tier.
 
-\section{Backend Design}
+\subsection{Backend Design}
 
 The backend entry point is \code{backend/server.ts}. It initializes Express, configures CORS, enables JSON parsing, mounts route modules, exposes a health endpoint, and conditionally seeds achievements at startup. The route structure is organized by domain:
 
@@ -45,7 +93,7 @@ The backend entry point is \code{backend/server.ts}. It initializes Express, con
 
 This separation keeps HTTP concerns close to route boundaries while pushing calculation-heavy logic into services.
 
-\section{Frontend Design}
+\subsection{Frontend Design}
 
 The frontend is built with Next.js using an app-router structure under \code{frontend/src/app}. It includes separate areas for authentication, student flows, and administration. The frontend is supported by Axios-based service modules, Redux state for authentication and permissions, and feature-specific components such as lesson cards, question players, result modals, and achievement galleries. The repository also uses \code{next-intl} for localized dictionaries and request-scoped internationalization in the App Router \cite{nextintl-docs}.
 
@@ -57,7 +105,7 @@ From a design perspective, the frontend acts as an orchestration layer:
   \item it enforces route-level and component-level access decisions using the permission payload returned by the backend.
 \end{itemize}
 
-\section{Security Model}
+\subsection{Security Model}
 
 Authentication is handled with JWT bearer tokens. The middleware in \code{backend/middleware/auth.ts} extracts the token from the \code{Authorization} header, verifies it using the configured secret, and attaches the decoded payload to the request object \cite{jwt-rfc,jwt-bcp}.
 
@@ -71,7 +119,7 @@ Authorization is layered on top of authentication. The project uses:
 
 The design choice to keep permissions data-driven is significant. It allows new resources and actions to be introduced through database records and route logic instead of forcing the codebase into a rigid two-role system.
 
-\section{Data Model}
+\subsection{Data Model}
 
 The database schema in \code{backend/prisma/schema.prisma} defines the educational, assessment, and progression domain. Table \ref{tab:main-entities} summarizes the most important entities.
 
@@ -99,7 +147,7 @@ The database schema in \code{backend/prisma/schema.prisma} defines the education
 \bottomrule
 \end{longtable}
 
-\section{Question Snapshot Strategy}
+\subsection{Question Snapshot Strategy}
 
 One of the strongest design decisions in Anhoc is the separation between \code{question\_templates} and \code{question\_snapshots}. Templates describe how a question can be generated. Snapshots record the exact generated variables, accepted answers, student response, correctness result, and awarded points for one attempt.
 
@@ -111,7 +159,7 @@ This decision solves several engineering problems:
   \item analytics can distinguish between template quality and attempt outcomes.
 \end{itemize}
 
-\section{Progression Design}
+\subsection{Progression Design}
 
 Progression in Anhoc is not limited to a final score. The backend updates several layers of state:
 \begin{itemize}
@@ -122,3 +170,249 @@ Progression in Anhoc is not limited to a final score. The backend updates severa
 \end{itemize}
 
 This design supports both immediate feedback and longitudinal tracking, which is more appropriate for learning software than a simple pass or fail test history.
+
+\subsection{Sequence Diagrams for Main Use Cases}
+
+The following sequence diagrams refine the use cases introduced in the requirements chapter and map them to the implemented frontend, backend, service, and database layers.
+
+\subsubsection{Use case 1: Register or Login}
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{
+\begin{tikzpicture}[font=\footnotesize]
+  \node[lifelinehead] (a1) at (0,0) {Guest/User};
+  \node[lifelinehead] (a2) at (3.5,0) {Frontend};
+  \node[lifelinehead] (a3) at (7,0) {Auth Route};
+  \node[lifelinehead] (a4) at (10.5,0) {Auth Service};
+  \node[lifelinehead] (a5) at (14,0) {PostgreSQL};
+
+  \foreach \x in {a1,a2,a3,a4,a5} {
+    \draw[dashed] (\x.south) -- ++(0,-6.8);
+  }
+
+  \seqstep{seqmsg}{a1}{a2}{-1.2}{Submit registration or login form}
+  \seqstep{seqmsg}{a2}{a3}{-2.0}{POST /auth/register or /auth/login}
+  \seqstep{seqmsg}{a3}{a4}{-2.8}{Validate input and resolve role}
+  \seqstep{seqmsg}{a4}{a5}{-3.6}{Load or create user and permissions}
+  \seqstep{seqreturn}{a5}{a4}{-4.4}{User and role records}
+  \seqstep{seqreturn}{a4}{a3}{-5.2}{JWT, refresh token, profile payload}
+  \seqstep{seqreturn}{a3}{a2}{-6.0}{Authenticated session response}
+  \seqstep{seqreturn}{a2}{a1}{-6.6}{Redirect to role-specific area}
+\end{tikzpicture}
+}
+\caption{Sequence diagram for registration or login}
+\label{fig:seq-authenticate-user}
+\end{figure}
+
+\subsubsection{Use case 2: Study Lesson}
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{
+\begin{tikzpicture}[font=\footnotesize]
+  \node[lifelinehead] (b1) at (0,0) {Student};
+  \node[lifelinehead] (b2) at (3.5,0) {Frontend};
+  \node[lifelinehead] (b3) at (7,0) {Lesson Route};
+  \node[lifelinehead] (b4) at (10.5,0) {Lesson Service};
+  \node[lifelinehead] (b5) at (14,0) {PostgreSQL};
+
+  \foreach \x in {b1,b2,b3,b4,b5} {
+    \draw[dashed] (\x.south) -- ++(0,-6.8);
+  }
+
+  \seqstep{seqmsg}{b1}{b2}{-1.2}{Choose subject, grade, and lesson}
+  \seqstep{seqmsg}{b2}{b3}{-2.0}{GET lesson detail}
+  \seqstep{seqmsg}{b3}{b4}{-2.8}{Check access and build lesson response}
+  \seqstep{seqmsg}{b4}{b5}{-3.6}{Query lesson, grade, and subject}
+  \seqstep{seqreturn}{b5}{b4}{-4.4}{Lesson content and metadata}
+  \seqstep{seqreturn}{b4}{b2}{-5.2}{Renderable lesson payload}
+  \seqstep{seqmsg}{b2}{b3}{-6.0}{POST study-time update}
+  \seqstep{seqmsg}{b3}{b5}{-6.6}{Persist study progress}
+\end{tikzpicture}
+}
+\caption{Sequence diagram for studying a lesson}
+\label{fig:seq-study-lesson}
+\end{figure}
+
+\subsubsection{Use case 3: Complete Lesson Practice}
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{
+\begin{tikzpicture}[font=\footnotesize]
+  \node[lifelinehead] (c1) at (0,0) {Student};
+  \node[lifelinehead] (c2) at (3.5,0) {Frontend};
+  \node[lifelinehead] (c3) at (7,0) {Lesson Route};
+  \node[lifelinehead] (c4) at (10.5,0) {Practice Services};
+  \node[lifelinehead] (c5) at (14,0) {PostgreSQL};
+
+  \foreach \x in {c1,c2,c3,c4,c5} {
+    \draw[dashed] (\x.south) -- ++(0,-8.4);
+  }
+
+  \seqstep{seqmsg}{c1}{c2}{-1.2}{Start lesson practice}
+  \seqstep{seqmsg}{c2}{c3}{-2.0}{POST start-practice}
+  \seqstep{seqmsg}{c3}{c4}{-2.8}{Create attempt from lesson templates}
+  \seqstep{seqmsg}{c4}{c5}{-3.6}{Persist attempt and question snapshots}
+  \seqstep{seqreturn}{c5}{c2}{-4.4}{Attempt with generated questions}
+  \seqstep{seqmsg}{c1}{c2}{-5.2}{Submit answers}
+  \seqstep{seqmsg}{c2}{c3}{-6.0}{POST attempt completion}
+  \seqstep{seqmsg}{c3}{c4}{-6.8}{Grade answers and compute XP and mastery}
+  \seqstep{seqmsg}{c4}{c5}{-7.6}{Store final score and progression state}
+  \seqstep{seqreturn}{c5}{c2}{-8.2}{Completed result and rewards}
+\end{tikzpicture}
+}
+\caption{Sequence diagram for completing lesson practice}
+\label{fig:seq-complete-practice}
+\end{figure}
+
+\subsubsection{Use case 4: Take Grade-Level Test}
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{
+\begin{tikzpicture}[font=\footnotesize]
+  \node[lifelinehead] (d1) at (0,0) {Student};
+  \node[lifelinehead] (d2) at (3.5,0) {Frontend};
+  \node[lifelinehead] (d3) at (7,0) {Test Route};
+  \node[lifelinehead] (d4) at (10.5,0) {Test Services};
+  \node[lifelinehead] (d5) at (14,0) {PostgreSQL};
+
+  \foreach \x in {d1,d2,d3,d4,d5} {
+    \draw[dashed] (\x.south) -- ++(0,-7.6);
+  }
+
+  \seqstep{seqmsg}{d1}{d2}{-1.2}{Select grade-level test}
+  \seqstep{seqmsg}{d2}{d3}{-2.0}{POST start grade test}
+  \seqstep{seqmsg}{d3}{d4}{-2.8}{Collect eligible grade templates}
+  \seqstep{seqmsg}{d4}{d5}{-3.6}{Create attempt and snapshots}
+  \seqstep{seqreturn}{d5}{d2}{-4.4}{Generated test session}
+  \seqstep{seqmsg}{d1}{d2}{-5.2}{Submit final answers}
+  \seqstep{seqmsg}{d2}{d3}{-6.0}{POST finish test}
+  \seqstep{seqmsg}{d3}{d5}{-6.8}{Persist graded attempt and score}
+  \seqstep{seqreturn}{d5}{d2}{-7.4}{Completed test result}
+\end{tikzpicture}
+}
+\caption{Sequence diagram for taking a grade-level test}
+\label{fig:seq-grade-test}
+\end{figure}
+
+\subsubsection{Use case 5: View Progress and Achievements}
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{
+\begin{tikzpicture}[font=\footnotesize]
+  \node[lifelinehead] (e1) at (0,0) {Student};
+  \node[lifelinehead] (e2) at (3.5,0) {Frontend};
+  \node[lifelinehead] (e3) at (7,0) {Profile Routes};
+  \node[lifelinehead] (e4) at (10.5,0) {Progress Services};
+  \node[lifelinehead] (e5) at (14,0) {PostgreSQL};
+
+  \foreach \x in {e1,e2,e3,e4,e5} {
+    \draw[dashed] (\x.south) -- ++(0,-6.8);
+  }
+
+  \seqstep{seqmsg}{e1}{e2}{-1.2}{Open dashboard or achievements page}
+  \seqstep{seqmsg}{e2}{e3}{-2.0}{GET profile, stats, and achievements}
+  \seqstep{seqmsg}{e3}{e4}{-2.8}{Assemble progress summary}
+  \seqstep{seqmsg}{e4}{e5}{-3.6}{Query XP, mastery, and reward records}
+  \seqstep{seqreturn}{e5}{e4}{-4.4}{Progress and achievement data}
+  \seqstep{seqreturn}{e4}{e2}{-5.2}{Dashboard payload}
+  \seqstep{seqreturn}{e2}{e1}{-6.0}{Rendered charts, badges, and history}
+\end{tikzpicture}
+}
+\caption{Sequence diagram for viewing progress and achievements}
+\label{fig:seq-progress-achievements}
+\end{figure}
+
+\subsubsection{Use case 6: Manage Content and Question Templates}
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{
+\begin{tikzpicture}[font=\footnotesize]
+  \node[lifelinehead] (f1) at (0,0) {Teacher/Supervisor/Admin};
+  \node[lifelinehead] (f2) at (3.5,0) {Frontend};
+  \node[lifelinehead] (f3) at (7,0) {Admin/Test Routes};
+  \node[lifelinehead] (f4) at (10.5,0) {Content Services};
+  \node[lifelinehead] (f5) at (14,0) {PostgreSQL};
+
+  \foreach \x in {f1,f2,f3,f4,f5} {
+    \draw[dashed] (\x.south) -- ++(0,-7.6);
+  }
+
+  \seqstep{seqmsg}{f1}{f2}{-1.2}{Create or edit lesson/template}
+  \seqstep{seqmsg}{f2}{f3}{-2.0}{POST, PUT, or DELETE management request}
+  \seqstep{seqmsg}{f3}{f4}{-2.8}{Check permission and subject scope}
+  \seqstep{seqmsg}{f4}{f5}{-3.6}{Load current data and save changes}
+  \seqstep{seqreturn}{f5}{f4}{-4.4}{Updated record set}
+  \seqstep{seqreturn}{f4}{f3}{-5.2}{Validated management response}
+  \seqstep{seqreturn}{f3}{f2}{-6.0}{Refreshed content payload}
+  \seqstep{seqreturn}{f2}{f1}{-6.8}{Updated management view}
+\end{tikzpicture}
+}
+\caption{Sequence diagram for managing content and question templates}
+\label{fig:seq-manage-content}
+\end{figure}
+
+\subsubsection{Use case 7: Manage Learning Unit Members and Seats}
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{
+\begin{tikzpicture}[font=\footnotesize]
+  \node[lifelinehead] (g1) at (0,0) {Supervisor/Admin};
+  \node[lifelinehead] (g2) at (3.5,0) {Frontend};
+  \node[lifelinehead] (g3) at (7,0) {Supervisor Route};
+  \node[lifelinehead] (g4) at (10.5,0) {Learn Unit Service};
+  \node[lifelinehead] (g5) at (14,0) {PostgreSQL};
+
+  \foreach \x in {g1,g2,g3,g4,g5} {
+    \draw[dashed] (\x.south) -- ++(0,-7.6);
+  }
+
+  \seqstep{seqmsg}{g1}{g2}{-1.2}{Open member or seat management}
+  \seqstep{seqmsg}{g2}{g3}{-2.0}{POST /supervisor/members or /buy-slots}
+  \seqstep{seqmsg}{g3}{g4}{-2.8}{Resolve learn unit context}
+  \seqstep{seqmsg}{g4}{g5}{-3.6}{Load supervisor, unit, and limits}
+  \seqstep{seqreturn}{g5}{g4}{-4.4}{Unit state and entitlement data}
+  \seqstep{seqmsg}{g4}{g5}{-5.2}{Persist member account or seat purchase}
+  \seqstep{seqreturn}{g5}{g3}{-6.0}{Updated learn unit state}
+  \seqstep{seqreturn}{g3}{g1}{-6.8}{Refreshed roster or slot summary}
+\end{tikzpicture}
+}
+\caption{Sequence diagram for managing learning unit members and seats}
+\label{fig:seq-manage-learning-unit}
+\end{figure}
+
+\subsubsection{Use case 8: Manage Roles, Access Control, and Dashboard}
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{
+\begin{tikzpicture}[font=\footnotesize]
+  \node[lifelinehead] (h1) at (0,0) {Administrator};
+  \node[lifelinehead] (h2) at (3.5,0) {Frontend};
+  \node[lifelinehead] (h3) at (7,0) {Admin Route};
+  \node[lifelinehead] (h4) at (10.5,0) {Admin Services};
+  \node[lifelinehead] (h5) at (14,0) {PostgreSQL};
+
+  \foreach \x in {h1,h2,h3,h4,h5} {
+    \draw[dashed] (\x.south) -- ++(0,-7.6);
+  }
+
+  \seqstep{seqmsg}{h1}{h2}{-1.2}{Open users, roles, or dashboard view}
+  \seqstep{seqmsg}{h2}{h3}{-2.0}{GET or PUT admin management request}
+  \seqstep{seqmsg}{h3}{h4}{-2.8}{Verify admin authority}
+  \seqstep{seqmsg}{h4}{h5}{-3.6}{Load or update users, roles, permissions, stats}
+  \seqstep{seqreturn}{h5}{h4}{-4.4}{Administrative records and aggregates}
+  \seqstep{seqreturn}{h4}{h3}{-5.2}{Dashboard or update response}
+  \seqstep{seqreturn}{h3}{h2}{-6.0}{Renderable admin payload}
+  \seqstep{seqreturn}{h2}{h1}{-6.8}{Updated dashboard or access-control view}
+\end{tikzpicture}
+}
+\caption{Sequence diagram for managing roles, access control, and dashboard data}
+\label{fig:seq-admin-rbac-dashboard}
+\end{figure}

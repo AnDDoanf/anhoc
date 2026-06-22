@@ -1,6 +1,6 @@
-\chapter{Requirements Analysis}
+\section{Requirements Analysis}
 
-\section{Stakeholders and User Roles}
+\subsection{Stakeholders and User Roles}
 
 The primary stakeholders in Anhoc are students, administrators, and maintainers of the platform.
 
@@ -12,7 +12,7 @@ The primary stakeholders in Anhoc are students, administrators, and maintainers 
 
 The codebase also distinguishes between global roles and subject-specific permissions. This is important because a role may have permission to manage some resources without necessarily having access to all subjects.
 
-\section{Functional Requirements}
+\subsection{Functional Requirements}
 
 Table \ref{tab:functional-requirements} summarizes the main functional requirements derived from the implementation.
 
@@ -35,7 +35,150 @@ Administration & The system shall provide user, role, permission, subject-access
 \end{tabularx}
 \end{table}
 
-\section{Non-Functional Requirements}
+\subsection{Use Case Model}
+
+Figure \ref{fig:use-case-diagram} summarizes the main interactions between the implemented role groups and the platform boundary. The repository defines five fixed application roles: \code{free\_student}, \code{sub\_student}, \code{teacher}, \code{supervisor}, and \code{admin}. A guest actor is also useful in the requirements model because registration and login begin before an authenticated role is established.
+
+\begin{figure}[H]
+\centering
+\resizebox{0.82\textwidth}{!}{
+\begin{tikzpicture}[node distance=1.0cm and 1.1cm]
+  \node[usecase, minimum width=4.6cm] (uc1) at (6.8,13.8) {Register or\\Login};
+  \node[usecase, minimum width=4.6cm] (uc2) at (6.8,11.7) {Study\\Lesson};
+  \node[usecase, minimum width=4.6cm] (uc3) at (6.8,9.6) {Complete\\Lesson Practice};
+  \node[usecase, minimum width=4.6cm] (uc4) at (6.8,7.5) {Take Grade-Level\\Test};
+  \node[usecase, minimum width=4.6cm] (uc5) at (6.8,5.4) {View Progress and\\Achievements};
+  \node[usecase, minimum width=4.6cm] (uc6) at (6.8,3.3) {Manage Content and\\Question Templates};
+  \node[usecase, minimum width=4.6cm] (uc7) at (6.8,1.4) {Manage Learning Unit\\Members and Seats};
+  \node[usecase, minimum width=4.6cm] (uc8) at (6.8,-0.9) {Manage Roles, Access\\Control, and Dashboard};
+
+  \node[systembox, fit=(uc1) (uc2) (uc3) (uc4) (uc5) (uc6) (uc7) (uc8), inner xsep=1.4cm, inner ysep=1.2cm] (system) {};
+  \node[anchor=north west] at ($(system.north west)+(0.2,-0.2)$) {\textbf{Anhoc Platform}};
+
+  \node[actor] (guest) at (0,13.2) {Guest};
+  \node[actor] (free) at (0,10.9) {Free\\Student};
+  \node[actor] (sub) at (0,8.6) {Subscribed\\Student};
+  \node[actor] (teacher) at (13.6,10.9) {Teacher};
+  \node[actor] (supervisor) at (13.6,8.6) {Supervisor};
+  \node[actor] (admin) at (13.6,6.3) {Administrator};
+
+  \draw (guest.east) -- (uc1.west);
+  \draw (free.east) -- (uc1.west);
+  \draw (free.east) -- (uc2.west);
+  \draw (free.east) -- (uc3.west);
+  \draw (free.east) -- (uc4.west);
+  \draw (free.east) -- (uc5.west);
+  \draw (sub.east) -- (uc2.west);
+  \draw (sub.east) -- (uc3.west);
+  \draw (sub.east) -- (uc4.west);
+  \draw (sub.east) -- (uc5.west);
+
+  \draw (teacher.west) -- (uc1.east);
+  \draw (teacher.west) -- (uc6.east);
+  \draw (supervisor.west) -- (uc1.east);
+  \draw (supervisor.west) -- (uc6.east);
+  \draw (supervisor.west) -- (uc7.east);
+  \draw (admin.west) -- (uc1.east);
+  \draw (admin.west) -- (uc6.east);
+  \draw (admin.west) -- (uc7.east);
+  \draw (admin.west) -- (uc8.east);
+\end{tikzpicture}
+}
+\caption{Use case diagram of the Anhoc platform}
+\label{fig:use-case-diagram}
+\end{figure}
+
+\subsection{Use Case Descriptions}
+
+\subsubsection{Use Case 1: Register or Login}
+
+\begin{longtable}{L{0.28\textwidth}L{0.62\textwidth}}
+\textbf{Primary actor} & Guest or authenticated platform user \\ \hline
+\textbf{Goal} & Create an account or obtain a valid authenticated session. \\ \hline
+\textbf{Preconditions} & The user has network access to the frontend and backend services. Login additionally requires an existing account. \\ \hline
+\textbf{Trigger} & The user opens the authentication area and submits a registration or login form. \\ \hline
+\textbf{Main flow} & (1) The user chooses registration or login. (2) The frontend sends credentials and requested role information to the authentication API. (3) The backend validates the request, resolves the target role, and loads permission data. (4) The backend returns session tokens and profile information. (5) The frontend stores the session and redirects the user to the proper interface. \\ \hline
+\textbf{Postconditions} & A new account is created or an authenticated session is established with role-specific permissions. \\
+\end{longtable}
+
+\subsubsection{Use Case 2: Study Lesson}
+
+\begin{longtable}{L{0.28\textwidth}L{0.62\textwidth}}
+\textbf{Primary actor} & Free student or subscribed student \\ \hline
+\textbf{Goal} & Read lesson content for a chosen subject, grade, and lesson. \\ \hline
+\textbf{Preconditions} & The student is authenticated and has access to the selected subject. \\ \hline
+\textbf{Trigger} & The student opens a lesson from the learning area. \\ \hline
+\textbf{Main flow} & (1) The student browses grades and lessons. (2) The frontend requests lesson detail from the API. (3) The backend retrieves lesson metadata and markdown content. (4) The frontend renders the bilingual lesson page. (5) The frontend records study time while the student remains on the page. \\ \hline
+\textbf{Postconditions} & The lesson is displayed and study progress can be updated for the student. \\
+\end{longtable}
+
+\subsubsection{Use Case 3: Complete Lesson Practice}
+
+\begin{longtable}{L{0.28\textwidth}L{0.62\textwidth}}
+\textbf{Primary actor} & Free student or subscribed student \\ \hline
+\textbf{Goal} & Practice a lesson through generated questions and receive feedback. \\ \hline
+\textbf{Preconditions} & The student is authenticated and the lesson has available question templates. \\ \hline
+\textbf{Trigger} & The student starts practice from a lesson page. \\ \hline
+\textbf{Main flow} & (1) The frontend requests a practice attempt for the lesson. (2) The backend generates question snapshots from the lesson templates. (3) The student answers questions one by one. (4) The frontend submits responses. (5) The backend evaluates correctness, computes the score, updates mastery and XP, and checks achievements. (6) The result view is returned to the student. \\ \hline
+\textbf{Postconditions} & The attempt is stored with snapshot-level grading and the student progression state is updated. \\
+\end{longtable}
+
+\subsubsection{Use Case 4: Take Grade-Level Test}
+
+\begin{longtable}{L{0.28\textwidth}L{0.62\textwidth}}
+\textbf{Primary actor} & Free student or subscribed student \\ \hline
+\textbf{Goal} & Assess broader understanding across the lessons of one grade. \\ \hline
+\textbf{Preconditions} & The student is authenticated and the grade has enough templates to assemble a test. \\ \hline
+\textbf{Trigger} & The student chooses a grade test from the practice or testing area. \\ \hline
+\textbf{Main flow} & (1) The frontend requests a grade-level test attempt. (2) The backend collects eligible templates from lessons in the grade. (3) Question snapshots are generated for the attempt. (4) The student submits answers. (5) The backend finalizes the attempt, calculates the score, and records progression outcomes. \\ \hline
+\textbf{Postconditions} & A completed grade-level test attempt is stored and can be reviewed later. \\
+\end{longtable}
+
+\subsubsection{Use Case 5: View Progress and Achievements}
+
+\begin{longtable}{L{0.28\textwidth}L{0.62\textwidth}}
+\textbf{Primary actor} & Free student or subscribed student \\ \hline
+\textbf{Goal} & Review learning progress, XP history, mastery, and earned achievements. \\ \hline
+\textbf{Preconditions} & The student is authenticated and has recorded activity in the system. \\ \hline
+\textbf{Trigger} & The student opens the dashboard, profile, or achievements page. \\ \hline
+\textbf{Main flow} & (1) The frontend requests student statistics and achievement data. (2) The backend loads profile, activity, mastery, and achievement records. (3) The frontend renders summary cards and achievement states. \\ \hline
+\textbf{Postconditions} & The student can inspect current progress and earned rewards. \\
+\end{longtable}
+
+\subsubsection{Use Case 6: Manage Content and Question Templates}
+
+\begin{longtable}{L{0.28\textwidth}L{0.62\textwidth}}
+\textbf{Primary actor} & Teacher, supervisor, or administrator \\ \hline
+\textbf{Goal} & Maintain lessons and reusable question templates for the learning platform. \\ \hline
+\textbf{Preconditions} & The actor is authenticated and has the required lesson or test management permissions within the permitted subject scope. \\ \hline
+\textbf{Trigger} & The actor creates, updates, previews, or deletes a lesson or template in a management interface. \\ \hline
+\textbf{Main flow} & (1) The actor edits lesson or template data in the frontend. (2) The frontend sends the request to the backend. (3) The backend validates the JWT, permissions, and subject scope. (4) The backend persists the changes in the database. (5) The frontend refreshes the management view. \\ \hline
+\textbf{Postconditions} & The affected content records are updated and become available to the rest of the platform. \\
+\end{longtable}
+
+\subsubsection{Use Case 7: Manage Learning Unit Members and Seats}
+
+\begin{longtable}{L{0.28\textwidth}L{0.62\textwidth}}
+\textbf{Primary actor} & Supervisor or administrator \\ \hline
+\textbf{Goal} & Manage a learning unit by purchasing seats and creating member accounts. \\ \hline
+\textbf{Preconditions} & The actor is authenticated, has supervisor-level access, and is associated with a learn unit or is acting as an administrator over one. \\ \hline
+\textbf{Trigger} & The actor opens the member management area or seat management flow. \\ \hline
+\textbf{Main flow} & (1) The actor requests the current learn unit context. (2) The frontend sends member or seat management operations to the supervisor API. (3) The backend checks whether the user is the relevant supervisor or an administrator. (4) The backend updates seat counts, subscription records, or member accounts. (5) The frontend refreshes the roster and learn unit summary. \\ \hline
+\textbf{Postconditions} & Learning unit seats or member accounts are updated consistently with subscription and scope constraints. \\
+\end{longtable}
+
+\subsubsection{Use Case 8: Manage Roles, Access Control, and Dashboard}
+
+\begin{longtable}{L{0.28\textwidth}L{0.62\textwidth}}
+\textbf{Primary actor} & Administrator \\ \hline
+\textbf{Goal} & Control platform-wide users, roles, permissions, subject access, and aggregate reports. \\ \hline
+\textbf{Preconditions} & The administrator is authenticated with full management privileges. \\ \hline
+\textbf{Trigger} & The administrator opens the admin dashboard or a user and permission management screen. \\ \hline
+\textbf{Main flow} & (1) The administrator requests role, user, or dashboard data. (2) The frontend calls the admin API. (3) The backend validates administrative authority. (4) The backend loads or updates users, roles, permissions, and statistical summaries. (5) The frontend renders the resulting dashboard or management state. \\ \hline
+\textbf{Postconditions} & Platform-level administration data is viewed or updated with persistent RBAC changes. \\
+\end{longtable}
+
+\subsection{Non-Functional Requirements}
 
 The repository implies the following non-functional requirements:
 
@@ -47,7 +190,7 @@ The repository implies the following non-functional requirements:
   \item \textbf{Deployability:} the architecture should run in a common cloud arrangement using Vercel, Render, and Neon.
 \end{itemize}
 
-\section{Learning Content Requirements}
+\subsection{Learning Content Requirements}
 
 Educational content in Anhoc is organized around a hierarchy of subjects, grades, and lessons. Lessons contain bilingual titles and markdown-based content bodies. This leads to several domain requirements:
 
@@ -58,7 +201,7 @@ Educational content in Anhoc is organized around a hierarchy of subjects, grades
   \item progress should be measurable at the lesson level.
 \end{itemize}
 
-\section{Assessment Requirements}
+\subsection{Assessment Requirements}
 
 Assessment in the project has two modes:
 \begin{itemize}
@@ -68,7 +211,7 @@ Assessment in the project has two modes:
 
 The assessment subsystem must support question generation, answer submission, correctness evaluation, score calculation, and post-completion progression updates. The implementation also needs to distinguish between theoretical questions and computed math questions because the grading strategy differs between those two cases.
 
-\section{Administrative Requirements}
+\subsection{Administrative Requirements}
 
 Administrative functionality in Anhoc goes beyond simple content editing. The platform must manage:
 \begin{itemize}
@@ -81,7 +224,7 @@ Administrative functionality in Anhoc goes beyond simple content editing. The pl
 
 This requirement set justifies the presence of a dynamic RBAC model instead of a fixed boolean admin flag.
 
-\section{Operational Assumptions}
+\subsection{Operational Assumptions}
 
 The codebase assumes a web-first deployment model:
 \begin{itemize}

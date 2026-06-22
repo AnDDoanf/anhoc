@@ -1,48 +1,77 @@
-\contentsline {chapter}{List of Acronyms}{i}{chapter*.4}%
-\contentsline {chapter}{List of Figures}{ii}{table.0.1}%
-\contentsline {chapter}{List of Tables}{iii}{chapter*.5}%
+\contentsline {chapter}{Acknowledgements}{3}{chapter*.2}%
+\contentsline {chapter}{List of Abbreviations}{i}{chapter*.4}%
+\contentsline {chapter}{List of Tables}{ii}{table.0.1}%
+\contentsline {chapter}{List of Figures}{iii}{chapter*.5}%
 \contentsline {chapter}{Abstract}{iv}{chapter*.7}%
-\contentsline {chapter}{\numberline {1}Introduction}{1}{chapter.1}%
-\contentsline {section}{\numberline {1.1}Background}{1}{section.1.1}%
-\contentsline {section}{\numberline {1.2}Problem Statement}{1}{section.1.2}%
-\contentsline {section}{\numberline {1.3}Objectives}{2}{section.1.3}%
-\contentsline {section}{\numberline {1.4}Scope}{2}{section.1.4}%
-\contentsline {section}{\numberline {1.5}Contributions of the Project}{2}{section.1.5}%
-\contentsline {section}{\numberline {1.6}Thesis Structure}{3}{section.1.6}%
-\contentsline {chapter}{\numberline {2}Requirements Analysis}{4}{chapter.2}%
-\contentsline {section}{\numberline {2.1}Stakeholders and User Roles}{4}{section.2.1}%
-\contentsline {section}{\numberline {2.2}Functional Requirements}{4}{section.2.2}%
-\contentsline {section}{\numberline {2.3}Non-Functional Requirements}{5}{section.2.3}%
-\contentsline {section}{\numberline {2.4}Learning Content Requirements}{5}{section.2.4}%
-\contentsline {section}{\numberline {2.5}Assessment Requirements}{6}{section.2.5}%
-\contentsline {section}{\numberline {2.6}Administrative Requirements}{6}{section.2.6}%
-\contentsline {section}{\numberline {2.7}Operational Assumptions}{7}{section.2.7}%
-\contentsline {chapter}{\numberline {3}System Design}{8}{chapter.3}%
-\contentsline {section}{\numberline {3.1}Architectural Overview}{8}{section.3.1}%
-\contentsline {section}{\numberline {3.2}Deployment Design}{9}{section.3.2}%
-\contentsline {section}{\numberline {3.3}Backend Design}{10}{section.3.3}%
-\contentsline {section}{\numberline {3.4}Frontend Design}{10}{section.3.4}%
-\contentsline {section}{\numberline {3.5}Security Model}{11}{section.3.5}%
-\contentsline {section}{\numberline {3.6}Data Model}{11}{section.3.6}%
-\contentsline {section}{\numberline {3.7}Question Snapshot Strategy}{12}{section.3.7}%
-\contentsline {section}{\numberline {3.8}Progression Design}{12}{section.3.8}%
-\contentsline {chapter}{\numberline {4}Implementation}{14}{chapter.4}%
-\contentsline {section}{\numberline {4.1}Frontend Implementation}{14}{section.4.1}%
-\contentsline {section}{\numberline {4.2}Backend API Implementation}{14}{section.4.2}%
-\contentsline {section}{\numberline {4.3}Question Generation and Grading}{15}{section.4.3}%
-\contentsline {section}{\numberline {4.4}Attempt Lifecycle}{16}{section.4.4}%
-\contentsline {section}{\numberline {4.5}Administrative Implementation}{17}{section.4.5}%
-\contentsline {section}{\numberline {4.6}Configuration and Deployment}{17}{section.4.6}%
-\contentsline {chapter}{\numberline {5}Evaluation and Discussion}{19}{chapter.5}%
-\contentsline {section}{\numberline {5.1}Method of Evaluation}{19}{section.5.1}%
-\contentsline {section}{\numberline {5.2}Representative User Scenarios}{19}{section.5.2}%
-\contentsline {section}{\numberline {5.3}Observed Strengths}{20}{section.5.3}%
-\contentsline {section}{\numberline {5.4}Current Limitations}{20}{section.5.4}%
-\contentsline {section}{\numberline {5.5}Risks and Tradeoffs}{21}{section.5.5}%
-\contentsline {section}{\numberline {5.6}Future Improvements}{21}{section.5.6}%
-\contentsline {section}{\numberline {5.7}Discussion}{22}{section.5.7}%
-\contentsline {chapter}{\numberline {6}Conclusion}{23}{chapter.6}%
-\contentsline {chapter}{\numberline {A}Appendix}{24}{appendix.A}%
-\contentsline {section}{\numberline {A.1}Build and Run Notes}{24}{section.A.1}%
-\contentsline {section}{\numberline {A.2}Selected Environment Variables}{25}{section.A.2}%
-\contentsline {section}{\numberline {A.3}Selected REST Endpoints}{25}{section.A.3}%
+\contentsline {chapter}{\numberline {I}Introduction}{1}{chapter.1}%
+\contentsline {section}{\numberline {1}Background}{1}{section.1.1}%
+\contentsline {subsection}{\numberline {1.1}Statistical Context of E-Learning in Vietnam}{1}{subsection.1.1.1}%
+\contentsline {section}{\numberline {2}Problem Statement}{2}{section.1.2}%
+\contentsline {subsection}{\numberline {2.1}Advantages and Limitations of E-Learning Applications in Vietnam}{2}{subsection.1.2.1}%
+\contentsline {section}{\numberline {3}Objectives}{3}{section.1.3}%
+\contentsline {section}{\numberline {4}Scope}{3}{section.1.4}%
+\contentsline {section}{\numberline {5}Contributions of the Project}{4}{section.1.5}%
+\contentsline {section}{\numberline {6}Thesis Structure}{4}{section.1.6}%
+\contentsline {chapter}{\numberline {II}Objectives}{5}{chapter.2}%
+\contentsline {section}{\numberline {1}Desired Features}{5}{section.2.1}%
+\contentsline {section}{\numberline {2}Expected Outcome}{6}{section.2.2}%
+\contentsline {chapter}{\numberline {III}Materials and Methods}{7}{chapter.3}%
+\contentsline {section}{\numberline {1}Requirements Analysis}{7}{section.3.1}%
+\contentsline {subsection}{\numberline {1.1}Stakeholders and User Roles}{7}{subsection.3.1.1}%
+\contentsline {subsection}{\numberline {1.2}Functional Requirements}{7}{subsection.3.1.2}%
+\contentsline {subsection}{\numberline {1.3}Use Case Model}{8}{subsection.3.1.3}%
+\contentsline {subsection}{\numberline {1.4}Use Case Descriptions}{9}{subsection.3.1.4}%
+\contentsline {subsubsection}{Use Case 1: Register or Login}{9}{subsection.3.1.4}%
+\contentsline {subsubsection}{Use Case 2: Study Lesson}{10}{table.3.2}%
+\contentsline {subsubsection}{Use Case 3: Complete Lesson Practice}{10}{table.3.3}%
+\contentsline {subsubsection}{Use Case 4: Take Grade-Level Test}{11}{table.3.4}%
+\contentsline {subsubsection}{Use Case 5: View Progress and Achievements}{11}{table.3.5}%
+\contentsline {subsubsection}{Use Case 6: Manage Content and Question Templates}{12}{table.3.6}%
+\contentsline {subsubsection}{Use Case 7: Manage Learning Unit Members and Seats}{12}{table.3.7}%
+\contentsline {subsubsection}{Use Case 8: Manage Roles, Access Control, and Dashboard}{13}{table.3.8}%
+\contentsline {subsection}{\numberline {1.5}Non-Functional Requirements}{13}{subsection.3.1.5}%
+\contentsline {subsection}{\numberline {1.6}Learning Content Requirements}{14}{subsection.3.1.6}%
+\contentsline {subsection}{\numberline {1.7}Assessment Requirements}{14}{subsection.3.1.7}%
+\contentsline {subsection}{\numberline {1.8}Administrative Requirements}{14}{subsection.3.1.8}%
+\contentsline {subsection}{\numberline {1.9}Operational Assumptions}{15}{subsection.3.1.9}%
+\contentsline {section}{\numberline {2}System Design}{15}{section.3.2}%
+\contentsline {subsection}{\numberline {2.1}Architectural Overview}{15}{subsection.3.2.1}%
+\contentsline {subsection}{\numberline {2.2}Deployment Design}{16}{subsection.3.2.2}%
+\contentsline {subsection}{\numberline {2.3}Backend Design}{17}{subsection.3.2.3}%
+\contentsline {subsection}{\numberline {2.4}Frontend Design}{17}{subsection.3.2.4}%
+\contentsline {subsection}{\numberline {2.5}Security Model}{17}{subsection.3.2.5}%
+\contentsline {subsection}{\numberline {2.6}Data Model}{18}{subsection.3.2.6}%
+\contentsline {subsection}{\numberline {2.7}Question Snapshot Strategy}{19}{subsection.3.2.7}%
+\contentsline {subsection}{\numberline {2.8}Progression Design}{19}{subsection.3.2.8}%
+\contentsline {subsection}{\numberline {2.9}Sequence Diagrams for Main Use Cases}{19}{subsection.3.2.9}%
+\contentsline {subsubsection}{Use case 1: Register or Login}{20}{subsection.3.2.9}%
+\contentsline {subsubsection}{Use case 2: Study Lesson}{20}{figure.3.3}%
+\contentsline {subsubsection}{Use case 3: Complete Lesson Practice}{21}{figure.3.4}%
+\contentsline {subsubsection}{Use case 4: Take Grade-Level Test}{21}{figure.3.5}%
+\contentsline {subsubsection}{Use case 5: View Progress and Achievements}{22}{figure.3.6}%
+\contentsline {subsubsection}{Use case 6: Manage Content and Question Templates}{22}{figure.3.7}%
+\contentsline {subsubsection}{Use case 7: Manage Learning Unit Members and Seats}{23}{figure.3.8}%
+\contentsline {subsubsection}{Use case 8: Manage Roles, Access Control, and Dashboard}{23}{figure.3.9}%
+\contentsline {section}{\numberline {3}System Implementation}{24}{section.3.3}%
+\contentsline {subsection}{\numberline {3.1}Frontend Implementation}{24}{subsection.3.3.1}%
+\contentsline {subsection}{\numberline {3.2}Backend API Implementation}{24}{subsection.3.3.2}%
+\contentsline {subsection}{\numberline {3.3}Question Generation and Grading}{25}{subsection.3.3.3}%
+\contentsline {subsection}{\numberline {3.4}Attempt Lifecycle}{25}{subsection.3.3.4}%
+\contentsline {subsection}{\numberline {3.5}Administrative Implementation}{26}{subsection.3.3.5}%
+\contentsline {subsection}{\numberline {3.6}Configuration and Deployment}{27}{subsection.3.3.6}%
+\contentsline {chapter}{\numberline {IV}Results and Discussion}{28}{chapter.4}%
+\contentsline {section}{\numberline {1}Method of Evaluation}{28}{section.4.1}%
+\contentsline {section}{\numberline {2}Representative User Scenarios}{28}{section.4.2}%
+\contentsline {section}{\numberline {3}Observed Strengths}{29}{section.4.3}%
+\contentsline {section}{\numberline {4}Current Limitations}{29}{section.4.4}%
+\contentsline {section}{\numberline {5}Risks and Tradeoffs}{29}{section.4.5}%
+\contentsline {section}{\numberline {6}Future Improvements}{30}{section.4.6}%
+\contentsline {section}{\numberline {7}Discussion}{30}{section.4.7}%
+\contentsline {chapter}{\numberline {V}Conclusion \& Perspective}{31}{chapter.5}%
+\contentsline {chapter}{Appendices}{32}{chapter*.8}%
+\contentsline {section}{\numberline {A.1}Build and Run Notes}{32}{section.5.1}%
+\contentsline {section}{\numberline {A.2}Selected Environment Variables}{32}{section.5.2}%
+\contentsline {section}{\numberline {A.3}Selected REST Endpoints}{33}{section.5.3}%
+\contentsline {section}{\numberline {A.4}Application User Interface Screenshots}{33}{section.5.4}%
+\contentsline {chapter}{References}{38}{figure.5.8}%
+\contentsfinish 

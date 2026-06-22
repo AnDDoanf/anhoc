@@ -6,6 +6,12 @@ Digital learning systems are increasingly expected to do more than present stati
 
 The Anhoc project addresses this gap by combining theory lessons, generated practice, formal test sessions, and gamified progression in a single web application. The project targets school-level mathematics learning and is organized around subjects, grades, and lessons. The implemented system allows a student to read theory content, start practice from lesson templates, submit answers, complete tests, and monitor progress through XP, levels, and achievements. At the same time, an administrator can manage lessons, question templates, user accounts, roles, and access permissions.
 
+\subsection{Statistical Context of E-Learning in Vietnam}
+
+The Vietnamese context makes digital learning both promising and uneven. DataReportal reported 78.44 million internet users in Vietnam in January 2024, equivalent to 79.1\% of the population, together with 168.5 million active cellular mobile connections \cite{datareportal-vietnam-2024}. This creates a strong baseline for mobile-first learning applications. UNESCO also reported that about nine out of ten schools in Vietnam are connected to the internet and that national policy targets full school connectivity by 2025 \cite{unesco-vietnam-technology}. EdTech Hub's 2024 rapid scan further notes that the Vietnamese educational technology landscape already includes online learning platforms, learning apps, websites, and video-based resources, showing that e-learning is no longer a niche delivery mode in the country \cite{edtechhub-vietnam-scan}.
+
+However, the same sources show that access and quality remain unequal. UNESCO highlights a very large home-access gap: 95\% of children from the richest households benefit from internet access at home compared with only 18\% of children from the poorest households. During the COVID-19 period, students from the poorest households were also 34\% less likely to experience distance learning than students from the richest households, and there were roughly three students per computer on average \cite{unesco-vietnam-technology}. A World Bank case note on Vietnam's emergency distance-learning response adds that, in less advantaged areas, only 10\% to 20\% of students and teachers had access to personal digital devices at home, even though some provinces still managed to reach about 80\% of students through a combination of online and educational television lessons \cite{worldbank-vietnam-distance-learning,worldbank-vietnam-tv-learning}.
+
 \section{Problem Statement}
 
 The main engineering problem solved by Anhoc is the design of a learning platform that satisfies four requirements at the same time:
@@ -17,6 +23,26 @@ The main engineering problem solved by Anhoc is the design of a learning platfor
 \end{itemize}
 
 Many simple practice applications solve only one part of this problem. They either store fixed question banks, do not track long-term student progression, or rely on coarse user roles that become difficult to extend. Anhoc introduces a more structured approach by combining generated questions with persisted snapshots, dynamic role-based access control, and a progression subsystem.
+
+\subsection{Advantages and Limitations of E-Learning Applications in Vietnam}
+
+The statistical context above suggests several clear advantages for e-learning applications in Vietnam.
+\begin{itemize}
+  \item \textbf{Large reachable user base:} high internet penetration and widespread mobile connectivity make app-based learning distribution technically feasible at national scale \cite{datareportal-vietnam-2024}.
+  \item \textbf{Institutional readiness:} the fact that most schools are already connected to the internet creates a practical foundation for blended learning, school-supported digital homework, and platform-assisted assessment \cite{unesco-vietnam-technology}.
+  \item \textbf{Flexible continuity:} emergency distance-learning evidence shows that digital tools, especially when combined with broadcast channels, can preserve instructional continuity during disruption \cite{worldbank-vietnam-tv-learning}.
+  \item \textbf{Expanding ecosystem:} the presence of platforms, apps, websites, and video channels indicates that learners and schools are already familiar with multiple forms of educational technology \cite{edtechhub-vietnam-scan}.
+\end{itemize}
+
+At the same time, e-learning applications in Vietnam face structural limitations that directly motivate Anhoc's design.
+\begin{itemize}
+  \item \textbf{Access inequality:} home internet access and device ownership vary sharply by income and geography, which means an app cannot assume stable, private, always-on access for every learner \cite{unesco-vietnam-technology,worldbank-vietnam-distance-learning}.
+  \item \textbf{Fragmentation of tools and content:} World Bank analysis of Vietnamese e-learning practice notes underdeveloped, unstandardized platforms and inconsistent learning materials, making quality assurance difficult \cite{worldbank-vietnam-distance-learning}.
+  \item \textbf{Weak progression support in basic tools:} many digital offerings can deliver lessons or quizzes but do not reliably connect content, assessment history, progression, and administration in one coherent system.
+  \item \textbf{Equity risk:} if platform design ignores device constraints, bandwidth limits, or administrative coordination, digital learning can widen rather than reduce educational inequality \cite{unesco-vietnam-technology,worldbank-vietnam-distance-learning}.
+\end{itemize}
+
+These conditions shape the problem statement for Anhoc. A useful platform in Vietnam must not only digitize lessons; it must also provide structured practice, durable assessment records, scalable administration, and a design that remains usable in a context where digital opportunity and digital inequality coexist.
 
 \section{Objectives}
 
