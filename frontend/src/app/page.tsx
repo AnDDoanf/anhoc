@@ -115,7 +115,7 @@ export default function RootPage() {
   return (
     <main id="home-scroll-root" className="h-screen snap-y snap-mandatory overflow-y-auto scroll-smooth bg-sol-bg text-sol-text">
       <div className="relative overflow-hidden">
-        <SettingBar />
+        <SettingBar scrollContainerId="home-scroll-root" />
         <ScrollToTop containerId="home-scroll-root" />
         <div className="absolute inset-x-0 top-0 h-[40rem] bg-[radial-gradient(circle_at_top_left,rgba(38,139,210,0.14),transparent_38%),radial-gradient(circle_at_top_right,rgba(220,50,47,0.10),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.08),transparent_72%)]" />
         <div className="absolute left-[-5rem] top-24 h-56 w-56 rounded-full bg-sol-accent/10 blur-3xl" />

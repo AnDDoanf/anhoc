@@ -11,14 +11,18 @@ import { useLocale, useTranslations } from "next-intl";
 import { AppNotification, notificationService } from "@/services/notificationService";
 import { getBackendUrl } from "@/services/api";
 
-export default function SettingBar() {
+type SettingBarProps = {
+  scrollContainerId?: string;
+};
+
+export default function SettingBar({ scrollContainerId }: SettingBarProps) {
   const t = useTranslations("Settings");
   const locale = useLocale();
   const [activePanel, setActivePanel] = useState<"settings" | "notifications" | null>(null);
   const { user, logout } = useAuth();
   const containerRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
+  const lastScrollYRef = useRef(0);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
@@ -35,19 +39,30 @@ export default function SettingBar() {
   }, [user?.avatar_url]);
 
   useEffect(() => {
+    const scrollContainer = scrollContainerId
+      ? document.getElementById(scrollContainerId)
+      : null;
+    const scrollTarget = scrollContainer ?? window;
+
+    const getScrollTop = () => (
+      scrollContainer ? scrollContainer.scrollTop : window.scrollY
+    );
+
+    lastScrollYRef.current = getScrollTop();
+
     const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      if (currentScrollY > lastScrollY && currentScrollY > 50) {
+      const currentScrollY = getScrollTop();
+      if (currentScrollY > lastScrollYRef.current && currentScrollY > 50) {
         setIsVisible(false);
       } else {
         setIsVisible(true);
       }
-      setLastScrollY(currentScrollY);
+      lastScrollYRef.current = currentScrollY;
     };
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [lastScrollY]);
+    scrollTarget.addEventListener("scroll", handleScroll, { passive: true });
+    return () => scrollTarget.removeEventListener("scroll", handleScroll);
+  }, [scrollContainerId]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
