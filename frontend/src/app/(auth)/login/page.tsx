@@ -171,7 +171,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => {
-                window.location.href = `${API_BASE_URL}/auth/google`;
+                window.location.href = `${API_BASE_URL}/auth/google?frontendUrl=${encodeURIComponent(window.location.origin)}`;
               }}
               className="flex w-full items-center justify-center gap-3 rounded-lg border border-sol-border/50 bg-sol-bg px-4 py-3 text-sm font-semibold text-sol-text transition-all hover:bg-sol-surface hover:border-sol-accent active:scale-[0.99] hover:cursor-pointer"
             >
@@ -189,7 +189,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => {
-                  window.location.href = `${API_BASE_URL}/auth/facebook`;
+                  window.location.href = `${API_BASE_URL}/auth/facebook?frontendUrl=${encodeURIComponent(window.location.origin)}`;
                 }}
                 className="flex items-center justify-center gap-2 rounded-lg border border-sol-border/50 bg-sol-bg px-3 py-3 text-xs font-semibold text-sol-text transition-all hover:bg-sol-surface hover:border-sol-accent active:scale-[0.99] hover:cursor-pointer"
               >
@@ -203,7 +203,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => {
-                  window.location.href = `${API_BASE_URL}/auth/microsoft`;
+                  window.location.href = `${API_BASE_URL}/auth/microsoft?frontendUrl=${encodeURIComponent(window.location.origin)}`;
                 }}
                 className="flex items-center justify-center gap-2 rounded-lg border border-sol-border/50 bg-sol-bg px-3 py-3 text-xs font-semibold text-sol-text transition-all hover:bg-sol-surface hover:border-sol-accent active:scale-[0.99] hover:cursor-pointer"
               >

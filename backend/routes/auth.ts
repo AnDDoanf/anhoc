@@ -900,39 +900,69 @@ const handleOAuthUserLogin = async (
 router.get("/google", (req: Request, res: Response) => {
   const backendUrl = process.env.BACKEND_URL || "http://localhost:5001";
   const redirectUri = `${backendUrl}/api/v1/auth/google/callback`;
-  const state = (req.query.state as string) || "login";
-  
+  const stateVal = (req.query.state as string) || "login";
+  const frontendUrl = (req.query.frontendUrl as string) || process.env.FRONTEND_URL || "http://localhost:5000";
+
+  const oauthState = jwt.sign(
+    {
+      state: stateVal,
+      frontendUrl,
+    },
+    JWT_SECRET!,
+    { expiresIn: "10m" }
+  );
+
   if (!process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID === "your_google_client_id") {
-    return res.redirect(`${redirectUri}?code=mock_code&state=${state}`);
+    return res.redirect(`${redirectUri}?code=mock_code&state=${oauthState}`);
   }
 
-  const url = getGoogleAuthUrl(redirectUri, state);
+  const url = getGoogleAuthUrl(redirectUri, oauthState);
   res.redirect(url);
 });
 
 router.get("/facebook", (req: Request, res: Response) => {
   const backendUrl = process.env.BACKEND_URL || "http://localhost:5001";
   const redirectUri = `${backendUrl}/api/v1/auth/facebook/callback`;
-  const state = (req.query.state as string) || "login";
+  const stateVal = (req.query.state as string) || "login";
+  const frontendUrl = (req.query.frontendUrl as string) || process.env.FRONTEND_URL || "http://localhost:5000";
+
+  const oauthState = jwt.sign(
+    {
+      state: stateVal,
+      frontendUrl,
+    },
+    JWT_SECRET!,
+    { expiresIn: "10m" }
+  );
 
   if (!process.env.FACEBOOK_CLIENT_ID || process.env.FACEBOOK_CLIENT_ID === "your_facebook_client_id") {
-    return res.redirect(`${redirectUri}?code=mock_code&state=${state}`);
+    return res.redirect(`${redirectUri}?code=mock_code&state=${oauthState}`);
   }
 
-  const url = getFacebookAuthUrl(redirectUri, state);
+  const url = getFacebookAuthUrl(redirectUri, oauthState);
   res.redirect(url);
 });
 
 router.get("/microsoft", (req: Request, res: Response) => {
   const backendUrl = process.env.BACKEND_URL || "http://localhost:5001";
   const redirectUri = `${backendUrl}/api/v1/auth/microsoft/callback`;
-  const state = (req.query.state as string) || "login";
+  const stateVal = (req.query.state as string) || "login";
+  const frontendUrl = (req.query.frontendUrl as string) || process.env.FRONTEND_URL || "http://localhost:5000";
+
+  const oauthState = jwt.sign(
+    {
+      state: stateVal,
+      frontendUrl,
+    },
+    JWT_SECRET!,
+    { expiresIn: "10m" }
+  );
 
   if (!process.env.MICROSOFT_CLIENT_ID || process.env.MICROSOFT_CLIENT_ID === "your_microsoft_client_id") {
-    return res.redirect(`${redirectUri}?code=mock_code&state=${state}`);
+    return res.redirect(`${redirectUri}?code=mock_code&state=${oauthState}`);
   }
 
-  const url = getMicrosoftAuthUrl(redirectUri, state);
+  const url = getMicrosoftAuthUrl(redirectUri, oauthState);
   res.redirect(url);
 });
 
@@ -941,11 +971,10 @@ const handleOAuthCallback = async (
   req: Request,
   res: Response,
   provider: "google" | "facebook" | "microsoft",
-  profile: { id: string; email: string; name: string; avatarUrl?: string }
+  profile: { id: string; email: string; name: string; avatarUrl?: string },
+  state: string,
+  frontendUrl: string
 ) => {
-  const state = req.query.state as string;
-  const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5000").replace(/\/+$/, "");
-
   let linkUserId: string | null = null;
   if (state && state !== "login") {
     try {
@@ -1009,9 +1038,24 @@ const handleOAuthCallback = async (
 // OAuth callback endpoints
 router.get("/google/callback", async (req: Request, res: Response) => {
   const code = req.query.code as string;
+  const oauthState = req.query.state as string;
   const backendUrl = process.env.BACKEND_URL || "http://localhost:5001";
   const redirectUri = `${backendUrl}/api/v1/auth/google/callback`;
-  const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5000").replace(/\/+$/, "");
+
+  let frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5000").replace(/\/+$/, "");
+  let state = "login";
+
+  if (oauthState) {
+    try {
+      const decodedState = jwt.verify(oauthState, JWT_SECRET!) as { state: string; frontendUrl: string };
+      state = decodedState.state;
+      if (decodedState.frontendUrl) {
+        frontendUrl = decodedState.frontendUrl.replace(/\/+$/, "");
+      }
+    } catch (err) {
+      console.warn("Invalid OAuth state JWT:", err);
+    }
+  }
 
   if (!code) {
     return res.redirect(`${frontendUrl}/login?error=no_code_provided`);
@@ -1019,7 +1063,7 @@ router.get("/google/callback", async (req: Request, res: Response) => {
 
   try {
     const profile = await getGoogleProfile(code, redirectUri);
-    await handleOAuthCallback(req, res, "google", profile);
+    await handleOAuthCallback(req, res, "google", profile, state, frontendUrl);
   } catch (error) {
     console.error("Google OAuth Callback Error:", error);
     return res.redirect(`${frontendUrl}/login?error=google_oauth_failed`);
@@ -1028,9 +1072,24 @@ router.get("/google/callback", async (req: Request, res: Response) => {
 
 router.get("/facebook/callback", async (req: Request, res: Response) => {
   const code = req.query.code as string;
+  const oauthState = req.query.state as string;
   const backendUrl = process.env.BACKEND_URL || "http://localhost:5001";
   const redirectUri = `${backendUrl}/api/v1/auth/facebook/callback`;
-  const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5000").replace(/\/+$/, "");
+
+  let frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5000").replace(/\/+$/, "");
+  let state = "login";
+
+  if (oauthState) {
+    try {
+      const decodedState = jwt.verify(oauthState, JWT_SECRET!) as { state: string; frontendUrl: string };
+      state = decodedState.state;
+      if (decodedState.frontendUrl) {
+        frontendUrl = decodedState.frontendUrl.replace(/\/+$/, "");
+      }
+    } catch (err) {
+      console.warn("Invalid OAuth state JWT:", err);
+    }
+  }
 
   if (!code) {
     return res.redirect(`${frontendUrl}/login?error=no_code_provided`);
@@ -1038,7 +1097,7 @@ router.get("/facebook/callback", async (req: Request, res: Response) => {
 
   try {
     const profile = await getFacebookProfile(code, redirectUri);
-    await handleOAuthCallback(req, res, "facebook", profile);
+    await handleOAuthCallback(req, res, "facebook", profile, state, frontendUrl);
   } catch (error) {
     console.error("Facebook OAuth Callback Error:", error);
     return res.redirect(`${frontendUrl}/login?error=facebook_oauth_failed`);
@@ -1047,9 +1106,24 @@ router.get("/facebook/callback", async (req: Request, res: Response) => {
 
 router.get("/microsoft/callback", async (req: Request, res: Response) => {
   const code = req.query.code as string;
+  const oauthState = req.query.state as string;
   const backendUrl = process.env.BACKEND_URL || "http://localhost:5001";
   const redirectUri = `${backendUrl}/api/v1/auth/microsoft/callback`;
-  const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5000").replace(/\/+$/, "");
+
+  let frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5000").replace(/\/+$/, "");
+  let state = "login";
+
+  if (oauthState) {
+    try {
+      const decodedState = jwt.verify(oauthState, JWT_SECRET!) as { state: string; frontendUrl: string };
+      state = decodedState.state;
+      if (decodedState.frontendUrl) {
+        frontendUrl = decodedState.frontendUrl.replace(/\/+$/, "");
+      }
+    } catch (err) {
+      console.warn("Invalid OAuth state JWT:", err);
+    }
+  }
 
   if (!code) {
     return res.redirect(`${frontendUrl}/login?error=no_code_provided`);
@@ -1057,7 +1131,7 @@ router.get("/microsoft/callback", async (req: Request, res: Response) => {
 
   try {
     const profile = await getMicrosoftProfile(code, redirectUri);
-    await handleOAuthCallback(req, res, "microsoft", profile);
+    await handleOAuthCallback(req, res, "microsoft", profile, state, frontendUrl);
   } catch (error) {
     console.error("Microsoft OAuth Callback Error:", error);
     return res.redirect(`${frontendUrl}/login?error=microsoft_oauth_failed`);

@@ -9,6 +9,7 @@ import ThemeToggle from "../ui/ThemeToggle";
 import { Settings, LogOut, LogIn, ChevronDown, UserCog, Bell, CheckCheck } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { AppNotification, notificationService } from "@/services/notificationService";
+import { getBackendUrl } from "@/services/api";
 
 export default function SettingBar() {
   const t = useTranslations("Settings");
@@ -247,7 +248,7 @@ export default function SettingBar() {
           >
             {user?.avatar_url && !imageError ? (
               <img
-                src={user.avatar_url.startsWith("http") ? user.avatar_url : `http://localhost:5001${user.avatar_url}`}
+                src={getBackendUrl(user.avatar_url)}
                 alt={displayName}
                 className="w-full h-full object-cover"
                 onError={() => setImageError(true)}

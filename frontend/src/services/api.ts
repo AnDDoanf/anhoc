@@ -10,20 +10,24 @@ const normalizeApiBaseUrl = (value: string) => {
 
 const publicApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
 const internalApiUrl = process.env.INTERNAL_API_URL?.trim() || process.env.API_URL?.trim();
-const hasAbsolutePublicApiUrl = !!publicApiUrl && /^https?:\/\//i.test(publicApiUrl);
 
-// Prefer a direct browser-to-backend connection in production when an absolute public API URL is configured.
-// This avoids Vercel external rewrite handshakes for auth/session calls.
 export const API_BASE_URL = normalizeApiBaseUrl(
-  typeof window === "undefined"
-    ? publicApiUrl || BROWSER_API_URL
-    : hasAbsolutePublicApiUrl && process.env.NODE_ENV === "production"
-    ? publicApiUrl
-    : BROWSER_API_URL
+  publicApiUrl || BROWSER_API_URL
 );
+
 export const SERVER_API_BASE_URL = normalizeApiBaseUrl(
   internalApiUrl || publicApiUrl || LOCAL_API_URL
 );
+
+// Helper to construct absolute URLs to backend assets (like user avatars)
+export const getBackendUrl = (path: string) => {
+  if (!path) return "";
+  if (path.startsWith("http")) return path;
+  
+  // Extract the base backend URL by stripping `/api/v1`
+  const base = API_BASE_URL.replace(/\/api\/v1\/?$/, "");
+  return `${base}${path.startsWith("/") ? "" : "/"}${path}`;
+};
 
 export const api = axios.create({
   baseURL: API_BASE_URL,

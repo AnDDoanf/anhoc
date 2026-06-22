@@ -7,7 +7,7 @@ import { useTranslations } from "next-intl";
 import { useRouter, useSearchParams } from "next/navigation";
 import { authService } from "@/services/auth";
 import { useAuth } from "@/hooks/useAuth";
-import { API_BASE_URL } from "@/services/api";
+import { API_BASE_URL, getBackendUrl } from "@/services/api";
 import { 
   KeyRound, 
   ShieldCheck, 
@@ -84,7 +84,7 @@ function SettingsPageContent() {
   const handleLink = (provider: string) => {
     setOauthActionLoading(provider);
     const token = localStorage.getItem("token") || "";
-    window.location.href = `${API_BASE_URL}/auth/${provider}?state=${token}`;
+    window.location.href = `${API_BASE_URL}/auth/${provider}?state=${token}&frontendUrl=${encodeURIComponent(window.location.origin)}`;
   };
 
   const handleUnlink = async (provider: string) => {
@@ -274,7 +274,7 @@ function SettingsPageContent() {
                   >
                     {user?.avatar_url && !imageError ? (
                       <img 
-                        src={user.avatar_url.startsWith("http") ? user.avatar_url : `http://localhost:5001${user.avatar_url}`}
+                        src={getBackendUrl(user.avatar_url)}
                         alt={user.username || "Avatar"} 
                         className="w-full h-full object-cover transition-transform duration-500 group-hover/avatar:scale-110"
                         onError={() => setImageError(true)}
