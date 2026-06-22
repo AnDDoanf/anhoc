@@ -222,7 +222,7 @@ export default function LearningDashboard() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl min-h-0 h-[calc(100dvh-7rem)] overflow-y-auto overscroll-y-contain space-y-6 snap-y snap-mandatory scroll-smooth touch-pan-y [-webkit-overflow-scrolling:touch] animate-in fade-in slide-in-from-bottom-4 duration-500 md:h-auto md:overflow-visible md:space-y-10 md:snap-none">
+    <div className="mx-auto max-w-7xl space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Educational Hero Header */}
       <Hero
         iconPosition="bottom-right"
@@ -322,7 +322,7 @@ export default function LearningDashboard() {
                 return (
                   <div
                     key={`${subject.subject}-${group.grade}`}
-                    className="snap-start scroll-mt-10 rounded-3xl border border-sol-border/30 bg-sol-surface p-5 shadow-sm transition-all hover:border-sol-accent/40 hover:bg-sol-surface md:scroll-mt-6 md:p-6"
+                    className="rounded-3xl border border-sol-border/30 bg-sol-surface p-5 shadow-sm transition-all hover:border-sol-accent/40 hover:bg-sol-surface md:p-6"
                   >
                     <div className="flex items-center gap-3">
                       <button
@@ -351,7 +351,7 @@ export default function LearningDashboard() {
                       </Link>
                     </div>
 
-                    {gradeTest && <GradeTestEntry test={gradeTest} className="mt-5" />}
+                    {gradeTest && <GradeTestEntry test={gradeTest} className="hidden md:block mt-5" />}
 
                     <div
                       className={`grid transition-all duration-300 ease-out ${
@@ -363,7 +363,12 @@ export default function LearningDashboard() {
                       <div className="min-h-0 overflow-hidden">
                         <div className="scrollbar-theme -mx-1 overflow-x-auto pb-2">
                           <div className="flex min-w-full gap-4 px-1">
-                          {group.lessons.map((lesson, idx) => {
+                            {gradeTest && (
+                              <div className="block md:hidden w-80 shrink-0 snap-start">
+                                <GradeTestEntry test={gradeTest} className="h-full bg-sol-bg" />
+                              </div>
+                            )}
+                            {group.lessons.map((lesson, idx) => {
                             const title = locale === "vi" ? lesson.title_vi : lesson.title_en;
                             const mastery = masteryData[lesson.id];
                             return (
@@ -464,7 +469,7 @@ export default function LearningDashboard() {
         </div>
 
         <aside className="space-y-6 xl:sticky xl:top-24 xl:self-start">
-          <section className="snap-start scroll-mt-10 overflow-hidden rounded-[2rem] border border-sol-border/30 bg-sol-surface shadow-sm md:scroll-mt-0">
+          <section className="overflow-hidden rounded-[2rem] border border-sol-border/30 bg-sol-surface shadow-sm">
             <div className="border-b border-sol-border/30 p-5">
               <div className="flex items-center gap-2 text-sol-accent">
                 <Flame size={18} />
@@ -542,7 +547,7 @@ export default function LearningDashboard() {
             </div>
           </section>
 
-          <section className="snap-start scroll-mt-10 rounded-[2rem] border border-sol-border/30 bg-sol-surface p-5 shadow-sm md:scroll-mt-0">
+          <section className="rounded-[2rem] border border-sol-border/30 bg-sol-surface p-5 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-sol-accent">
                 <Users size={18} />

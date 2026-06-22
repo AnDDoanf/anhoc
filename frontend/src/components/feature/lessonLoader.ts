@@ -99,3 +99,29 @@ export async function getLesson(lessonId: string, locale: string = "vi") {
     return null;
   }
 }
+
+export async function getGradeLessons(gradeSlug: string, locale: string = "vi") {
+  try {
+    const token = (await cookies()).get("token")?.value;
+    const response = await fetch(`${SERVER_API_BASE_URL}/lessons`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      console.warn(`Failed to fetch lessons: ${response.status} ${response.statusText}`);
+      return [];
+    }
+
+    const lessons = (await response.json()) as any[];
+    // Filter by grade slug
+    const filtered = lessons.filter((l: any) => l.grade?.slug === gradeSlug);
+    return filtered.map((l: any) => ({
+      id: l.id,
+      title: (locale === "vi" ? l.title_vi : l.title_en) || "",
+    }));
+  } catch (error) {
+    console.error("Error loading grade lessons:", error);
+    return [];
+  }
+}

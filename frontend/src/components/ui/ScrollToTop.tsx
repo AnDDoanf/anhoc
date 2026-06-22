@@ -10,6 +10,12 @@ type ScrollToTopProps = {
 
 export default function ScrollToTop({ containerId, className = "bottom-6 right-6" }: ScrollToTopProps) {
   const [isVisible, setIsVisible] = useState(false);
+  const [hasChatbot, setHasChatbot] = useState(() => {
+    if (typeof window !== "undefined") {
+      return !!(window as any).__chatbotVisible;
+    }
+    return false;
+  });
 
   const scrollToTop = () => {
     const container = containerId ? document.getElementById(containerId) : null;
@@ -38,8 +44,27 @@ export default function ScrollToTop({ containerId, className = "bottom-6 right-6
     };
   }, [containerId]);
 
+  useEffect(() => {
+    const handleChatbotChange = (e: Event) => {
+      const customEvent = e as CustomEvent<boolean>;
+      setHasChatbot(customEvent.detail);
+    };
+
+    window.addEventListener("chatbot-visible-change", handleChatbotChange);
+    
+    if (typeof window !== "undefined") {
+      setHasChatbot(!!(window as any).__chatbotVisible);
+    }
+
+    return () => {
+      window.removeEventListener("chatbot-visible-change", handleChatbotChange);
+    };
+  }, []);
+
+  const finalClassName = hasChatbot ? className : className.replace("bottom-24", "bottom-6");
+
   return (
-    <div className={`fixed z-[60] ${className}`}>
+    <div className={`fixed z-[60] ${finalClassName}`}>
       <button
         type="button"
         onClick={scrollToTop}

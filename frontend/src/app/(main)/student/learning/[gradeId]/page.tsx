@@ -66,7 +66,7 @@ export default function GradePathPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-12 space-y-16">
+    <div className="max-w-7xl mx-auto px-0 py-6 md:py-12 space-y-10 md:space-y-16">
 
       {/* Header & Back Link */}
       <div className="space-y-8">
@@ -79,13 +79,13 @@ export default function GradePathPage() {
           <span>{commonT("backToHub")}</span>
         </Link>
 
-        <header className="relative p-10 md:p-16 rounded-[3rem] bg-sol-surface border border-sol-border/30 shadow-2xl overflow-hidden group">
+        <header className="relative p-5 sm:p-8 md:p-16 rounded-3xl sm:rounded-[2.5rem] md:rounded-[3rem] bg-sol-surface border border-sol-border/30 shadow-xl sm:shadow-2xl overflow-hidden group">
           {/* Premium Pulsing Gradient Glows aligned with student/games */}
           <div className="absolute top-0 right-0 w-96 h-96 bg-sol-accent/15 rounded-full -mr-32 -mt-32 blur-3xl animate-pulse pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-sol-orange/5 rounded-full -ml-32 -mb-32 blur-3xl pointer-events-none" />
 
-          <div className="absolute top-0 right-0 p-10 opacity-10 group-hover:scale-110 transition-transform duration-1000 rotate-6">
-            <Trophy size={140} className="text-sol-accent" />
+          <div className="absolute top-0 right-0 p-4 sm:p-8 md:p-12 opacity-10 group-hover:scale-110 transition-transform duration-1000 rotate-6 pointer-events-none">
+            <Trophy size={140} className="text-sol-accent w-24 h-24 sm:w-32 sm:h-32 md:w-36 md:h-36" />
           </div>
 
           <div className="relative z-10 space-y-4">

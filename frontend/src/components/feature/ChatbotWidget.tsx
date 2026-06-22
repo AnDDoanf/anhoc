@@ -333,6 +333,21 @@ export default function ChatbotWidget() {
     }
   }, [isOpen, activeSection]);
 
+  const isChatbotVisible = !!(isAuthenticated && isAvailable && user);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      (window as any).__chatbotVisible = isChatbotVisible;
+      window.dispatchEvent(new CustomEvent("chatbot-visible-change", { detail: isChatbotVisible }));
+    }
+    return () => {
+      if (typeof window !== "undefined") {
+        (window as any).__chatbotVisible = false;
+        window.dispatchEvent(new CustomEvent("chatbot-visible-change", { detail: false }));
+      }
+    };
+  }, [isChatbotVisible]);
+
   if (!isAuthenticated || !isAvailable || !user) return null;
 
   const providerTypeSystem = t("providerTypes.system");
