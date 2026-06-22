@@ -39,53 +39,15 @@ export const economyService = {
     return Math.min(12, baseMax) + extraLivesFromPoints;
   },
 
-  // Dynamically restore lives based on hours passed
-  restoreLives: async (stats: any): Promise<any> => {
-    const upgrades = stats.upgrades && typeof stats.upgrades === 'object' ? stats.upgrades : {};
-    const extraLivesFromPoints = Number((upgrades as any).extra_lives_from_points || 0);
-    const maxLives = economyService.getMaxLives(stats.level, extraLivesFromPoints);
-
-    if (stats.lives >= maxLives) {
-      // If already at or above max, keep the last restored timestamp updated to now so timer starts fresh when they drop
-      if (stats.lives > maxLives) {
-        return await prisma.studentStats.update({
-          where: { user_id: stats.user_id },
-          data: { lives: maxLives, last_life_restored_at: new Date() }
-        });
-      }
-      return stats;
-    }
-
-    const now = new Date();
-    const lastRestored = new Date(stats.last_life_restored_at);
-    const msDiff = now.getTime() - lastRestored.getTime();
-    const hoursPassed = Math.floor(msDiff / 3600000); // 1 hour = 3,600,000 ms
-
-    if (hoursPassed > 0) {
-      const newLives = Math.min(maxLives, stats.lives + hoursPassed);
-      // Advance last restored timestamp by hours restored
-      const nextRestored = newLives === maxLives ? now : new Date(lastRestored.getTime() + hoursPassed * 3600000);
-
-      return await prisma.studentStats.update({
-        where: { user_id: stats.user_id },
-        data: {
-          lives: newLives,
-          last_life_restored_at: nextRestored
-        }
-      });
-    }
-
-    return stats;
-  },
-
-  // Retrieve user stats and restore lives
-  getStats: async (userId: string): Promise<any> => {
-    let stats = await prisma.studentStats.findUnique({
+  // Helper to fetch profile once, and perform in-memory computations for points sync and life restoration.
+  fetchAndComputeStats: async (userId: string, tx?: any): Promise<{ stats: any; hasChanges: boolean; data: any }> => {
+    let stats = await (tx || prisma).studentStats.findUnique({
       where: { user_id: userId }
     });
 
+    let created = false;
     if (!stats) {
-      stats = await prisma.studentStats.create({
+      stats = await (tx || prisma).studentStats.create({
         data: {
           user_id: userId,
           lives: 6,
@@ -97,9 +59,9 @@ export const economyService = {
           upgrades: {}
         }
       });
+      created = true;
     }
 
-    // Dynamic level points synchronization
     const upgrades = stats.upgrades && typeof stats.upgrades === 'object' ? (stats.upgrades as any) : {};
     const xpBonusPoints = Math.floor((upgrades.xp_bonus_pct || 0) / 5);
     const coinBonusPoints = Math.floor((upgrades.coin_bonus_pct || 0) / 5);
@@ -110,19 +72,76 @@ export const economyService = {
     const totalSpent = xpBonusPoints + coinBonusPoints + gameDurationPoints + extraLivesPoints + extraAttemptsPoints;
     const expectedCurrent = Math.max(0, (stats.level - 1) * 2 - totalSpent);
     
+    let levelPoints = stats.level_points;
+    let levelPointsChanged = false;
     if (stats.level_points < expectedCurrent) {
-      stats = await prisma.studentStats.update({
-        where: { user_id: userId },
-        data: { level_points: expectedCurrent }
-      });
+      levelPoints = expectedCurrent;
+      levelPointsChanged = true;
     }
 
-    return await economyService.restoreLives(stats);
+    // Now restore lives in-memory
+    const extraLivesFromPoints = Number((upgrades as any).extra_lives_from_points || 0);
+    const maxLives = economyService.getMaxLives(stats.level, extraLivesFromPoints);
+
+    let lives = stats.lives;
+    let lastLifeRestoredAt = stats.last_life_restored_at;
+    let livesChanged = false;
+
+    if (stats.lives >= maxLives) {
+      if (stats.lives > maxLives) {
+        lives = maxLives;
+        lastLifeRestoredAt = new Date();
+        livesChanged = true;
+      }
+    } else {
+      const now = new Date();
+      const lastRestored = new Date(stats.last_life_restored_at);
+      const msDiff = now.getTime() - lastRestored.getTime();
+      const hoursPassed = Math.floor(msDiff / 3600000); // 1 hour = 3,600,000 ms
+
+      if (hoursPassed > 0) {
+        lives = Math.min(maxLives, stats.lives + hoursPassed);
+        lastLifeRestoredAt = lives === maxLives ? now : new Date(lastRestored.getTime() + hoursPassed * 3600000);
+        livesChanged = true;
+      }
+    }
+
+    const updatedStats = {
+      ...stats,
+      level_points: levelPoints,
+      lives,
+      last_life_restored_at: lastLifeRestoredAt
+    };
+
+    const data: any = {};
+    if (levelPointsChanged) data.level_points = levelPoints;
+    if (livesChanged) {
+      data.lives = lives;
+      data.last_life_restored_at = lastLifeRestoredAt;
+    }
+
+    return {
+      stats: updatedStats,
+      hasChanges: (levelPointsChanged || livesChanged) && !created,
+      data
+    };
+  },
+
+  // Retrieve user stats and restore lives
+  getStats: async (userId: string): Promise<any> => {
+    const { stats, hasChanges, data } = await economyService.fetchAndComputeStats(userId);
+    if (hasChanges) {
+      return await prisma.studentStats.update({
+        where: { user_id: userId },
+        data
+      });
+    }
+    return stats;
   },
 
   // Consume 1 life for practice attempts
   consumeLife: async (userId: string): Promise<void> => {
-    const stats = await economyService.getStats(userId);
+    const { stats, data } = await economyService.fetchAndComputeStats(userId);
     const upgrades = stats.upgrades && typeof stats.upgrades === 'object' ? stats.upgrades : {};
     const extraLivesFromPoints = Number((upgrades as any).extra_lives_from_points || 0);
     const maxLives = economyService.getMaxLives(stats.level, extraLivesFromPoints);
@@ -138,6 +157,7 @@ export const economyService = {
     await prisma.studentStats.update({
       where: { user_id: userId },
       data: {
+        ...data,
         lives: newLives,
         last_life_restored_at: nextRestored
       }
@@ -146,7 +166,7 @@ export const economyService = {
 
   // Add coins with a transaction log capped at 50 history entries
   addCoins: async (userId: string, amount: number, reason: string): Promise<any> => {
-    const stats = await economyService.getStats(userId);
+    const { stats, data } = await economyService.fetchAndComputeStats(userId);
     const nextCoins = Math.max(0, stats.coins + amount);
     
     // Add transaction to history
@@ -164,6 +184,7 @@ export const economyService = {
     return await prisma.studentStats.update({
       where: { user_id: userId },
       data: {
+        ...data,
         coins: nextCoins,
         coin_transactions: history
       }
@@ -172,7 +193,7 @@ export const economyService = {
 
   // Spend level-up points on upgrades
   spendLevelPoint: async (userId: string, upgradeType: string): Promise<any> => {
-    const stats = await economyService.getStats(userId);
+    const { stats, data } = await economyService.fetchAndComputeStats(userId);
     const currentPoints = stats.level_points || 0;
 
     let cost = 1;
@@ -214,6 +235,7 @@ export const economyService = {
     return await prisma.studentStats.update({
       where: { user_id: userId },
       data: {
+        ...data,
         level_points: currentPoints - cost,
         upgrades: upgrades
       }
@@ -227,7 +249,7 @@ export const economyService = {
       throw new Error("Item not found");
     }
 
-    const stats = await economyService.getStats(userId);
+    const { stats, data } = await economyService.fetchAndComputeStats(userId);
     if (stats.coins < item.price) {
       throw new Error("Insufficient coins");
     }
@@ -256,6 +278,7 @@ export const economyService = {
     return await prisma.studentStats.update({
       where: { user_id: userId },
       data: {
+        ...data,
         coins: nextCoins,
         inventory: inventory,
         coin_transactions: history
@@ -265,7 +288,7 @@ export const economyService = {
 
   // Equip an item from inventory
   equipItem: async (userId: string, category: string, itemId: string): Promise<any> => {
-    const stats = await economyService.getStats(userId);
+    const { stats, data } = await economyService.fetchAndComputeStats(userId);
     const inventory = stats.inventory && typeof stats.inventory === 'object' ? stats.inventory : {};
     const count = Number((inventory as any)[itemId] || 0);
 
@@ -282,13 +305,16 @@ export const economyService = {
 
     return await prisma.studentStats.update({
       where: { user_id: userId },
-      data: { equipped_items: equipped }
+      data: {
+        ...data,
+        equipped_items: equipped
+      }
     });
   },
 
   // Use skip guard
   useSkipGuard: async (userId: string, snapshotId: string): Promise<any> => {
-    const stats = await economyService.getStats(userId);
+    const { stats, data } = await economyService.fetchAndComputeStats(userId);
     const inventory = stats.inventory && typeof stats.inventory === 'object' ? { ...stats.inventory as object } : {};
     const count = Number((inventory as any)['skip_guard'] || 0);
 
@@ -309,27 +335,28 @@ export const economyService = {
     };
     history = [newTx, ...history].slice(0, 50);
 
-    // Update snapshot to be correct
-    const updatedSnapshot = await prisma.questionSnapshot.update({
-      where: { id: snapshotId },
-      data: {
-        is_correct: true,
-        points_earned: 10,
-        student_answer: "Skip Guard",
-        responded_at: new Date()
-      },
-      include: {
-        template: true
-      }
-    });
-
-    await prisma.studentStats.update({
-      where: { user_id: userId },
-      data: {
-        inventory: inventory,
-        coin_transactions: history
-      }
-    });
+    const [updatedSnapshot] = await prisma.$transaction([
+      prisma.questionSnapshot.update({
+        where: { id: snapshotId },
+        data: {
+          is_correct: true,
+          points_earned: 10,
+          student_answer: "Skip Guard",
+          responded_at: new Date()
+        },
+        include: {
+          template: true
+        }
+      }),
+      prisma.studentStats.update({
+        where: { user_id: userId },
+        data: {
+          ...data,
+          inventory: inventory,
+          coin_transactions: history
+        }
+      })
+    ]);
 
     return updatedSnapshot;
   }

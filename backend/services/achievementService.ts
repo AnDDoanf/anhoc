@@ -261,8 +261,12 @@ export const THEME_DEFS: ThemeDef[] = [
   },
 ];
 
-const countCompletedPractices = async (uid: string, db: any) =>
-  await db.testAttempt.count({ where: { user_id: uid, is_completed: true, is_practice: true } });
+const countCompletedPractices = async (uid: string, db: any, context?: any) => {
+  if (context?.attempts) {
+    return context.attempts.filter((a: any) => a.is_practice).length;
+  }
+  return await db.testAttempt.count({ where: { user_id: uid, is_completed: true, is_practice: true } });
+};
 
 const countUniqueLessonsPracticed = async (uid: string, db: any, context?: any) => {
   const attempts = context?.attempts || await db.testAttempt.findMany({
@@ -280,25 +284,35 @@ const countDistinctGradesPracticed = async (uid: string, db: any, context?: any)
   return new Set(attempts.map((a: any) => a.lesson?.grade_id).filter(Boolean)).size;
 };
 
-const countPracticeDays = async (uid: string, db: any) => {
-  const attempts: any[] = await db.testAttempt.findMany({
-    where: { user_id: uid, is_completed: true, is_practice: true },
-    select: { completed_at: true }
-  });
+const countPracticeDays = async (uid: string, db: any, context?: any) => {
+  const attempts: any[] = context?.attempts
+    ? context.attempts.filter((a: any) => a.is_practice)
+    : await db.testAttempt.findMany({
+        where: { user_id: uid, is_completed: true, is_practice: true },
+        select: { completed_at: true }
+      });
   return new Set(
     attempts
       .filter((a: any) => a.completed_at)
-      .map((a: any) => a.completed_at.toISOString().split('T')[0])
+      .map((a: any) => new Date(a.completed_at).toISOString().split('T')[0])
   ).size;
 };
 
-const countScoreThresholdAttempts = async (uid: string, db: any, threshold: number) =>
-  await db.testAttempt.count({
+const countScoreThresholdAttempts = async (uid: string, db: any, threshold: number, context?: any) => {
+  if (context?.attempts) {
+    return context.attempts.filter((a: any) => a.is_practice && Number(a.total_score ?? 0) >= threshold).length;
+  }
+  return await db.testAttempt.count({
     where: { user_id: uid, is_completed: true, is_practice: true, total_score: { gte: threshold } }
   });
+};
 
-const countEvidenceUploads = async (uid: string, db: any) =>
-  await db.activityEvidence.count({ where: { user_id: uid } });
+const countEvidenceUploads = async (uid: string, db: any, context?: any) => {
+  if (context?.evidenceCount !== undefined) {
+    return context.evidenceCount;
+  }
+  return await db.activityEvidence.count({ where: { user_id: uid } });
+};
 
 const practiceMilestoneDefs: AchievementDef[] = [
   { slug: 'practice-15', count: 15, xp: 180, icon: 'NotebookPen', titleEn: 'Practice Apprentice', titleVi: 'Học Việc Luyện Tập' },
@@ -324,7 +338,7 @@ const practiceMilestoneDefs: AchievementDef[] = [
   category: 'progress',
   xp_reward: milestone.xp,
   icon: milestone.icon,
-  check: async (uid: string, db: any) => (await countCompletedPractices(uid, db)) >= milestone.count,
+  check: async (uid: string, db: any, context?: any) => (await countCompletedPractices(uid, db, context)) >= milestone.count,
 }));
 
 const uniqueLessonMilestoneDefs: AchievementDef[] = [
@@ -386,7 +400,7 @@ const practiceDayMilestoneDefs: AchievementDef[] = [
   category: 'streak',
   xp_reward: milestone.xp,
   icon: milestone.icon,
-  check: async (uid: string, db: any) => (await countPracticeDays(uid, db)) >= milestone.count,
+  check: async (uid: string, db: any, context?: any) => (await countPracticeDays(uid, db, context)) >= milestone.count,
 }));
 
 const scoreMilestoneDefs: AchievementDef[] = [
@@ -408,7 +422,7 @@ const scoreMilestoneDefs: AchievementDef[] = [
   category: 'performance',
   xp_reward: milestone.xp,
   icon: milestone.icon,
-  check: async (uid: string, db: any) => (await countScoreThresholdAttempts(uid, db, milestone.threshold)) >= milestone.count,
+  check: async (uid: string, db: any, context?: any) => (await countScoreThresholdAttempts(uid, db, milestone.threshold, context)) >= milestone.count,
 }));
 
 const aceMilestoneDefs: AchievementDef[] = [
@@ -431,15 +445,19 @@ const aceMilestoneDefs: AchievementDef[] = [
   category: 'performance',
   xp_reward: milestone.xp,
   icon: milestone.icon,
-  check: async (uid: string, db: any) =>
-    (await db.testAttempt.count({
+  check: async (uid: string, db: any, context?: any) => {
+    if (context?.attempts) {
+      return context.attempts.filter((a: any) => a.is_practice && Number(a.total_score ?? 0) > 90).length >= milestone.count;
+    }
+    return (await db.testAttempt.count({
       where: {
         user_id: uid,
         is_completed: true,
         is_practice: true,
         total_score: { gt: 90 }
       }
-    })) >= milestone.count,
+    })) >= milestone.count;
+  }
 }));
 
 const evidenceMilestoneDefs: AchievementDef[] = [
@@ -459,7 +477,7 @@ const evidenceMilestoneDefs: AchievementDef[] = [
   category: 'social',
   xp_reward: milestone.xp,
   icon: milestone.icon,
-  check: async (uid: string, db: any) => (await countEvidenceUploads(uid, db)) >= milestone.count,
+  check: async (uid: string, db: any, context?: any) => (await countEvidenceUploads(uid, db, context)) >= milestone.count,
 }));
 
 const fastCompletionDefs: AchievementDef[] = [
@@ -476,12 +494,14 @@ const fastCompletionDefs: AchievementDef[] = [
   category: 'speed',
   xp_reward: milestone.xp,
   icon: milestone.icon,
-  check: async (uid: string, db: any) => {
-    const attempts: any[] = await db.testAttempt.findMany({
-      where: { user_id: uid, is_completed: true, is_practice: true },
-      select: { started_at: true, completed_at: true }
-    });
-    return attempts.filter((a: any) => a.completed_at && (a.completed_at.getTime() - a.started_at.getTime()) < 3 * 60 * 1000).length >= milestone.count;
+  check: async (uid: string, db: any, context?: any) => {
+    const attempts: any[] = context?.attempts
+      ? context.attempts.filter((a: any) => a.is_practice)
+      : await db.testAttempt.findMany({
+          where: { user_id: uid, is_completed: true, is_practice: true },
+          select: { started_at: true, completed_at: true }
+        });
+    return attempts.filter((a: any) => a.completed_at && (new Date(a.completed_at).getTime() - new Date(a.started_at).getTime()) < 3 * 60 * 1000).length >= milestone.count;
   },
 }));
 
@@ -498,17 +518,19 @@ const comebackMilestoneDefs: AchievementDef[] = [
   category: 'recovery',
   xp_reward: milestone.xp,
   icon: milestone.icon,
-  check: async (uid: string, db: any) => {
-    const attempts: any[] = await db.testAttempt.findMany({
-      where: { user_id: uid, is_completed: true, is_practice: true },
-      orderBy: { completed_at: 'asc' },
-      select: { completed_at: true }
-    });
+  check: async (uid: string, db: any, context?: any) => {
+    const attempts: any[] = context?.attempts
+      ? [...context.attempts].filter((a: any) => a.is_practice).sort((a, b) => new Date(a.completed_at).getTime() - new Date(b.completed_at).getTime())
+      : await db.testAttempt.findMany({
+          where: { user_id: uid, is_completed: true, is_practice: true },
+          orderBy: { completed_at: 'asc' },
+          select: { completed_at: true }
+        });
     let comebacks = 0;
     for (let i = 1; i < attempts.length; i++) {
       const prev = attempts[i - 1].completed_at as Date | null;
       const curr = attempts[i].completed_at as Date | null;
-      if (prev && curr && (curr.getTime() - prev.getTime()) > 7 * 24 * 60 * 60 * 1000) {
+      if (prev && curr && (new Date(curr).getTime() - new Date(prev).getTime()) > 7 * 24 * 60 * 60 * 1000) {
         comebacks++;
       }
     }
@@ -527,7 +549,7 @@ const specialThemeDefs: AchievementDef[] = [
     category: 'special',
     xp_reward: 120,
     icon: 'Sunrise',
-    check: async (uid, db) => (await db.userAchievement.count({ where: { user_id: uid } })) >= 5,
+    check: async (uid, db, context) => (context?.userAchievementCount !== undefined ? context.userAchievementCount : await db.userAchievement.count({ where: { user_id: uid } })) >= 5,
   },
   {
     slug: 'theme-mint-horizon',
@@ -539,7 +561,7 @@ const specialThemeDefs: AchievementDef[] = [
     category: 'special',
     xp_reward: 180,
     icon: 'Sparkles',
-    check: async (uid, db) => (await db.userAchievement.count({ where: { user_id: uid } })) >= 12,
+    check: async (uid, db, context) => (context?.userAchievementCount !== undefined ? context.userAchievementCount : await db.userAchievement.count({ where: { user_id: uid } })) >= 12,
   },
   {
     slug: 'theme-rose-night',
@@ -551,7 +573,7 @@ const specialThemeDefs: AchievementDef[] = [
     category: 'special',
     xp_reward: 260,
     icon: 'Moon',
-    check: async (uid, db) => (await db.userAchievement.count({ where: { user_id: uid } })) >= 20,
+    check: async (uid, db, context) => (context?.userAchievementCount !== undefined ? context.userAchievementCount : await db.userAchievement.count({ where: { user_id: uid } })) >= 20,
   },
   {
     slug: 'theme-ocean-ink',
@@ -563,7 +585,7 @@ const specialThemeDefs: AchievementDef[] = [
     category: 'special',
     xp_reward: 320,
     icon: 'Compass',
-    check: async (uid, db) => (await db.userAchievement.count({ where: { user_id: uid } })) >= 28,
+    check: async (uid, db, context) => (context?.userAchievementCount !== undefined ? context.userAchievementCount : await db.userAchievement.count({ where: { user_id: uid } })) >= 28,
   },
   {
     slug: 'theme-forest-notebook',
@@ -575,7 +597,7 @@ const specialThemeDefs: AchievementDef[] = [
     category: 'special',
     xp_reward: 400,
     icon: 'Leaf',
-    check: async (uid, db) => (await db.userAchievement.count({ where: { user_id: uid } })) >= 36,
+    check: async (uid, db, context) => (context?.userAchievementCount !== undefined ? context.userAchievementCount : await db.userAchievement.count({ where: { user_id: uid } })) >= 36,
   },
   {
     slug: 'theme-violet-lab',
@@ -587,7 +609,7 @@ const specialThemeDefs: AchievementDef[] = [
     category: 'special',
     xp_reward: 520,
     icon: 'Sparkles',
-    check: async (uid, db) => (await db.userAchievement.count({ where: { user_id: uid } })) >= 45,
+    check: async (uid, db, context) => (context?.userAchievementCount !== undefined ? context.userAchievementCount : await db.userAchievement.count({ where: { user_id: uid } })) >= 45,
   },
 ];
 
@@ -599,7 +621,7 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     description_en: 'Complete your very first practice session.',
     description_vi: 'Hoàn thành phiên luyện tập đầu tiên của bạn.',
     category: 'progress', xp_reward: 50, icon: 'Footprints',
-    check: async (uid, db) => (await db.testAttempt.count({ where: { user_id: uid, is_completed: true, is_practice: true } })) >= 1,
+    check: async (uid, db, context) => (context?.attempts ? context.attempts.filter((a: any) => a.is_practice).length : await db.testAttempt.count({ where: { user_id: uid, is_completed: true, is_practice: true } })) >= 1,
   },
   {
     slug: 'getting-warmed-up',
@@ -607,7 +629,7 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     description_en: 'Complete 5 practice sessions.',
     description_vi: 'Hoàn thành 5 phiên luyện tập.',
     category: 'progress', xp_reward: 100, icon: 'Flame',
-    check: async (uid, db) => (await db.testAttempt.count({ where: { user_id: uid, is_completed: true, is_practice: true } })) >= 5,
+    check: async (uid, db, context) => (context?.attempts ? context.attempts.filter((a: any) => a.is_practice).length : await db.testAttempt.count({ where: { user_id: uid, is_completed: true, is_practice: true } })) >= 5,
   },
   {
     slug: 'on-a-roll',
@@ -615,7 +637,7 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     description_en: 'Complete 10 practice sessions.',
     description_vi: 'Hoàn thành 10 phiên luyện tập.',
     category: 'progress', xp_reward: 150, icon: 'Zap',
-    check: async (uid, db) => (await db.testAttempt.count({ where: { user_id: uid, is_completed: true, is_practice: true } })) >= 10,
+    check: async (uid, db, context) => (context?.attempts ? context.attempts.filter((a: any) => a.is_practice).length : await db.testAttempt.count({ where: { user_id: uid, is_completed: true, is_practice: true } })) >= 10,
   },
   {
     slug: 'halfway-there',
@@ -623,8 +645,8 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     description_en: 'Practice at least 5 different lessons.',
     description_vi: 'Luyện tập ít nhất 5 bài học khác nhau.',
     category: 'progress', xp_reward: 200, icon: 'Target',
-    check: async (uid, db) => {
-      const all: any[] = await db.testAttempt.findMany({ where: { user_id: uid, is_completed: true }, select: { lesson_id: true } });
+    check: async (uid, db, context) => {
+      const all: any[] = context?.attempts || await db.testAttempt.findMany({ where: { user_id: uid, is_completed: true }, select: { lesson_id: true } });
       const unique = new Set(all.map((a: any) => a.lesson_id).filter(Boolean));
       return unique.size >= 5;
     },
@@ -635,9 +657,9 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     description_en: 'Practice all lessons of at least one grade.',
     description_vi: 'Luyện tập tất cả bài học của ít nhất một lớp.',
     category: 'progress', xp_reward: 400, icon: 'BookCheck',
-    check: async (uid, db) => {
+    check: async (uid, db, context) => {
       const grades = await db.grade.findMany({ include: { lessons: { select: { id: true } } } });
-      const attempted: any[] = await db.testAttempt.findMany({ where: { user_id: uid, is_completed: true }, select: { lesson_id: true } });
+      const attempted: any[] = context?.attempts || await db.testAttempt.findMany({ where: { user_id: uid, is_completed: true }, select: { lesson_id: true } });
       const attemptedIds = new Set(attempted.map((a: any) => a.lesson_id));
       return (grades as any[]).some((g: any) => g.lessons.length > 0 && g.lessons.every((l: any) => attemptedIds.has(l.id)));
     },
@@ -648,9 +670,9 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     description_en: 'Practice every lesson in the entire curriculum.',
     description_vi: 'Luyện tập tất cả bài học trong toàn bộ chương trình.',
     category: 'progress', xp_reward: 1000, icon: 'GraduationCap',
-    check: async (uid, db) => {
+    check: async (uid, db, context) => {
       const totalLessons = await db.lesson.count();
-      const attempted: any[] = await db.testAttempt.findMany({ where: { user_id: uid, is_completed: true }, select: { lesson_id: true } });
+      const attempted: any[] = context?.attempts || await db.testAttempt.findMany({ where: { user_id: uid, is_completed: true }, select: { lesson_id: true } });
       const unique = new Set(attempted.map((a: any) => a.lesson_id).filter(Boolean));
       return totalLessons > 0 && unique.size >= totalLessons;
     },
@@ -661,7 +683,7 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     description_en: 'Earn 10 or more other achievements.',
     description_vi: 'Nhận được 10 thành tích trở lên.',
     category: 'progress', xp_reward: 2000, icon: 'Trophy',
-    check: async (uid, db) => (await db.userAchievement.count({ where: { user_id: uid } })) >= 10,
+    check: async (uid, db, context) => (context?.userAchievementCount !== undefined ? context.userAchievementCount : await db.userAchievement.count({ where: { user_id: uid } })) >= 10,
   },
   // ── PERFORMANCE ───────────────────────────────────────────────────────────
   {
@@ -670,7 +692,7 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     description_en: 'Score 80% or higher in a practice session.',
     description_vi: 'Đạt 80% trở lên trong một phiên luyện tập.',
     category: 'performance', xp_reward: 100, icon: 'Star',
-    check: async (uid, db) => (await db.testAttempt.count({ where: { user_id: uid, is_completed: true, total_score: { gte: 80 } } })) >= 1,
+    check: async (uid, db, context) => (context?.attempts ? context.attempts.some((a: any) => Number(a.total_score ?? 0) >= 80) : await db.testAttempt.count({ where: { user_id: uid, is_completed: true, total_score: { gte: 80 } } })) >= 1,
   },
   {
     slug: 'top-performer',
@@ -678,7 +700,7 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     description_en: 'Score 90% or higher in a practice session.',
     description_vi: 'Đạt 90% trở lên trong một phiên luyện tập.',
     category: 'performance', xp_reward: 200, icon: 'Award',
-    check: async (uid, db) => (await db.testAttempt.count({ where: { user_id: uid, is_completed: true, total_score: { gte: 90 } } })) >= 1,
+    check: async (uid, db, context) => (context?.attempts ? context.attempts.some((a: any) => Number(a.total_score ?? 0) >= 90) : await db.testAttempt.count({ where: { user_id: uid, is_completed: true, total_score: { gte: 90 } } })) >= 1,
   },
   {
     slug: 'perfect-score',
@@ -686,7 +708,7 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     description_en: 'Score 100% in a practice session.',
     description_vi: 'Đạt 100% trong một phiên luyện tập.',
     category: 'performance', xp_reward: 300, icon: 'Crown',
-    check: async (uid, db) => (await db.testAttempt.count({ where: { user_id: uid, is_completed: true, total_score: { gte: 100 } } })) >= 1,
+    check: async (uid, db, context) => (context?.attempts ? context.attempts.some((a: any) => Number(a.total_score ?? 0) >= 100) : await db.testAttempt.count({ where: { user_id: uid, is_completed: true, total_score: { gte: 100 } } })) >= 1,
   },
   {
     slug: 'first-try',
@@ -694,8 +716,10 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     description_en: 'Score 100% on the very first attempt of any lesson.',
     description_vi: 'Đạt 100% ngay trong lần thử đầu tiên của bất kỳ bài học nào.',
     category: 'performance', xp_reward: 350, icon: 'Rocket',
-    check: async (uid, db) => {
-      const attempts: any[] = await db.testAttempt.findMany({ where: { user_id: uid, is_completed: true }, select: { lesson_id: true, started_at: true, total_score: true }, orderBy: { started_at: 'asc' } });
+    check: async (uid, db, context) => {
+      const attempts: any[] = context?.attempts
+        ? [...context.attempts].sort((a, b) => new Date(a.started_at).getTime() - new Date(b.started_at).getTime())
+        : await db.testAttempt.findMany({ where: { user_id: uid, is_completed: true }, select: { lesson_id: true, started_at: true, total_score: true }, orderBy: { started_at: 'asc' } });
       const seenLessons = new Set<string>();
       for (const a of attempts) {
         if (!a.lesson_id) continue;
@@ -713,13 +737,23 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     description_en: 'Answer every question correctly in a single session.',
     description_vi: 'Trả lời đúng tất cả câu hỏi trong một phiên duy nhất.',
     category: 'performance', xp_reward: 250, icon: 'Shield',
-    check: async (uid, db) => {
-      const attempts: any[] = await db.testAttempt.findMany({ where: { user_id: uid, is_completed: true }, select: { id: true } });
-      for (const a of attempts) {
-        const snaps: any[] = await db.questionSnapshot.findMany({ where: { attempt_id: a.id } });
-        if (snaps.length > 0 && snaps.every((s: any) => s.is_correct)) return true;
-      }
-      return false;
+    check: async (uid, db, context) => {
+      const perfectAttemptCount = await db.testAttempt.count({
+        where: {
+          user_id: uid,
+          is_completed: true,
+          snapshots: {
+            some: {},
+            none: {
+              OR: [
+                { is_correct: false },
+                { is_correct: null }
+              ]
+            }
+          }
+        }
+      });
+      return perfectAttemptCount > 0;
     },
   },
   {
@@ -728,13 +762,15 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     description_en: 'Improve your score on a retry of the same lesson.',
     description_vi: 'Cải thiện điểm số khi thử lại cùng một bài học.',
     category: 'performance', xp_reward: 150, icon: 'TrendingUp',
-    check: async (uid, db) => {
-      const attempts: any[] = await db.testAttempt.findMany({ where: { user_id: uid, is_completed: true }, select: { lesson_id: true, started_at: true, total_score: true }, orderBy: { started_at: 'asc' } });
+    check: async (uid, db, context) => {
+      const attempts: any[] = context?.attempts
+        ? [...context.attempts].sort((a, b) => new Date(a.started_at).getTime() - new Date(b.started_at).getTime())
+        : await db.testAttempt.findMany({ where: { user_id: uid, is_completed: true }, select: { lesson_id: true, started_at: true, total_score: true }, orderBy: { started_at: 'asc' } });
       const byLesson: Record<string, any[]> = {};
       for (const a of attempts) {
         if (!a.lesson_id) continue;
         if (!byLesson[a.lesson_id]) byLesson[a.lesson_id] = [];
-        byLesson[a.lesson_id].push(a);
+        byLesson[a.lesson_id]!.push(a);
       }
       for (const list of Object.values(byLesson)) {
         for (let i = 1; i < list.length; i++) {
@@ -751,7 +787,7 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     description_en: 'Practice on your first day.',
     description_vi: 'Luyện tập vào ngày đầu tiên.',
     category: 'streak', xp_reward: 25, icon: 'Calendar',
-    check: async (uid, db) => (await db.testAttempt.count({ where: { user_id: uid, is_completed: true, is_practice: true } })) >= 1,
+    check: async (uid, db, context) => (context?.attempts ? context.attempts.filter((a: any) => a.is_practice).length : await db.testAttempt.count({ where: { user_id: uid, is_completed: true, is_practice: true } })) >= 1,
   },
   {
     slug: 'weekly-warrior',
@@ -759,9 +795,11 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     description_en: 'Practice on 7 different days.',
     description_vi: 'Luyện tập trong 7 ngày khác nhau.',
     category: 'streak', xp_reward: 300, icon: 'Swords',
-    check: async (uid, db) => {
-      const attempts: any[] = await db.testAttempt.findMany({ where: { user_id: uid, is_completed: true, is_practice: true }, select: { completed_at: true } });
-      const days = new Set(attempts.filter((a: any) => a.completed_at).map((a: any) => a.completed_at.toISOString().split('T')[0]));
+    check: async (uid, db, context) => {
+      const attempts: any[] = context?.attempts
+        ? context.attempts.filter((a: any) => a.is_practice)
+        : await db.testAttempt.findMany({ where: { user_id: uid, is_completed: true, is_practice: true }, select: { completed_at: true } });
+      const days = new Set(attempts.filter((a: any) => a.completed_at).map((a: any) => new Date(a.completed_at).toISOString().split('T')[0]));
       return days.size >= 7;
     },
   },
@@ -771,9 +809,11 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     description_en: 'Practice on 30 different days.',
     description_vi: 'Luyện tập trong 30 ngày khác nhau.',
     category: 'streak', xp_reward: 1000, icon: 'Infinity',
-    check: async (uid, db) => {
-      const attempts: any[] = await db.testAttempt.findMany({ where: { user_id: uid, is_completed: true, is_practice: true }, select: { completed_at: true } });
-      const days = new Set(attempts.filter((a: any) => a.completed_at).map((a: any) => a.completed_at.toISOString().split('T')[0]));
+    check: async (uid, db, context) => {
+      const attempts: any[] = context?.attempts
+        ? context.attempts.filter((a: any) => a.is_practice)
+        : await db.testAttempt.findMany({ where: { user_id: uid, is_completed: true, is_practice: true }, select: { completed_at: true } });
+      const days = new Set(attempts.filter((a: any) => a.completed_at).map((a: any) => new Date(a.completed_at).toISOString().split('T')[0]));
       return days.size >= 30;
     },
   },
@@ -784,9 +824,11 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     description_en: 'Complete a practice session before 8 AM.',
     description_vi: 'Hoàn thành một phiên luyện tập trước 8 giờ sáng.',
     category: 'time', xp_reward: 75, icon: 'Sunrise',
-    check: async (uid, db) => {
-      const attempts: any[] = await db.testAttempt.findMany({ where: { user_id: uid, is_completed: true, is_practice: true }, select: { completed_at: true } });
-      return attempts.some((a: any) => a.completed_at && a.completed_at.getHours() < 8);
+    check: async (uid, db, context) => {
+      const attempts: any[] = context?.attempts
+        ? context.attempts.filter((a: any) => a.is_practice)
+        : await db.testAttempt.findMany({ where: { user_id: uid, is_completed: true, is_practice: true }, select: { completed_at: true } });
+      return attempts.some((a: any) => a.completed_at && new Date(a.completed_at).getHours() < 8);
     },
   },
   {
@@ -795,9 +837,11 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     description_en: 'Complete a practice session after 10 PM.',
     description_vi: 'Hoàn thành một phiên luyện tập sau 10 giờ đêm.',
     category: 'time', xp_reward: 75, icon: 'Moon',
-    check: async (uid, db) => {
-      const attempts: any[] = await db.testAttempt.findMany({ where: { user_id: uid, is_completed: true, is_practice: true }, select: { completed_at: true } });
-      return attempts.some((a: any) => a.completed_at && a.completed_at.getHours() >= 22);
+    check: async (uid, db, context) => {
+      const attempts: any[] = context?.attempts
+        ? context.attempts.filter((a: any) => a.is_practice)
+        : await db.testAttempt.findMany({ where: { user_id: uid, is_completed: true, is_practice: true }, select: { completed_at: true } });
+      return attempts.some((a: any) => a.completed_at && new Date(a.completed_at).getHours() >= 22);
     },
   },
   {
@@ -806,7 +850,7 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     description_en: 'Complete at least 3 practice sessions.',
     description_vi: 'Hoàn thành ít nhất 3 phiên luyện tập.',
     category: 'time', xp_reward: 120, icon: 'Brain',
-    check: async (uid, db) => (await db.testAttempt.count({ where: { user_id: uid, is_completed: true, is_practice: true } })) >= 3,
+    check: async (uid, db, context) => (context?.attempts ? context.attempts.filter((a: any) => a.is_practice).length : await db.testAttempt.count({ where: { user_id: uid, is_completed: true, is_practice: true } })) >= 3,
   },
   {
     slug: 'marathon-learner',
@@ -814,10 +858,19 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     description_en: 'Complete 5 or more practice sessions in a single day.',
     description_vi: 'Hoàn thành 5 phiên luyện tập trở lên trong một ngày.',
     category: 'time', xp_reward: 200, icon: 'Timer',
-    check: async (uid, db) => {
-      const attempts: any[] = await db.testAttempt.findMany({ where: { user_id: uid, is_completed: true, is_practice: true }, select: { completed_at: true } });
+    check: async (uid, db, context) => {
+      const attempts: any[] = context?.attempts
+        ? context.attempts.filter((a: any) => a.is_practice)
+        : await db.testAttempt.findMany({ where: { user_id: uid, is_completed: true, is_practice: true }, select: { completed_at: true } });
       const byday: Record<string, number> = {};
-      attempts.forEach((a: any) => { if (a.completed_at) { const d = (a.completed_at as Date).toISOString().split('T')[0]; byday[d] = (byday[d] || 0) + 1; } });
+      attempts.forEach((a: any) => {
+        if (a.completed_at) {
+          const d = new Date(a.completed_at).toISOString().split('T')[0];
+          if (d) {
+            byday[d] = (byday[d] || 0) + 1;
+          }
+        }
+      });
       return Object.values(byday).some(c => c >= 5);
     },
   },
@@ -827,12 +880,14 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     description_en: 'Complete your first practice session within 24 hours of joining.',
     description_vi: 'Hoàn thành phiên luyện tập đầu tiên trong vòng 24 giờ kể từ khi đăng ký.',
     category: 'time', xp_reward: 100, icon: 'Gauge',
-    check: async (uid, db) => {
-      const user = await db.user.findUnique({ where: { id: uid } });
+    check: async (uid, db, context) => {
+      const user = context?.user || await db.user.findUnique({ where: { id: uid } });
       if (!user) return false;
-      const first: any = await db.testAttempt.findFirst({ where: { user_id: uid, is_completed: true, is_practice: true }, orderBy: { started_at: 'asc' } });
+      const first: any = context?.attempts
+        ? [...context.attempts].filter((a: any) => a.is_practice).sort((a, b) => new Date(a.started_at).getTime() - new Date(b.started_at).getTime())[0]
+        : await db.testAttempt.findFirst({ where: { user_id: uid, is_completed: true, is_practice: true }, orderBy: { started_at: 'asc' } });
       if (!first) return false;
-      return (first.started_at.getTime() - user.created_at.getTime()) < 24 * 60 * 60 * 1000;
+      return (new Date(first.started_at).getTime() - new Date(user.created_at).getTime()) < 24 * 60 * 60 * 1000;
     },
   },
   // ── SPEED ─────────────────────────────────────────────────────────────────
@@ -842,9 +897,11 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     description_en: 'Complete a practice session in under 3 minutes.',
     description_vi: 'Hoàn thành một phiên luyện tập trong vòng 3 phút.',
     category: 'speed', xp_reward: 150, icon: 'Wind',
-    check: async (uid, db) => {
-      const attempts: any[] = await db.testAttempt.findMany({ where: { user_id: uid, is_completed: true, is_practice: true }, select: { started_at: true, completed_at: true } });
-      return attempts.some((a: any) => a.completed_at && (a.completed_at.getTime() - a.started_at.getTime()) < 3 * 60 * 1000);
+    check: async (uid, db, context) => {
+      const attempts: any[] = context?.attempts
+        ? context.attempts.filter((a: any) => a.is_practice)
+        : await db.testAttempt.findMany({ where: { user_id: uid, is_completed: true, is_practice: true }, select: { started_at: true, completed_at: true } });
+      return attempts.some((a: any) => a.completed_at && (new Date(a.completed_at).getTime() - new Date(a.started_at).getTime()) < 3 * 60 * 1000);
     },
   },
   {
@@ -853,10 +910,19 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     description_en: 'Complete 3 practice sessions in a single day.',
     description_vi: 'Hoàn thành 3 phiên luyện tập trong một ngày duy nhất.',
     category: 'speed', xp_reward: 175, icon: 'BatteryCharging',
-    check: async (uid, db) => {
-      const attempts: any[] = await db.testAttempt.findMany({ where: { user_id: uid, is_completed: true, is_practice: true }, select: { completed_at: true } });
+    check: async (uid, db, context) => {
+      const attempts: any[] = context?.attempts
+        ? context.attempts.filter((a: any) => a.is_practice)
+        : await db.testAttempt.findMany({ where: { user_id: uid, is_completed: true, is_practice: true }, select: { completed_at: true } });
       const byday: Record<string, number> = {};
-      attempts.forEach((a: any) => { if (a.completed_at) { const d = (a.completed_at as Date).toISOString().split('T')[0]; byday[d] = (byday[d] || 0) + 1; } });
+      attempts.forEach((a: any) => {
+        if (a.completed_at) {
+          const d = new Date(a.completed_at).toISOString().split('T')[0];
+          if (d) {
+            byday[d] = (byday[d] || 0) + 1;
+          }
+        }
+      });
       return Object.values(byday).some(c => c >= 3);
     },
   },
@@ -867,7 +933,7 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     description_en: 'Submit your first answer in a practice session.',
     description_vi: 'Nộp câu trả lời đầu tiên trong phiên luyện tập.',
     category: 'social', xp_reward: 25, icon: 'MessageSquare',
-    check: async (uid, db) => (await db.questionSnapshot.count({ where: { attempt: { user_id: uid }, student_answer: { not: null } } })) >= 1,
+    check: async (uid, db, context) => (await db.questionSnapshot.count({ where: { attempt: { user_id: uid }, student_answer: { not: null } } })) >= 1,
   },
   {
     slug: 'helpful-learner',
@@ -875,7 +941,7 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     description_en: 'Complete 3 practice sessions and keep learning.',
     description_vi: 'Hoàn thành 3 bài luyện tập và tiếp tục học.',
     category: 'social', xp_reward: 100, icon: 'Heart',
-    check: async (uid, db) => (await db.testAttempt.count({ where: { user_id: uid, is_completed: true, is_practice: true } })) >= 3,
+    check: async (uid, db, context) => (context?.attempts ? context.attempts.filter((a: any) => a.is_practice).length : await db.testAttempt.count({ where: { user_id: uid, is_completed: true, is_practice: true } })) >= 3,
   },
   {
     slug: 'contributor',
@@ -883,7 +949,7 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     description_en: 'Submit evidence for at least one practice session.',
     description_vi: 'Nộp bằng chứng cho ít nhất một phiên luyện tập.',
     category: 'social', xp_reward: 150, icon: 'PenTool',
-    check: async (uid, db) => (await db.activityEvidence.count({ where: { user_id: uid } })) >= 1,
+    check: async (uid, db, context) => (context?.evidenceCount !== undefined ? context.evidenceCount : await db.activityEvidence.count({ where: { user_id: uid } })) >= 1,
   },
   {
     slug: 'explorer',
@@ -892,7 +958,6 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     description_vi: 'Luyện tập bài học từ ít nhất 3 lớp học khác nhau.',
     category: 'social', xp_reward: 200, icon: 'Compass',
     check: async (uid, db, context?: any) => {
-      // Use pre-fetched attempts if available
       const attempts = context?.attempts || await db.testAttempt.findMany({ where: { user_id: uid, is_completed: true }, include: { lesson: true } });
       const grades = new Set(attempts.map((a: any) => a.lesson?.grade_id).filter(Boolean));
       return grades.size >= 3;
@@ -917,13 +982,15 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     description_en: 'Return and practice after 7+ days of no activity.',
     description_vi: 'Quay lại luyện tập sau 7+ ngày không hoạt động.',
     category: 'recovery', xp_reward: 200, icon: 'RefreshCw',
-    check: async (uid, db) => {
-      const attempts: any[] = await db.testAttempt.findMany({ where: { user_id: uid, is_completed: true, is_practice: true }, orderBy: { completed_at: 'asc' }, select: { completed_at: true } });
+    check: async (uid, db, context) => {
+      const attempts: any[] = context?.attempts
+        ? [...context.attempts].filter((a: any) => a.is_practice).sort((a, b) => new Date(a.completed_at).getTime() - new Date(b.completed_at).getTime())
+        : await db.testAttempt.findMany({ where: { user_id: uid, is_completed: true, is_practice: true }, orderBy: { completed_at: 'asc' }, select: { completed_at: true } });
       if (attempts.length < 2) return false;
       for (let i = 1; i < attempts.length; i++) {
         const prev = attempts[i - 1].completed_at as Date | null;
         const curr = attempts[i].completed_at as Date | null;
-        if (prev && curr && (curr.getTime() - prev.getTime()) > 7 * 24 * 60 * 60 * 1000) return true;
+        if (prev && curr && (new Date(curr).getTime() - new Date(prev).getTime()) > 7 * 24 * 60 * 60 * 1000) return true;
       }
       return false;
     },
@@ -934,7 +1001,7 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     description_en: 'Score 100% in 5 different practice sessions.',
     description_vi: 'Đạt 100% trong 5 phiên luyện tập khác nhau.',
     category: 'recovery', xp_reward: 500, icon: 'Diamond',
-    check: async (uid, db) => (await db.testAttempt.count({ where: { user_id: uid, is_completed: true, is_practice: true, total_score: { gte: 100 } } })) >= 5,
+    check: async (uid, db, context) => (context?.attempts ? context.attempts.filter((a: any) => a.is_practice && Number(a.total_score ?? 0) >= 100).length : await db.testAttempt.count({ where: { user_id: uid, is_completed: true, is_practice: true, total_score: { gte: 100 } } })) >= 5,
   },
   ...practiceMilestoneDefs,
   ...uniqueLessonMilestoneDefs,
@@ -1028,7 +1095,7 @@ export interface NewAchievement {
 
 export async function checkAndAwardAchievements(userId: string): Promise<NewAchievement[]> {
   // 1. Pre-fetch essential data to avoid "N+1" query explosion inside the loop
-  const [earned, allAttempts, user] = await Promise.all([
+  const [earned, allAttempts, user, evidenceCount] = await Promise.all([
     (prisma as any).userAchievement.findMany({ 
       where: { user_id: userId }, 
       include: { achievement: { select: { slug: true } } } 
@@ -1040,6 +1107,9 @@ export async function checkAndAwardAchievements(userId: string): Promise<NewAchi
     (prisma as any).user.findUnique({ 
       where: { id: userId },
       include: { role: { select: { name: true } } }
+    }),
+    (prisma as any).activityEvidence.count({
+      where: { user_id: userId }
     })
   ]);
 
@@ -1054,7 +1124,9 @@ export async function checkAndAwardAchievements(userId: string): Promise<NewAchi
   const context = {
     userId,
     attempts: allAttempts as any[],
-    user: user as any
+    user: user as any,
+    evidenceCount,
+    userAchievementCount: earned.length
   };
 
   for (const def of ACHIEVEMENT_DEFS) {
@@ -1074,6 +1146,9 @@ export async function checkAndAwardAchievements(userId: string): Promise<NewAchi
       await (prisma as any).userAchievement.create({ 
         data: { user_id: userId, achievement_id: achievement.id } 
       });
+
+      // Increment count so subsequent special theme thresholds evaluate correctly
+      context.userAchievementCount++;
 
       // Use levelService to keep XP and Level in sync!
       if (achievement.xp_reward > 0) {

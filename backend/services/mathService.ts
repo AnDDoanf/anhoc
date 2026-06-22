@@ -38,7 +38,8 @@ const pickFromRule = (rule: VariableRule, vars: Record<string, number>): number 
 
   if (Array.isArray(rule)) {
     if (rule.length === 0) return null;
-    return rule[Math.floor(Math.random() * rule.length)];
+    const val = rule[Math.floor(Math.random() * rule.length)];
+    return typeof val === 'number' ? val : null;
   }
 
   if (!rule || typeof rule !== 'object') return null;
@@ -49,7 +50,8 @@ const pickFromRule = (rule: VariableRule, vars: Record<string, number>): number 
   }
 
   if (Array.isArray(rule.choices) && rule.choices.length > 0) {
-    return rule.choices[Math.floor(Math.random() * rule.choices.length)];
+    const val = rule.choices[Math.floor(Math.random() * rule.choices.length)];
+    return typeof val === 'number' ? val : null;
   }
 
   if (typeof rule.min === 'number' && typeof rule.max === 'number') {
@@ -61,6 +63,7 @@ const pickFromRule = (rule: VariableRule, vars: Record<string, number>): number 
       choices.push(i);
     }
     const picked = choices[Math.floor(Math.random() * choices.length)];
+    if (typeof picked !== 'number') return null;
     return typeof rule.precision === 'number' ? Number(picked.toFixed(rule.precision)) : picked;
   }
 

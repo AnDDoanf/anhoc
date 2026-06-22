@@ -13,6 +13,7 @@ import LanguageToggle from "@/components/ui/LanguageToggle";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import LoadingOverlayWrapper from "@/components/ui/LoadingOverlayWrapper";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { API_BASE_URL } from "@/services/api";
 
 export default function LoginPage() {
   const t = useTranslations("Login");
@@ -170,7 +171,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => {
-                window.location.href = "/api/v1/auth/google";
+                window.location.href = `${API_BASE_URL}/auth/google`;
               }}
               className="flex w-full items-center justify-center gap-3 rounded-lg border border-sol-border/50 bg-sol-bg px-4 py-3 text-sm font-semibold text-sol-text transition-all hover:bg-sol-surface hover:border-sol-accent active:scale-[0.99] hover:cursor-pointer"
             >
@@ -188,7 +189,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => {
-                  window.location.href = "/api/v1/auth/facebook";
+                  window.location.href = `${API_BASE_URL}/auth/facebook`;
                 }}
                 className="flex items-center justify-center gap-2 rounded-lg border border-sol-border/50 bg-sol-bg px-3 py-3 text-xs font-semibold text-sol-text transition-all hover:bg-sol-surface hover:border-sol-accent active:scale-[0.99] hover:cursor-pointer"
               >
@@ -202,7 +203,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => {
-                  window.location.href = "/api/v1/auth/microsoft";
+                  window.location.href = `${API_BASE_URL}/auth/microsoft`;
                 }}
                 className="flex items-center justify-center gap-2 rounded-lg border border-sol-border/50 bg-sol-bg px-3 py-3 text-xs font-semibold text-sol-text transition-all hover:bg-sol-surface hover:border-sol-accent active:scale-[0.99] hover:cursor-pointer"
               >

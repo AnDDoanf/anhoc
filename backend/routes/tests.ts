@@ -206,7 +206,7 @@ const getGradeTestEligibilityForViewer = async (
 
 type NormalizedTemplatePayload = ReturnType<typeof normalizeTemplatePayload>;
 
-const buildQuestionSnapshots = (attemptId: string, templates: any[], targetCount: number) => {
+const buildQuestionSnapshots = (templates: any[], targetCount: number) => {
   const repeatsPerTemplate = Math.ceil(targetCount / templates.length);
   let templatePool: any[] = [];
 
@@ -224,7 +224,6 @@ const buildQuestionSnapshots = (attemptId: string, templates: any[], targetCount
         .filter((answer: unknown) => answer !== null);
 
     return {
-      attempt_id: attemptId,
       template_id: template.id,
       generated_variables: vars,
       right_answers
@@ -553,21 +552,19 @@ router.post('/grade-tests/:gradeId/start', authenticate, async (req, res) => {
       return res.status(404).json({ error: "No question templates found for this grade test." });
     }
 
-    const attempt = await prisma.testAttempt.create({
+    const questionsToCreate = buildQuestionSnapshots(templates, 50);
+
+    const attemptWithQuestions = await prisma.testAttempt.create({
       data: {
         user_id: userId,
         lesson_id: null,
-        is_practice: false
-      }
-    });
-
-    const questionsToCreate = buildQuestionSnapshots(attempt.id, templates, 50);
-    await prisma.questionSnapshot.createMany({
-      data: questionsToCreate
-    });
-
-    const attemptWithQuestions = await prisma.testAttempt.findUnique({
-      where: { id: attempt.id },
+        is_practice: false,
+        snapshots: {
+          createMany: {
+            data: questionsToCreate
+          }
+        }
+      },
       include: {
         snapshots: {
           include: {

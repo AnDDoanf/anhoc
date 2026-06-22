@@ -60,7 +60,7 @@ const globalSubjectWhere = {
     { created_by: null },
     { creator: { role: { name: "admin" } } },
   ],
-} as const;
+};
 
 const visibleSubjectSelect = {
   id: true,

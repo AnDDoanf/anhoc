@@ -25,17 +25,20 @@ export const levelService = {
   addXp: async (userId: string, amount: number, reason: string) => {
     if (amount <= 0) return null;
 
-    // Fetch user role
+    // Fetch user role and student stats in a single DB call
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { role: { select: { name: true } } }
+      include: {
+        role: { select: { name: true } },
+        student_stats: true
+      }
     });
-    const isFreeStudent = user?.role?.name === 'free_student';
+
+    if (!user) return null;
+    const isFreeStudent = user.role?.name === 'free_student';
 
     // Fetch current stats
-    let stats = await prisma.studentStats.findUnique({
-      where: { user_id: userId }
-    });
+    let stats = user.student_stats;
 
     if (!stats) {
       stats = await prisma.studentStats.create({
@@ -65,26 +68,28 @@ export const levelService = {
 
     if (xpToAdd <= 0) return stats;
 
-    // 1. Log the XP gain for history
-    await prisma.xpLog.create({
-      data: { user_id: userId, amount: xpToAdd, reason }
-    });
-
-    // 3. Recompute level from cumulative XP total
+    // Recompute level from cumulative XP total
     const nextTotalXp = currentXp + xpToAdd;
     const nextLevel = levelService.getLevelFromTotalXp(nextTotalXp);
     const levelDiff = nextLevel - stats.level;
     const levelPointsAwarded = levelDiff > 0 ? levelDiff * 2 : 0;
 
-    // 4. Update stats
-    return await prisma.studentStats.update({
-      where: { user_id: userId },
-      data: {
-        total_xp: nextTotalXp,
-        level: nextLevel,
-        level_points: { increment: levelPointsAwarded },
-        last_active: new Date()
-      } as any
-    });
+    // Log the XP gain for history and update stats in a single transaction
+    const [_, updatedStats] = await prisma.$transaction([
+      prisma.xpLog.create({
+        data: { user_id: userId, amount: xpToAdd, reason }
+      }),
+      prisma.studentStats.update({
+        where: { user_id: userId },
+        data: {
+          total_xp: nextTotalXp,
+          level: nextLevel,
+          level_points: { increment: levelPointsAwarded },
+          last_active: new Date()
+        } as any
+      })
+    ]);
+
+    return updatedStats;
   }
 };

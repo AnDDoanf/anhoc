@@ -533,9 +533,11 @@ router.get('/global-leaderboard', authenticate, async (req, res) => {
       });
     };
 
-    const speed = await fetchTopAttempts('speed');
-    const climb = await fetchTopAttempts('climb');
-    const match = await fetchTopAttempts('match');
+    const [speed, climb, match] = await Promise.all([
+      fetchTopAttempts('speed'),
+      fetchTopAttempts('climb'),
+      fetchTopAttempts('match')
+    ]);
 
     const leaderboardData = { speed, climb, match };
     await cacheSet(cacheKey, leaderboardData, 300); // 5 minutes cache

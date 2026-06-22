@@ -509,20 +509,11 @@ router.post('/:id/practice', optionalAuthenticate, async (req, res) => {
       });
     }
 
-    // 2. Create a practice TestAttempt
-    const attempt = await prisma.testAttempt.create({
-      data: { 
-        user_id: userId,
-        lesson_id: lesson_id,
-        is_practice: true
-      }
-    });
-
     // Generate question snapshots
     const questionsToCreate = [];
     const targetCount = Math.min(20, templates.length * 5);
 
-    let templatePool = [];
+    let templatePool: any[] = [];
     const repeatsPerTemplate = Math.ceil(targetCount / templates.length);
 
     for (let i = 0; i < repeatsPerTemplate; i++) {
@@ -543,25 +534,28 @@ router.post('/:id/practice', optionalAuthenticate, async (req, res) => {
       const right_answers = isTheoretical
         ? template.accepted_formulas.slice(0, 1).filter(Boolean)
         : template.accepted_formulas
-          .map(f => MathService.evaluateFormula(f, vars))
-          .filter(ans => ans !== null);
+          .map((f: string) => MathService.evaluateFormula(f, vars))
+          .filter((ans: unknown) => ans !== null);
 
       questionsToCreate.push({
-        attempt_id: attempt.id,
         template_id: template.id,
         generated_variables: vars,
         right_answers: right_answers
       });
     }
 
-    // Batch insert snapshots
-    await prisma.questionSnapshot.createMany({
-      data: questionsToCreate
-    });
-
-    // Fetch the attempt with snapshots to return
-    const attemptWithQuestions = await prisma.testAttempt.findUnique({
-      where: { id: attempt.id },
+    // Create a practice TestAttempt with snapshots in a single nested statement
+    const attemptWithQuestions = await prisma.testAttempt.create({
+      data: { 
+        user_id: userId,
+        lesson_id: lesson_id,
+        is_practice: true,
+        snapshots: {
+          createMany: {
+            data: questionsToCreate
+          }
+        }
+      },
       include: { 
         snapshots: {
           include: { 
