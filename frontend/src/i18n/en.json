@@ -372,7 +372,7 @@
   "Practice": {
     "title": "Master Your Skills",
     "subtitle": "Select a lesson to start practicing and boost your knowledge.",
-    "startBtn": "Start Practice",
+    "startBtn": "Practice",
     "reviewBtn": "Review",
     "startPractice": "Start Practice Session",
     "starting": "Starting...",
@@ -486,7 +486,7 @@
     "backToGrade": "Back to Grade",
     "title": "Learning Hub",
     "subtitle": "Dive into your lessons and master new concepts today.",
-    "viewLesson": "Start Learning",
+    "viewLesson": "Learn",
     "viewPath": "View Full Path",
     "streakLabel": "{count, plural, one {# active day streak} other {# active days streak}}",
     "socializingTitle": "Socializing",

@@ -111,7 +111,10 @@ export default async function LessonPage({ params }: Props) {
                     [&_li]:text-base md:[&_li]:text-lg [&_li]:leading-relaxed md:[&_li]:leading-[2]
                     [&_.katex-display]:text-center [&_.katex-display]:my-10 md:[_.katex-display]:my-16 [&_.katex-display]:w-full [&_.katex-display]:overflow-x-auto [&_.katex-display]:overflow-y-hidden [&_.katex-display]:py-4
                     [&>pre]:bg-sol-bg [&>pre]:p-6 md:[&>pre]:p-10 [&>pre]:rounded-2xl md:[&>pre]:rounded-[2rem] [&>pre]:border [&>pre]:border-sol-border/20 [&>pre]:my-8 md:[&>pre]:my-12 [&>pre]:shadow-2xl
-                    [&>blockquote]:border-l-4 md:[&>blockquote]:border-l-[6px] [&>blockquote]:border-sol-accent [&>blockquote]:pl-6 md:[&>blockquote]:pl-10 [&>blockquote]:italic [&>blockquote]:my-8 md:[&>blockquote]:my-12 [&>blockquote]:text-sol-muted [&>blockquote]:bg-sol-accent/5 [&>blockquote]:p-6 md:[&>blockquote]:py-10 md:[&>blockquote]:pr-10 [&>blockquote]:rounded-r-2xl md:[&>blockquote]:rounded-r-[2.5rem]"
+                    [&>blockquote]:border-l-4 md:[&>blockquote]:border-l-[6px] [&>blockquote]:border-sol-accent [&>blockquote]:pl-6 md:[&>blockquote]:pl-10 [&>blockquote]:italic [&>blockquote]:my-8 md:[&>blockquote]:my-12 [&>blockquote]:text-sol-muted [&>blockquote]:bg-sol-accent/5 [&>blockquote]:p-6 md:[&>blockquote]:py-10 md:[&>blockquote]:pr-10 [&>blockquote]:rounded-r-2xl md:[&>blockquote]:rounded-r-[2.5rem]
+                    [&_table]:w-full [&_table]:border-collapse [&_table]:my-8 [&_table]:text-left
+                    [&_th]:border-b-2 [&_th]:border-sol-border/30 [&_th]:p-3 [&_th]:font-black [&_th]:text-sol-text
+                    [&_td]:border-b [&_td]:border-sol-border/10 [&_td]:p-3 [&_td]:text-sol-text/80 [&_tr:nth-child(even)]:bg-sol-bg/20"
                   dangerouslySetInnerHTML={{ __html: sectionHtml }}
                 />
               </article>
