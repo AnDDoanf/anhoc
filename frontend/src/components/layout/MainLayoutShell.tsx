@@ -67,7 +67,7 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
       <div className="relative flex min-w-0 flex-1 flex-col">
         <Settingbar />
 
-        <main className="min-w-0 flex-grow p-3 pt-15 pb-20 sm:p-4 sm:pt-4 md:p-8 md:pt-8">
+        <main className="min-w-0 flex-grow p-3 pt-20 pb-20 sm:p-4 sm:pt-4 md:p-8 md:pt-8">
           {children}
         </main>
 
