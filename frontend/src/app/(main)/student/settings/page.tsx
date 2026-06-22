@@ -84,7 +84,43 @@ function SettingsPageContent() {
   const handleLink = (provider: string) => {
     setOauthActionLoading(provider);
     const token = localStorage.getItem("token") || "";
-    window.location.href = `${API_BASE_URL}/auth/${provider}?state=${token}&frontendUrl=${encodeURIComponent(window.location.origin)}`;
+    const oauthUrl = `${API_BASE_URL}/auth/${provider}?state=${token}&frontendUrl=${encodeURIComponent(window.location.origin)}`;
+
+    if (provider === "facebook") {
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      if (isMobile) {
+        const confirmOpen = window.confirm(t("facebookAppPrompt") || "Do you want to open the Facebook app?");
+        if (confirmOpen) {
+          const deepLinkUrl = `fb://facewebmodal/f?href=${encodeURIComponent(oauthUrl)}`;
+          let fallbackTriggered = false;
+
+          const fallbackTimer = setTimeout(() => {
+            if (!document.hidden && !fallbackTriggered) {
+              fallbackTriggered = true;
+              window.location.href = oauthUrl;
+            }
+          }, 1500);
+
+          const handleVisibilityChange = () => {
+            if (document.hidden) {
+              clearTimeout(fallbackTimer);
+            }
+          };
+
+          const handleBlur = () => {
+            clearTimeout(fallbackTimer);
+          };
+
+          window.addEventListener("visibilitychange", handleVisibilityChange, { once: true });
+          window.addEventListener("blur", handleBlur, { once: true });
+
+          window.location.href = deepLinkUrl;
+          return;
+        }
+      }
+    }
+
+    window.location.href = oauthUrl;
   };
 
   const handleUnlink = async (provider: string) => {
