@@ -41,6 +41,9 @@ model User {
   xp_logs           XpLog[]
   achievements      UserAchievement[]
   student_stats     StudentStats?
+  user_streak       UserStreak?
+  streak_claims     UserStreakRewardClaim[]
+  daily_quests      UserDailyQuest[]
   evidence          ActivityEvidence[]
   audit_logs        AuditLog[]
   question_reports  QuestionTemplateReport[]
@@ -685,4 +688,74 @@ model OAuthAccount {
   @@index([user_id])
   @@map("oauth_accounts")
 }
+
+model UserStreak {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id               String    @unique @db.Uuid
+  current_streak        Int       @default(0)
+  longest_streak        Int       @default(0)
+  weekly_streak         Int       @default(0)
+  last_active_date      String?   @db.VarChar(10) // "YYYY-MM-DD"
+  streak_start_date     DateTime? @db.Timestamptz
+  missed_days           Int       @default(0)
+  rewards_generated_at  DateTime? @db.Timestamptz
+  precalculated_rewards Json?     // JSON array of 14 precalculated rewards
+  created_at            DateTime  @default(now()) @db.Timestamptz
+  updated_at            DateTime  @default(now()) @db.Timestamptz
+
+  user                  User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("user_streaks")
+}
+
+model StreakReward {
+  id             String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String                  @db.VarChar(100)
+  description    String?
+  reward_type    String                  @db.VarChar(50) // "milestone" or "specific_day"
+  specific_date  String?                 @db.VarChar(10) // "YYYY-MM-DD" for specific day
+  required_days  Int?                    // Nullable for specific day
+  reward_payload Json?                   // e.g. { "coins": 100 }
+  message_en     String?
+  message_vi     String?
+  is_repeatable  Boolean                 @default(false)
+  is_active      Boolean                 @default(true)
+  created_at     DateTime                @default(now()) @db.Timestamptz
+  updated_at     DateTime                @default(now()) @db.Timestamptz
+  claims         UserStreakRewardClaim[]
+
+  @@map("streak_rewards")
+}
+
+model UserStreakRewardClaim {
+  id               String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id          String       @db.Uuid
+  streak_reward_id String       @db.Uuid
+  streak_day       Int          @default(0) // The streak day they claimed this at (0 for specific day)
+  claimed_at       DateTime     @default(now()) @db.Timestamptz
+
+  user          User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  streak_reward StreakReward @relation(fields: [streak_reward_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, streak_reward_id, streak_day])
+  @@map("user_streak_reward_claims")
+}
+
+model UserDailyQuest {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id       String   @db.Uuid
+  quest_type    String   @db.VarChar(50) // "complete_lesson", "finish_quiz", "submit_practice", "play_game", "earn_xp"
+  target_count  Int
+  current_count Int      @default(0)
+  xp_reward     Int
+  is_completed  Boolean  @default(false)
+  date          String   @db.VarChar(10) // "YYYY-MM-DD"
+  created_at    DateTime @default(now()) @db.Timestamptz
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, quest_type, date])
+  @@map("user_daily_quests")
+}
+
 
