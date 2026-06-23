@@ -53,7 +53,7 @@ const decodeJwt = (token: string) => {
   }
 };
 
-let isRefreshing = false;
+let refreshPromise: Promise<string | null> | null = null;
 
 // Auto-attach token and auto-refresh if it's close to expiry
 api.interceptors.request.use(async (config) => {
@@ -69,33 +69,44 @@ api.interceptors.request.use(async (config) => {
         const refreshToken = localStorage.getItem("refreshToken");
         
         // Refresh token if remaining validity is under 60 seconds
-        if (timeRemaining < 60 && refreshToken && !isRefreshing && config.url !== "/auth/refresh") {
-          isRefreshing = true;
+        if (timeRemaining < 60 && refreshToken && config.url !== "/auth/refresh") {
+          if (!refreshPromise) {
+            refreshPromise = api.post("/auth/refresh", { refreshToken })
+              .then((res) => {
+                const newToken = res.data.token;
+                const newRefreshToken = res.data.refreshToken;
+                const newUser = res.data.user;
+                localStorage.setItem("token", newToken);
+                if (newRefreshToken) {
+                  localStorage.setItem("refreshToken", newRefreshToken);
+                }
+                localStorage.setItem("user", JSON.stringify(newUser));
+                
+                // Keep document.cookie and Authorization headers in sync
+                document.cookie = `token=${newToken}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+                api.defaults.headers.common["Authorization"] = `Bearer ${newToken}`;
+                
+                // Notify listeners of the refreshed credentials
+                window.dispatchEvent(
+                  new CustomEvent("auth-token-refreshed", {
+                    detail: { token: newToken, user: newUser },
+                  })
+                );
+                return newToken;
+              })
+              .catch((err) => {
+                console.error("Token auto-refresh failed:", err);
+                return null;
+              })
+              .finally(() => {
+                refreshPromise = null;
+              });
+          }
           
-          api.post("/auth/refresh", { refreshToken })
-            .then((res) => {
-              const newToken = res.data.token;
-              const newRefreshToken = res.data.refreshToken;
-              const newUser = res.data.user;
-              localStorage.setItem("token", newToken);
-              if (newRefreshToken) {
-                localStorage.setItem("refreshToken", newRefreshToken);
-              }
-              localStorage.setItem("user", JSON.stringify(newUser));
-              
-              // Notify listeners of the refreshed credentials
-              window.dispatchEvent(
-                new CustomEvent("auth-token-refreshed", {
-                  detail: { token: newToken, user: newUser },
-                })
-              );
-            })
-            .catch((err) => {
-              console.error("Token auto-refresh failed:", err);
-            })
-            .finally(() => {
-              isRefreshing = false;
-            });
+          const newToken = await refreshPromise;
+          if (newToken) {
+            config.headers.Authorization = `Bearer ${newToken}`;
+          }
         }
       }
     }
@@ -113,6 +124,8 @@ api.interceptors.response.use(
         localStorage.removeItem("token");
         localStorage.removeItem("refreshToken");
         localStorage.removeItem("user");
+        document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+        delete api.defaults.headers.common["Authorization"];
 
         // Notify global guard to display the relogin modal
         window.dispatchEvent(new CustomEvent("auth-session-expired"));

@@ -20,6 +20,8 @@ export const useAuth = () => {
     localStorage.setItem("user", JSON.stringify(response.user));
     if (response.token) {
       localStorage.setItem("token", response.token);
+      document.cookie = `token=${response.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+      authService.setAuthHeader(response.token);
     }
     if (response.refreshToken) {
       localStorage.setItem("refreshToken", response.refreshToken);
