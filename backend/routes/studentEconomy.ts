@@ -2,6 +2,7 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth.ts';
 import { economyService, SHOP_ITEMS } from '../services/economyService.ts';
+import { streakService } from '../services/streakService.ts';
 
 const router = Router();
 
@@ -108,6 +109,50 @@ router.post('/use-skip-guard', authenticate, async (req, res) => {
     }
     const snapshot = await economyService.useSkipGuard(userId, snapshotId);
     res.json({ success: true, snapshot });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// GET /api/v1/student-economy/streak/status
+router.get('/streak/status', authenticate, async (req, res) => {
+  try {
+    const userId = (req as any).user.id;
+    const status = await streakService.getStreakStatus(userId);
+    res.json(status);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/v1/student-economy/streak/claim
+router.post('/streak/claim', authenticate, async (req, res) => {
+  try {
+    const userId = (req as any).user.id;
+    const result = await streakService.claimDailyReward(userId);
+    res.json(result);
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// POST /api/v1/student-economy/streak/recover
+router.post('/streak/recover', authenticate, async (req, res) => {
+  try {
+    const userId = (req as any).user.id;
+    const result = await streakService.recoverStreak(userId);
+    res.json(result);
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// POST /api/v1/student-economy/streak/reset
+router.post('/streak/reset', authenticate, async (req, res) => {
+  try {
+    const userId = (req as any).user.id;
+    const result = await streakService.resetStreak(userId);
+    res.json(result);
   } catch (error: any) {
     res.status(400).json({ error: error.message });
   }

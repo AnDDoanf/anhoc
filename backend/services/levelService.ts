@@ -1,5 +1,6 @@
 // src/services/levelService.ts
 import prisma from '../lib/db';
+import { streakService } from './streakService.ts';
 
 const BASE_XP = 100;
 const GROWTH_RATE = 1.3;
@@ -89,6 +90,11 @@ export const levelService = {
         } as any
       })
     ]);
+
+    const skipReasons = ['daily_quest_completion', 'streak_auto_claim', 'daily_streak_reward', 'streak_milestone_reward'];
+    if (xpToAdd > 0 && !skipReasons.includes(reason)) {
+      await streakService.updateQuestProgress(userId, 'earn_xp', xpToAdd);
+    }
 
     return updatedStats;
   }

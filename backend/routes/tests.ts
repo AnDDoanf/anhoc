@@ -7,6 +7,7 @@ import { masteryService } from '../services/masteryService';
 import { levelService } from '../services/levelService';
 import { createNotification, NotificationType, notifyAdmins } from '../services/notificationService.ts';
 import { economyService } from '../services/economyService.ts';
+import { streakService } from '../services/streakService.ts';
 import { achievementQueue } from '../lib/queue.ts';
 import { checkAndAwardAchievements } from '../services/achievementService.ts';
 import {
@@ -206,15 +207,32 @@ const getGradeTestEligibilityForViewer = async (
 
 type NormalizedTemplatePayload = ReturnType<typeof normalizeTemplatePayload>;
 
-const buildQuestionSnapshots = (templates: any[], targetCount: number) => {
-  const repeatsPerTemplate = Math.ceil(targetCount / templates.length);
-  let templatePool: any[] = [];
-
-  for (let i = 0; i < repeatsPerTemplate; i++) {
-    templatePool = templatePool.concat(templates);
+const selectTemplates = (templates: any[], n: number): any[] => {
+  const m = templates.length;
+  if (m === 0) return [];
+  if (n <= m) {
+    return shuffle(templates).slice(0, n);
+  } else {
+    let result: any[] = [];
+    let remaining = n;
+    while (remaining > 0) {
+      const currentShuffle = shuffle(templates);
+      if (remaining >= m) {
+        result = result.concat(currentShuffle);
+        remaining -= m;
+      } else {
+        result = result.concat(currentShuffle.slice(0, remaining));
+        remaining = 0;
+      }
+    }
+    return result;
   }
+};
 
-  return shuffle(templatePool).slice(0, targetCount).map((template) => {
+const buildQuestionSnapshots = (templates: any[], targetCount: number) => {
+  const selection = selectTemplates(templates, targetCount);
+
+  return selection.map((template) => {
     const isTheoretical = template.template_type === "theoretical_question";
     const vars = isTheoretical ? {} : MathService.generateVars(template.logic_config);
     const right_answers = isTheoretical
@@ -440,14 +458,7 @@ router.get('/grade-tests/:gradeId/export-questions', optionalAuthenticate, async
 
     // Generate up to 50 questions
     const targetCount = 50;
-    const repeatsPerTemplate = Math.ceil(targetCount / templates.length);
-    let templatePool: any[] = [];
-    for (let i = 0; i < repeatsPerTemplate; i++) {
-      templatePool = templatePool.concat(templates);
-    }
-
-    // Shuffle and slice
-    const shuffledTemplates = templatePool.sort(() => Math.random() - 0.5).slice(0, targetCount);
+    const shuffledTemplates = selectTemplates(templates, targetCount);
 
     const questions = shuffledTemplates.map((template) => {
       const isTheoretical = template.template_type === "theoretical_question";
@@ -921,6 +932,18 @@ router.post('/attempts/:id/finish', authenticate, async (req, res) => {
       }
     } catch (e) {
       console.error("XP Service Error:", e);
+    }
+
+    try {
+      if (attempt.user_id) {
+        if (existing?.is_practice) {
+          await streakService.updateQuestProgress(attempt.user_id, 'submit_practice', 1);
+        } else {
+          await streakService.updateQuestProgress(attempt.user_id, 'finish_quiz', 1);
+        }
+      }
+    } catch (e) {
+      console.error("Daily Quest Progression Error:", e);
     }
 
     try {

@@ -1,4 +1,5 @@
 import prisma from '../lib/db';
+import { streakService } from './streakService.ts';
 
 export const masteryService = {
   /**
@@ -41,6 +42,10 @@ export const masteryService = {
         last_activity_at: new Date()
       }
     });
+
+    if (current?.completion_status !== "completed" && status === "completed") {
+      await streakService.updateQuestProgress(userId, 'complete_lesson', 1);
+    }
 
     return updated;
   },

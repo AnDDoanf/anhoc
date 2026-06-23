@@ -14,6 +14,7 @@ import supervisorRoutes from './routes/supervisor.ts';
 import subscriptionRoutes from './routes/subscription.ts';
 import studentEconomyRoutes from './routes/studentEconomy.ts';
 import { seedAchievements } from './services/achievementService.ts';
+import { seedStreakRewards } from './services/streakRewardSeeder.ts';
 import { scheduleInactiveAccountCleanup } from './services/accountLifecycleService.ts';
 import { startQueueWorkers } from './workers/index.ts';
 import swaggerUi from 'swagger-ui-express';
@@ -107,6 +108,7 @@ async function main() {
       await seedAchievements();
       console.log('Achievements seeded');
     }
+    await seedStreakRewards();
 
     const server = app.listen(PORT, () => {
       console.log(`Server is running at http://localhost:${PORT}`);

@@ -4,6 +4,7 @@ import { cacheGet, cacheSet, cacheDel } from '../lib/redis';
 import { authenticate, optionalAuthenticate } from '../middleware/auth';
 import * as MathService from '../services/mathService';
 import { levelService } from '../services/levelService';
+import { streakService } from '../services/streakService.ts';
 
 const router = Router();
 const ACTIVE_CHALLENGE_LIMIT = 3;
@@ -56,6 +57,39 @@ async function generateUniqueGameCode(): Promise<string> {
   
   return code;
 }
+
+const shuffle = <T>(items: T[]): T[] => {
+  const next = [...items];
+  for (let i = next.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const current = next[i]!;
+    next[i] = next[j]!;
+    next[j] = current;
+  }
+  return next;
+};
+
+const selectTemplates = (templates: any[], n: number): any[] => {
+  const m = templates.length;
+  if (m === 0) return [];
+  if (n <= m) {
+    return shuffle(templates).slice(0, n);
+  } else {
+    let result: any[] = [];
+    let remaining = n;
+    while (remaining > 0) {
+      const currentShuffle = shuffle(templates);
+      if (remaining >= m) {
+        result = result.concat(currentShuffle);
+        remaining -= m;
+      } else {
+        result = result.concat(currentShuffle.slice(0, remaining));
+        remaining = 0;
+      }
+    }
+    return result;
+  }
+};
 
 const toAttemptView = (attempt: {
   id: string;
@@ -174,9 +208,9 @@ router.post('/challenges', authenticate, async (req, res) => {
     }
 
     const snapshotTarget = GAME_SNAPSHOT_TARGETS[game_type] ?? 15;
-    const shuffledTemplates = [...compatibleTemplates].sort(() => 0.5 - Math.random());
+    const shuffledTemplates = selectTemplates(compatibleTemplates, snapshotTarget);
     const questions = Array.from({ length: snapshotTarget }, (_, index) => {
-      const template = shuffledTemplates[index % shuffledTemplates.length];
+      const template = shuffledTemplates[index];
       const isTheoretical = template.template_type === 'theoretical_question';
       const vars = isTheoretical ? {} : MathService.generateVars(template.logic_config);
       
@@ -486,9 +520,16 @@ router.post('/attempts', optionalAuthenticate, async (req, res) => {
       }
     });
 
-    // Add XP
-    if (userId && xpEarned > 0) {
-      await levelService.addXp(userId, xpEarned, logReason);
+    // Add XP and update daily quest
+    if (userId) {
+      if (xpEarned > 0) {
+        await levelService.addXp(userId, xpEarned, logReason);
+      }
+      try {
+        await streakService.updateQuestProgress(userId, 'play_game', 1);
+      } catch (questErr) {
+        console.error('Error updating play_game quest progress:', questErr);
+      }
     }
 
     await cacheDel('leaderboard:global');

@@ -35,6 +35,40 @@ const normalizeBooleanFlag = (value: unknown): boolean => {
   return false;
 };
 
+const shuffle = <T>(items: T[]): T[] => {
+  const next = [...items];
+  for (let i = next.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const current = next[i]!;
+    next[i] = next[j]!;
+    next[j] = current;
+  }
+  return next;
+};
+
+const selectTemplates = (templates: any[], n: number): any[] => {
+  const m = templates.length;
+  if (m === 0) return [];
+  if (n <= m) {
+    return shuffle(templates).slice(0, n);
+  } else {
+    let result: any[] = [];
+    let remaining = n;
+    while (remaining > 0) {
+      const currentShuffle = shuffle(templates);
+      if (remaining >= m) {
+        result = result.concat(currentShuffle);
+        remaining -= m;
+      } else {
+        result = result.concat(currentShuffle.slice(0, remaining));
+        remaining = 0;
+      }
+    }
+    return result;
+  }
+};
+
+
 const getAllowedSubjectIds = async (req: any): Promise<number[] | null> => (
   getAllowedSubjectIdsForViewer(req.user)
 );
@@ -512,20 +546,7 @@ router.post('/:id/practice', optionalAuthenticate, async (req, res) => {
     // Generate question snapshots
     const questionsToCreate = [];
     const targetCount = Math.min(20, templates.length * 5);
-
-    let templatePool: any[] = [];
-    const repeatsPerTemplate = Math.ceil(targetCount / templates.length);
-
-    for (let i = 0; i < repeatsPerTemplate; i++) {
-      templatePool = templatePool.concat(templates);
-    }
-
-    for (let i = templatePool.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [templatePool[i], templatePool[j]] = [templatePool[j], templatePool[i]];
-    }
-
-    const selection = templatePool.slice(0, targetCount);
+    const selection = selectTemplates(templates, targetCount);
 
     for (const template of selection) {
       const isTheoretical = template.template_type === "theoretical_question";
@@ -619,14 +640,7 @@ router.get('/:id/export-questions', optionalAuthenticate, async (req, res) => {
 
     // Generate questions on the fly (limit to 15)
     const targetCount = 15;
-    const repeatsPerTemplate = Math.ceil(targetCount / templates.length);
-    let templatePool: any[] = [];
-    for (let i = 0; i < repeatsPerTemplate; i++) {
-      templatePool = templatePool.concat(templates);
-    }
-
-    // Shuffle and slice
-    const shuffledTemplates = templatePool.sort(() => Math.random() - 0.5).slice(0, targetCount);
+    const shuffledTemplates = selectTemplates(templates, targetCount);
 
     const questions = shuffledTemplates.map((template) => {
       const isTheoretical = template.template_type === "theoretical_question";

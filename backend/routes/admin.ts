@@ -838,4 +838,172 @@ router.get('/stats', authenticate, async (req, res) => {
   }
 });
 
+// GET /admin/streak-rewards
+router.get('/streak-rewards', authenticate, isAdmin, async (req, res) => {
+  try {
+    const rewards = await prisma.streakReward.findMany({
+      orderBy: [
+        { reward_type: 'asc' },
+        { required_days: 'asc' },
+        { specific_date: 'asc' }
+      ]
+    });
+    res.json(rewards);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to fetch streak rewards', details: error.message });
+  }
+});
+
+// POST /admin/streak-rewards
+router.post('/streak-rewards', authenticate, isAdmin, async (req, res) => {
+  try {
+    const {
+      name,
+      description,
+      reward_type,
+      specific_date,
+      required_days,
+      reward_payload,
+      message_en,
+      message_vi,
+      is_repeatable,
+      is_active
+    } = req.body;
+
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({ error: 'Name is required' });
+    }
+    if (!reward_type || !['milestone', 'specific_day'].includes(reward_type)) {
+      return res.status(400).json({ error: 'reward_type must be milestone or specific_day' });
+    }
+    if (reward_type === 'milestone' && (required_days === undefined || required_days === null || isNaN(Number(required_days)))) {
+      return res.status(400).json({ error: 'required_days is required for milestone rewards' });
+    }
+    if (reward_type === 'specific_day' && (!specific_date || typeof specific_date !== 'string')) {
+      return res.status(400).json({ error: 'specific_date is required for specific_day rewards' });
+    }
+
+    const reward = await prisma.streakReward.create({
+      data: {
+        name: name.trim(),
+        description: description ? String(description).trim() : null,
+        reward_type,
+        specific_date: reward_type === 'specific_day' ? specific_date : null,
+        required_days: reward_type === 'milestone' ? Number(required_days) : null,
+        reward_payload: reward_payload || null,
+        message_en: message_en ? String(message_en).trim() : null,
+        message_vi: message_vi ? String(message_vi).trim() : null,
+        is_repeatable: is_repeatable === undefined ? false : !!is_repeatable,
+        is_active: is_active === undefined ? true : !!is_active
+      }
+    });
+
+    res.status(201).json(reward);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to create streak reward', details: error.message });
+  }
+});
+
+// PATCH /admin/streak-rewards/:id
+router.patch('/streak-rewards/:id', authenticate, isAdmin, async (req, res) => {
+  try {
+    const id = req.params.id as string;
+    const {
+      name,
+      description,
+      reward_type,
+      specific_date,
+      required_days,
+      reward_payload,
+      message_en,
+      message_vi,
+      is_repeatable,
+      is_active
+    } = req.body;
+
+    const existing = await prisma.streakReward.findUnique({ where: { id } });
+    if (!existing) {
+      return res.status(404).json({ error: 'Streak reward not found' });
+    }
+
+    const data: any = {};
+    if (name !== undefined) {
+      if (typeof name !== 'string' || !name.trim()) {
+        return res.status(400).json({ error: 'Name cannot be empty' });
+      }
+      data.name = name.trim();
+    }
+    if (description !== undefined) {
+      data.description = description ? String(description).trim() : null;
+    }
+    if (reward_type !== undefined) {
+      if (!['milestone', 'specific_day'].includes(reward_type)) {
+        return res.status(400).json({ error: 'reward_type must be milestone or specific_day' });
+      }
+      data.reward_type = reward_type;
+    }
+
+    const currentRewardType = data.reward_type || existing.reward_type;
+
+    if (currentRewardType === 'milestone') {
+      if (required_days !== undefined) {
+        if (required_days === null || isNaN(Number(required_days))) {
+          return res.status(400).json({ error: 'required_days must be a valid number' });
+        }
+        data.required_days = Number(required_days);
+      }
+      data.specific_date = null;
+    } else {
+      if (specific_date !== undefined) {
+        if (!specific_date) {
+          return res.status(400).json({ error: 'specific_date cannot be empty' });
+        }
+        data.specific_date = String(specific_date);
+      }
+      data.required_days = null;
+    }
+
+    if (reward_payload !== undefined) {
+      data.reward_payload = reward_payload || null;
+    }
+    if (message_en !== undefined) {
+      data.message_en = message_en ? String(message_en).trim() : null;
+    }
+    if (message_vi !== undefined) {
+      data.message_vi = message_vi ? String(message_vi).trim() : null;
+    }
+    if (is_repeatable !== undefined) {
+      data.is_repeatable = !!is_repeatable;
+    }
+    if (is_active !== undefined) {
+      data.is_active = !!is_active;
+    }
+
+    const updated = await prisma.streakReward.update({
+      where: { id },
+      data
+    });
+
+    res.json(updated);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to update streak reward', details: error.message });
+  }
+});
+
+// DELETE /admin/streak-rewards/:id
+router.delete('/streak-rewards/:id', authenticate, isAdmin, async (req, res) => {
+  try {
+    const id = req.params.id as string;
+    const existing = await prisma.streakReward.findUnique({ where: { id } });
+    if (!existing) {
+      return res.status(404).json({ error: 'Streak reward not found' });
+    }
+
+    await prisma.streakReward.delete({ where: { id } });
+    res.status(204).send();
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to delete streak reward', details: error.message });
+  }
+});
+
 export default router;
