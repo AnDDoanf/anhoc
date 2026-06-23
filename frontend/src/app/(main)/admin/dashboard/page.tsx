@@ -326,7 +326,7 @@ export default function AdminDashboard() {
           </div>
           <div className="bg-sol-surface border border-sol-border/10 rounded-3xl sm:rounded-[2.5rem] overflow-hidden shadow-xl p-4 sm:p-6">
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full min-w-[600px]">
                 <thead>
                   <tr className="border-b border-sol-border/5 bg-sol-bg/50">
                     <th className="px-3 py-3 sm:px-6 sm:py-4 text-left text-[10px] font-black text-sol-muted uppercase tracking-widest rounded-tl-2xl">{t("recentActivity.student")}</th>
