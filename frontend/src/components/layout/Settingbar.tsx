@@ -6,10 +6,11 @@ import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
 import LanguageToggle from "../ui/LanguageToggle";
 import ThemeToggle from "../ui/ThemeToggle";
-import { Settings, LogOut, LogIn, ChevronDown, UserCog, Bell, CheckCheck } from "lucide-react";
+import { Settings, LogOut, LogIn, ChevronDown, UserCog, Bell, CheckCheck, Flame } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { AppNotification, notificationService } from "@/services/notificationService";
 import { getBackendUrl } from "@/services/api";
+import { economyService } from "@/services/economyService";
 
 type SettingBarProps = {
   scrollContainerId?: string;
@@ -34,6 +35,26 @@ export default function SettingBar({ scrollContainerId, mobileAlignment }: Setti
   const displayName = user?.username || user?.email?.split("@")[0] || t("guestName");
   const isSettingsOpen = activePanel === "settings";
   const isNotificationsOpen = activePanel === "notifications";
+
+  const [streakCount, setStreakCount] = useState<number | null>(null);
+
+  const fetchStreak = useCallback(async () => {
+    if (!user) return;
+    try {
+      const status = await economyService.getStreakStatus();
+      setStreakCount(status.currentStreak);
+    } catch (err) {
+      console.error("Failed to load streak status in Settingbar:", err);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    void fetchStreak();
+    window.addEventListener("student-stats-updated", fetchStreak);
+    return () => {
+      window.removeEventListener("student-stats-updated", fetchStreak);
+    };
+  }, [fetchStreak]);
 
   useEffect(() => {
     setImageError(false);
@@ -232,6 +253,20 @@ export default function SettingBar({ scrollContainerId, mobileAlignment }: Setti
     >
       <div className="relative flex flex-col items-end">
         <div className="flex items-center gap-3">
+          {!isGuest && (
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent("open-streak-modal"))}
+              className="relative flex h-12 px-3 items-center justify-center gap-1.5 rounded-full border border-sol-border/30 bg-sol-surface/80 backdrop-blur-md text-orange-500 hover:border-orange-500/50 hover:bg-orange-500/5 transition-all duration-300 shadow-sm hover:cursor-pointer"
+              title={t("viewStreakCalendar")}
+            >
+              <Flame size={18} className="fill-current animate-pulse" />
+              {streakCount !== null && (
+                <span className="text-xs font-black tracking-tight">{streakCount}</span>
+              )}
+            </button>
+          )}
+
           {!isGuest && (
             <button
               type="button"

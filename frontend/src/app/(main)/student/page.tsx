@@ -168,9 +168,22 @@ export default function UserHomePage() {
           
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
             <div className="space-y-4">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sol-accent/10 border border-sol-accent/20 text-sol-accent text-sm font-black uppercase tracking-wider">
-                <Sparkles size={14} />
-                {dt("studentHub")}
+              <div className="flex flex-wrap gap-2">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sol-accent/10 border border-sol-accent/20 text-sol-accent text-sm font-black uppercase tracking-wider">
+                  <Sparkles size={14} />
+                  {dt("studentHub")}
+                </div>
+                
+                {profile?.user_streak && (
+                  <button
+                    onClick={() => window.dispatchEvent(new CustomEvent("open-streak-modal"))}
+                    className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-500 hover:bg-orange-500/20 text-sm font-black uppercase tracking-wider transition-colors"
+                    title={locale === "vi" ? "Xem quà điểm danh" : "View streak calendar"}
+                  >
+                    <Flame size={14} className="fill-current" />
+                    <span>{profile.user_streak.current_streak} {locale === "vi" ? "Ngày" : "Days"}</span>
+                  </button>
+                )}
               </div>
               <h1 className="text-4xl md:text-6xl font-black text-sol-text tracking-tight leading-[1.05]">
                 {dt("welcomeBackMessage", { email: user?.username || user?.email?.split("@")[0] || "" })}
@@ -330,11 +343,15 @@ export default function UserHomePage() {
               </h3>
               <div className="space-y-6">
                 {[
-                  { title: dt("dailyStreak"), desc: dt("dailyStreakDesc"), icon: <Flame className="text-sol-orange" /> },
+                  { title: dt("dailyStreak"), desc: dt("dailyStreakDesc"), icon: <Flame className="text-sol-orange" />, action: () => window.dispatchEvent(new CustomEvent("open-streak-modal")) },
                   { title: dt("masteryFocus"), desc: dt("masteryFocusDesc"), icon: <Target className="text-sol-blue" /> },
                   { title: dt("newChallenges"), desc: dt("newChallengesDesc"), icon: <Sparkles className="text-sol-accent" /> }
                 ].map((item, i) => (
-                  <div key={i} className="flex gap-4 group cursor-default">
+                  <div 
+                    key={i} 
+                    onClick={item.action}
+                    className={`flex gap-4 group ${item.action ? "cursor-pointer hover:bg-sol-bg/40 p-2 rounded-2xl transition-all animate-pulse" : "cursor-default"}`}
+                  >
                     <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-sol-bg border border-sol-border/30 flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all">
                       {item.icon}
                     </div>

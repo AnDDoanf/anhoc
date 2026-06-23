@@ -5,6 +5,8 @@ import Footer from "@/components/layout/Footer";
 import Settingbar from "@/components/layout/Settingbar";
 import ScrollToTop from "@/components/ui/ScrollToTop";
 import ChatbotWidget from "@/components/feature/ChatbotWidget";
+import DailyLoginCalendarModal from "@/components/feature/DailyLoginCalendarModal";
+import { economyService } from "@/services/economyService";
 import { RootState } from "@/redux/store";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -20,11 +22,41 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
 
   const [isMounted, setIsMounted] = useState(false);
   const [hasToken, setHasToken] = useState(false);
+  const [isStreakOpen, setIsStreakOpen] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
     setHasToken(!!localStorage.getItem("token"));
   }, []);
+
+  useEffect(() => {
+    const handleOpenStreak = () => setIsStreakOpen(true);
+    window.addEventListener("open-streak-modal", handleOpenStreak);
+    return () => window.removeEventListener("open-streak-modal", handleOpenStreak);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted || !authUser) return;
+
+    const sessionChecked = sessionStorage.getItem("streak_checked");
+    if (sessionChecked) return;
+
+    const checkStreak = async () => {
+      try {
+        const status = await economyService.getStreakStatus();
+        if (status.canClaimToday || status.needsRecovery) {
+          setIsStreakOpen(true);
+        }
+        sessionStorage.setItem("streak_checked", "true");
+      } catch (err) {
+        console.error("Error checking streak status:", err);
+      }
+    };
+
+    // Delay checking slightly to let main layout settle
+    const timer = setTimeout(checkStreak, 1000);
+    return () => clearTimeout(timer);
+  }, [isMounted, authUser]);
 
   const isSharedChallengeRoute = pathname.startsWith("/student/games/challenge/");
   const isSharedPlayRoute = pathname === "/student/games/play";
@@ -74,6 +106,7 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
         <Footer />
         <ScrollToTop className="bottom-24 right-6" />
         <ChatbotWidget />
+        <DailyLoginCalendarModal isOpen={isStreakOpen} onClose={() => setIsStreakOpen(false)} />
       </div>
     </div>
   );

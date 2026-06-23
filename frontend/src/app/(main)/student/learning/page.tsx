@@ -9,6 +9,7 @@ import CreateLessonModal from "@/components/feature/CreateLessonModal";
 import Hero from "@/components/ui/Hero";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Lesson, LessonMastery, Subject, lessonService } from "@/services/lessonService";
+import { economyService } from "@/services/economyService";
 import { GradeTest, testService } from "@/services/testService";
 import { isAxiosError } from "axios";
 import { useRouter } from "next/navigation";
@@ -55,6 +56,7 @@ export default function LearningDashboard() {
   const [expandedGrades, setExpandedGrades] = useState<Record<string, boolean>>({});
   const [startingPracticeId, setStartingPracticeId] = useState<string | null>(null);
   const [activity, setActivity] = useState<ActivityPoint[]>([]);
+  const [streakStatus, setStreakStatus] = useState<any>(null);
   const [nearbyLearners, setNearbyLearners] = useState<NearbyLearner[]>([]);
   const [recommendedUser, setRecommendedUser] = useState<NearbyLearner | null>(null);
   const [socialSummary, setSocialSummary] = useState({ followers: 0, following: 0 });
@@ -66,7 +68,7 @@ export default function LearningDashboard() {
 
   const fetchDisplayData = useCallback(async () => {
     try {
-      const [lessons, mastery, activityData, socializingData, catalog, tests] = await Promise.all([
+      const [lessons, mastery, activityData, socializingData, catalog, tests, streakData] = await Promise.all([
         lessonService.list(),
         lessonService.getMasteryAll(),
         authService.getActivity(),
@@ -75,6 +77,10 @@ export default function LearningDashboard() {
         testService.listGradeTests().catch((error) => {
           console.error("Failed to load grade tests:", error);
           return [] as GradeTest[];
+        }),
+        economyService.getStreakStatus().catch((error) => {
+          console.error("Failed to load streak status:", error);
+          return null;
         })
       ]);
 
@@ -84,6 +90,7 @@ export default function LearningDashboard() {
         return acc;
       }, {});
       setMasteryData(masteryMap);
+      setStreakStatus(streakData);
 
       const groups = lessons.reduce<Record<string, Omit<LessonSubjectGroup, "grades"> & { grades: Record<string, LessonGradeGroup> }>>((acc, lesson) => {
         const subjectId = lesson.subject?.id || "other";
@@ -128,16 +135,8 @@ export default function LearningDashboard() {
   );
 
   const currentStreak = useMemo(() => {
-    let streak = 0;
-    for (let index = activity.length - 1; index >= 0; index -= 1) {
-      if ((activity[index]?.xp || 0) > 0) {
-        streak += 1;
-      } else {
-        break;
-      }
-    }
-    return streak;
-  }, [activity]);
+    return streakStatus?.currentStreak ?? 0;
+  }, [streakStatus]);
 
   const activeDays = useMemo(() => activity.filter((item) => item.xp > 0).length, [activity]);
 
@@ -469,7 +468,10 @@ export default function LearningDashboard() {
         </div>
 
         <aside className="space-y-6 xl:sticky xl:top-24 xl:self-start">
-          <section className="overflow-hidden rounded-[2rem] border border-sol-border/30 bg-sol-surface shadow-sm">
+          <section 
+            onClick={() => window.dispatchEvent(new CustomEvent("open-streak-modal"))}
+            className="overflow-hidden rounded-[2rem] border border-sol-border/30 bg-sol-surface shadow-sm cursor-pointer hover:border-sol-accent/30 hover:shadow-md transition-all animate-pulse"
+          >
             <div className="border-b border-sol-border/30 p-5">
               <div className="flex items-center gap-2 text-sol-accent">
                 <Flame size={18} />

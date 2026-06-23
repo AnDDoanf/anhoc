@@ -16,7 +16,8 @@ import {
   Gamepad2,
   CreditCard,
   ShoppingBag,
-  Zap
+  Zap,
+  Flame
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
@@ -241,6 +242,13 @@ export default function Sidebar() {
                       href="/admin/questions"
                       label={t("questions")}
                       icon={<Database size={18} />}
+                      pathname={pathname}
+                      isCollapsed={isCollapsed}
+                    />
+                    <NavItem
+                      href="/admin/streak"
+                      label={t("streakRewards")}
+                      icon={<Flame size={18} />}
                       pathname={pathname}
                       isCollapsed={isCollapsed}
                     />
