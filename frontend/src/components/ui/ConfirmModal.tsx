@@ -40,7 +40,7 @@ export default function ConfirmModal({
         {/* Header */}
         <div className="p-6 pb-4 flex items-center justify-between border-b border-sol-border/5">
           <div className="flex items-center gap-3">
-            <div className={`p-2.5 rounded-xl ${isDestructive ? 'bg-red-500/10 text-red-500' : 'bg-sol-accent/10 text-sol-accent'}`}>
+            <div className={`p-2.5 rounded-xl ${isDestructive ? 'bg-sol-red/10 text-sol-red' : 'bg-sol-accent/10 text-sol-accent'}`}>
               <AlertCircle size={24} />
             </div>
             <h2 className="text-xl font-black text-sol-text tracking-tight">{title}</h2>
@@ -69,7 +69,7 @@ export default function ConfirmModal({
           <button
             onClick={onConfirm}
             className={`px-6 py-2.5 rounded-xl font-bold transition-all shadow-md active:scale-95 ${isDestructive
-                ? 'bg-red-500 text-white hover:bg-red-500/90 hover:shadow-red-500/20'
+                ? 'bg-sol-red text-sol-bg hover:bg-sol-red/90 hover:shadow-sol-red/20'
                 : 'bg-sol-accent text-sol-bg hover:bg-sol-accent/90 hover:shadow-sol-accent/20'
               }`}
           >

@@ -37,7 +37,7 @@ export default function TemplateCard({ tmpl, onEdit, onDelete, onPreview }: Temp
       {/* Absolute Icon Buttons */}
       <div className="absolute top-8 right-8 flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
          {onPreview && (
-           <button onClick={(e) => { e.stopPropagation(); onPreview(tmpl); }} className="text-sol-muted hover:text-green-500 transition-colors cursor-pointer" title={t("actions.preview")}>
+           <button onClick={(e) => { e.stopPropagation(); onPreview(tmpl); }} className="text-sol-muted hover:text-sol-green transition-colors cursor-pointer" title={t("actions.preview")}>
              <PlayCircle size={20} strokeWidth={1.5} />
            </button>
          )}
@@ -47,7 +47,7 @@ export default function TemplateCard({ tmpl, onEdit, onDelete, onPreview }: Temp
            </button>
          </Can>
          <Can I="manage" a="test">
-           <button onClick={(e) => { e.stopPropagation(); onDelete(tmpl.id); }} className="text-sol-muted hover:text-red-500 transition-colors cursor-pointer" title={t("actions.delete")}>
+           <button onClick={(e) => { e.stopPropagation(); onDelete(tmpl.id); }} className="text-sol-muted hover:text-sol-red transition-colors cursor-pointer" title={t("actions.delete")}>
              <Trash2 size={20} strokeWidth={1.5} />
            </button>
          </Can>

@@ -115,7 +115,7 @@ export default function QuestionPlayer({ template }: QuestionPlayerProps) {
   return (
     <div className="bg-sol-surface border border-sol-border/10 rounded-3xl p-8 relative overflow-hidden flex flex-col gap-8 shadow-sm">
       <div className={`absolute top-0 left-0 w-full h-1 transition-colors duration-500
-        ${status === "correct" ? "bg-green-500" : status === "incorrect" ? "bg-red-500" : "bg-sol-accent"}`}
+        ${status === "correct" ? "bg-sol-green" : status === "incorrect" ? "bg-sol-red" : "bg-sol-accent"}`}
       />
 
       <div className="flex justify-between items-start">
@@ -230,8 +230,8 @@ export default function QuestionPlayer({ template }: QuestionPlayerProps) {
               }}
               placeholder={t("placeholder")}
               className={`w-full bg-sol-bg border-2 rounded-2xl px-6 py-4 text-sol-text placeholder-sol-muted/40 outline-none transition-all font-mono font-bold text-lg
-                ${status === "correct" ? "border-green-500/50 focus:border-green-500" : ""}
-                ${status === "incorrect" ? "border-red-500/50 focus:border-red-500" : ""}
+                ${status === "correct" ? "border-sol-green/50 focus:border-sol-green" : ""}
+                ${status === "incorrect" ? "border-sol-red/50 focus:border-sol-red" : ""}
                 ${status === "idle" ? "border-sol-border/20 focus:border-sol-accent/50" : ""}
               `}
             />
@@ -246,12 +246,12 @@ export default function QuestionPlayer({ template }: QuestionPlayerProps) {
       )}
 
       {status === "correct" && (
-        <div className="flex items-center gap-2 text-green-500 font-bold bg-green-500/10 p-4 rounded-xl animate-in fade-in slide-in-from-bottom-2 duration-300">
+        <div className="flex items-center gap-2 text-sol-green font-bold bg-sol-green/10 p-4 rounded-xl animate-in fade-in slide-in-from-bottom-2 duration-300">
           <CheckCircle2 size={20} /> {t("correct")}
         </div>
       )}
       {status === "incorrect" && (
-        <div className="flex items-center gap-2 text-red-500/90 font-bold bg-red-500/10 p-4 rounded-xl animate-in fade-in slide-in-from-bottom-2 duration-300">
+        <div className="flex items-center gap-2 text-sol-red/90 font-bold bg-sol-red/10 p-4 rounded-xl animate-in fade-in slide-in-from-bottom-2 duration-300">
           <XCircle size={20} /> {t("incorrect")}
         </div>
       )}

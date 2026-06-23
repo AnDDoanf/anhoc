@@ -58,7 +58,7 @@ export default function ProtectedRoute({
   if (!user) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
+        <div className="animate-spin h-8 w-8 border-4 border-sol-accent border-t-transparent rounded-full"></div>
       </div>
     );
   }
@@ -89,9 +89,9 @@ export default function ProtectedRoute({
 
   if (!isRoleAllowed()) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen text-gray-900">
-        <h1 className="text-2xl font-bold text-red-600">{t("accessDenied")}</h1>
-        <p className="mt-2 text-gray-600">
+      <div className="flex flex-col items-center justify-center min-h-screen text-sol-text">
+        <h1 className="text-2xl font-bold text-sol-red">{t("accessDenied")}</h1>
+        <p className="mt-2 text-sol-muted">
           {t("requiredFound", { 
             required: Array.isArray(requiredRole) ? requiredRole.join(", ") : (requiredRole ?? ""), 
             found: user.role ?? "" 
@@ -99,7 +99,7 @@ export default function ProtectedRoute({
         </p>
         <button 
           onClick={() => router.push("/")}
-          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+          className="mt-4 px-4 py-2 bg-sol-accent text-sol-bg rounded hover:bg-sol-accent/90 transition-colors"
         >
           {t("backToHome")}
         </button>

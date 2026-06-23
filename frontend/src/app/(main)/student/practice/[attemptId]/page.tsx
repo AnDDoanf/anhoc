@@ -460,7 +460,7 @@ export default function PracticeRunnerPage() {
       <div className="flex items-center justify-between">
         <button
           onClick={handleFinish}
-          className="flex items-center gap-2 text-sol-muted hover:text-red-500 transition-colors font-bold text-sm"
+          className="flex items-center gap-2 text-sol-muted hover:text-sol-red transition-colors font-bold text-sm"
         >
           <ArrowLeft size={16} /> {t("finishAbandon")}
         </button>
@@ -501,8 +501,8 @@ export default function PracticeRunnerPage() {
         {/* Status stripe */}
         <div className={`absolute top-0 left-0 w-full h-1 transition-colors duration-500
           ${currentSnapshot?.student_answer
-            ? (currentSnapshot.is_correct ? 'bg-green-500' : 'bg-red-500')
-            : (status === 'correct' ? 'bg-green-500' : status === 'incorrect' ? 'bg-red-500' : 'bg-sol-accent')}
+            ? (currentSnapshot.is_correct ? 'bg-sol-green' : 'bg-sol-red')
+            : (status === 'correct' ? 'bg-sol-green' : status === 'incorrect' ? 'bg-sol-red' : 'bg-sol-accent')}
         `} />
 
         {/* Question Content */}
@@ -524,11 +524,11 @@ export default function PracticeRunnerPage() {
               </div>
 
               {currentSnapshot.is_correct ? (
-                <div className="flex items-center gap-2 text-green-500 font-bold bg-green-500/10 p-5 rounded-xl">
+                <div className="flex items-center gap-2 text-sol-green font-bold bg-sol-green/10 p-5 rounded-xl">
                   <CheckCircle2 size={24} /> {t("correct")}
                 </div>
               ) : (
-                <div className="space-y-3 text-red-500/90 font-bold bg-red-500/10 p-5 rounded-xl">
+                <div className="space-y-3 text-sol-red/90 font-bold bg-sol-red/10 p-5 rounded-xl">
                   <div className="flex items-center gap-2">
                     <XCircle size={24} /> {t("incorrect")}
                   </div>
@@ -636,8 +636,8 @@ export default function PracticeRunnerPage() {
                     placeholder={t("enterAnswer")}
                     disabled={submitting}
                     className={`w-full bg-sol-bg border-2 rounded-2xl px-6 py-4 text-sol-text placeholder-sol-muted/40 outline-none transition-all font-mono font-bold text-lg disabled:opacity-50
-                      ${status === 'correct' ? 'border-green-500/50 focus:border-green-500' : ''}
-                      ${status === 'incorrect' ? 'border-red-500/50 focus:border-red-500' : ''}
+                      ${status === 'correct' ? 'border-sol-green/50 focus:border-sol-green' : ''}
+                      ${status === 'incorrect' ? 'border-sol-red/50 focus:border-sol-red' : ''}
                       ${status === 'idle' ? 'border-sol-border/20 focus:border-sol-accent/50' : ''}
                     `}
                     autoFocus
@@ -676,12 +676,12 @@ export default function PracticeRunnerPage() {
               </div>
 
               {status === "correct" && (
-                <div className="flex items-center gap-2 text-green-500 font-bold bg-green-500/10 p-5 rounded-xl animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="flex items-center gap-2 text-sol-green font-bold bg-sol-green/10 p-5 rounded-xl animate-in fade-in slide-in-from-bottom-2 duration-300">
                   <CheckCircle2 size={24} /> {t("correct")}
                 </div>
               )}
               {status === "incorrect" && (
-                <div className="space-y-3 text-red-500/90 font-bold bg-red-500/10 p-5 rounded-xl animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="space-y-3 text-sol-red/90 font-bold bg-sol-red/10 p-5 rounded-xl animate-in fade-in slide-in-from-bottom-2 duration-300">
                   <div className="flex items-center gap-2">
                     <XCircle size={24} /> {t("notQuiteRight")}
                   </div>

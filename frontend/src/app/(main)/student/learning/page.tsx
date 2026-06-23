@@ -397,7 +397,7 @@ export default function LearningDashboard() {
                                     </button>
                                     <button
                                       onClick={() => handleDelete(lesson.id)}
-                                      className="rounded-xl p-2 text-sol-text/55 transition-colors hover:bg-red-500/10 hover:text-red-500"
+                                      className="rounded-xl p-2 text-sol-text/55 transition-colors hover:bg-sol-red/10 hover:text-sol-red"
                                       title="Delete Lesson"
                                     >
                                       <Trash2 size={16} />
@@ -414,14 +414,14 @@ export default function LearningDashboard() {
                                 {mastery && (
                                   <div className="space-y-2">
                                     <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
-                                      <span className={mastery.completion_status === "completed" ? "text-green-500" : "text-sol-accent"}>
+                                      <span className={mastery.completion_status === "completed" ? "text-sol-green" : "text-sol-accent"}>
                                         {mastery.completion_status.replace("_", " ")}
                                       </span>
                                       <span className="text-sol-text/65">{Number(mastery.mastery_score).toFixed(0)}%</span>
                                     </div>
                                     <div className="h-1.5 w-full overflow-hidden rounded-full bg-sol-border/25">
                                       <div
-                                        className={`h-full transition-all duration-700 ${mastery.completion_status === "completed" ? "bg-green-500" : "bg-sol-accent"}`}
+                                        className={`h-full transition-all duration-700 ${mastery.completion_status === "completed" ? "bg-sol-green" : "bg-sol-accent"}`}
                                         style={{ width: `${mastery.mastery_score}%` }}
                                       />
                                     </div>
@@ -793,7 +793,7 @@ function ManageSubjectAccessModal({ isOpen, onClose, onSuccess }: { isOpen: bool
     <MetaModal title={t("subjectAccessTitle")} onClose={onClose}>
       <div className="space-y-4">
         <p className="text-sm font-medium leading-6 text-sol-muted">{t("subjectAccessHint")}</p>
-        {errorMessage && <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm font-bold text-red-500">{errorMessage}</p>}
+        {errorMessage && <p className="rounded-lg border border-sol-red/30 bg-sol-red/10 px-3 py-2 text-sm font-bold text-sol-red">{errorMessage}</p>}
         <div className="max-h-[26rem] space-y-3 overflow-y-auto pr-1">
           {loading ? (
             <div className="rounded-lg border border-sol-border/20 bg-sol-bg px-4 py-4 text-sm font-bold text-sol-muted">{t("loadingSubjects")}</div>
@@ -876,7 +876,7 @@ function CreateSubjectModal({ isOpen, onClose, onSuccess }: { isOpen: boolean; o
             <span>{t("classified")}</span>
           </label>
         )}
-        {errorMessage && <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm font-bold text-red-500">{errorMessage}</p>}
+        {errorMessage && <p className="rounded-lg border border-sol-red/30 bg-sol-red/10 px-3 py-2 text-sm font-bold text-sol-red">{errorMessage}</p>}
         <button disabled={loading} className="w-full rounded-lg bg-sol-accent px-4 py-3 font-black text-sol-bg">
           {loading ? t("saving") : t("createSubject")}
         </button>
@@ -940,7 +940,7 @@ function CreateGradeModal({ isOpen, onClose, onSuccess }: { isOpen: boolean; onC
             ))}
           </select>
         </label>
-        {errorMessage && <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm font-bold text-red-500">{errorMessage}</p>}
+        {errorMessage && <p className="rounded-lg border border-sol-red/30 bg-sol-red/10 px-3 py-2 text-sm font-bold text-sol-red">{errorMessage}</p>}
         <button disabled={loading || subjects.length === 0} className="w-full rounded-lg bg-sol-accent px-4 py-3 font-black text-sol-bg disabled:opacity-50">
           {loading ? t("saving") : t("createGrade")}
         </button>

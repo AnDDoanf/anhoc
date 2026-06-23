@@ -69,7 +69,7 @@ export default function LearningCard({ lessonId, gradeId, title, index, mastery,
                   e.preventDefault();
                   if (onDelete) onDelete(lessonId);
                 }}
-                className="p-2 text-sol-muted hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-colors cursor-pointer"
+                className="p-2 text-sol-muted hover:text-sol-red hover:bg-sol-red/10 rounded-xl transition-colors cursor-pointer"
                 title="Delete Lesson"
               >
                 <Trash2 size={18} />
@@ -88,14 +88,14 @@ export default function LearningCard({ lessonId, gradeId, title, index, mastery,
           {mastery && (
             <div className="space-y-2">
               <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
-                <span className={`${mastery.completion_status === 'completed' ? 'text-green-500' : 'text-sol-accent'}`}>
+                <span className={`${mastery.completion_status === 'completed' ? 'text-sol-green' : 'text-sol-accent'}`}>
                   {mastery.completion_status.replace('_', ' ')}
                 </span>
                 <span className="text-sol-muted">{Number(mastery.mastery_score).toFixed(0)}% Mastery</span>
               </div>
               <div className="h-1.5 w-full bg-sol-bg/50 rounded-full overflow-hidden">
                 <div
-                  className={`h-full transition-all duration-1000 ${mastery.completion_status === 'completed' ? 'bg-green-500' : 'bg-sol-accent'}`}
+                  className={`h-full transition-all duration-1000 ${mastery.completion_status === 'completed' ? 'bg-sol-green' : 'bg-sol-accent'}`}
                   style={{ width: `${mastery.mastery_score}%` }}
                 />
               </div>
@@ -120,7 +120,7 @@ export default function LearningCard({ lessonId, gradeId, title, index, mastery,
           <span className="group-hover:translate-x-1 transition-transform">{t("viewLesson")}</span>
           <div className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all duration-500
             ${mastery?.completion_status === 'completed'
-              ? 'bg-green-500/10 border-green-500/20 text-green-500 group-hover:bg-green-500 group-hover:text-sol-bg'
+              ? 'bg-sol-green/10 border-sol-green/20 text-sol-green group-hover:bg-sol-green group-hover:text-sol-bg'
               : 'border-sol-accent/20 group-hover:bg-sol-accent group-hover:text-sol-bg'}
           `}>
             <ChevronRight size={20} />

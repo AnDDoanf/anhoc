@@ -273,7 +273,7 @@ export default function PracticeResultModal({ isOpen, onClose, attemptId }: Prac
                     className="w-full flex items-center justify-between p-6 text-left"
                   >
                     <div className="flex items-center gap-4">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs ${isCorrect ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs ${isCorrect ? 'bg-sol-green/10 text-sol-green' : 'bg-sol-red/10 text-sol-red'}`}>
                         {idx + 1}
                       </div>
                       <div className="flex-grow prose prose-sm dark:prose-invert line-clamp-1 text-sol-text font-bold">
@@ -284,9 +284,9 @@ export default function PracticeResultModal({ isOpen, onClose, attemptId }: Prac
                     </div>
                     <div className="flex items-center gap-4">
                       {isCorrect ? (
-                        <CheckCircle2 size={20} className="text-green-500" />
+                        <CheckCircle2 size={20} className="text-sol-green" />
                       ) : (
-                        <XCircle size={20} className="text-red-500" />
+                        <XCircle size={20} className="text-sol-red" />
                       )}
                       {isExpanded ? <ChevronUp size={20} className="text-sol-muted" /> : <ChevronDown size={20} className="text-sol-muted" />}
                     </div>
@@ -302,9 +302,9 @@ export default function PracticeResultModal({ isOpen, onClose, attemptId }: Prac
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-sol-border/5">
-                        <div className={`p-4 rounded-2xl border ${isCorrect ? 'bg-green-500/5 border-green-500/10' : 'bg-red-500/5 border-red-500/10'}`}>
+                        <div className={`p-4 rounded-2xl border ${isCorrect ? 'bg-sol-green/5 border-sol-green/10' : 'bg-sol-red/5 border-sol-red/10'}`}>
                            <label className="text-[10px] uppercase font-black text-sol-muted tracking-widest mb-1 block">{t("yourAnswerLabel")}</label>
-                           <p className={`text-xl font-mono font-black ${isCorrect ? 'text-green-500' : 'text-red-500'}`}>
+                           <p className={`text-xl font-mono font-black ${isCorrect ? 'text-sol-green' : 'text-sol-red'}`}>
                              {snapshot.student_answer || t("skipped")}
                            </p>
                         </div>

@@ -32,6 +32,10 @@
     --sol-blue: #268bd2;
     --sol-cyan: #2aa198;
     --sol-green: #859900;
+    --sol-accent-rgb: 38, 139, 210;
+    --sol-green-rgb: 133, 153, 0;
+    --sol-red-rgb: 220, 50, 47;
+    --sol-orange-rgb: 203, 75, 22;
 
     /* Default to Light Theme */
     --bg-primary: var(--sol-base3);
