@@ -99,5 +99,79 @@ export const economyService = {
   useSkipGuard: async (snapshotId: string): Promise<{ success: boolean; snapshot: any }> => {
     const response = await api.post<{ success: boolean; snapshot: any }>("/student-economy/use-skip-guard", { snapshotId });
     return response.data;
+  },
+
+  getStreakStatus: async (): Promise<StreakStatusResponse> => {
+    const response = await api.get<StreakStatusResponse>("/student-economy/streak/status");
+    return response.data;
+  },
+
+  claimDailyReward: async (): Promise<StreakClaimResponse> => {
+    const response = await api.post<StreakClaimResponse>("/student-economy/streak/claim");
+    return response.data;
+  },
+
+  recoverStreak: async (): Promise<StreakStatusResponse> => {
+    const response = await api.post<StreakStatusResponse>("/student-economy/streak/recover");
+    return response.data;
+  },
+
+  resetStreak: async (): Promise<StreakStatusResponse> => {
+    const response = await api.post<StreakStatusResponse>("/student-economy/streak/reset");
+    return response.data;
   }
 };
+
+export interface DailyQuest {
+  id: string;
+  quest_type: 'complete_lesson' | 'finish_quiz' | 'submit_practice' | 'play_game' | 'earn_xp';
+  target_count: number;
+  current_count: number;
+  xp_reward: number;
+  is_completed: boolean;
+  date: string;
+}
+
+export interface PrecalculatedReward {
+  dayIndex: number;
+  rewardType: 'coins' | 'xp' | 'shop_item' | 'badge';
+  rewardAmount: number;
+  itemId?: string;
+  badgeSlug?: string;
+  claimed: boolean;
+  dateClaimed?: string | null;
+  dateStr: string;
+}
+
+export interface StreakStatusResponse {
+  currentStreak: number;
+  longestStreak: number;
+  weeklyStreak: number;
+  lastActiveDate: string | null;
+  rewardsGeneratedAt: string;
+  precalculatedRewards: PrecalculatedReward[];
+  dailyQuests: DailyQuest[];
+  needsRecovery: boolean;
+  recoveryDate: string;
+  streakShields: number;
+  canClaimToday: boolean;
+}
+
+export interface MilestoneClaim {
+  name: string;
+  message_en: string;
+  message_vi: string;
+  payload: {
+    coins?: number;
+    xp?: number;
+    items?: Array<{ type: string; quantity: number }>;
+  };
+}
+
+export interface StreakClaimResponse {
+  success: boolean;
+  claimedReward: PrecalculatedReward;
+  milestoneClaims: MilestoneClaim[];
+  status: StreakStatusResponse;
+}
+

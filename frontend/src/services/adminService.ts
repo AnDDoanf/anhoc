@@ -208,8 +208,57 @@ export const adminService = {
     await api.delete(`/admin/users/${id}`);
   },
 
-  getUserInsights: async (id: string): Promise<AdminUserInsights> => {
+    getUserInsights: async (id: string): Promise<AdminUserInsights> => {
     const response = await api.get(`/admin/users/${id}/insights`);
     return response.data;
+  },
+
+  listStreakRewards: async (): Promise<StreakReward[]> => {
+    const response = await api.get<StreakReward[]>('/admin/streak-rewards');
+    return response.data;
+  },
+
+  createStreakReward: async (payload: StreakRewardPayload): Promise<StreakReward> => {
+    const response = await api.post<StreakReward>('/admin/streak-rewards', payload);
+    return response.data;
+  },
+
+  updateStreakReward: async (id: string, payload: StreakRewardPayload): Promise<StreakReward> => {
+    const response = await api.patch<StreakReward>(`/admin/streak-rewards/${id}`, payload);
+    return response.data;
+  },
+
+  deleteStreakReward: async (id: string): Promise<void> => {
+    await api.delete(`/admin/streak-rewards/${id}`);
   }
 };
+
+export type StreakReward = {
+  id: string;
+  name: string;
+  description?: string | null;
+  reward_type: "milestone" | "specific_day";
+  specific_date?: string | null;
+  required_days?: number | null;
+  reward_payload?: any | null;
+  message_en?: string | null;
+  message_vi?: string | null;
+  is_repeatable: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type StreakRewardPayload = {
+  name: string;
+  description?: string | null;
+  reward_type: "milestone" | "specific_day";
+  specific_date?: string | null;
+  required_days?: number | null;
+  reward_payload?: any | null;
+  message_en?: string | null;
+  message_vi?: string | null;
+  is_repeatable?: boolean;
+  is_active?: boolean;
+};
+
