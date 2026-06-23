@@ -221,17 +221,22 @@ Status: partially implemented in the app. Core XP, achievements, daily streak UI
 
 ### Streak System
 
-* [x] Daily streak
-* [ ] Weekly streak
-* [ ] Recovery mechanics
-* [ ] Daily login reward calendar
-* [ ] One reward claim per day
-* [ ] Consecutive login tracking
-* [ ] Missed-day reset or recovery rule
-* [ ] Milestone login rewards with bigger prizes
-* [ ] Support milestone rewards with `ancoin`
-* [ ] Support milestone rewards with shop items
-* [ ] Daily reward notification and claim UI
+* [x] Daily streak, reset at 0:00, UTC+0
+* [x] Weekly streak
+* [x] Recovery mechanics (utilizing `streak_shield` item to recover missed days), number of user `streak_shield` is stored in `StudentStats` model
+* [x] Missed-day reset or recovery rule (streak resets to 0 if daily quest is missed and not recovered)
+* [x] Admin-configurable streak milestone rewards (`StreakReward` model with JSON payload) choosing from the items in the shop
+* [x] Daily streak reward can be choose randomly with probability from `ancoin`, `shop item`, `XP`, or `badge`, with the amount from range (min, max) calculate by min <= x*gap <= max
+* [x] Track claims in `UserStreakRewardClaim` to prevent double-claiming
+* [x] Streak reward list UI, it is precalculate at the start of every 2 weeks
+* [x] Daily reward notification, streak count UI (daily, weekly), and reward claim UI, `streak_shield` used UI
+* [x] Daily Quest System:
+  * [x] Generate 3 random daily quests per user each day (e.g., complete lesson, finish quiz, submit practice, playing game, earn X XP)
+  * [x] User must complete at least 1 out of 3 quests to maintain/continue their daily streak
+  * [x] UI component on dashboard showing daily quest progress and streak requirements
+* [x] XP bonus for completing daily quests
+* [x] Achievement for maintaining streak for X days
+* [x] Minimized the transaction call to reduce the cost of server billing
 
 ---
 
