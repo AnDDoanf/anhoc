@@ -387,3 +387,442 @@ export const exportWorksheetPDF = async (
   const fileName = `${prefix}-${cleanSlug}.pdf`;
   doc.save(fileName);
 };
+
+export const exportLessonPDF = async (
+  title: string,
+  markdown: string,
+  locale: string
+) => {
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4"
+  });
+
+  // 1. Fetch and Load Unicode Font (Roboto) to support Vietnamese characters
+  try {
+    const fontUrl = window.location.origin + "/Roboto-Regular.ttf";
+    const response = await fetch(fontUrl);
+    if (!response.ok) throw new Error("Failed to fetch font");
+    const fontBuffer = await response.arrayBuffer();
+
+    const bytes = new Uint8Array(fontBuffer);
+    let binary = "";
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    const base64Font = btoa(binary);
+
+    doc.addFileToVFS("Roboto-Regular.ttf", base64Font);
+    doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
+    doc.setFont("Roboto");
+  } catch (err) {
+    console.warn("Could not load Unicode font. Falling back to Helvetica.", err);
+    doc.setFont("helvetica");
+  }
+
+  const margin = 20;
+  const pageHeight = 297;
+  const pageWidth = 210;
+  const contentWidth = pageWidth - 2 * margin; // 170mm
+  let y = margin;
+
+  const drawRunningHeader = () => {
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text("ANHOC LEARNING PLATFORM - LESSON STUDY NOTES", margin, 12);
+    doc.setDrawColor(230, 230, 230);
+    doc.setLineWidth(0.2);
+    doc.line(margin, 14, pageWidth - margin, 14);
+  };
+
+  const checkPageOverflow = (neededHeight: number) => {
+    if (y + neededHeight > pageHeight - margin - 10) {
+      doc.addPage();
+      y = margin + 5;
+      drawRunningHeader();
+    }
+  };
+
+  // Inline formatting classes/helpers
+  interface TextSegment {
+    text: string;
+    bold: boolean;
+    italic: boolean;
+    code: boolean;
+    math: boolean;
+  }
+
+  interface FormattedLine {
+    segments: TextSegment[];
+  }
+
+  const tokenizeLine = (text: string): TextSegment[] => {
+    const segments: TextSegment[] = [];
+    let currentText = "";
+    let bold = false;
+    let italic = false;
+    let code = false;
+    let math = false;
+    
+    let i = 0;
+    while (i < text.length) {
+      const twoChars = text.substring(i, i + 2);
+      if (twoChars === "**") {
+        if (currentText) {
+          segments.push({ text: currentText, bold, italic, code, math });
+          currentText = "";
+        }
+        bold = !bold;
+        i += 2;
+      } else if (text[i] === "*") {
+        if (currentText) {
+          segments.push({ text: currentText, bold, italic, code, math });
+          currentText = "";
+        }
+        italic = !italic;
+        i += 1;
+      } else if (text[i] === "`") {
+        if (currentText) {
+          segments.push({ text: currentText, bold, italic, code, math });
+          currentText = "";
+        }
+        code = !code;
+        i += 1;
+      } else if (text[i] === "$") {
+        if (currentText) {
+          segments.push({ text: currentText, bold, italic, code, math });
+          currentText = "";
+        }
+        math = !math;
+        i += 1;
+      } else {
+        currentText += text[i];
+        i++;
+      }
+    }
+    if (currentText) {
+      segments.push({ text: currentText, bold, italic, code, math });
+    }
+    return segments;
+  };
+
+  const wrapSegments = (
+    segments: TextSegment[],
+    maxWidth: number,
+    baseFont: string = "Roboto"
+  ): FormattedLine[] => {
+    const lines: FormattedLine[] = [];
+    let currentLineSegs: TextSegment[] = [];
+    let currentLineWidth = 0;
+
+    const words: { word: string; bold: boolean; italic: boolean; code: boolean; math: boolean; hasTrailingSpace: boolean }[] = [];
+
+    segments.forEach(seg => {
+      const parts = seg.text.split(/(\s+)/);
+      parts.forEach(part => {
+        if (part === "") return;
+        const isSpace = /^\s+$/.test(part);
+        if (isSpace) {
+          if (words.length > 0) {
+            words[words.length - 1].hasTrailingSpace = true;
+          }
+        } else {
+          words.push({
+            word: part,
+            bold: seg.bold,
+            italic: seg.italic,
+            code: seg.code,
+            math: seg.math,
+            hasTrailingSpace: false
+          });
+        }
+      });
+    });
+
+    words.forEach(w => {
+      if (w.code) {
+        doc.setFont("courier", "normal");
+      } else {
+        doc.setFont(baseFont, "normal");
+      }
+
+      const textToMeasure = w.word + (w.hasTrailingSpace ? " " : "");
+      const cleanToMeasure = cleanMathText(textToMeasure);
+      let wordWidth = doc.getTextWidth(cleanToMeasure);
+      if (w.bold) {
+        wordWidth *= 1.05;
+      }
+
+      if (currentLineWidth + wordWidth > maxWidth && currentLineWidth > 0) {
+        lines.push({ segments: currentLineSegs });
+        currentLineSegs = [];
+        currentLineWidth = 0;
+      }
+
+      currentLineSegs.push({
+        text: textToMeasure,
+        bold: w.bold,
+        italic: w.italic,
+        code: w.code,
+        math: w.math
+      });
+      currentLineWidth += wordWidth;
+    });
+
+    if (currentLineSegs.length > 0) {
+      lines.push({ segments: currentLineSegs });
+    }
+
+    return lines;
+  };
+
+  const drawFormattedLine = (
+    line: FormattedLine,
+    startX: number,
+    targetY: number,
+    baseFont: string = "Roboto"
+  ) => {
+    let currentX = startX;
+    line.segments.forEach(seg => {
+      const cleanSegText = cleanMathText(seg.text);
+
+      if (seg.code) {
+        doc.setFont("courier", "normal");
+        doc.setTextColor(197, 34, 31);
+      } else if (seg.math) {
+        doc.setFont(baseFont, "normal");
+        doc.setTextColor(16, 117, 107);
+      } else {
+        doc.setFont(baseFont, "normal");
+      }
+
+      if (seg.bold) {
+        doc.setLineWidth(0.15);
+        doc.setDrawColor(60, 60, 60);
+        if (seg.math) doc.setDrawColor(16, 117, 107);
+        if (seg.code) doc.setDrawColor(197, 34, 31);
+        doc.text(cleanSegText, currentX, targetY, { renderingMode: "fillThenStroke" });
+      } else {
+        doc.text(cleanSegText, currentX, targetY);
+      }
+
+      currentX += doc.getTextWidth(cleanSegText);
+      doc.setTextColor(60, 60, 60);
+    });
+  };
+
+  // Header Title
+  doc.setFontSize(16);
+  doc.setTextColor(33, 33, 33);
+  
+  const cleanTitle = cleanMathText(title);
+  const titleLines = doc.splitTextToSize(cleanTitle.toUpperCase(), contentWidth);
+  const titleHeight = titleLines.length * 7;
+  doc.text(titleLines, margin, y);
+  y += titleHeight + 3;
+
+  // Horizontal divider
+  doc.setDrawColor(200, 200, 200);
+  doc.setLineWidth(0.4);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 10;
+
+  // Split markdown into lines
+  const rawLines = markdown.split(/\r?\n/);
+  let inCodeBlock = false;
+  let inTikzBlock = false;
+
+  for (let i = 0; i < rawLines.length; i++) {
+    const rawLine = rawLines[i];
+    const line = rawLine.trim();
+
+    // Detect indentation level from rawLine
+    const leadingSpaces = rawLine.match(/^(\s*)/)?.[0] || "";
+    let spaceCount = 0;
+    for (let j = 0; j < leadingSpaces.length; j++) {
+      const char = leadingSpaces[j];
+      if (char === '\t') spaceCount += 4;
+      else if (char === ' ') spaceCount += 1;
+    }
+    const indentLevel = Math.floor(spaceCount / 2);
+    const indentX = margin + (indentLevel * 4);
+
+    // Handle code blocks
+    if (line.startsWith("```")) {
+      if (inCodeBlock) {
+        inCodeBlock = false;
+        inTikzBlock = false;
+      } else {
+        inCodeBlock = true;
+        if (line.toLowerCase().includes("tikz")) {
+          inTikzBlock = true;
+        }
+      }
+      continue;
+    }
+
+    if (inCodeBlock) {
+      if (inTikzBlock) {
+        // Skip printing raw Tikz script blocks
+        continue;
+      }
+      // Print code block line
+      doc.setFontSize(9.5);
+      doc.setTextColor(80, 80, 80);
+      const splitText = doc.splitTextToSize(rawLine, contentWidth - (indentLevel * 4) - 10);
+      const needed = splitText.length * 5;
+      checkPageOverflow(needed + 2);
+      
+      // Draw background box for code
+      doc.setDrawColor(240, 240, 240);
+      doc.setFillColor(245, 245, 245);
+      doc.rect(indentX, y - 4, contentWidth - (indentLevel * 4), needed + 3, "F");
+      doc.text(splitText, indentX + 5, y);
+      y += needed + 3;
+      continue;
+    }
+
+    if (line === "") {
+      // Empty line, add spacing
+      checkPageOverflow(4);
+      y += 4;
+      continue;
+    }
+
+    // Process dividers (like --- or ***)
+    if (line.match(/^---+$/) || line.match(/^\*\*\*+$/)) {
+      checkPageOverflow(8);
+      doc.setDrawColor(220, 220, 220);
+      doc.setLineWidth(0.3);
+      doc.line(indentX, y, pageWidth - margin, y);
+      y += 8;
+      continue;
+    }
+
+    // Process Headings
+    if (line.startsWith("#")) {
+      let level = 0;
+      while (line[level] === "#") level++;
+      const text = line.substring(level).trim();
+      
+      let size = 11;
+      let spacing = 6;
+      if (level === 1) { size = 15; spacing = 9; }
+      else if (level === 2) { size = 13; spacing = 8; }
+      else if (level === 3) { size = 11.5; spacing = 7; }
+
+      doc.setFontSize(size);
+      doc.setTextColor(33, 33, 33);
+      
+      const segments = tokenizeLine(text);
+      const wrapped = wrapSegments(segments, contentWidth - (indentLevel * 4));
+      const needed = wrapped.length * (size * 0.4 + 2);
+      
+      checkPageOverflow(needed + spacing);
+
+      wrapped.forEach(wl => {
+        wl.segments.forEach(seg => {
+          seg.bold = true;
+        });
+        drawFormattedLine(wl, indentX, y);
+        y += size * 0.4 + 2;
+      });
+      y += spacing - (size * 0.4 + 2);
+      continue;
+    }
+
+    // Process Blockquotes
+    if (line.startsWith(">")) {
+      const text = line.substring(1).trim();
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+
+      const segments = tokenizeLine(text);
+      segments.forEach(seg => {
+        seg.italic = true;
+      });
+
+      const wrapped = wrapSegments(segments, contentWidth - (indentLevel * 4) - 10);
+      const needed = wrapped.length * 5.5;
+      checkPageOverflow(needed + 5);
+
+      // Draw faint background box
+      doc.setFillColor(248, 250, 252);
+      doc.rect(indentX, y - 4, contentWidth - (indentLevel * 4), needed + 4, "F");
+
+      // Draw quote border
+      doc.setDrawColor(16, 117, 107); // Sol accent teal
+      doc.setLineWidth(0.8);
+      doc.line(indentX + 2, y - 4, indentX + 2, y + needed - 4);
+
+      wrapped.forEach(wl => {
+        drawFormattedLine(wl, indentX + 6, y);
+        y += 5.5;
+      });
+      y += 2.0;
+      continue;
+    }
+
+    // Process Lists
+    const listMatch = line.match(/^(-\s+|\*\s+|\d+\.\s+)(.*)$/);
+    if (listMatch) {
+      const isOrdered = /^\d+/.test(listMatch[1]);
+      const text = listMatch[2].trim();
+      const isAlreadyNumbered = /^[A-Za-z0-9]+\.\s+/.test(text) || /^[A-Za-z0-9]+\)\s+/.test(text);
+      const prefix = isAlreadyNumbered ? "" : (isOrdered ? listMatch[1].trim() + " " : "• ");
+      const textX = isAlreadyNumbered ? indentX : indentX + 5;
+
+      doc.setFontSize(10.5);
+      doc.setTextColor(60, 60, 60);
+
+      const segments = tokenizeLine(text);
+      const wrapped = wrapSegments(segments, contentWidth - (textX - margin));
+      const needed = wrapped.length * 5.5;
+      checkPageOverflow(needed + 3);
+
+      if (prefix) {
+        doc.text(prefix, indentX, y);
+      }
+      wrapped.forEach(wl => {
+        drawFormattedLine(wl, textX, y);
+        y += 5.5;
+      });
+      y += 1.5;
+      continue;
+    }
+
+    // Process Normal Paragraph
+    doc.setFontSize(10.5);
+    doc.setTextColor(60, 60, 60);
+
+    const segments = tokenizeLine(line);
+    const wrapped = wrapSegments(segments, contentWidth - (indentLevel * 4));
+    const needed = wrapped.length * 5.5;
+    checkPageOverflow(needed + 3);
+    
+    wrapped.forEach(wl => {
+      drawFormattedLine(wl, indentX, y);
+      y += 5.5;
+    });
+    y += 2.0;
+  }
+
+  // Draw Page numbers
+  const totalPages = doc.getNumberOfPages();
+  const pageLabel = locale === "vi" ? "Trang" : "Page";
+  const ofLabel = locale === "vi" ? "trên" : "of";
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    const pageString = `${pageLabel} ${i} ${ofLabel} ${totalPages}`;
+    doc.text(pageString, pageWidth / 2, pageHeight - 10, { align: "center" });
+  }
+
+  const cleanSlug = title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  doc.save(`anhoc-lesson-${cleanSlug}.pdf`);
+};

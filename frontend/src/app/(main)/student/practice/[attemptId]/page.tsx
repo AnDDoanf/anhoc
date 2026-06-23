@@ -5,7 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { testService } from "@/services/testService";
 import { achievementService } from "@/services/achievementService";
-import { Loader2, ArrowRight, ArrowLeft, Send, CheckCircle2, XCircle, Award, Flag, Heart, Coins, Sparkles, SkipForward } from "lucide-react";
+import { Loader2, ArrowRight, ArrowLeft, Send, CheckCircle2, XCircle, Award, Flag, Heart, Coins, Sparkles, SkipForward, RefreshCw } from "lucide-react";
+import { lessonService } from "@/services/lessonService";
 import { economyService, type StudentStats } from "@/services/economyService";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
@@ -302,6 +303,31 @@ export default function PracticeRunnerPage() {
     }
   };
 
+  const [restarting, setRestarting] = useState(false);
+
+  const handlePracticeAgain = async () => {
+    const template = attempt?.snapshots?.[0]?.template;
+    const lessonId = template?.lesson?.id;
+    if (!lessonId) return;
+
+    setRestarting(true);
+    try {
+      const newAttempt = await lessonService.startPractice(lessonId);
+      router.push(`/student/practice/${newAttempt.id}`);
+      setLoading(true);
+      setAttempt(null);
+      setCurrentIndex(0);
+      setIsFinished(false);
+      setStatus("idle");
+      setAnswerInput("");
+    } catch (error) {
+      console.error("Failed to restart practice:", error);
+      alert(locale === "vi" ? "Không thể bắt đầu lại bài luyện tập." : "Failed to restart practice session.");
+    } finally {
+      setRestarting(false);
+    }
+  };
+
   const onModalConfirm = () => {
     confirmFinish();
   };
@@ -441,6 +467,14 @@ export default function PracticeRunnerPage() {
                 {t("showResult")}
               </button>
               <button
+                disabled={restarting}
+                onClick={handlePracticeAgain}
+                className="px-12 py-4 bg-sol-green text-sol-bg rounded-2xl font-bold hover:bg-sol-green/90 transition-all shadow-lg hover:shadow-sol-green/20 active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2"
+              >
+                {restarting ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={18} />}
+                <span>{locale === "vi" ? "Luyện tập lại" : "Practice Again"}</span>
+              </button>
+              <button
                 onClick={handleReturnToLesson}
                 className="px-12 py-4 bg-sol-accent text-sol-bg rounded-2xl font-bold hover:bg-sol-accent/90 transition-all shadow-lg hover:shadow-sol-accent/20 active:scale-95"
               >
@@ -457,32 +491,51 @@ export default function PracticeRunnerPage() {
     <div className="max-w-4xl mx-auto px-4 py-12 space-y-10">
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <button
-          onClick={handleFinish}
-          className="flex items-center gap-2 text-sol-muted hover:text-sol-red transition-colors font-bold text-sm"
-        >
-          <ArrowLeft size={16} /> {t("finishAbandon")}
-        </button>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center justify-between w-full sm:w-auto">
+          <button
+            onClick={handleFinish}
+            className="flex items-center gap-2 text-sol-muted hover:text-sol-red transition-colors font-bold text-sm"
+          >
+            <ArrowLeft size={16} /> {t("finishAbandon")}
+          </button>
 
-        <div className="flex items-center gap-3">
+          {/* Mobile-only stats layout */}
+          <div className="flex items-center gap-2 sm:hidden">
+            {stats && (
+              <div className="flex items-center gap-1 px-3 py-1.5 bg-sol-surface rounded-full border border-sol-border/10 text-xs font-bold text-sol-text" title={locale === "vi" ? "Số tim hiện tại" : "Current lives"}>
+                <Heart className="text-sol-orange fill-sol-orange" size={14} />
+                <span>{stats.lives}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-sol-surface rounded-full border border-sol-border/10 text-xs font-bold text-sol-muted whitespace-nowrap">
+              <span>{currentIndex + 1} / {attempt.snapshots.length}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
           <button
             type="button"
             onClick={() => setReportModalOpen(true)}
             disabled={!currentSnapshot?.template_id || reportedSnapshotIds.includes(currentSnapshot?.id)}
-            className="flex items-center gap-2 rounded-full border border-sol-orange/20 bg-sol-orange/10 px-4 py-2 text-sm font-bold text-sol-orange transition-colors hover:bg-sol-orange/15 disabled:opacity-50"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-full border border-sol-orange/20 bg-sol-orange/10 px-4 py-2 text-sm font-bold text-sol-orange transition-colors hover:bg-sol-orange/15 disabled:opacity-50 whitespace-nowrap"
           >
             <Flag size={15} />
-            {reportedSnapshotIds.includes(currentSnapshot?.id) ? t("reportedQuestion") : t("reportQuestion")}
+            <span>{reportedSnapshotIds.includes(currentSnapshot?.id) ? t("reportedQuestion") : t("reportQuestion")}</span>
           </button>
-          {stats && (
-            <div className="flex items-center gap-1.5 px-4 py-2 bg-sol-surface rounded-full border border-sol-border/10 text-sm font-bold text-sol-text" title={locale === "vi" ? "Số tim hiện tại" : "Current lives"}>
-              <Heart className="text-sol-orange fill-sol-orange" size={16} />
-              <span>{stats.lives}</span>
+
+          {/* Desktop-only stats layout */}
+          <div className="hidden sm:flex items-center gap-3">
+            {stats && (
+              <div className="flex items-center gap-1.5 px-4 py-2 bg-sol-surface rounded-full border border-sol-border/10 text-sm font-bold text-sol-text" title={locale === "vi" ? "Số tim hiện tại" : "Current lives"}>
+                <Heart className="text-sol-orange fill-sol-orange" size={16} />
+                <span>{stats.lives}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-2 px-4 py-2 bg-sol-surface rounded-full border border-sol-border/10 text-sm font-bold text-sol-muted whitespace-nowrap">
+              {t("questionInfo", { current: currentIndex + 1, total: attempt.snapshots.length })}
             </div>
-          )}
-          <div className="flex items-center gap-2 px-4 py-2 bg-sol-surface rounded-full border border-sol-border/10 text-sm font-bold text-sol-muted">
-            {t("questionInfo", { current: currentIndex + 1, total: attempt.snapshots.length })}
           </div>
         </div>
       </div>

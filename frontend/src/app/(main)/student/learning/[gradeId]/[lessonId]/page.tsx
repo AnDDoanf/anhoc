@@ -129,6 +129,23 @@ export default async function LessonPage({ params }: Props) {
           </div>
         </TikZRenderer>
 
+        {/* Mobile Practice & Pro Tip Block (hidden on xl screens where sidebar is visible) */}
+        <div className="block xl:hidden space-y-6 px-2">
+          <LessonPracticeButton lesson={{ id: lessonId, title_en: lesson.meta.title, title_vi: lesson.meta.title }} />
+          
+          <div className="group/tip">
+            <div className="p-6 rounded-[2rem] bg-sol-accent/10 border border-sol-accent/20 transition-all hover:bg-sol-accent/20">
+              <div className="flex items-center gap-2 text-sol-accent font-black text-xs uppercase tracking-widest mb-3">
+                <GraduationCap size={16} />
+                <span>{t("proTip")}</span>
+              </div>
+              <p className="text-xs text-sol-muted leading-relaxed">
+                {t("proTipDescription1")}
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Previous / Next Lesson Navigation */}
         <div className="flex items-center gap-4 pt-6 border-t border-sol-border/10">
           {prevLesson ? (
