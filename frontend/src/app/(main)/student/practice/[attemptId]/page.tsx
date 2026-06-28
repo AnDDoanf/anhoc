@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { testService } from "@/services/testService";
 import { achievementService } from "@/services/achievementService";
-import { Loader2, ArrowRight, ArrowLeft, Send, CheckCircle2, XCircle, Award, Flag, Heart, Coins, Sparkles, SkipForward, RefreshCw } from "lucide-react";
+import { Loader2, ArrowRight, ArrowLeft, Send, CheckCircle2, XCircle, Award, Flag, Heart, SkipForward, RefreshCw } from "lucide-react";
 import { lessonService } from "@/services/lessonService";
 import { economyService, type StudentStats } from "@/services/economyService";
 import ReactMarkdown from "react-markdown";

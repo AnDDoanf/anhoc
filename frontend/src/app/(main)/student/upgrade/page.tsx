@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale } from "next-intl";
 import { economyService, StudentStats } from "@/services/economyService";
 import { 
   Loader2, 
@@ -17,7 +17,6 @@ import ProtectedRoute from "@/components/guard/ProtectedRoute";
 import Hero from "@/components/ui/Hero";
 
 export default function UpgradePage() {
-  const t = useTranslations("Settings");
   const locale = useLocale();
   
   // Tab control

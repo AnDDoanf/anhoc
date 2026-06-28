@@ -5,7 +5,7 @@ import TikZRenderer from "@/components/feature/TikZRenderer";
 import LessonPracticeButton from "@/components/feature/LessonPracticeButton";
 import StudyTimer from "@/components/feature/StudyTimer";
 import { getLocale, getTranslations } from "next-intl/server";
-import { GraduationCap, ArrowLeft, ArrowRight, MoreVertical } from "lucide-react";
+import { GraduationCap, ArrowLeft, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 

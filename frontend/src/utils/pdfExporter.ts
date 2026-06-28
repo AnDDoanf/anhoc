@@ -97,7 +97,7 @@ export const exportWorksheetPDF = async (
   let y = margin;
 
   // Header and Footer Drawing helpers
-  const drawRunningHeader = (pageNumber: number) => {
+  const drawRunningHeader = () => {
     doc.setFontSize(8);
     doc.setTextColor(150, 150, 150);
     // Draw running header top line
@@ -107,11 +107,11 @@ export const exportWorksheetPDF = async (
     doc.line(margin, 14, pageWidth - margin, 14);
   };
 
-  const checkPageOverflow = (neededHeight: number, isSolutionsSection: boolean = false) => {
+  const checkPageOverflow = (neededHeight: number) => {
     if (y + neededHeight > pageHeight - margin - 10) {
       doc.addPage();
       y = margin + 5;
-      drawRunningHeader(doc.getNumberOfPages());
+      drawRunningHeader();
     }
   };
 

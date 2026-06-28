@@ -28,10 +28,6 @@ type LogicConfigDraft = Record<string, unknown> & {
   choices?: unknown;
 };
 
-type QuestionTemplate = CreateTemplateDTO & {
-  id: string;
-};
-
 interface Props {
   isOpen: boolean;
   onClose: () => void;

@@ -3,12 +3,11 @@
 
 import { useAuth } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/guard/ProtectedRoute";
-import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 export default function AdminHomePage() {
-  const { user } = useAuth();
+  useAuth();
   const router = useRouter();
 
   // Redirect to the admin dashboard page directly

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocale, useTranslations } from "next-intl";
 import { authService } from "@/services/auth";
@@ -54,7 +54,6 @@ export default function ChatbotWidget() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [remainingUses, setRemainingUses] = useState<number>(5);
-  const [lastThought, setLastThought] = useState<string>("");
   const [lastContext, setLastContext] = useState<any>(null);
   const [lastProviderDebug, setLastProviderDebug] = useState<ProviderDebug | null>(null);
   const [provider, setProvider] = useState<string>("gemini");
@@ -127,7 +126,13 @@ export default function ChatbotWidget() {
     localStorage.setItem("chatbot_reasoning_technique", val);
   };
 
-  const loadInitialHistory = async () => {
+  const scrollToBottom = useCallback(() => {
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
+  }, []);
+
+  const loadInitialHistory = useCallback(async () => {
     if (!isAuthenticated || !user) return;
     try {
       setHistoryLoading(true);
@@ -172,7 +177,7 @@ export default function ChatbotWidget() {
       setHistoryLoading(false);
       scrollToBottom();
     }
-  };
+  }, [chatbotApiUrl, isAuthenticated, scrollToBottom, user]);
 
   const loadMoreHistory = async (container?: HTMLDivElement) => {
     if (historyLoading || !hasMoreHistory || !isAuthenticated || !user) return;
@@ -285,17 +290,13 @@ export default function ChatbotWidget() {
         const parsed = JSON.parse(cached);
         const truncated = parsed.slice(-6); // 3 rounds is 6 messages
         setMessages(truncated);
-        const lastTutorMsg = [...truncated].reverse().find((message: Message) => message.sender === "tutor");
-        if (lastTutorMsg?.thought) {
-          setLastThought(lastTutorMsg.thought);
-        }
       } catch (e) {
         console.error("Failed to parse chat history cache", e);
       }
     }
 
     loadInitialHistory();
-  }, [chatbotApiUrl, isAuthenticated, user]);
+  }, [chatbotApiUrl, isAuthenticated, loadInitialHistory, user]);
 
   useEffect(() => {
     if (isOpen && isAuthenticated && user) {
@@ -315,23 +316,17 @@ export default function ChatbotWidget() {
       fetchProfileStats();
       loadInitialHistory();
     }
-  }, [isOpen, isAuthenticated, user]);
-
-  const scrollToBottom = () => {
-    setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 100);
-  };
+  }, [isAuthenticated, isOpen, loadInitialHistory, user]);
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, scrollToBottom]);
 
   useEffect(() => {
     if (isOpen && activeSection === "chat") {
       scrollToBottom();
     }
-  }, [isOpen, activeSection]);
+  }, [activeSection, isOpen, scrollToBottom]);
 
   const isChatbotVisible = !!(isAuthenticated && isAvailable && user);
 

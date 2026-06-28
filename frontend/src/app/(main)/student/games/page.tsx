@@ -47,7 +47,6 @@ export default function GamesHubPage() {
   });
   
   const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
   const [createdChallenge, setCreatedChallenge] = useState<GameChallenge | null>(null);
   const [copied, setCopied] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);

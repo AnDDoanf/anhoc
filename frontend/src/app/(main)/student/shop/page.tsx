@@ -1,8 +1,8 @@
 // frontend/src/app/(main)/student/shop/page.tsx
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useEffect, useState } from "react";
+import { useLocale } from "next-intl";
 import { economyService, ShopItem, StudentStats } from "@/services/economyService";
 import ProtectedRoute from "@/components/guard/ProtectedRoute";
 import Hero from "@/components/ui/Hero";
@@ -23,7 +23,6 @@ import {
 } from "lucide-react";
 
 export default function ShopPage() {
-  const t = useTranslations("Common");
   const locale = useLocale();
   const [stats, setStats] = useState<StudentStats | null>(null);
   const [shopItems, setShopItems] = useState<ShopItem[]>([]);
@@ -57,10 +56,6 @@ export default function ShopPage() {
   useEffect(() => {
     fetchEconomy();
   }, []);
-
-  const handleUpgrade = async (upgradeType: string) => {
-    // Left for potential talent spending on this page, currently unused but safe
-  };
 
   const handleEquip = async (category: string, itemId: string) => {
     const isCurrentlyEquipped = equipped[category] === itemId;

@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo } from "react";
-import Image from "next/image";
 import Logo from "@/components/ui/Logo";
 import Link from "next/link";
 import { useTranslations } from "next-intl";

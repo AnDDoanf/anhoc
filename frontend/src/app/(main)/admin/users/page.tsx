@@ -118,7 +118,6 @@ export default function AdminUsersPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [hasMore, setHasMore] = useState(false);
   const [summary, setSummary] = useState({ total: 0, admins: 0, students: 0, teachers: 0 });
   const [subjectAccessRequests, setSubjectAccessRequests] = useState<SubjectAccessRequest[]>([]);
   const [reviewingRequestId, setReviewingRequestId] = useState<number | null>(null);
@@ -148,7 +147,6 @@ export default function AdminUsersPage() {
         });
       }
       setPage(data.pagination.page);
-      setHasMore(data.pagination.hasMore);
       setTotalPages(data.pagination.totalPages || 1);
     } catch (err: unknown) {
       setError(getErrorMessage(err, t("errors.load")));

@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Logo from "@/components/ui/Logo";
 import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
@@ -19,7 +18,6 @@ import {
   GraduationCap,
   Users,
   BookOpen,
-  Zap,
   Check,
   X
 } from "lucide-react";

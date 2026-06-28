@@ -359,7 +359,7 @@ export default function SettingBar({ scrollContainerId, mobileAlignment }: Setti
               </div>
               <ChevronDown
                 size={16}
-                className={`transition-transform duration-300 ${isSettingsOpen ? "rotate-180 text-sol-accent" : "text-sol-muted"
+                className={`shrink-0 translate-y-[1px] transition-transform duration-300 ${isSettingsOpen ? "rotate-180 text-sol-accent" : "text-sol-muted"
                   }`}
               />
             </button>
