@@ -75,7 +75,7 @@ export default function GradeTestEntry({ test, className = "" }: GradeTestEntryP
           <div>
             <h4 className="text-lg font-black text-sol-text md:text-xl">{title}</h4>
             <p className="mt-1 text-sm font-medium text-sol-muted">
-              {eligibility.eligible ? t("ready") : t("requirement", { score: eligibility.minimumScore })}
+              {eligibility.eligible ? t("ready") : ""}
             </p>
           </div>
 

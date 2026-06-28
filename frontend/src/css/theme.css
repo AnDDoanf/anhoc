@@ -76,6 +76,19 @@
     color: var(--text-primary);
     scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
     scrollbar-width: thin;
+    overflow-x: hidden;
+  }
+
+  html {
+    overflow-x: hidden;
+  }
+
+  @media (max-width: 767px) {
+    html,
+    body {
+      overscroll-behavior-x: none;
+      touch-action: pan-y pinch-zoom;
+    }
   }
 
   * {
@@ -264,5 +277,23 @@
   }
   .animate-scale-shake {
     animation: scaleShake 0.12s infinite;
+  }
+
+  @keyframes milestonePopoverPop {
+    0% {
+      opacity: 0;
+      transform: translateY(-14px) scale(0.86);
+    }
+    70% {
+      opacity: 1;
+      transform: translateY(2px) scale(1.02);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  .animate-milestone-pop {
+    animation: milestonePopoverPop 0.22s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   }
 }

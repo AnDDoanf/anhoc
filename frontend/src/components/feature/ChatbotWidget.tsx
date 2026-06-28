@@ -561,7 +561,7 @@ export default function ChatbotWidget() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-[999] select-none font-sans">
+    <div className="fixed bottom-24 md:bottom-6 right-6 z-[999] select-none font-sans">
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}

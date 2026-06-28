@@ -273,8 +273,8 @@ export default function ShopPage() {
             </h1>
             <p className="max-w-xl text-sm leading-relaxed text-sol-muted md:text-lg font-medium">
               {locale === "vi" 
-                ? "Dùng Ancoin bạn kiếm được từ việc giải toán để mua vật phẩm hỗ trợ học tập, thú cưng và khung trang trí cá nhân cực ngầu." 
-                : "Spend your earned Ancoins to unlock profile frames, study companions, mathematical helpers, and double XP boosts."}
+                ? "Dùng Ancoin bạn kiếm được từ việc giải toán để mua các vật phẩm cực ngầu." 
+                : "Spend your earned Ancoins to unlock cool items."}
             </p>
           </div>
         </Hero>

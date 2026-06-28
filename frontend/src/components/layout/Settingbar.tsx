@@ -6,11 +6,12 @@ import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
 import LanguageToggle from "../ui/LanguageToggle";
 import ThemeToggle from "../ui/ThemeToggle";
-import { Settings, LogOut, LogIn, ChevronDown, UserCog, Bell, CheckCheck, Flame } from "lucide-react";
+import { Settings, LogOut, LogIn, ChevronDown, UserCog, Bell, CheckCheck, Flame, Heart } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { AppNotification, notificationService } from "@/services/notificationService";
 import { getBackendUrl } from "@/services/api";
 import { economyService } from "@/services/economyService";
+import { authService } from "@/services/auth";
 
 type SettingBarProps = {
   scrollContainerId?: string;
@@ -37,6 +38,7 @@ export default function SettingBar({ scrollContainerId, mobileAlignment }: Setti
   const isNotificationsOpen = activePanel === "notifications";
 
   const [streakCount, setStreakCount] = useState<number | null>(null);
+  const [remainingHearts, setRemainingHearts] = useState<number | null>(null);
 
   const fetchStreak = useCallback(async () => {
     if (!user) return;
@@ -48,13 +50,26 @@ export default function SettingBar({ scrollContainerId, mobileAlignment }: Setti
     }
   }, [user]);
 
+  const fetchHearts = useCallback(async () => {
+    if (!user) return;
+    try {
+      const profile = await authService.getProfile();
+      setRemainingHearts(profile.student_stats?.lives ?? null);
+    } catch (err) {
+      console.error("Failed to load remaining hearts in Settingbar:", err);
+    }
+  }, [user]);
+
   useEffect(() => {
     void fetchStreak();
+    void fetchHearts();
     window.addEventListener("student-stats-updated", fetchStreak);
+    window.addEventListener("student-stats-updated", fetchHearts);
     return () => {
       window.removeEventListener("student-stats-updated", fetchStreak);
+      window.removeEventListener("student-stats-updated", fetchHearts);
     };
-  }, [fetchStreak]);
+  }, [fetchHearts, fetchStreak]);
 
   useEffect(() => {
     setImageError(false);
@@ -243,96 +258,113 @@ export default function SettingBar({ scrollContainerId, mobileAlignment }: Setti
   }, []);
 
   const alignmentClass = mobileAlignment === "center"
-    ? "left-1/2 -translate-x-1/2 right-auto sm:left-auto sm:translate-x-0 sm:right-6"
-    : "right-3 sm:right-6";
+    ? "left-3 right-3 sm:left-auto sm:right-6 sm:translate-x-0"
+    : "left-3 right-3 sm:left-auto sm:right-6";
 
   return (
     <div 
       ref={containerRef}
-      className={`fixed top-3 sm:top-4 z-50 transition-all duration-300 ${alignmentClass} ${isVisible || activePanel ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none"}`}
+      className={`fixed top-3 sm:top-4 z-50 overflow-x-clip transition-all duration-300 ${alignmentClass} ${isVisible || activePanel ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none"}`}
     >
       <div className="relative flex flex-col items-end">
-        <div className="flex items-center gap-3">
+        <div className="relative w-full rounded-full bg-sol-surface/45 px-2 py-1.5 backdrop-blur-2xl supports-[backdrop-filter]:bg-sol-surface/35 sm:w-auto">
+          <div className="pointer-events-none absolute inset-0 rounded-full bg-white/20 blur-xl" />
+          <div className="relative flex items-center justify-between gap-2 sm:gap-3">
           {!isGuest && (
-            <button
-              type="button"
-              onClick={() => window.dispatchEvent(new CustomEvent("open-streak-modal"))}
-              className="relative flex h-12 px-3 items-center justify-center gap-1.5 rounded-full border border-sol-border/30 bg-sol-surface/80 backdrop-blur-md text-orange-500 hover:border-orange-500/50 hover:bg-orange-500/5 transition-all duration-300 shadow-sm hover:cursor-pointer"
-              title={t("viewStreakCalendar")}
-            >
-              <Flame size={18} className="fill-current animate-pulse" />
-              {streakCount !== null && (
-                <span className="text-xs font-black tracking-tight">{streakCount}</span>
-              )}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new CustomEvent("open-streak-modal"))}
+                className="relative flex h-12 px-3 items-center justify-center gap-1.5 rounded-full border border-sol-border/30 bg-sol-surface/80 backdrop-blur-md text-orange-500 hover:border-orange-500/50 hover:bg-orange-500/5 transition-all duration-300 shadow-sm hover:cursor-pointer"
+                title={t("viewStreakCalendar")}
+              >
+                <Flame size={18} className="fill-current animate-pulse" />
+                {streakCount !== null && (
+                  <span className="text-xs font-black tracking-tight">{streakCount}</span>
+                )}
+              </button>
+
+              <div
+                className="relative flex h-12 px-3 items-center justify-center gap-1.5 rounded-full border border-sol-border/30 bg-sol-surface/80 backdrop-blur-md text-rose-500 shadow-sm"
+                title={locale === "vi" ? "Số tim còn lại" : "Remaining hearts"}
+              >
+                <Heart size={18} className="fill-current" />
+                {remainingHearts !== null && (
+                  <span className="text-xs font-black tracking-tight">{remainingHearts}</span>
+                )}
+              </div>
+            </div>
           )}
 
-          {!isGuest && (
-            <button
-              type="button"
-              onClick={() => setActivePanel(isNotificationsOpen ? null : "notifications")}
-              className={`relative flex h-12 w-12 items-center justify-center rounded-full border transition-all duration-300 shadow-sm hover:cursor-pointer ${
-                isNotificationsOpen
-                  ? "bg-sol-surface border-sol-accent shadow-lg ring-4 ring-sol-accent/5 text-sol-accent"
-                  : "bg-sol-surface/80 backdrop-blur-md border-sol-border/30 text-sol-muted hover:border-sol-accent hover:text-sol-accent"
-              }`}
-            >
-              <Bell size={18} />
-              {unreadCount > 0 && (
-                <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-sol-orange px-1.5 py-0.5 text-[10px] font-black leading-none text-sol-bg">
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </span>
-              )}
-            </button>
-          )}
-
-        <button
-          onClick={() => setActivePanel(isSettingsOpen ? null : "settings")}
-          className={`flex items-center gap-3 p-1.5 pr-3 hover:cursor-pointer rounded-full border transition-all duration-300 shadow-sm z-30 relative
-            ${isSettingsOpen
-              ? "bg-sol-surface border-sol-accent shadow-lg ring-4 ring-sol-accent/5"
-              : "bg-sol-surface/80 backdrop-blur-md border-sol-border/30 hover:border-sol-accent"
-            }`}
-        >
-          <div
-            className={`w-8 h-8 rounded-full overflow-hidden flex items-center justify-center transition-colors duration-300
-            ${isSettingsOpen
-                ? "bg-sol-accent text-sol-bg"
-                : "bg-sol-accent/10 text-sol-accent"
-              }`}
-          >
-            {user?.avatar_url && !imageError ? (
-              <img
-                src={getBackendUrl(user.avatar_url)}
-                alt={displayName}
-                className="w-full h-full object-cover"
-                onError={() => setImageError(true)}
-              />
-            ) : (
-              <UserCog size={18} />
+          <div className="ml-auto flex items-center gap-2 sm:gap-3">
+            {!isGuest && (
+              <button
+                type="button"
+                onClick={() => setActivePanel(isNotificationsOpen ? null : "notifications")}
+                className={`relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full border transition-all duration-300 shadow-sm hover:cursor-pointer ${
+                  isNotificationsOpen
+                    ? "bg-sol-surface border-sol-accent shadow-lg ring-4 ring-sol-accent/5 text-sol-accent"
+                    : "bg-sol-surface/80 backdrop-blur-md border-sol-border/30 text-sol-muted hover:border-sol-accent hover:text-sol-accent"
+                }`}
+              >
+                <Bell size={18} />
+                {unreadCount > 0 && (
+                  <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-sol-orange px-1.5 py-0.5 text-[10px] font-black leading-none text-sol-bg">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </button>
             )}
-          </div>
 
-          <div className="flex flex-col items-start mr-1">
-            <span
-              className={`text-xs font-black uppercase tracking-tighter transition-colors ${isSettingsOpen ? "text-sol-accent" : "text-sol-muted"
+            <button
+              onClick={() => setActivePanel(isSettingsOpen ? null : "settings")}
+              className={`flex shrink-0 items-center gap-3 p-1.5 pr-3 hover:cursor-pointer rounded-full border transition-all duration-300 shadow-sm z-30 relative
+                ${isSettingsOpen
+                  ? "bg-sol-surface border-sol-accent shadow-lg ring-4 ring-sol-accent/5"
+                  : "bg-sol-surface/80 backdrop-blur-md border-sol-border/30 hover:border-sol-accent"
                 }`}
             >
-              {roleLabel}
-            </span>
-            <span
-              className={`text-sm font-bold transition-colors ${isSettingsOpen ? "text-sol-text" : "text-sol-text/80"
-                }`}
-            >
-              {displayName}
-            </span>
+              <div
+                className={`w-8 h-8 rounded-full overflow-hidden flex items-center justify-center transition-colors duration-300
+                ${isSettingsOpen
+                    ? "bg-sol-accent text-sol-bg"
+                    : "bg-sol-accent/10 text-sol-accent"
+                  }`}
+              >
+                {user?.avatar_url && !imageError ? (
+                  <img
+                    src={getBackendUrl(user.avatar_url)}
+                    alt={displayName}
+                    className="w-full h-full object-cover"
+                    onError={() => setImageError(true)}
+                  />
+                ) : (
+                  <UserCog size={18} />
+                )}
+              </div>
+
+              <div className="flex flex-col items-start mr-1">
+                <span
+                  className={`text-xs font-black uppercase tracking-tighter transition-colors ${isSettingsOpen ? "text-sol-accent" : "text-sol-muted"
+                    }`}
+                >
+                  {roleLabel}
+                </span>
+                <span
+                  className={`text-sm font-bold transition-colors ${isSettingsOpen ? "text-sol-text" : "text-sol-text/80"
+                    }`}
+                >
+                  {displayName}
+                </span>
+              </div>
+              <ChevronDown
+                size={16}
+                className={`transition-transform duration-300 ${isSettingsOpen ? "rotate-180 text-sol-accent" : "text-sol-muted"
+                  }`}
+              />
+            </button>
           </div>
-          <ChevronDown
-            size={16}
-            className={`transition-transform duration-300 ${isSettingsOpen ? "rotate-180 text-sol-accent" : "text-sol-muted"
-              }`}
-          />
-        </button>
+          </div>
         </div>
 
         {isNotificationsOpen && (

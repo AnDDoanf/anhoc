@@ -7,7 +7,7 @@ import GradeTestEntry from "@/components/feature/GradeTestEntry";
 import { GraduationCap, Library, Globe, ArrowUpRight, PlusCircle, Layers, BookMarked, ChevronRight, ChevronLeft, BookOpen, PlayCircle, Loader2, Pencil, Trash2, Flame, Users, Sparkles, TrendingUp, ShieldAlert, CheckCircle2, Clock, Lock } from "lucide-react";
 import CreateLessonModal from "@/components/feature/CreateLessonModal";
 import Hero from "@/components/ui/Hero";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Lesson, LessonMastery, Subject, lessonService } from "@/services/lessonService";
 import { economyService } from "@/services/economyService";
 import { GradeTest, testService } from "@/services/testService";
@@ -45,6 +45,7 @@ export default function LearningDashboard() {
   const dashboardT = useTranslations("Dashboard");
   const locale = useLocale();
   const router = useRouter();
+
   const { theme } = useTheme();
   const { user } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -65,6 +66,33 @@ export default function LearningDashboard() {
   const [requestingSubjectId, setRequestingSubjectId] = useState<number | null>(null);
   const [learnerPage, setLearnerPage] = useState(0);
   const LEARNERS_PER_PAGE = 1;
+  const sidebarInnerRef = useRef<HTMLDivElement | null>(null);
+  const [sidebarTop, setSidebarTop] = useState(96);
+
+  const [isRedirecting] = useState(() => {
+    if (typeof window !== "undefined") {
+      const selectMode = window.location.search.includes("select=true");
+      if (selectMode) {
+        localStorage.removeItem("last_learning_grade");
+        return false;
+      }
+      const lastGrade = localStorage.getItem("last_learning_grade");
+      if (lastGrade) {
+        return true;
+      }
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    if (isRedirecting) {
+      const lastGrade = localStorage.getItem("last_learning_grade");
+      if (lastGrade) {
+        router.replace(`/student/learning/${lastGrade}`);
+      }
+    }
+  }, [isRedirecting, router]);
+
 
   const fetchDisplayData = useCallback(async () => {
     try {
@@ -140,6 +168,74 @@ export default function LearningDashboard() {
 
   const activeDays = useMemo(() => activity.filter((item) => item.xp > 0).length, [activity]);
 
+  useEffect(() => {
+    const sidebarNode = sidebarInnerRef.current;
+    let frameId = 0;
+    let smoothScroll = window.scrollY;
+    let targetScroll = window.scrollY;
+
+    const syncSidebarBase = () => {
+      const sidebarHeight = sidebarInnerRef.current?.offsetHeight ?? 0;
+      const centeredTop = Math.max(96, Math.round((window.innerHeight - sidebarHeight) / 2));
+      setSidebarTop(centeredTop);
+    };
+
+    const animateSidebar = () => {
+      smoothScroll += (targetScroll - smoothScroll) * 0.12;
+      const lagOffset = Math.max(-120, Math.min(120, targetScroll - smoothScroll));
+
+      if (sidebarInnerRef.current) {
+        sidebarInnerRef.current.style.transform = `translate3d(0, ${lagOffset}px, 0)`;
+      }
+
+      if (Math.abs(targetScroll - smoothScroll) > 0.2) {
+        frameId = window.requestAnimationFrame(animateSidebar);
+      } else {
+        smoothScroll = targetScroll;
+        if (sidebarInnerRef.current) {
+          sidebarInnerRef.current.style.transform = "translate3d(0, 0, 0)";
+        }
+        frameId = 0;
+      }
+    };
+
+    const handleScroll = () => {
+      targetScroll = window.scrollY;
+      if (!frameId) {
+        frameId = window.requestAnimationFrame(animateSidebar);
+      }
+    };
+
+    const handleResize = () => {
+      syncSidebarBase();
+    };
+
+    window.requestAnimationFrame(() => {
+      syncSidebarBase();
+      if (sidebarNode) {
+        sidebarNode.style.willChange = "transform";
+      }
+    });
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      if (frameId) {
+        window.cancelAnimationFrame(frameId);
+      }
+      if (sidebarNode) {
+        sidebarNode.style.transform = "translate3d(0, 0, 0)";
+        sidebarNode.style.willChange = "auto";
+      }
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+  const totalSubjects = useMemo(() => {
+    return subjectCatalog.length || lessonGroups.length;
+  }, [subjectCatalog.length, lessonGroups.length]);
+
   const handleFollowToggle = async (learner: NearbyLearner) => {
     setFollowLoadingId(learner.id);
     try {
@@ -158,8 +254,9 @@ export default function LearningDashboard() {
   };
 
   useEffect(() => {
+    if (isRedirecting) return;
     fetchDisplayData();
-  }, [fetchDisplayData]);
+  }, [fetchDisplayData, isRedirecting]);
 
   const handleCreateSuccess = () => {
     fetchDisplayData();
@@ -219,7 +316,13 @@ export default function LearningDashboard() {
       setRequestingSubjectId(null);
     }
   };
-
+  if (isRedirecting) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="animate-spin text-sol-accent" size={48} />
+      </div>
+    );
+  }
   return (
     <div className="mx-auto max-w-7xl space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Educational Hero Header */}
@@ -245,21 +348,21 @@ export default function LearningDashboard() {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 md:gap-4">
-            <div className="flex items-center gap-2 rounded-2xl bg-sol-accent px-4 py-2 text-sm font-bold text-sol-bg shadow-lg shadow-sol-accent/20 md:px-5 md:py-2.5">
+          <div className="flex flex-wrap items-center gap-3 md:gap-4">
+            <div className="flex h-11 items-center gap-2 rounded-2xl bg-sol-accent px-4 py-2.5 text-sm font-bold text-sol-bg shadow-lg shadow-sol-accent/20 md:px-5">
               <Globe size={16} className="md:h-[18px] md:w-[18px]" />
               <span>{commonT("curriculumYear")}</span>
             </div>
-            <div className="flex items-center gap-2 rounded-2xl border border-sol-border/20 bg-sol-surface/90 px-4 py-2 text-sm font-bold text-sol-text md:px-5 md:py-2.5">
+            <div className="flex h-11 items-center gap-2 rounded-2xl border border-sol-border/20 bg-sol-surface/90 px-4 py-2.5 text-sm font-bold text-sol-text shadow-sm md:px-5">
               <Library size={16} className="text-sol-accent md:h-[18px] md:w-[18px]" />
-              <span>{commonT("tracks", { count: 12 })}</span>
+              <span>{totalSubjects} {t("subjects")}</span>
             </div>
             <button
               onClick={() => setMetaModal("subjectsList")}
-              className="flex items-center gap-2 rounded-2xl bg-sol-accent hover:opacity-90 transition-transform hover:scale-105 px-4 py-2 text-sm font-bold text-sol-bg shadow-lg shadow-sol-accent/20 cursor-pointer md:px-5 md:py-2.5"
+              className="flex h-11 items-center gap-2 rounded-2xl bg-sol-accent px-4 py-2.5 text-sm font-bold text-sol-bg shadow-lg shadow-sol-accent/20 transition-transform hover:scale-105 hover:opacity-90 cursor-pointer md:px-5"
             >
               <Library size={16} className="md:h-[18px] md:w-[18px]" />
-              <span>{t("subjects")}</span>
+              <span>{t("subjectCatalogTitle")}</span>
             </button>
           </div>
         </div>
@@ -467,7 +570,8 @@ export default function LearningDashboard() {
           ))}
         </div>
 
-        <aside className="space-y-6 xl:sticky xl:top-24 xl:self-start">
+        <aside className="xl:sticky xl:self-start" style={{ top: `${sidebarTop}px` }}>
+          <div ref={sidebarInnerRef} className="space-y-6 will-change-transform">
           <section 
             onClick={() => window.dispatchEvent(new CustomEvent("open-streak-modal"))}
             className="overflow-hidden rounded-[2rem] border border-sol-border/30 bg-sol-surface shadow-sm cursor-pointer hover:border-sol-accent/30 hover:shadow-md transition-all animate-pulse"
@@ -704,6 +808,7 @@ export default function LearningDashboard() {
               })()}
             </div>
           </section>
+          </div>
         </aside>
       </div>
 

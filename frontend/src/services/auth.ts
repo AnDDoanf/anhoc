@@ -52,6 +52,7 @@ export interface AuthProfile extends AuthUser {
     total_xp?: number | null;
     average_score?: number | string | null;
     lessons_completed?: number | null;
+    lives?: number | null;
     last_active?: string | null;
   } | null;
   created_at?: string;

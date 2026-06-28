@@ -470,7 +470,7 @@
     "subtitle": "Select a lesson to start practicing and boost your knowledge.",
     "startBtn": "Practice",
     "reviewBtn": "Review",
-    "startPractice": "Start Practice Session",
+    "startPractice": "Practice",
     "starting": "Starting...",
     "stats": "{count} exercises",
     "difficulty": "Difficulty",
@@ -680,6 +680,7 @@
     }
   },
   "Path": {
+    "eyebrow": "Path unlocked",
     "title": "Learning Path",
     "subtitle": "Your personal curriculum roadmap to success.",
     "step": "Step {n}",

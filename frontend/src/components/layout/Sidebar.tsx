@@ -127,7 +127,7 @@ export default function Sidebar() {
   return (
     <>
       {/* Mobile Menu Toggle Button */}
-      {isMobile && (
+      {isMobile && hasAdminAccess && (
         <button
           onClick={() => setIsMobileOpen(!isMobileOpen)}
           className={`fixed top-4 right-4 z-[60] w-10 h-10 bg-sol-surface/80 backdrop-blur-md rounded-full flex items-center justify-center text-sol-text active:scale-95 transition-all duration-300
@@ -139,7 +139,7 @@ export default function Sidebar() {
       )}
 
       {/* Backdrop for Mobile */}
-      {isMobile && isMobileOpen && (
+      {isMobile && isMobileOpen && hasAdminAccess && (
         <div
           className="fixed inset-0 bg-sol-bg/40 backdrop-blur-sm z-40 animate-in fade-in duration-300"
           onClick={() => setIsMobileOpen(false)}
@@ -150,7 +150,7 @@ export default function Sidebar() {
         <aside
           className={`h-screen bg-sol-surface flex flex-col transition-all duration-500 ease-in-out z-50
           ${isMobile
-              ? `fixed inset-y-0 right-0 w-72 border-l border-sol-border/30 shadow-2xl ${isMobileOpen ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none"}`
+              ? `fixed inset-y-0 right-0 w-72 border-l border-sol-border/30 shadow-2xl ${isMobileOpen && hasAdminAccess ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none"}`
               : `sticky top-0 w-full border-r border-sol-border/30`}
         `}
         >
@@ -254,9 +254,7 @@ export default function Sidebar() {
                     />
                   </Can>
                 </section>
-              )}
-
-              <section className="space-y-1">
+              )}              <section className="space-y-1 hidden md:block">
                 <SidebarSectionHeading label={t("learningMaterial")} isCollapsed={isCollapsed} />
                 <NavItem
                   href="/student"

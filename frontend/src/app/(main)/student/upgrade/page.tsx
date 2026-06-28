@@ -294,7 +294,7 @@ export default function UpgradePage() {
                       { 
                         id: "extra_lives", 
                         title: locale === "vi" ? "Tối Đa Tim Thêm (+1 Tim)" : "Max Lives (+1 Heart)",
-                        desc: locale === "vi" ? "Tăng thêm 1 tim tối đa cho bạn. Tối đa mua được 3 lần." : "Increase your maximum lives limit by 1. Up to 3 times.",
+                        desc: locale === "vi" ? "Tăng thêm 1 tim tối đa cho bạn." : "Increase your maximum lives limit by 1.",
                         current: `${(stats.upgrades as any)?.extra_lives_from_points || 0} / 3`,
                         cost: 10,
                         disabled: ((stats.upgrades as any)?.extra_lives_from_points || 0) >= 3 || stats.level_points < 10,
@@ -303,7 +303,7 @@ export default function UpgradePage() {
                       { 
                         id: "coin_bonus", 
                         title: locale === "vi" ? "Tiền Thưởng Ancoin (+5%)" : "Ancoin Bonus (+5% Coins)",
-                        desc: locale === "vi" ? "Nhận thêm 5% Ancoin sau mỗi lần hoàn thành luyện tập." : "Add 5% bonus coins to all future practice completions.",
+                        desc: locale === "vi" ? "Nhận thêm 5% thưởng Ancoin." : "Add 5% bonus coins.",
                         current: `+${(stats.upgrades as any)?.coin_bonus_pct || 0}%`,
                         cost: 1,
                         disabled: stats.level_points < 1,
@@ -312,7 +312,7 @@ export default function UpgradePage() {
                       { 
                         id: "xp_bonus", 
                         title: locale === "vi" ? "Kinh Nghiệm Nhân Lên (+5% XP)" : "XP Boost (+5% XP)",
-                        desc: locale === "vi" ? "Nhận thêm 5% điểm kinh nghiệm (XP) sau mỗi hoạt động học tập." : "Add 5% bonus XP to all future learning actions.",
+                        desc: locale === "vi" ? "Nhận thêm 5% thưởng XP." : "Add 5% bonus XP.",
                         current: `+${(stats.upgrades as any)?.xp_bonus_pct || 0}%`,
                         cost: 1,
                         disabled: stats.level_points < 1,
@@ -321,7 +321,7 @@ export default function UpgradePage() {
                       { 
                         id: "game_duration_bonus", 
                         title: locale === "vi" ? "Tăng Giờ Chơi (+5 giây)" : "Game Duration (+5 Seconds)",
-                        desc: locale === "vi" ? "Thêm 5 giây vào thời gian giới hạn của các chế độ chơi toán." : "Add 5 extra seconds to standard game mode durations.",
+                        desc: locale === "vi" ? "Thêm 5 giây vào thời gian giới hạn các trò chơi." : "Add 5 extra seconds to standard game mode durations.",
                         current: `+${(stats.upgrades as any)?.game_duration_bonus || 0}s`,
                         cost: 1,
                         disabled: stats.level_points < 1,
@@ -330,7 +330,7 @@ export default function UpgradePage() {
                       { 
                         id: "extra_attempts", 
                         title: locale === "vi" ? "Mua Vé Thách Đấu (+1 Lượt)" : "Extra Attempts (+1 Attempt)",
-                        desc: locale === "vi" ? "Nhận thêm 1 lượt tham gia thử thách game đấu trí. Tối đa mua được 5 lần." : "Add 1 additional active challenge attempt to your limit. Up to 5 times.",
+                        desc: locale === "vi" ? "Nhận thêm 1 lượt chơi." : "Add 1 additional active challenge attempt to your limit.",
                         current: `${(stats.upgrades as any)?.extra_game_attempts || 0} / 5`,
                         cost: 10,
                         disabled: ((stats.upgrades as any)?.extra_game_attempts || 0) >= 5 || stats.level_points < 10,

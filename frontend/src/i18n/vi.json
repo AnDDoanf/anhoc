@@ -397,7 +397,7 @@
     "subtitle": "Chọn một bài học để bắt đầu luyện tập và nâng cao kiến thức của bạn.",
     "startBtn": "Luyện tập",
     "reviewBtn": "Ôn tập",
-    "startPractice": "Bắt đầu Phiên Luyện tập",
+    "startPractice": "Luyện tập",
     "starting": "Đang bắt đầu...",
     "stats": "{count} bài tập",
     "difficulty": "Độ khó",
@@ -517,7 +517,7 @@
     "viewLesson": "Học",
     "viewPath": "Xem Lộ trình",
     "streakLabel": "{count, plural, one {# ngày hoạt động liên tiếp} other {# ngày hoạt động liên tiếp}}",
-    "socializingTitle": "Kết nối học tập",
+    "socializingTitle": "Kết nối",
     "socializingSubtitle": "Những người học có cấp độ và nhịp độ học gần với bạn.",
     "followersLabel": "Người theo dõi",
     "followingLabel": "Đang theo dõi",
@@ -563,7 +563,7 @@
       "createSubject": "Tạo môn học",
       "createGrade": "Tạo lớp",
       "saveError": "Không thể lưu. Vui lòng kiểm tra thông tin và thử lại.",
-      "subjectAccessTitle": "Quản lý quyền truy cập môn học",
+      "subjectAccessTitle": "Quyền truy cập",
       "classified": "Yêu cầu admin phê duyệt",
       "subjectAccessHint": "Chuyển môn học hiện có giữa truy cập mở và cần phê duyệt.",
       "loadingSubjects": "Đang tải môn học...",
@@ -608,9 +608,10 @@
     "classifiedRequestRetry": "Yêu cầu lại",
     "classifiedRequestSending": "Đang gửi...",
     "classifiedRequestError": "Không thể gửi yêu cầu truy cập môn học này.",
-    "manageSubjectAccess": "Quản lý quyền truy cập môn học"
+    "manageSubjectAccess": "Quyền truy cập"
   },
   "Path": {
+    "eyebrow": "Lộ trình đang mở",
     "title": "Lộ trình Học tập",
     "subtitle": "Lộ trình học tập cá nhân giúp bạn thành công.",
     "step": "Bước {n}",

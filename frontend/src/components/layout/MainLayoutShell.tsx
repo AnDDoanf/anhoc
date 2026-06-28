@@ -4,6 +4,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import Footer from "@/components/layout/Footer";
 import Settingbar from "@/components/layout/Settingbar";
 import ScrollToTop from "@/components/ui/ScrollToTop";
+import BottomNav from "@/components/layout/BottomNav";
 import ChatbotWidget from "@/components/feature/ChatbotWidget";
 import DailyLoginCalendarModal from "@/components/feature/DailyLoginCalendarModal";
 import { economyService } from "@/services/economyService";
@@ -93,19 +94,20 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="flex min-h-screen w-full bg-sol-bg">
+    <div className="flex min-h-screen w-full overflow-x-hidden md:overflow-x-visible bg-sol-bg">
       <Sidebar />
 
-      <div className="relative flex min-w-0 flex-1 flex-col">
+      <div className="relative flex min-w-0 flex-1 flex-col overflow-x-hidden md:overflow-x-visible">
         <Settingbar />
 
-        <main className="min-w-0 flex-grow p-3 pt-20 pb-20 sm:p-4 sm:pt-4 md:p-8 md:pt-8">
+        <main className="min-w-0 flex-grow p-3 pt-20 pb-32 sm:p-4 sm:pt-4 sm:pb-36 md:p-8 md:pt-8 md:pb-8">
           {children}
         </main>
 
         <Footer />
         <ScrollToTop className="bottom-24 right-6" />
         <ChatbotWidget />
+        <BottomNav />
         <DailyLoginCalendarModal isOpen={isStreakOpen} onClose={() => setIsStreakOpen(false)} />
       </div>
     </div>
