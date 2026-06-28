@@ -30,6 +30,7 @@ model User {
   login_id      String?       @db.VarChar(80)
   avatar_url    String?       @db.VarChar(255)
   stripe_customer_id String?   @unique
+  active_session_id  String?
   
   // Relations to content & tracking
   subjects_created  Subject[]           @relation("SubjectsCreated")

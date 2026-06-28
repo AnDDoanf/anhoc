@@ -14,6 +14,7 @@ import {
   getUserIdentity,
   findUserIdByIdentifier
 } from '../services/userIdentityService.ts';
+import { authenticate } from '../middleware/auth.ts';
 
 describe('Auth & Identity Flow', () => {
   const restores: (() => void)[] = [];
@@ -24,19 +25,30 @@ describe('Auth & Identity Flow', () => {
     } catch {}
   });
 
-  const mockPrismaUser = (methodName: string, mockFn: any) => {
-    const original = (prisma.user as any)[methodName];
-    (prisma.user as any)[methodName] = mockFn;
-    restores.push(() => {
-      (prisma.user as any)[methodName] = original;
-    });
-  };
-
   const mockPrisma = (methodName: string, mockFn: any) => {
     const original = (prisma as any)[methodName];
     (prisma as any)[methodName] = mockFn;
     restores.push(() => {
       (prisma as any)[methodName] = original;
+    });
+  };
+
+  const mockPrismaModel = (modelName: string, methodName: string, mockFn: any) => {
+    const model = (prisma as any)[modelName];
+    if (model) {
+      const original = model[methodName];
+      model[methodName] = mockFn;
+      restores.push(() => {
+        model[methodName] = original;
+      });
+    }
+  };
+
+  const mockPrismaUser = (methodName: string, mockFn: any) => {
+    const original = (prisma.user as any)[methodName];
+    (prisma.user as any)[methodName] = mockFn;
+    restores.push(() => {
+      (prisma.user as any)[methodName] = original;
     });
   };
 
@@ -143,6 +155,44 @@ describe('Auth & Identity Flow', () => {
       const decoded = jwt.verify(token, secret) as any;
       assert.strictEqual(decoded.userId, '12345');
       assert.strictEqual(decoded.role, 'student');
+    });
+
+    test('authenticate middleware should reject older sessions with i18n message', async () => {
+      mockPrismaUser('findUnique', async () => {
+        return { active_session_id: 'new-session-uuid' };
+      });
+
+      const secret = process.env.JWT_SECRET || 'temp-secret';
+      const token = jwt.sign({ id: 'user-1', active_session_id: 'old-session-uuid' }, secret);
+      
+      const req: any = {
+        headers: {
+          authorization: `Bearer ${token}`,
+          'accept-language': 'vi'
+        }
+      };
+
+      let statusVal = 0;
+      let jsonMsg = '';
+      const res: any = {
+        status(code: number) {
+          statusVal = code;
+          return this;
+        },
+        json(data: any) {
+          jsonMsg = data.message;
+          return this;
+        }
+      };
+
+      const next = () => {};
+
+      await authenticate(req, res, next);
+      
+      assert.strictEqual(statusVal, 401);
+      assert.strictEqual(jsonMsg, 'Đăng nhập ở nơi khác');
+
+      restoreMocks();
     });
   });
 });

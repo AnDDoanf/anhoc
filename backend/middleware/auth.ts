@@ -1,12 +1,28 @@
 import {type Request, type Response, type NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import prisma from '../lib/db.ts';
 
-export const authenticate = (req: Request, res: Response, next: NextFunction) => {
+export const authenticate = async (req: Request, res: Response, next: NextFunction) => {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) return res.status(401).json({ message: "Unauthorized" });
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+
+    if (decoded.id && decoded.active_session_id) {
+      const user = await (prisma as any).user.findUnique({
+        where: { id: decoded.id },
+        select: { active_session_id: true }
+      }) as any;
+
+      if (user && user.active_session_id !== decoded.active_session_id) {
+        const langHeader = req.headers["accept-language"] || "";
+        const isVi = langHeader.toLowerCase().includes("vi");
+        const message = isVi ? "Đăng nhập ở nơi khác" : "Login in another place";
+        return res.status(401).json({ message });
+      }
+    }
+
     (req as any).user = decoded;
     next();
   } catch (err) {
@@ -14,7 +30,7 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
   }
 };
 
-export const optionalAuthenticate = (req: Request, res: Response, next: NextFunction) => {
+export const optionalAuthenticate = async (req: Request, res: Response, next: NextFunction) => {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) {
     next();
@@ -22,7 +38,21 @@ export const optionalAuthenticate = (req: Request, res: Response, next: NextFunc
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+
+    if (decoded.id && decoded.active_session_id) {
+      const user = await (prisma as any).user.findUnique({
+        where: { id: decoded.id },
+        select: { active_session_id: true }
+      }) as any;
+
+      if (user && user.active_session_id !== decoded.active_session_id) {
+        (req as any).user = undefined;
+        next();
+        return;
+      }
+    }
+
     (req as any).user = decoded;
   } catch {
     (req as any).user = undefined;

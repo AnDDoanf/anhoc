@@ -187,6 +187,12 @@ const createAuthPayload = async (user: {
   const learnUnit = serializeLearnUnit(user.learn_unit || user.supervised_learn_unit);
   const identity = await getUserIdentity(user.id, user.username);
 
+  const activeSessionId = crypto.randomUUID();
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { active_session_id: activeSessionId },
+  });
+
   const token = jwt.sign(
     {
       id: user.id,
@@ -198,6 +204,7 @@ const createAuthPayload = async (user: {
       supervisor_id: learnUnit?.supervisor_id ?? null,
       learn_unit_id: user.learn_unit_id ?? null,
       slots_purchased: user.slots_purchased ?? 0,
+      active_session_id: activeSessionId,
     },
     JWT_SECRET,
     { expiresIn: "15m" }
