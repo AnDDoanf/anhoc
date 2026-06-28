@@ -167,15 +167,42 @@ export async function upgradeSubscription(
 export async function activateLocalSubscription(
   stripeSubscriptionId: string,
   stripeInvoiceId: string,
-  learnUnitName?: string
+  learnUnitName?: string,
+  sessionId?: string
 ) {
-  const subPlan = await prisma.subscriptionPlan.findUnique({
+  let subPlan = await prisma.subscriptionPlan.findUnique({
     where: { stripe_subscription_id: stripeSubscriptionId },
     include: { plan: true },
   });
 
+  if (!subPlan && sessionId) {
+    // Fallback: search by Checkout Session ID that was stored initially in stripe_subscription_id
+    subPlan = await prisma.subscriptionPlan.findUnique({
+      where: { stripe_subscription_id: sessionId },
+      include: { plan: true },
+    });
+
+    if (subPlan) {
+      // Overwrite the placeholder Stripe IDs with the actual Subscription and Invoice IDs
+      await prisma.subscriptionPlan.update({
+        where: { id: subPlan.id },
+        data: { stripe_subscription_id: stripeSubscriptionId },
+      });
+
+      const invoice = await prisma.invoice.findFirst({
+        where: { subscription_plan_id: subPlan.id },
+      });
+      if (invoice) {
+        await prisma.invoice.update({
+          where: { id: invoice.id },
+          data: { stripe_invoice_id: stripeInvoiceId },
+        });
+      }
+    }
+  }
+
   if (!subPlan) {
-    throw new Error(`Subscription plan not found for stripeSubscriptionId: ${stripeSubscriptionId}`);
+    throw new Error(`Subscription plan not found for stripeSubscriptionId: ${stripeSubscriptionId} or sessionId: ${sessionId}`);
   }
 
   if (subPlan.status === "active") {
@@ -310,7 +337,7 @@ export async function verifyCheckoutSession(sessionId: string) {
     const invId = session.invoice as string;
     const learnUnitName = session.metadata?.learnUnitName;
 
-    return await activateLocalSubscription(subId, invId, learnUnitName);
+    return await activateLocalSubscription(subId, invId, learnUnitName, sessionId);
   }
 
   throw new Error("Checkout session has not been paid");

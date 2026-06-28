@@ -27,12 +27,13 @@ router.post("/", async (req: Request, res: Response) => {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
+        const sessionId = session.id;
         const subId = session.subscription as string;
         const invId = session.invoice as string;
         const learnUnitName = session.metadata?.learnUnitName;
 
         if (subId && invId) {
-          await activateLocalSubscription(subId, invId, learnUnitName);
+          await activateLocalSubscription(subId, invId, learnUnitName, sessionId);
           console.log(`✅ Subscription activated from checkout session: ${subId}`);
         }
         break;

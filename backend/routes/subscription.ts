@@ -262,7 +262,7 @@ router.post("/checkout", authenticate, async (req: Request, res: Response) => {
           max_templates: targetMaxTemplates,
           max_grades: targetMaxGrades,
           max_subjects: plan.max_subjects,
-          stripe_subscription_id: session.subscription as string,
+          stripe_subscription_id: session.id,
           effect_from: new Date(),
           effect_to: null,
         } as any,
@@ -275,7 +275,7 @@ router.post("/checkout", authenticate, async (req: Request, res: Response) => {
           subscription_plan_id: sub.id,
           amount: calculatedPrice,
           status: "pending",
-          stripe_invoice_id: session.invoice as string,
+          stripe_invoice_id: session.id,
           description: `${plan.name.toUpperCase()} Subscription Plan - ${cycleLabel} Cycle (Pending Payment)`,
         },
       });
