@@ -26,8 +26,8 @@ export default function BottomNav() {
   ];
 
   return (
-    <div className="md:hidden fixed inset-x-0 bottom-0 z-50 w-full max-w-full overflow-hidden animate-in slide-in-from-bottom duration-500 ease-out">
-      <div className="grid grid-cols-6 items-center overflow-hidden bg-sol-surface/85 backdrop-blur-md border-t border-sol-border/30 px-2 py-3 rounded-t-2xl shadow-[0_-4px_24px_rgba(0,0,0,0.15)]">
+    <div className="md:hidden fixed inset-x-0 bottom-0 z-50 w-full max-w-full overflow-hidden animate-in slide-in-from-bottom duration-500 ease-out border-t-2">
+      <div className="grid grid-cols-6 items-center overflow-hidden bg-sol-surface/85 backdrop-blur-md px-2 py-3 rounded-t-2xl">
         {items.map((item) => {
           const isActive = pathname === item.href || (item.href !== "/student" && pathname.startsWith(item.href));
           return (
