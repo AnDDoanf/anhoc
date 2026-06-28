@@ -12,7 +12,7 @@ RUN npm ci
 COPY . .
 
 # Generate the Prisma Client
-RUN npx prisma generate --schema=./prisma/schema.prisma
+RUN npx prisma generate
 
 EXPOSE 5001
 
