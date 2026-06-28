@@ -2,11 +2,11 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert';
 import EventEmitter from 'events';
 
-// Import the middlewares
-import { correlationId } from '../backend/middleware/correlation.ts';
-import { requestTimeout } from '../backend/middleware/timeout.ts';
-import { errorHandler } from '../backend/middleware/errorHandler.ts';
-import { requestLogger } from '../backend/middleware/logging.ts';
+// Import the middlewares relative to backend/test
+import { correlationId } from '../middleware/correlation.ts';
+import { requestTimeout } from '../middleware/timeout.ts';
+import { errorHandler } from '../middleware/errorHandler.ts';
+import { requestLogger } from '../middleware/logging.ts';
 
 describe('correlationId Middleware', () => {
   test('should generate a correlation ID if one is not present in headers', () => {
@@ -205,7 +205,7 @@ describe('requestLogger Middleware', () => {
   });
 });
 
-import { createRateLimiter } from '../backend/middleware/rateLimiter.ts';
+import { createRateLimiter } from '../middleware/rateLimiter.ts';
 
 describe('rateLimiter Middleware', () => {
   test('should allow requests below threshold and block when exceeded', () => {
