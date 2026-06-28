@@ -1,5 +1,5 @@
 # Fdb version 4
-["pdflatex"] 1782113461.42515 "main.tex" "main.pdf" "main" 1782113465.81887 0
+["pdflatex"] 1782117806.0468 "c:/code/anhoc/docs/thesis/main.tex" "main.pdf" "main" 1782117809.1848 0
   "C:/Users/AnDoan/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map" 1782108295 88550 556fbefa7d2e4c8f68bc8647c78bd8e4 ""
   "C:/Users/AnDoan/AppData/Local/MiKTeX/miktex/data/le/pdftex/pdflatex.fmt" 1768913784 13333971 ae372178f5fb3fcb99236b8164a70ae3 ""
   "C:/Users/AnDoan/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/lm/lm-ec.enc" 1256929440 2375 baa924870cfb487815765f9094cf3728 ""
@@ -169,6 +169,7 @@
   "C:/Users/AnDoan/AppData/Local/Programs/MiKTeX/tex/latex/tools/tabularx.sty" 1761901070 7243 a2c17f18e2c9b702b84fad03d5f9c78b ""
   "C:/Users/AnDoan/AppData/Local/Programs/MiKTeX/tex/latex/url/url.sty" 1388490452 12796 8edb7d69a20b857904dd0ea757c14ec9 ""
   "C:/Users/AnDoan/AppData/Local/Programs/MiKTeX/tex/latex/xcolor/xcolor.sty" 1729265222 55384 b454dec21c2d9f45ec0b793f0995b992 ""
+  "c:/code/anhoc/docs/thesis/main.tex" 1782113443 13007 0b627806038a36440244501c27d5f45f ""
   "chapters/appendix.tex" 1782108323 4609 dd9156e56ae28d08ca8e26c49944282f ""
   "chapters/conclusion_and_perspective.tex" 1782104498 1330 483e2583aa9d9d67e5f5953d10fb3023 ""
   "chapters/design.tex" 1782112627 19534 a92ecb3dca338726ea77d885c08e0d2e ""
@@ -187,12 +188,12 @@
   "images/student_dashboard.png" 1782103783 161085 c95df50ad300a799820729f37e73c38c ""
   "images/student_learning.png" 1782103800 172214 4e8b55510dbde510bf0a6759b94c8ec7 ""
   "images/usth_logo.png" 1782102636 40922 bcf5d2d59ab25236ecd1ca299354ec7d ""
-  "main.aux" 1782113465 18789 a701237d11cdd752a34a5ed8562cb68c "pdflatex"
-  "main.lof" 1782113465 2706 38f89dd800bced25fc643db48edbbbd7 "pdflatex"
-  "main.lot" 1782113465 616 6a85f30b79e48eae9ab920f0a42f0036 "pdflatex"
-  "main.out" 1782113465 9867 7c5f7021639ca3295d5c760abb9c9ed8 "pdflatex"
+  "main.aux" 1782117808 18789 a701237d11cdd752a34a5ed8562cb68c "pdflatex"
+  "main.lof" 1782117808 2706 38f89dd800bced25fc643db48edbbbd7 "pdflatex"
+  "main.lot" 1782117808 616 6a85f30b79e48eae9ab920f0a42f0036 "pdflatex"
+  "main.out" 1782117808 9867 7c5f7021639ca3295d5c760abb9c9ed8 "pdflatex"
   "main.tex" 1782113443 13007 0b627806038a36440244501c27d5f45f ""
-  "main.toc" 1782113465 6360 6d7fd7fac41be8a6bbbb49ffd4b60fa0 "pdflatex"
+  "main.toc" 1782117808 6360 6d7fd7fac41be8a6bbbb49ffd4b60fa0 "pdflatex"
   (generated)
   "main.aux"
   "main.lof"

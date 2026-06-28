@@ -5,6 +5,12 @@ import {
   createLearnUnitForSupervisor,
   createDefaultLearnUnitName,
 } from "../services/learnUnitService.ts";
+import {
+  createCheckoutSession,
+  cancelSubscription,
+  reactivateSubscription,
+  verifyCheckoutSession,
+} from "../services/stripeService.ts";
 
 const router = Router();
 
@@ -101,8 +107,22 @@ router.post("/toggle-auto-renew", authenticate, async (req: Request, res: Respon
       return res.status(400).json({ error: "No active subscription found to modify" });
     }
 
+    if (activeSubscription.stripe_subscription_id) {
+      if (activeSubscription.auto_renew) {
+        await cancelSubscription(activeSubscription.stripe_subscription_id);
+      } else {
+        await reactivateSubscription(activeSubscription.stripe_subscription_id);
+      }
+      
+      const updated = await prisma.subscriptionPlan.findUnique({
+        where: { id: activeSubscription.id },
+        include: { plan: true },
+      });
+      return res.json({ activeSubscription: updated });
+    }
+
+    // Fallback simulated logic for legacy/simulated
     const updated = await prisma.$transaction(async (tx) => {
-      // 1. Supersede old subscription version
       await tx.subscriptionPlan.update({
         where: { id: activeSubscription.id },
         data: {
@@ -111,7 +131,6 @@ router.post("/toggle-auto-renew", authenticate, async (req: Request, res: Respon
         },
       });
 
-      // 2. Create a new subscription version with toggled auto-renew
       return tx.subscriptionPlan.create({
         data: {
           user_id: userId,
@@ -135,7 +154,7 @@ router.post("/toggle-auto-renew", authenticate, async (req: Request, res: Respon
   }
 });
 
-// Upgrade/Downgrade subscription checkout
+// Upgrade/Downgrade subscription checkout using Stripe
 router.post("/checkout", authenticate, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
@@ -154,6 +173,14 @@ router.post("/checkout", authenticate, async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Invalid planId or billingCycle" });
     }
 
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
     // Resolve the target plan
     const plan = await prisma.plan.findFirst({
       where: { id: Number(planId) },
@@ -161,22 +188,6 @@ router.post("/checkout", authenticate, async (req: Request, res: Response) => {
 
     if (!plan) {
       return res.status(404).json({ error: "Target plan not found" });
-    }
-
-    // Resolve corresponding role record
-    let roleName = "free_student";
-    if (plan.name === "pro") {
-      roleName = "sub_student";
-    } else if (plan.name === "family" || plan.name === "learning_center") {
-      roleName = "supervisor";
-    }
-
-    const roleRecord = await prisma.role.findUnique({
-      where: { name: roleName },
-    });
-
-    if (!roleRecord) {
-      return res.status(500).json({ error: `System role '${roleName}' not found` });
     }
 
     // Parse dynamic capacity limits
@@ -204,43 +215,45 @@ router.post("/checkout", authenticate, async (req: Request, res: Response) => {
         (numTemplates * pTemplate);
     }
 
-    // Start database transaction to ensure billing consistency
+    // Success and cancel redirection URLs
+    const origin = req.headers.origin || process.env.FRONTEND_URL || "http://localhost:5000";
+    const successUrl = `${origin}/subscription?session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = `${origin}/subscription?cancelled=true`;
+
+    // Create Stripe checkout session
+    const session = await createCheckoutSession({
+      userId,
+      email: user.email,
+      planId: plan.id,
+      planName: plan.name,
+      billingCycle,
+      calculatedPrice,
+      successUrl,
+      cancelUrl,
+      learnUnitName,
+      maxStudents: numStudents,
+      maxTeachers: numTeachers,
+      maxLessons: numLessons,
+      maxGrades: numGrades,
+      maxTemplates: numTemplates,
+    });
+
+    const targetMaxStudents = plan.name === "learning_center" ? numStudents : plan.max_students;
+    const targetMaxTeachers = plan.name === "learning_center" ? numTeachers : plan.max_teachers;
+    const targetMaxLessons = plan.name === "learning_center" ? numLessons : plan.max_lessons;
+    const targetMaxTemplates = plan.name === "learning_center" ? numTemplates : plan.max_templates;
+    const targetMaxGrades = plan.name === "learning_center" ? numGrades : plan.max_grades;
+
+    // Create local SubscriptionPlan in "incomplete" status and Invoice in "pending" status
     await prisma.$transaction(async (tx) => {
-      // 1. Terminate any previous active subscriptions
-      await tx.subscriptionPlan.updateMany({
-        where: {
-          user_id: userId,
-          status: "active",
-          effect_to: null,
-        },
-        data: {
-          status: "cancelled",
-          end_date: new Date(),
-          effect_to: new Date(),
-          auto_renew: false,
-        },
-      });
-
-      // 2. Create the new active subscription
-      const durationDays = billingCycle === "annually" ? 365 : 30;
-      const startDate = new Date();
-      const endDate = new Date();
-      endDate.setDate(endDate.getDate() + durationDays);
-
-      const targetMaxStudents = plan.name === "learning_center" ? numStudents : plan.max_students;
-      const targetMaxTeachers = plan.name === "learning_center" ? numTeachers : plan.max_teachers;
-      const targetMaxLessons = plan.name === "learning_center" ? numLessons : plan.max_lessons;
-      const targetMaxTemplates = plan.name === "learning_center" ? numTemplates : plan.max_templates;
-      const targetMaxGrades = plan.name === "learning_center" ? numGrades : plan.max_grades;
-
       const sub = await tx.subscriptionPlan.create({
         data: {
           user_id: userId,
           plan_id: plan.id,
-          status: "active",
+          status: "incomplete",
           billing_cycle: billingCycle,
-          start_date: startDate,
-          end_date: endDate,
+          start_date: new Date(),
+          end_date: null,
           auto_renew: true,
           slots_purchased: plan.name === "learning_center" ? numStudents : (plan.max_students || 0),
           max_students: targetMaxStudents,
@@ -249,82 +262,43 @@ router.post("/checkout", authenticate, async (req: Request, res: Response) => {
           max_templates: targetMaxTemplates,
           max_grades: targetMaxGrades,
           max_subjects: plan.max_subjects,
+          stripe_subscription_id: session.subscription as string,
           effect_from: new Date(),
           effect_to: null,
         } as any,
       });
 
-      // 3. Create the Invoice record
       const cycleLabel = billingCycle === "annually" ? "Annual" : "Monthly";
       await tx.invoice.create({
         data: {
           user_id: userId,
           subscription_plan_id: sub.id,
           amount: calculatedPrice,
-          status: "paid",
-          description: `${plan.name.toUpperCase()} Subscription Plan - ${cycleLabel} Cycle`,
+          status: "pending",
+          stripe_invoice_id: session.invoice as string,
+          description: `${plan.name.toUpperCase()} Subscription Plan - ${cycleLabel} Cycle (Pending Payment)`,
         },
       });
-
-      // 4. Update user role
-      await tx.user.update({
-        where: { id: userId },
-        data: {
-          role_id: roleRecord.id,
-          slots_purchased: plan.name === "learning_center" ? numStudents : (plan.max_students || 0),
-        },
-      });
-
-      // 5. Manage Learn Unit if supervisor plan (Family or Learning Center)
-      if (roleName === "supervisor") {
-        const existingUnit = await tx.learnUnit.findUnique({
-          where: { supervisor_id: userId },
-        });
-
-        if (existingUnit) {
-          // Update limits of existing learn unit
-          await tx.learnUnit.update({
-            where: { id: existingUnit.id },
-            data: {
-              max_students: targetMaxStudents,
-              max_teachers: targetMaxTeachers,
-              max_lessons: targetMaxLessons,
-              max_templates: targetMaxTemplates,
-              max_grades: targetMaxGrades,
-              max_subjects: plan.max_subjects,
-            },
-          });
-        } else {
-          // Provision a new learn unit
-          const user = await tx.user.findUnique({ where: { id: userId } });
-          const luName = learnUnitName?.trim() || createDefaultLearnUnitName(user?.username || "Supervisor");
-          
-          const newUnit = await createLearnUnitForSupervisor(
-            userId,
-            luName,
-            {
-              max_students: targetMaxStudents,
-              max_teachers: targetMaxTeachers,
-              max_lessons: targetMaxLessons,
-              max_templates: targetMaxTemplates,
-              max_grades: targetMaxGrades,
-              max_subjects: plan.max_subjects,
-            },
-            tx as any
-          );
-
-          // Update supervisor's learn unit ID
-          await tx.user.update({
-            where: { id: userId },
-            data: { learn_unit_id: newUnit.id },
-          });
-        }
-      }
     });
 
-    res.json({ success: true, message: `Successfully subscribed to ${plan.name} plan` });
+    res.json({ success: true, url: session.url });
   } catch (error: any) {
     res.status(500).json({ error: "Failed to process subscription checkout", details: error.message });
+  }
+});
+
+// Verify manual checkout session
+router.get("/verify-session", authenticate, async (req: Request, res: Response) => {
+  try {
+    const { sessionId } = req.query;
+    if (!sessionId || typeof sessionId !== "string") {
+      return res.status(400).json({ error: "Missing sessionId parameter" });
+    }
+
+    const updatedSub = await verifyCheckoutSession(sessionId);
+    res.json({ success: true, activeSubscription: updatedSub });
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to verify session", details: error.message });
   }
 });
 

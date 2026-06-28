@@ -281,6 +281,17 @@ Status: partially implemented in the app. Core XP, achievements, daily streak UI
 * [x] Spend 1 point to add 5% XP reward bonus to future rewards
 * [x] Spend 10 points to buy 1 extra game attempt (total 5)
 
+### Subscription & Payments (Stripe)
+
+* [x] Configure Stripe API keys and Webhook secrets in environment files
+* [x] Install `stripe` package on backend and configure webhook route with signature verification
+* [x] Implement checkout session endpoint (`POST /api/v1/subscription/checkout`) for plan purchasing
+* [x] Implement webhook event listener for `checkout.session.completed` and `customer.subscription.deleted` to sync local state
+* [x] Implement fallback `GET /api/v1/subscription/verify-session` to manually sync session states
+* [x] Support `pending` and `paid` status handling for invoices
+* [x] Integrate automatic renewal toggle (cancellation & reactivation) and plan upgrades
+* [x] Update frontend subscription page to trigger checkout session redirection and verification
+
 ---
 
 ## Competitive Learning

@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { useDispatch } from "react-redux";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Check,
   CreditCard,
@@ -102,10 +102,12 @@ export default function PricingPage() {
   const [learnUnitName, setLearnUnitName] = useState("");
   const [checkoutStatus, setCheckoutStatus] = useState<"idle" | "processing" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
-  const [cardName, setCardName] = useState("");
-  const [cardNumber, setCardNumber] = useState("");
-  const [cardExpiry, setCardExpiry] = useState("");
-  const [cardCvc, setCardCvc] = useState("");
+  const searchParams = useSearchParams();
+  const sessionId = searchParams?.get("session_id");
+  const isCancelled = searchParams?.get("cancelled");
+
+  const [verifyingSession, setVerifyingSession] = useState(false);
+  const [verificationError, setVerificationError] = useState("");
   const [isPending, startTransition] = useTransition();
 
   // Custom limits for Learning Center plan
@@ -169,6 +171,56 @@ export default function PricingPage() {
     }
   }, [isAuthenticated]);
 
+  useEffect(() => {
+    if (sessionId && plans.length > 0) {
+      const verify = async () => {
+        setVerifyingSession(true);
+        setVerificationError("");
+        try {
+          await api.get(`/subscription/verify-session?sessionId=${sessionId}`);
+          
+          // Sync Redux profile credentials
+          const updatedProfile = await authService.getProfile();
+          const token = localStorage.getItem("token") || "";
+          localStorage.setItem("user", JSON.stringify(updatedProfile));
+          dispatch(setCredentials({ user: updatedProfile, token }));
+          dispatch(setPermissions(updatedProfile.permissions));
+
+          // Load updated billing info
+          const detailsRes = await api.get("/subscription/details");
+          setSubDetails(detailsRes.data);
+          
+          // Open success dialog/state
+          const activeSub = detailsRes.data.activeSubscription;
+          const matchedPlan = plans.find(p => p.id === activeSub?.plan_id);
+          setSelectedPlan(matchedPlan || null);
+          setCheckoutStatus("success");
+          setIsCheckoutOpen(true);
+          
+          // Clear query params
+          router.replace("/subscription");
+        } catch (err: any) {
+          console.error("Session verification failed:", err);
+          setVerificationError(err.response?.data?.error || "Failed to verify payment session.");
+        } finally {
+          setVerifyingSession(false);
+        }
+      };
+      
+      verify();
+    }
+  }, [sessionId, plans, isAuthenticated]);
+
+  useEffect(() => {
+    if (isCancelled === "true") {
+      setErrorMessage("Payment checkout was cancelled. You have not been charged.");
+      setIsCheckoutOpen(true);
+      setSelectedPlan(null);
+      setCheckoutStatus("error");
+      router.replace("/subscription");
+    }
+  }, [isCancelled]);
+
   const handleOpenCheckout = (plan: Plan) => {
     if (!isAuthenticated) {
       router.push(`/login?redirect=/subscription`);
@@ -176,10 +228,6 @@ export default function PricingPage() {
     }
     setSelectedPlan(plan);
     setCheckoutStatus("idle");
-    setCardName("");
-    setCardNumber("");
-    setCardExpiry("");
-    setCardCvc("");
     setLearnUnitName("");
     setErrorMessage("");
     // Reset limits for Learning Center when opening checkout
@@ -193,33 +241,41 @@ export default function PricingPage() {
     setIsCheckoutOpen(true);
   };
 
-  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, "");
-    if (value.length > 16) value = value.slice(0, 16);
-    const formatted = value.match(/.{1,4}/g)?.join(" ") || "";
-    setCardNumber(formatted);
-  };
+  const triggerStripeCheckout = async (plan: Plan, customParams: any = {}) => {
+    setCheckoutStatus("processing");
+    setErrorMessage("");
+    try {
+      const res = await api.post("/subscription/checkout", {
+        planId: plan.id,
+        billingCycle,
+        ...customParams
+      });
 
-  const handleExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, "");
-    if (value.length > 4) value = value.slice(0, 4);
-    if (value.length > 2) {
-      value = `${value.slice(0, 2)}/${value.slice(2)}`;
+      if (res.data.url) {
+        window.location.href = res.data.url;
+      } else {
+        throw new Error("Checkout URL not returned from server");
+      }
+    } catch (err: any) {
+      console.error("Payment checkout error:", err);
+      setCheckoutStatus("error");
+      setErrorMessage(err.response?.data?.error || t("checkout.fail"));
+      setSelectedPlan(plan);
+      setIsCheckoutOpen(true);
     }
-    setCardExpiry(value);
   };
 
-  const handleCvcChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, "").slice(0, 3);
-    setCardCvc(value);
-  };
-
-  const getCardType = () => {
-    const cleanNumber = cardNumber.replace(/\s/g, "");
-    if (cleanNumber.startsWith("4")) return "Visa";
-    if (/^5[1-5]/.test(cleanNumber)) return "Master";
-    if (cleanNumber.startsWith("3")) return "Amex";
-    return "Card";
+  const handlePlanAction = (plan: Plan) => {
+    if (!isAuthenticated) {
+      router.push(`/login?redirect=/subscription`);
+      return;
+    }
+    
+    if (plan.name === "pro") {
+      triggerStripeCheckout(plan);
+    } else {
+      handleOpenCheckout(plan);
+    }
   };
 
   const handleCheckoutSubmit = (e: React.FormEvent) => {
@@ -233,38 +289,13 @@ export default function PricingPage() {
       return;
     }
 
-    setCheckoutStatus("processing");
-    setErrorMessage("");
-
-    startTransition(async () => {
-      try {
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-        
-        await api.post("/subscription/checkout", {
-          planId: selectedPlan.id,
-          billingCycle,
-          learnUnitName: learnUnitName.trim() || undefined,
-          maxStudents: selectedPlan.name === "learning_center" ? lcStudents : undefined,
-          maxTeachers: selectedPlan.name === "learning_center" ? lcTeachers : undefined,
-          maxLessons: selectedPlan.name === "learning_center" ? lcLessons : undefined,
-          maxGrades: selectedPlan.name === "learning_center" ? lcGrades : undefined,
-          maxTemplates: selectedPlan.name === "learning_center" ? lcTemplates : undefined,
-        });
-
-        // Sync Redux profile credentials
-        const updatedProfile = await authService.getProfile();
-        const token = localStorage.getItem("token") || "";
-        localStorage.setItem("user", JSON.stringify(updatedProfile));
-        dispatch(setCredentials({ user: updatedProfile, token }));
-        dispatch(setPermissions(updatedProfile.permissions));
-
-        setCheckoutStatus("success");
-        loadSubDetails();
-      } catch (err: any) {
-        console.error("Payment checkout error:", err);
-        setCheckoutStatus("error");
-        setErrorMessage(err.response?.data?.error || t("checkout.fail"));
-      }
+    triggerStripeCheckout(selectedPlan, {
+      learnUnitName: learnUnitName.trim() || undefined,
+      maxStudents: selectedPlan.name === "learning_center" ? lcStudents : undefined,
+      maxTeachers: selectedPlan.name === "learning_center" ? lcTeachers : undefined,
+      maxLessons: selectedPlan.name === "learning_center" ? lcLessons : undefined,
+      maxGrades: selectedPlan.name === "learning_center" ? lcGrades : undefined,
+      maxTemplates: selectedPlan.name === "learning_center" ? lcTemplates : undefined,
     });
   };
 
@@ -294,6 +325,39 @@ export default function PricingPage() {
     if (name === "learning_center") return "learningCenter";
     return name; // "family" maps directly
   };
+
+  if (verifyingSession) {
+    return (
+      <div className="flex h-[80vh] flex-col items-center justify-center gap-3 text-sol-text">
+        <Loader2 className="animate-spin text-sol-accent animate-spin-slow" size={48} />
+        <h2 className="text-xl font-black">{locale === "vi" ? "Đang xác thực giao dịch..." : "Verifying payment session..."}</h2>
+        <p className="text-sm font-semibold text-sol-muted">{locale === "vi" ? "Vui lòng giữ nguyên màn hình, quá trình này có thể mất vài giây." : "Please do not close this window, this may take a few seconds."}</p>
+      </div>
+    );
+  }
+
+  if (verificationError) {
+    return (
+      <div className="flex h-[80vh] flex-col items-center justify-center gap-4 text-sol-text p-6 text-center max-w-md mx-auto">
+        <div className="rounded-full bg-red-500/10 p-4 text-red-500">
+          <AlertCircle size={48} />
+        </div>
+        <h2 className="text-2xl font-black">{locale === "vi" ? "Xác thực thất bại" : "Verification Failed"}</h2>
+        <p className="text-sm font-semibold text-red-500 bg-red-500/5 border border-red-500/20 rounded-2xl p-4 leading-relaxed">
+          {verificationError}
+        </p>
+        <button
+          onClick={() => {
+            setVerificationError("");
+            router.replace("/subscription");
+          }}
+          className="mt-4 rounded-2xl bg-sol-accent hover:cursor-pointer px-6 py-3 text-xs font-black uppercase tracking-wider text-sol-bg transition hover:opacity-90"
+        >
+          {locale === "vi" ? "Quay lại trang Thành viên" : "Back to Subscriptions"}
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="relative mx-auto max-w-7xl space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -598,7 +662,7 @@ export default function PricingPage() {
                     ) : (
                       <button
                         type="button"
-                        onClick={() => handleOpenCheckout(plan)}
+                        onClick={() => handlePlanAction(plan)}
                         className="mt-8 w-full rounded-2xl bg-sol-accent hover:cursor-pointer hover:opacity-95 text-sol-bg shadow-lg shadow-sol-accent/15 px-4 py-3.5 text-center text-xs font-black uppercase tracking-wider transition-all transform hover:scale-[1.01] active:scale-95"
                       >
                         {isPlanActive ? "Switch Cycle" : t("buttons.upgrade")}
@@ -931,108 +995,16 @@ export default function PricingPage() {
                   </div>
                 )}
 
-                {/* Stylized credit card template preview */}
-                <div className="relative w-full h-44 rounded-2xl bg-gradient-to-br from-sol-accent/90 via-sol-cyan to-sol-accent p-6 text-sol-bg shadow-lg mb-6 overflow-hidden flex flex-col justify-between">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl pointer-events-none" />
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-wider opacity-60">Anhoc Premium</p>
-                      <p className="text-xs font-bold mt-0.5 uppercase">
-                        {locale === "vi" ? selectedPlan.vi_name : selectedPlan.en_name}
-                      </p>
-                    </div>
-                    <div className="h-8 w-12 bg-white/10 rounded-md backdrop-blur border border-white/10 flex items-center justify-center font-bold text-xs">
-                      {getCardType()}
-                    </div>
-                  </div>
-
-                  <p className="text-lg font-black tracking-[0.15em] font-mono mt-4">
-                    {cardNumber || "•••• •••• •••• ••••"}
+                {/* Stripe redirection info */}
+                <div className="rounded-2xl border border-sol-border/20 bg-sol-surface/30 p-4 mb-6">
+                  <p className="text-xs font-semibold text-sol-muted leading-relaxed">
+                    {locale === "vi" 
+                      ? "Bạn sẽ được chuyển sang cổng thanh toán an toàn của Stripe để nhập thông tin thẻ tín dụng / thẻ ghi nợ." 
+                      : "You will be redirected to the secure Stripe checkout page to enter your credit or debit card details."}
                   </p>
-
-                  <div className="flex justify-between items-end">
-                    <div>
-                      <p className="text-[8px] font-black uppercase tracking-wider opacity-60">Card Holder</p>
-                      <p className="text-sm font-bold tracking-tight uppercase truncate max-w-[12rem]">
-                        {cardName || "Your Name"}
-                      </p>
-                    </div>
-                    <div className="flex gap-4">
-                      <div>
-                        <p className="text-[8px] font-black uppercase tracking-wider opacity-60">Expires</p>
-                        <p className="text-xs font-bold font-mono">
-                          {cardExpiry || "MM/YY"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-[8px] font-black uppercase tracking-wider opacity-60">CVC</p>
-                        <p className="text-xs font-bold font-mono">
-                          {cardCvc || "•••"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
                 </div>
 
-                {/* Checkout form fields */}
                 <form onSubmit={handleCheckoutSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-black uppercase tracking-wider text-sol-muted mb-1.5">{t("checkout.cardholder")}</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. ALAN TURING"
-                      value={cardName}
-                      onChange={(e) => setCardName(e.target.value)}
-                      disabled={checkoutStatus === "processing"}
-                      className="w-full rounded-xl border border-sol-border/30 bg-sol-bg/20 px-4 py-3 text-sm font-bold text-sol-text placeholder-sol-muted/50 focus:border-sol-accent focus:outline-none transition-colors"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-black uppercase tracking-wider text-sol-muted mb-1.5">{t("checkout.cardNumber")}</label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        required
-                        placeholder="4242 4242 4242 4242"
-                        value={cardNumber}
-                        onChange={handleCardNumberChange}
-                        disabled={checkoutStatus === "processing"}
-                        className="w-full rounded-xl border border-sol-border/30 bg-sol-bg/20 pl-11 pr-4 py-3 text-sm font-bold text-sol-text placeholder-sol-muted/50 focus:border-sol-accent focus:outline-none transition-colors font-mono"
-                      />
-                      <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 text-sol-muted/80" size={16} />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-black uppercase tracking-wider text-sol-muted mb-1.5">{t("checkout.expiry")}</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="MM/YY"
-                        value={cardExpiry}
-                        onChange={handleExpiryChange}
-                        disabled={checkoutStatus === "processing"}
-                        className="w-full rounded-xl border border-sol-border/30 bg-sol-bg/20 px-4 py-3 text-sm font-bold text-sol-text placeholder-sol-muted/50 focus:border-sol-accent focus:outline-none transition-colors font-mono"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-black uppercase tracking-wider text-sol-muted mb-1.5">{t("checkout.cvc")}</label>
-                      <input
-                        type="password"
-                        required
-                        placeholder="123"
-                        value={cardCvc}
-                        onChange={handleCvcChange}
-                        disabled={checkoutStatus === "processing"}
-                        className="w-full rounded-xl border border-sol-border/30 bg-sol-bg/20 px-4 py-3 text-sm font-bold text-sol-text placeholder-sol-muted/50 focus:border-sol-accent focus:outline-none transition-colors font-mono"
-                      />
-                    </div>
-                  </div>
-
                   {checkoutStatus === "error" && (
                     <div className="rounded-xl border border-sol-red/25 bg-sol-red/5 p-3 text-xs font-bold text-sol-red leading-relaxed">
                       {errorMessage}
@@ -1042,7 +1014,7 @@ export default function PricingPage() {
                   <button
                     type="submit"
                     disabled={checkoutStatus === "processing"}
-                    className="w-full mt-6 flex items-center justify-center gap-2 rounded-2xl bg-sol-accent hover:cursor-pointer hover:opacity-95 text-sol-bg py-4 text-sm font-black uppercase tracking-wider transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-sol-accent/15 animate-pulse-slow"
+                    className="w-full mt-6 flex items-center justify-center gap-2 rounded-2xl bg-sol-accent hover:cursor-pointer hover:opacity-95 text-sol-bg py-4 text-sm font-black uppercase tracking-wider transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-sol-accent/15"
                   >
                     {checkoutStatus === "processing" ? (
                       <>

@@ -29,6 +29,7 @@ model User {
   last_name     String?       @db.VarChar(100)
   login_id      String?       @db.VarChar(80)
   avatar_url    String?       @db.VarChar(255)
+  stripe_customer_id String?   @unique
   
   // Relations to content & tracking
   subjects_created  Subject[]           @relation("SubjectsCreated")
@@ -621,6 +622,7 @@ model SubscriptionPlan {
   end_date        DateTime? @db.Timestamptz
   auto_renew      Boolean   @default(true) // true = continuous payment, false = stop payment
   slots_purchased Int       @default(0)
+  stripe_subscription_id String? @unique
   
   // Customized limits captured at checkout
   max_students    Int?
@@ -649,7 +651,8 @@ model Invoice {
   subscription_plan_id String?           @db.Uuid
   amount               Decimal           @db.Decimal(10, 2)
   billing_date         DateTime          @default(now()) @db.Timestamptz
-  status               String            @default("paid") @db.VarChar(20) // "paid", "failed"
+  status               String            @default("paid") @db.VarChar(20) // "paid", "failed", "pending"
+  stripe_invoice_id    String?           @unique
   description          String?           @db.VarChar(255)
   created_at           DateTime          @default(now()) @db.Timestamptz
 

@@ -13,6 +13,7 @@ import notificationRoutes from './routes/notifications.ts';
 import supervisorRoutes from './routes/supervisor.ts';
 import subscriptionRoutes from './routes/subscription.ts';
 import studentEconomyRoutes from './routes/studentEconomy.ts';
+import webhookRoutes from './routes/webhook.ts';
 import { seedAchievements } from './services/achievementService.ts';
 import { seedStreakRewards } from './services/streakRewardSeeder.ts';
 import { scheduleInactiveAccountCleanup } from './services/accountLifecycleService.ts';
@@ -65,6 +66,9 @@ app.use(cors({
   },
   credentials: true,
 }));
+
+// Stripe webhook route needs raw body for signature verification
+app.use('/api/v1/webhook', express.raw({ type: 'application/json' }), webhookRoutes);
 
 // Apply body size limits (5mb for base64 uploads)
 app.use(express.json({ limit: '5mb' }));
