@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { useDispatch } from "react-redux";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -9,11 +9,16 @@ import {
   CreditCard,
   Sparkles,
   Lock,
+  Plus,
+  Minus,
   X,
   ShieldAlert,
   Loader2,
   Calendar,
   UserCheck,
+  RefreshCw,
+  Clock,
+  Infinity as InfinityIcon,
   AlertCircle
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -103,6 +108,8 @@ export default function PricingPage() {
 
   const [verifyingSession, setVerifyingSession] = useState(false);
   const [verificationError, setVerificationError] = useState("");
+  const [isPending, startTransition] = useTransition();
+
   // Custom limits for Learning Center plan
   const [lcStudents, setLcStudents] = useState(20);
   const [lcTeachers, setLcTeachers] = useState(5);
@@ -131,7 +138,7 @@ export default function PricingPage() {
   };
 
   // Load plans from backend
-  const loadPlans = useCallback(async () => {
+  const loadPlans = async () => {
     setLoadingPlans(true);
     try {
       const res = await api.get("/subscription/plans");
@@ -141,10 +148,10 @@ export default function PricingPage() {
     } finally {
       setLoadingPlans(false);
     }
-  }, []);
+  };
 
   // Load active subscription and invoices from backend
-  const loadSubDetails = useCallback(async () => {
+  const loadSubDetails = async () => {
     if (!isAuthenticated) return;
     setLoadingDetails(true);
     try {
@@ -155,14 +162,14 @@ export default function PricingPage() {
     } finally {
       setLoadingDetails(false);
     }
-  }, [isAuthenticated]);
+  };
 
   useEffect(() => {
     loadPlans();
     if (isAuthenticated) {
       loadSubDetails();
     }
-  }, [isAuthenticated, loadPlans, loadSubDetails]);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (sessionId && plans.length > 0) {
@@ -202,7 +209,7 @@ export default function PricingPage() {
       
       verify();
     }
-  }, [dispatch, isAuthenticated, plans, router, sessionId]);
+  }, [sessionId, plans, isAuthenticated]);
 
   useEffect(() => {
     if (isCancelled === "true") {
@@ -212,7 +219,7 @@ export default function PricingPage() {
       setCheckoutStatus("error");
       router.replace("/subscription");
     }
-  }, [isCancelled, router]);
+  }, [isCancelled]);
 
   const handleOpenCheckout = (plan: Plan) => {
     if (!isAuthenticated) {

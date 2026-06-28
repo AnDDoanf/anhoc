@@ -65,7 +65,7 @@ function SettingsPageContent() {
       updateUser(profile);
     }).catch(() => {})
       .finally(() => setLoading(false));
-  }, [updateUser]);
+  }, []);
 
   // Handle URL query feedback parameters
   useEffect(() => {

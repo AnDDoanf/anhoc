@@ -10,6 +10,7 @@ import Link from "next/link";
 import FilterBar from "@/components/ui/FilterBar";
 import Hero from "@/components/ui/Hero";
 import MetricCard from "@/components/ui/MetricCard";
+import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 type ReportStatus = "all" | "open" | "reviewing" | "resolved" | "dismissed";

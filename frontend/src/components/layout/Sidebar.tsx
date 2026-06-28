@@ -5,6 +5,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Flag,
+  PencilLine,
   Database,
   LayoutDashboard,
   Trophy,
@@ -129,7 +130,7 @@ export default function Sidebar() {
       {isMobile && hasAdminAccess && (
         <button
           onClick={() => setIsMobileOpen(!isMobileOpen)}
-          className={`fixed top-5.5 right-5 z-[60] w-10 h-10 bg-sol-surface/80 backdrop-blur-md rounded-full flex items-center justify-center text-sol-text active:scale-95 transition-all duration-300
+          className={`fixed top-4 right-4 z-[60] w-10 h-10 bg-sol-surface/80 backdrop-blur-md rounded-full flex items-center justify-center text-sol-text active:scale-95 transition-all duration-300
             ${isVisible || isMobileOpen ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none"}
           `}
         >

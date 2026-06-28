@@ -1,9 +1,11 @@
 "use client";
 
 import ProtectedRoute from "@/components/guard/ProtectedRoute";
+import PillBadge from "@/components/ui/PillBadge";
 import { adminService } from "@/services/adminService";
 import {
   Check,
+  Infinity as InfinityIcon,
   Loader2,
   RefreshCw,
   Sparkles,
@@ -24,6 +26,7 @@ import {
   Mail,
   Key,
   User,
+  ArrowRight,
 } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 import { useCallback, useEffect, useState, useTransition } from "react";
@@ -54,6 +57,13 @@ type SupervisorMembersResponse = {
   learnUnit: LearnUnitSummary | null;
   members: ManagedMember[];
 };
+
+type ApiError = {
+  response?: { data?: { error?: string } };
+};
+
+const getErrorMessage = (err: unknown, fallback: string) =>
+  (err as ApiError)?.response?.data?.error || fallback;
 
 interface Plan {
   id: number;
@@ -120,7 +130,7 @@ export default function AdminSubscriptionPage() {
   const [cardNumber, setCardNumber] = useState("");
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardCvc, setCardCvc] = useState("");
-  const [, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
 
   // Supervisor member management states
   const [learnUnit, setLearnUnit] = useState<LearnUnitSummary | null>(null);
@@ -343,6 +353,15 @@ export default function AdminSubscriptionPage() {
       setActiveOperationId(null);
     }
   };
+
+  const legendItems = [
+    { key: "subjects" as const },
+    { key: "grades" as const },
+    { key: "lessons" as const },
+    { key: "templates" as const },
+    { key: "teachers" as const },
+    { key: "students" as const },
+  ];
 
   {
     const lu = user?.learn_unit || learnUnit;
