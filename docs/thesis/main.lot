@@ -2,10 +2,11 @@
 \addvspace {10\p@ }
 \addvspace {10\p@ }
 \contentsline {table}{\numberline {3.1}{\ignorespaces Core functional requirements}}{8}{table.3.1}%
-\contentsline {table}{\numberline {3.10}{Main persistent entities}}{18}{table.3.10}%
-\contentsline {table}{\numberline {3.11}{\ignorespaces Main API groups}}{24}{table.3.11}%
+\contentsline {table}{\numberline {3.10}{Main persistent entities}}{24}{table.3.10}%
+\contentsline {table}{\numberline {3.27}{Complete Database Schema --- Table Summary (38 tables)}}{39}{table.3.27}%
+\contentsline {table}{\numberline {3.28}{\ignorespaces Main API groups}}{46}{table.3.28}%
 \addvspace {10\p@ }
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {A.1}{\ignorespaces Representative environment variables}}{32}{table.5.1}%
-\contentsline {table}{\numberline {A.2}{\ignorespaces Example endpoints from the implemented API}}{33}{table.5.2}%
+\contentsline {table}{\numberline {A.1}{\ignorespaces Representative environment variables}}{55}{table.5.1}%
+\contentsline {table}{\numberline {A.2}{\ignorespaces Example endpoints from the implemented API}}{56}{table.5.2}%
 \contentsfinish 

@@ -1,0 +1,930 @@
+% -------------------------------------------------------
+% Entity-Relationship Diagrams (all TikZ, no colors, no titles inside figures)
+% -------------------------------------------------------
+
+\subsection{Entity-Relationship Diagrams}
+
+The following diagrams use a simplified ERD notation. Each entity is a rectangle with its name in the header row and its key attributes listed below. Lines between entities carry crow's foot cardinality markers: \textbf{||} for exactly one, \textbf{o|} for zero-or-one, \textbf{o\{} for zero-or-many, \textbf{|\{} for one-or-many. Primary keys are marked \textbf{PK}; foreign keys are marked \textbf{FK}.
+
+\tikzset{
+  erdtable/.style={
+    draw, rectangle split, rectangle split parts=#1,
+    rectangle split part fill={black!15, white, black!3, white, black!3, white, black!3, white, black!3, white, black!3, white, black!3, white, black!3, white, black!3, white, black!3, white, black!3, white, black!3, white},
+    rounded corners=3pt, align=left, font=\ttfamily\scriptsize,
+    inner sep=4pt, minimum width=3.4cm, text width=3.4cm,
+    line width=0.6pt
+  },
+  oneone/.style={thick, {Bar[width=4pt] Bar[width=4pt]}-{Bar[width=4pt] Bar[width=4pt]}},
+  onemany/.style={thick, {Bar[width=4pt] Bar[width=4pt]}-{Latex[length=4pt]}},
+  zeromany/.style={thick, {Circle[open,length=3pt]}-{Latex[length=4pt]}},
+  zeroone/.style={thick, {Circle[open,length=3pt]}-{Bar[width=4pt] Bar[width=4pt]}}
+}
+
+% ------------------------------------------
+\subsubsection{ERD Group 1 --- User and Authentication}
+% ------------------------------------------
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{
+\begin{tikzpicture}[font=\scriptsize, node distance=1.5cm, >=latex]
+
+  % ---- users ----
+  \node[erdtable=11] (users) at (0,0) {
+    \textbf{users}
+    \nodepart{two} id : UUID (PK)
+    \nodepart{three} username : VARCHAR(50) (UK)
+    \nodepart{four} email : VARCHAR(255) (UK)
+    \nodepart{five} password\_hash
+    \nodepart{six} account\_status
+    \nodepart{seven} role\_id : INT (FK)
+    \nodepart{eight} learn\_unit\_id (FK, null)
+    \nodepart{nine} stripe\_customer\_id (null)
+    \nodepart{ten} active\_session\_id (null)
+    \nodepart{eleven} created\_at
+  };
+
+  % ---- user_securities ----
+  \node[erdtable=7] (user_securities) at (5.8,3.0) {
+    \textbf{user\_securities}
+    \nodepart{two} user\_id (PK, FK)
+    \nodepart{three} email\_verify\_token (null)
+    \nodepart{four} email\_verified\_at (null)
+    \nodepart{five} failed\_attempts
+    \nodepart{six} lockout\_until (null)
+    \nodepart{seven} password\_reset\_token
+  };
+
+  % ---- refresh_tokens ----
+  \node[erdtable=6] (refresh_tokens) at (11.6,0) {
+    \textbf{refresh\_tokens}
+    \nodepart{two} id : UUID (PK)
+    \nodepart{three} token (UNIQUE)
+    \nodepart{four} user\_id (FK)
+    \nodepart{five} expires\_at
+    \nodepart{six} revoked\_at (null)
+  };
+
+  % ---- oauth_accounts ----
+  \node[erdtable=5] (oauth_accounts) at (5.8,-3.0) {
+    \textbf{oauth\_accounts}
+    \nodepart{two} id : UUID (PK)
+    \nodepart{three} user\_id (FK)
+    \nodepart{four} provider
+    \nodepart{five} provider\_user\_id
+  };
+
+  % ---- roles ----
+  \node[erdtable=3] (roles) at (0,-5.5) {
+    \textbf{roles}
+    \nodepart{two} id : INT (PK)
+    \nodepart{three} name (UNIQUE)
+  };
+
+  % ---- role_permissions ----
+  \node[erdtable=5] (role_permissions) at (0,-9.0) {
+    \textbf{role\_permissions}
+    \nodepart{two} id : INT (PK)
+    \nodepart{three} role\_id (FK)
+    \nodepart{four} action\_id (FK)
+    \nodepart{five} resource\_id (FK)
+  };
+
+  % ---- actions ----
+  \node[erdtable=3] (actions) at (5.8,-9.0) {
+    \textbf{actions}
+    \nodepart{two} id : INT (PK)
+    \nodepart{three} name (UNIQUE)
+  };
+
+  % ---- resources ----
+  \node[erdtable=3] (resources) at (11.6,-9.0) {
+    \textbf{resources}
+    \nodepart{two} id : INT (PK)
+    \nodepart{three} name (UNIQUE)
+  };
+
+  % ---- learn_units ----
+  \node[erdtable=11] (learn_units) at (0, 7.5) {
+    \textbf{learn\_units}
+    \nodepart{two} id : UUID (PK)
+    \nodepart{three} name
+    \nodepart{four} code (UNIQUE)
+    \nodepart{five} supervisor\_id (FK, null)
+    \nodepart{six} max\_subjects (null)
+    \nodepart{seven} max\_grades (null)
+    \nodepart{eight} max\_lessons (null)
+    \nodepart{nine} max\_teachers (null)
+    \nodepart{ten} max\_students (null)
+    \nodepart{eleven} created\_at
+  };
+
+  % Relationships
+  \draw[oneone] (users.east) -- ++(0.5,0) |- (user_securities.west);
+  \draw[onemany] (users.east) -- (refresh_tokens.west);
+  \draw[onemany] (users.east) -- ++(0.5,0) |- (oauth_accounts.west);
+  \draw[onemany] (roles.north) -- (users.south);
+  \draw[onemany] (roles.south) -- (role_permissions.north);
+  \draw[onemany] (actions.west) -- (role_permissions.east);
+  \draw[onemany] (resources.south) -- ++(0,-0.5) -| (role_permissions.south);
+  \draw[zeroone] (users.north) -- (learn_units.south);
+
+\end{tikzpicture}
+}
+\caption{ERD Group 1 --- User \& Authentication tables}
+\label{fig:erd-auth}
+\end{figure}
+
+This group contains the core identity and access control entities. Every other table in the schema references \texttt{users} as its ultimate root.
+
+\paragraph{Table: \texttt{users}}
+The central entity of the entire platform. Each row represents one registered account.
+
+\begin{longtable}{|p{4.2cm}|p{3cm}|p{6.8cm}|}
+\hline \textbf{Column} & \textbf{Type} & \textbf{Description} \\ \hline
+id & UUID (PK) & Auto-generated primary key using \texttt{gen\_random\_uuid()}. \\ \hline
+username & VARCHAR(50) & Unique display name chosen at registration. \\ \hline
+email & VARCHAR(255) & Unique email address; used for login and notifications. \\ \hline
+password\_hash & TEXT & bcrypt hash of the user's password. Never stored in plaintext. \\ \hline
+account\_status & VARCHAR(20) & Lifecycle state: \texttt{active}, \texttt{pending}, \texttt{suspended}, or \texttt{deleted}. \\ \hline
+role\_id & INT (FK) & References \texttt{roles.id}; determines permissions via RBAC. \\ \hline
+learn\_unit\_id & UUID (FK, null) & References \texttt{learn\_units.id}; set for group-plan members. \\ \hline
+stripe\_customer\_id & TEXT (unique, null) & Stripe customer identifier; set on first checkout. \\ \hline
+active\_session\_id & TEXT (null) & UUID of the current valid session; rotated on every login for single-session enforcement. \\ \hline
+avatar\_url & VARCHAR(255) & URL of the active equipped avatar image. \\ \hline
+first\_name, last\_name & VARCHAR(100) & Optional display name components. \\ \hline
+created\_at & TIMESTAMPTZ & Account creation timestamp. \\ \hline
+\end{longtable}
+
+\paragraph{Table: \texttt{user\_securities}}
+One-to-one extension of \texttt{users} holding all sensitive security metadata. Separated from the main users table to avoid loading security data on every profile read.
+
+\begin{longtable}{|p{4.5cm}|p{3cm}|p{6cm}|}
+\hline \textbf{Column} & \textbf{Type} & \textbf{Description} \\ \hline
+user\_id & UUID (PK/FK) & References \texttt{users.id} with CASCADE delete. \\ \hline
+email\_verification\_token & VARCHAR(255) & Time-limited signed token sent in the activation email. \\ \hline
+email\_verified\_at & TIMESTAMPTZ & Timestamp of successful email verification; null if unverified. \\ \hline
+failed\_login\_attempts & INT & Counter reset to zero on successful login. \\ \hline
+lockout\_until & TIMESTAMPTZ & If set, login is blocked until this timestamp (account lockout). \\ \hline
+password\_reset\_token & VARCHAR(255) & Signed reset token; cleared after use or expiry. \\ \hline
+password\_reset\_sent\_at & TIMESTAMPTZ & Throttle timestamp to prevent reset email flooding. \\ \hline
+\end{longtable}
+
+\paragraph{Table: \texttt{refresh\_tokens}}
+Stores active refresh tokens issued during login. A user may have multiple rows (e.g.\ across devices), but single-session enforcement via \texttt{active\_session\_id} invalidates all but the latest.
+
+\begin{longtable}{|p{4.2cm}|p{3cm}|p{6.8cm}|}
+\hline \textbf{Column} & \textbf{Type} & \textbf{Description} \\ \hline
+id & UUID (PK) & Row identifier. \\ \hline
+token & TEXT (UNIQUE) & The opaque refresh token string stored in the \texttt{HttpOnly} cookie. \\ \hline
+user\_id & UUID (FK) & Owner of this token. CASCADE deleted with the user. \\ \hline
+expires\_at & TIMESTAMPTZ & Hard expiry; token is rejected after this even if not revoked. \\ \hline
+revoked\_at & TIMESTAMPTZ (null) & Set when the token is explicitly invalidated (logout or rotation). \\ \hline
+\end{longtable}
+
+\paragraph{Table: \texttt{oauth\_accounts}}
+Stores OAuth2 identity links for social login providers (Google, etc.). One user may link multiple providers.
+
+\begin{longtable}{|p{4.2cm}|p{3cm}|p{6.8cm}|}
+\hline \textbf{Column} & \textbf{Type} & \textbf{Description} \\ \hline
+id & UUID (PK) & Row identifier. \\ \hline
+user\_id & UUID (FK) & References \texttt{users.id}. \\ \hline
+provider & VARCHAR(50) & Provider name, e.g.\ \texttt{google}, \texttt{facebook}. \\ \hline
+provider\_user\_id & VARCHAR(255) & The unique user ID within the external provider's system. \\ \hline
+\end{longtable}
+
+\paragraph{Table: \texttt{roles} and \texttt{role\_permissions}}
+Implement the Role-Based Access Control (RBAC) model. Each role has a set of \texttt{(action, resource)} permission pairs. Middleware checks these at runtime for every protected route.
+
+% ------------------------------------------
+\subsubsection{ERD Group 2 --- Curriculum and Content}
+% ------------------------------------------
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{
+\begin{tikzpicture}[font=\scriptsize, node distance=1.5cm, >=latex]
+
+  % ---- subjects ----
+  \node[erdtable=6] (subjects) at (0,0) {
+    \textbf{subjects}
+    \nodepart{two} id : INT (PK)
+    \nodepart{three} slug (UNIQUE)
+    \nodepart{four} title\_en / title\_vi
+    \nodepart{five} is\_classified : BOOL
+    \nodepart{six} created\_by (FK, null)
+  };
+
+  % ---- grades ----
+  \node[erdtable=5] (grades) at (5.8,0) {
+    \textbf{grades}
+    \nodepart{two} id : INT (PK)
+    \nodepart{three} slug (UNIQUE)
+    \nodepart{four} title\_en / title\_vi
+    \nodepart{five} subject\_id (FK)
+  };
+
+  % ---- lessons ----
+  \node[erdtable=8] (lessons) at (11.6,0) {
+    \textbf{lessons}
+    \nodepart{two} id : UUID (PK)
+    \nodepart{three} grade\_id (FK)
+    \nodepart{four} subject\_id (FK)
+    \nodepart{five} title\_en / title\_vi
+    \nodepart{six} content\_markdown\_en / vi
+    \nodepart{seven} order\_index
+    \nodepart{eight} is\_premium : BOOL
+  };
+
+  % ---- question_templates ----
+  \node[erdtable=8] (question_templates) at (11.6,-5.5) {
+    \textbf{question\_templates}
+    \nodepart{two} id : UUID (PK)
+    \nodepart{three} lesson\_id (FK, null)
+    \nodepart{four} template\_type
+    \nodepart{five} difficulty
+    \nodepart{six} body\_template\_en / vi
+    \nodepart{seven} logic\_config : JSON
+    \nodepart{eight} accepted\_formulas
+  };
+
+  % ---- user_subject_access_requests ----
+  \node[erdtable=6] (user_subject_access_requests) at (0,-5.5) {
+    \textbf{user\_subject\_access\_requests}
+    \nodepart{two} id : INT (PK)
+    \nodepart{three} user\_id (FK)
+    \nodepart{four} subject\_id (FK)
+    \nodepart{five} status
+    \nodepart{six} requested\_at
+  };
+
+  % ---- role_subject_permissions ----
+  \node[erdtable=4] (role_subject_permissions) at (5.8,-5.5) {
+    \textbf{role\_subject\_permissions}
+    \nodepart{two} id : INT (PK)
+    \nodepart{three} role\_id (FK)
+    \nodepart{four} subject\_id (FK)
+  };
+
+  % ---- user_learning_profiles ----
+  \node[erdtable=3] (user_learning_profiles) at (0,-9.0) {
+    \textbf{user\_learning\_profiles}
+    \nodepart{two} id : UUID (PK)
+    \nodepart{three} user\_id (FK)
+  };
+
+  % ---- users (stub) ----
+  \node[erdtable=2] (users) at (5.8,-9.0) {
+    \textbf{users}
+    \nodepart{two} id : UUID (PK)
+  };
+
+  % ---- roles (stub) ----
+  \node[erdtable=2] (roles) at (11.6,-9.0) {
+    \textbf{roles}
+    \nodepart{two} id : INT (PK)
+  };
+
+  % Relationships
+  \draw[onemany] (subjects.east) -- (grades.west);
+  \draw[onemany] (grades.east) -- (lessons.west);
+  \draw[onemany] (subjects.north) -- ++(0, 1.0) -| (lessons.north);
+  \draw[onemany] (lessons.south) -- (question_templates.north);
+  \draw[onemany] (subjects.south) -- (user_subject_access_requests.north);
+  \draw[onemany] (users.north) -- (user_subject_access_requests.east);
+  \draw[onemany] (users.west) -- ++(-0.5,0) |- (subjects.west);
+  \draw[onemany] (users.east) -- ++(0.5,0) |- (grades.east);
+  \draw[onemany] (users.east) -- ++(1.0,0) |- (lessons.east);
+  \draw[onemany] (users.east) -- ++(0.5,0) |- (question_templates.west);
+  \draw[onemany] (roles.north) -- (role_subject_permissions.south);
+  \draw[onemany] (subjects.south) -- ++(0,-0.5) -| (role_subject_permissions.north);
+  \draw[oneone] (users.west) -- (user_learning_profiles.east);
+  \draw[onemany] (subjects.west) -- ++(-0.5,0) |- (user_learning_profiles.west);
+
+\end{tikzpicture}
+}
+\caption{ERD Group 2 --- Curriculum \& Content tables}
+\label{fig:erd-curriculum}
+\end{figure}
+
+This group models the three-level curriculum hierarchy: Subject → Grade → Lesson → Question Template.
+
+\paragraph{Table: \texttt{subjects}}
+Top-level subject classification (e.g.\ Mathematics, Physics).
+
+\begin{longtable}{|p{4.2cm}|p{3cm}|p{6.8cm}|}
+\hline \textbf{Column} & \textbf{Type} & \textbf{Description} \\ \hline
+id & INT (PK) & Auto-increment integer key. \\ \hline
+slug & VARCHAR(50) & Unique display name chosen at registration. \\ \hline
+title\_en / title\_vi & VARCHAR(100) & Bilingual display names. \\ \hline
+is\_classified & BOOLEAN & If true, access requires an approved \texttt{user\_subject\_access\_request}. \\ \hline
+color & VARCHAR(20) & Hex colour for UI theming of this subject. \\ \hline
+created\_by & UUID (FK, null) & Administrator who created the subject. \\ \hline
+\end{longtable}
+
+\paragraph{Table: \texttt{grades}}
+Represents a school year/grade within a subject (e.g.\ ``Grade 6 Mathematics'').
+
+\begin{longtable}{|p{4.2cm}|p{3cm}|p{6.8cm}|}
+\hline \textbf{Column} & \textbf{Type} & \textbf{Description} \\ \hline
+id & INT (PK) & Auto-increment key. \\ \hline
+slug & VARCHAR(50) & URL-safe grade identifier, e.g.\ \texttt{grade-6}. \\ \hline
+subject\_id & INT (FK, null) & Parent subject. \\ \hline
+title\_en / title\_vi & VARCHAR(100) & Bilingual grade titles. \\ \hline
+\end{longtable}
+
+\paragraph{Table: \texttt{lessons}}
+The core content entity. Each lesson belongs to one grade and one subject, and contains full bilingual theory text in Markdown format.
+
+\begin{longtable}{|p{4.2cm}|p{3cm}|p{6.8cm}|}
+\hline \textbf{Column} & \textbf{Type} & \textbf{Description} \\ \hline
+id & UUID (PK) & Row identifier. \\ \hline
+grade\_id & INT (FK) & Parent grade. \\ \hline
+subject\_id & INT (FK) & Parent subject (denormalised for fast filtering). \\ \hline
+title\_en / title\_vi & VARCHAR(255) & Bilingual lesson titles, displayed on the roadmap. \\ \hline
+content\_markdown\_en / vi & TEXT & Full theory content in Markdown with embedded KaTeX. \\ \hline
+order\_index & INT (null) & Display ordering within the grade roadmap. \\ \hline
+is\_premium & BOOLEAN & If true, only subscribers can view the full content. \\ \hline
+updated\_at & TIMESTAMPTZ & Last content update; used to invalidate Redis caches. \\ \hline
+\end{longtable}
+
+\paragraph{Table: \texttt{question\_templates}}
+Parameterised question blueprints. At practice time, numeric parameters are instantiated from the \texttt{logic\_config} ranges and the ground-truth answer is computed by SymPy from \texttt{accepted\_formulas}.
+
+\begin{longtable}{|p{4.2cm}|p{3cm}|p{6.8cm}|}
+\hline \textbf{Column} & \textbf{Type} & \textbf{Description} \\ \hline
+id & UUID (PK) & Row identifier. \\ \hline
+lesson\_id & UUID (FK, null) & Associated lesson; null for topic-level free questions. \\ \hline
+template\_type & VARCHAR(50) & Category, e.g.\ \texttt{multiple\_choice}, \texttt{open\_input}. \\ \hline
+difficulty & VARCHAR(20) & One of: \texttt{easy}, \texttt{medium}, \texttt{hard}. \\ \hline
+body\_template\_en / vi & TEXT & Question text with \texttt{\{\{a\}\}}, \texttt{\{\{b\}\}} parameter placeholders. \\ \hline
+logic\_config & JSON & Parameter ranges and types, e.g.\ \texttt{\{"a": [2,20], "b": [1,9]\}}. \\ \hline
+accepted\_formulas & TEXT[] & SymPy expression strings to compute the correct answer. \\ \hline
+tags & TEXT[] & Topic tags for filtering and adaptive selection. \\ \hline
+\end{longtable}
+
+\paragraph{Table: \texttt{user\_subject\_access\_requests}}
+Students request access to classified subjects. Administrators approve or reject via the admin panel.
+
+% ------------------------------------------
+\subsubsection{ERD Group 3 --- Practice, Tests and Progress}
+% ------------------------------------------
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{
+\begin{tikzpicture}[font=\scriptsize, node distance=1.5cm, >=latex]
+
+  % ---- users ----
+  \node[erdtable=2] (users) at (0, 6.0) {
+    \textbf{users}
+    \nodepart{two} id : UUID (PK)
+  };
+
+  % ---- learning_sessions ----
+  \node[erdtable=6] (learning_sessions) at (5.0, 6.0) {
+    \textbf{learning\_sessions}
+    \nodepart{two} id : UUID (PK)
+    \nodepart{three} user\_id : UUID (FK)
+    \nodepart{four} lesson\_id : UUID (FK)
+    \nodepart{five} started\_at
+    \nodepart{six} ended\_at
+  };
+
+  % ---- lessons ----
+  \node[erdtable=2] (lessons) at (10.0, 6.0) {
+    \textbf{lessons}
+    \nodepart{two} id : UUID (PK)
+  };
+
+  % ---- user_lesson_mastery ----
+  \node[erdtable=7] (user_lesson_mastery) at (0, 0) {
+    \textbf{user\_lesson\_mastery}
+    \nodepart{two} user\_id : UUID (PK, FK)
+    \nodepart{three} lesson\_id : UUID (PK, FK)
+    \nodepart{four} mastery\_score : DECIMAL
+    \nodepart{five} total\_study\_time : INT
+    \nodepart{six} total\_test\_time : INT
+    \nodepart{seven} completion\_status
+  };
+
+  % ---- test_attempts ----
+  \node[erdtable=9] (test_attempts) at (5.0, 0) {
+    \textbf{test\_attempts}
+    \nodepart{two} id : UUID (PK)
+    \nodepart{three} user\_id : UUID (FK, null)
+    \nodepart{four} lesson\_id : UUID (FK, null)
+    \nodepart{five} total\_score : DECIMAL
+    \nodepart{six} is\_practice : BOOL
+    \nodepart{seven} is\_completed : BOOL
+    \nodepart{eight} started\_at
+    \nodepart{nine} completed\_at
+  };
+
+  % ---- question_templates ----
+  \node[erdtable=2] (question_templates) at (10.0, 0) {
+    \textbf{question\_templates}
+    \nodepart{two} id : UUID (PK)
+  };
+
+  % ---- activity_evidence ----
+  \node[erdtable=7] (activity_evidence) at (0, -7.0) {
+    \textbf{activity\_evidence}
+    \nodepart{two} id : UUID (PK)
+    \nodepart{three} user\_id : UUID (FK)
+    \nodepart{four} attempt\_id : UUID (FK)
+    \nodepart{five} snapshot\_id : UUID (FK)
+    \nodepart{six} image\_url
+    \nodepart{seven} caption
+  };
+
+  % ---- question_snapshots ----
+  \node[erdtable=9] (question_snapshots) at (5.0, -7.0) {
+    \textbf{question\_snapshots}
+    \nodepart{two} id : UUID (PK)
+    \nodepart{three} attempt\_id : UUID (FK)
+    \nodepart{four} template\_id : UUID (FK, null)
+    \nodepart{five} generated\_variables : JSON
+    \nodepart{six} student\_answer
+    \nodepart{seven} right\_answers : Array
+    \nodepart{eight} is\_correct : BOOL
+    \nodepart{nine} points\_earned
+  };
+
+  % ---- question_template_reports ----
+  \node[erdtable=10] (question_template_reports) at (10.0, -7.0) {
+    \textbf{question\_template\_reports}
+    \nodepart{two} id : UUID (PK)
+    \nodepart{three} template\_id : UUID (FK)
+    \nodepart{four} snapshot\_id : UUID (FK, null)
+    \nodepart{five} attempt\_id : UUID (FK, null)
+    \nodepart{six} lesson\_id : UUID (FK, null)
+    \nodepart{seven} reporter\_id : UUID (FK, null)
+    \nodepart{eight} reason
+    \nodepart{nine} status
+    \nodepart{ten} created\_at
+  };
+
+  % Relationships
+  \draw[onemany] (users.east) -- (learning_sessions.west);
+  \draw[onemany] (lessons.west) -- (learning_sessions.east);
+  \draw[onemany] (users.south) -- ++(0,-0.5) -| (test_attempts.north);
+  \draw[onemany] (lessons.south) -- ++(0,-0.5) -| (test_attempts.north);
+  \draw[onemany] (test_attempts.south) -- (question_snapshots.north);
+  \draw[onemany] (question_templates.south) -- (question_snapshots.north);
+  \draw[onemany] (users.south) -- (user_lesson_mastery.north);
+  \draw[onemany] (lessons.south) -- ++(0,-1.0) -| (user_lesson_mastery.east);
+  \draw[onemany] (users.west) -- ++(-1.0,0) |- (activity_evidence.west);
+  \draw[onemany] (test_attempts.west) -- ++(-0.5, -0.5) |- (activity_evidence.east);
+  \draw[onemany] (question_snapshots.west) -- (activity_evidence.east);
+  \draw[onemany] (question_templates.south) -- (question_template_reports.north);
+  \draw[onemany] (question_snapshots.east) -- (question_template_reports.west);
+  \draw[onemany] (test_attempts.east) -- ++(0.5, -0.5) |- (question_template_reports.west);
+  \draw[onemany] (lessons.east) -- ++(1.0, 0) |- (question_template_reports.east);
+  \draw[onemany] (users.east) -- ++(2.0, 0) |- (question_template_reports.north);
+
+\end{tikzpicture}
+}
+\caption{ERD Group 3 --- Practice, Tests \& Progress tables}
+\label{fig:erd-practice}
+\end{figure}
+
+This group maintains records of active studies, completed lessons, test score achievements, and audit logs.
+
+\paragraph{Table: \texttt{test\_attempts}}
+Records every practice session or grade test attempt. The \texttt{is\_practice} flag distinguishes practice runs from formal tests.
+
+\begin{longtable}{|p{4.2cm}|p{3cm}|p{6.8cm}|}
+\hline \textbf{Column} & \textbf{Type} & \textbf{Description} \\ \hline
+id & UUID (PK) & Attempt identifier. \\ \hline
+user\_id & UUID (FK, null) & Null for anonymous guest game attempts. \\ \hline
+lesson\_id & UUID (FK, null) & Lesson context; null for grade-level tests. \\ \hline
+total\_score & DECIMAL(5,2) & Percentage score, computed on completion. \\ \hline
+is\_practice & BOOLEAN & True for lesson practice; false for grade tests. \\ \hline
+is\_completed & BOOLEAN & Set to true when the student submits or the timer expires. \\ \hline
+started\_at & TIMESTAMPTZ & Session start time (used for speed calculation). \\ \hline
+completed\_at & TIMESTAMPTZ & Session end time. Duration = \texttt{completed\_at - started\_at}. \\ \hline
+\end{longtable}
+
+\paragraph{Table: \texttt{question\_snapshots}}
+One row per question per attempt. Captures the instantiated parameter values, the student's answer, and the ground-truth answers at the time of the attempt (immutable record for audit purposes).
+
+\begin{longtable}{|p{4.2cm}|p{3cm}|p{6.8cm}|}
+\hline \textbf{Column} & \textbf{Type} & \textbf{Description} \\ \hline
+id & UUID (PK) & Snapshot identifier. \\ \hline
+attempt\_id & UUID (FK, null) & Parent attempt. CASCADE deleted. \\ \hline
+template\_id & UUID (FK, null) & Source template (SET NULL on template deletion for history). \\ \hline
+generated\_variables & JSON & E.g.\ \texttt{\{"a": 7, "b": 3\}} --- the random values used for this instance. \\ \hline
+student\_answer & TEXT (null) & The answer submitted by the student. \\ \hline
+right\_answers & TEXT[] & Array of accepted correct answer strings at generation time. \\ \hline
+is\_correct & BOOLEAN & Whether \texttt{student\_answer} matches any element of \texttt{right\_answers}. \\ \hline
+points\_earned & INT & Points scored (0 or configured per-template value). \\ \hline
+\end{longtable}
+
+\paragraph{Table: \texttt{user\_lesson\_mastery}}
+Composite-primary-key junction tracking each student's cumulative performance per lesson. Updated atomically on every attempt completion.
+
+\begin{longtable}{|p{4.2cm}|p{3cm}|p{6.8cm}|}
+\hline \textbf{Column} & \textbf{Type} & \textbf{Description} \\ \hline
+user\_id & UUID (PK/FK) & Composite PK component. References \texttt{users.id}. \\ \hline
+lesson\_id & UUID (PK/FK) & Composite PK component. References \texttt{lessons.id}. \\ \hline
+mastery\_score & DECIMAL(5,2) & Rolling weighted-average performance score (0--100). \\ \hline
+total\_study\_time & INT & Cumulative seconds spent on the lesson's reading sessions. \\ \hline
+total\_test\_time & INT & Cumulative seconds spent on this lesson's practice attempts. \\ \hline
+completion\_status & VARCHAR & One of: \texttt{not\_started}, \texttt{in\_progress}, \texttt{completed}. Drives the roadmap badge. \\ \hline
+\end{longtable}
+
+\paragraph{Table: \texttt{learning\_sessions} and \texttt{question\_template\_reports}}
+\texttt{learning\_sessions} stores each discrete reading duration to measure study metrics. \texttt{question\_template\_reports} lets students flag issues with question accuracy, linking templates, snapshots, and logs for review.
+
+% ------------------------------------------
+\subsubsection{ERD Group 4 --- Gamification and Economy}
+% ------------------------------------------
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{
+\begin{tikzpicture}[font=\scriptsize, node distance=1.5cm, >=latex]
+
+  % ---- student_stats ----
+  \node[erdtable=11] (student_stats) at (0,0) {
+    \textbf{student\_stats}
+    \nodepart{two} user\_id : UUID (PK, FK)
+    \nodepart{three} total\_xp : INT
+    \nodepart{four} level : INT
+    \nodepart{five} average\_score : DECIMAL
+    \nodepart{six} lives : INT
+    \nodepart{seven} last\_life\_restored
+    \nodepart{eight} coins : INT
+    \nodepart{nine} level\_points : INT
+    \nodepart{ten} inventory : JSON
+    \nodepart{eleven} equipped\_items : JSON
+  };
+
+  % ---- xp_logs ----
+  \node[erdtable=5] (xp_logs) at (5.8,0) {
+    \textbf{xp\_logs}
+    \nodepart{two} user\_id : UUID (FK)
+    \nodepart{three} amount : INT
+    \nodepart{four} reason
+    \nodepart{five} occurred\_at
+  };
+
+  % ---- achievements ----
+  \node[erdtable=6] (achievements) at (11.6,0) {
+    \textbf{achievements}
+    \nodepart{two} id : UUID (PK)
+    \nodepart{three} slug (UNIQUE)
+    \nodepart{four} title\_en / title\_vi
+    \nodepart{five} category
+    \nodepart{six} xp\_reward
+  };
+
+  % ---- user_achievements ----
+  \node[erdtable=3] (user_achievements) at (11.6,-5.5) {
+    \textbf{user\_achievements}
+    \nodepart{two} user\_id (PK, FK)
+    \nodepart{three} achievement\_id (PK, FK)
+  };
+
+  % ---- themes ----
+  \node[erdtable=9] (themes) at (11.6,4.0) {
+    \textbf{themes}
+    \nodepart{two} id : UUID (PK)
+    \nodepart{three} code (UNIQUE)
+    \nodepart{four} name\_en / name\_vi
+    \nodepart{five} border\_color
+    \nodepart{six} is\_premium : BOOL
+    \nodepart{seven} price : INT
+    \nodepart{eight} level\_required : INT
+    \nodepart{nine} created\_at
+  };
+
+  % ---- user_streaks ----
+  \node[erdtable=11] (user_streaks) at (0,-7.0) {
+    \textbf{user\_streaks}
+    \nodepart{two} id : UUID (PK)
+    \nodepart{three} user\_id : UUID (FK, UNIQUE)
+    \nodepart{four} current\_streak : INT
+    \nodepart{five} longest\_streak : INT
+    \nodepart{six} last\_active\_date
+    \nodepart{seven} missed\_days
+    \nodepart{eight} freeze\_count : INT
+    \nodepart{nine} last\_freeze\_used
+    \nodepart{ten} total\_freezes\_used
+    \nodepart{eleven} streak\_freeze\_active
+  };
+
+  % ---- streak_rewards ----
+  \node[erdtable=6] (streak_rewards) at (5.8,-7.0) {
+    \textbf{streak\_rewards}
+    \nodepart{two} id : UUID (PK)
+    \nodepart{three} name
+    \nodepart{four} reward\_type
+    \nodepart{five} required\_days : INT
+    \nodepart{six} reward\_payload : JSON
+  };
+
+  % ---- user_streak_reward_claims ----
+  \node[erdtable=5] (user_streak_reward_claims) at (5.8,-11.5) {
+    \textbf{user\_streak\_reward\_claims}
+    \nodepart{two} id : UUID (PK)
+    \nodepart{three} user\_id : UUID (FK)
+    \nodepart{four} streak\_reward\_id (FK)
+    \nodepart{five} claimed\_at
+  };
+
+  % ---- user_daily_quests ----
+  \node[erdtable=7] (user_daily_quests) at (0,-11.5) {
+    \textbf{user\_daily\_quests}
+    \nodepart{two} id : UUID (PK)
+    \nodepart{three} user\_id : UUID (FK)
+    \nodepart{four} quest\_type
+    \nodepart{five} target\_count : INT
+    \nodepart{six} current\_count : INT
+    \nodepart{seven} is\_completed : BOOL
+  };
+
+  % ---- user_follows ----
+  \node[erdtable=3] (user_follows) at (0,5.5) {
+    \textbf{user\_follows}
+    \nodepart{two} follower\_id (PK, FK)
+    \nodepart{three} following\_id (PK, FK)
+  };
+
+  % ---- users (stub) ----
+  \node[erdtable=2] (users) at (5.8,4.0) {
+    \textbf{users}
+    \nodepart{two} id : UUID (PK)
+  };
+
+  % Relationships
+  \draw[oneone] (users.west) -- ++(-0.5,0) |- (student_stats.east);
+  \draw[onemany] (users.south) -- (xp_logs.north);
+  \draw[onemany] (themes.south) -- (achievements.north);
+  \draw[onemany] (users.east) -- ++(0.5,0) |- (user_achievements.west);
+  \draw[onemany] (achievements.south) -- (user_achievements.north);
+  \draw[oneone] (users.west) -- ++(-1.0,0) |- (user_streaks.west);
+  \draw[onemany] (users.east) -- ++(1.0,0) |- (user_streak_reward_claims.east);
+  \draw[onemany] (streak_rewards.south) -- (user_streak_reward_claims.north);
+  \draw[onemany] (users.west) -- ++(-1.5,0) |- (user_daily_quests.west);
+  \draw[onemany] (users.west) -- ++(-0.5,0) |- (user_follows.south);
+  \draw[onemany] (users.north) -- ++(0,0.5) -| (user_follows.east);
+
+\end{tikzpicture}
+}
+\caption{ERD Group 4 --- Gamification \& Economy tables}
+\label{fig:erd-gamification}
+\end{figure}
+
+This group maintains points, levels, items, streak configurations, daily quest targets, and earned achievements.
+
+\paragraph{Table: \texttt{student\_stats}}
+One-to-one extension of \texttt{users} holding the student's entire gamification state. Kept separate from \texttt{users} to avoid locking the user row on every XP award transaction.
+
+\begin{longtable}{|p{4.5cm}|p{3cm}|p{6cm}|}
+\hline \textbf{Column} & \textbf{Type} & \textbf{Description} \\ \hline
+user\_id & UUID (PK/FK) & One-to-one with \texttt{users}. \\ \hline
+total\_xp & INT & Cumulative experience points earned. \\ \hline
+level & INT & Current level, derived from \texttt{total\_xp} against the levelling formula. \\ \hline
+average\_score & DECIMAL(5,2) & Rolling average across all practice attempts. \\ \hline
+lives & INT & Current number of lives (1 consumed per practice attempt). \\ \hline
+last\_life\_restored\_at & TIMESTAMPTZ & Timestamp of last hourly life restore; drives the restore scheduler. \\ \hline
+coins & INT & Current Ancoin balance. \\ \hline
+level\_points & INT & Unspent attribute points earned on level-up. \\ \hline
+inventory & JSON & Map of owned shop item holdings. \\ \hline
+equipped\_items & JSON & Map of currently active cosmetic items. \\ \hline
+upgrades & JSON & Map of purchased permanent upgrades. \\ \hline
+\end{longtable}
+
+\paragraph{Table: \texttt{xp\_logs}}
+Immutable append-only log of every XP award event. Used for the XP history view and for audit purposes.
+
+\begin{longtable}{|p{4.2cm}|p{3cm}|p{6.8cm}|}
+\hline \textbf{Column} & \textbf{Type} & \textbf{Description} \\ \hline
+user\_id & UUID (FK) & The student who received the XP. \\ \hline
+amount & INT & XP delta awarded. \\ \hline
+reason & VARCHAR(100) & Human-readable label (e.g. \texttt{practice\_complete}). \\ \hline
+occurred\_at & TIMESTAMPTZ & Timestamp of award event. \\ \hline
+\end{longtable}
+
+\paragraph{Table: \texttt{user\_streaks}, \texttt{achievements}, \texttt{themes}, \texttt{user\_daily\_quests}}
+Tracks continuous engagement records, custom variable sets for light/dark CSS styles, badges catalogued by milestones, and recurring daily quest logs designed to reward incremental student learning.
+
+% ------------------------------------------
+\subsubsection{ERD Group 5 --- Subscriptions, Gaming and Notifications}
+% ------------------------------------------
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{
+\begin{tikzpicture}[font=\scriptsize, node distance=1.5cm, >=latex]
+
+  % ---- plans ----
+  \node[erdtable=7] (plans) at (0,0) {
+    \textbf{plans}
+    \nodepart{two} id : INT (PK)
+    \nodepart{three} name
+    \nodepart{four} price\_monthly : DECIMAL
+    \nodepart{five} price\_annually : DECIMAL
+    \nodepart{six} effect\_from
+    \nodepart{seven} effect\_to
+  };
+
+  % ---- subscription_plans ----
+  \node[erdtable=8] (subscription_plans) at (5.8,0) {
+    \textbf{subscription\_plans}
+    \nodepart{two} id : UUID (PK)
+    \nodepart{three} user\_id : UUID (FK)
+    \nodepart{four} plan\_id : INT (FK)
+    \nodepart{five} status
+    \nodepart{six} billing\_cycle
+    \nodepart{seven} stripe\_subscription\_id
+    \nodepart{eight} end\_date
+  };
+
+  % ---- invoices ----
+  \node[erdtable=7] (invoices) at (11.6,0) {
+    \textbf{invoices}
+    \nodepart{two} id : UUID (PK)
+    \nodepart{three} user\_id : UUID (FK)
+    \nodepart{four} subscription\_plan\_id (FK)
+    \nodepart{five} amount : DECIMAL
+    \nodepart{six} billing\_date
+    \nodepart{seven} status
+  };
+
+  % ---- game_challenges ----
+  \node[erdtable=8] (game_challenges) at (0,-9.0) {
+    \textbf{game\_challenges}
+    \nodepart{two} id : UUID (PK)
+    \nodepart{three} code (UNIQUE)
+    \nodepart{four} game\_type
+    \nodepart{five} grade\_id (FK, null)
+    \nodepart{six} lesson\_id (FK, null)
+    \nodepart{seven} created\_by : UUID (FK)
+    \nodepart{eight} config : JSON
+  };
+
+  % ---- game_attempts ----
+  \node[erdtable=6] (game_attempts) at (5.8,-9.0) {
+    \textbf{game\_attempts}
+    \nodepart{two} id : UUID (PK)
+    \nodepart{three} challenge\_id (FK)
+    \nodepart{four} user\_id : UUID (FK, null)
+    \nodepart{five} score : INT
+    \nodepart{six} time\_spent : INT
+  };
+
+  % ---- notifications ----
+  \node[erdtable=7] (notifications) at (11.6,-9.0) {
+    \textbf{notifications}
+    \nodepart{two} id : UUID (PK)
+    \nodepart{three} recipient\_id : UUID (FK)
+    \nodepart{four} actor\_id (FK, null)
+    \nodepart{five} type
+    \nodepart{six} payload : JSON
+    \nodepart{seven} read\_at
+  };
+
+  % ---- audit_logs ----
+  \node[erdtable=5] (audit_logs) at (11.6,-5.0) {
+    \textbf{audit\_logs}
+    \nodepart{two} id : UUID (PK)
+    \nodepart{three} user\_id : UUID (FK, null)
+    \nodepart{four} action
+    \nodepart{five} performed\_at
+  };
+
+  % ---- users (stub) ----
+  \node[erdtable=2] (users) at (5.8,6.0) {
+    \textbf{users}
+    \nodepart{two} id : UUID (PK)
+  };
+
+  % ---- grades (stub) ----
+  \node[erdtable=2] (grades) at (0,-5.0) {
+    \textbf{grades}
+    \nodepart{two} id : INT (PK)
+  };
+
+  % ---- lessons (stub) ----
+  \node[erdtable=2] (lessons) at (5.8,-5.0) {
+    \textbf{lessons}
+    \nodepart{two} id : UUID (PK)
+  };
+
+  % Relationships
+  \draw[onemany] (users.south) -- (subscription_plans.north);
+  \draw[onemany] (plans.east) -- (subscription_plans.west);
+  \draw[onemany] (users.east) -- ++(0.5,0) |- (invoices.west);
+  \draw[onemany] (subscription_plans.east) -- (invoices.west);
+  \draw[onemany] (users.west) -- ++(-1.0,0) |- (game_challenges.west);
+  \draw[onemany] (grades.south) -- (game_challenges.north);
+  \draw[onemany] (lessons.south) -- (game_challenges.north);
+  \draw[onemany] (game_challenges.east) -- (game_attempts.west);
+  \draw[onemany] (users.south) -- ++(0,-0.5) -| (game_attempts.north);
+  \draw[onemany] (users.east) -- ++(1.0,0) |- (notifications.north);
+  \draw[onemany] (users.east) -- ++(1.5,0) |- (notifications.east);
+  \draw[onemany] (users.east) -- ++(0.5,0) |- (audit_logs.west);
+
+\end{tikzpicture}
+}
+\caption{ERD Group 5 --- Subscriptions, Gaming and Notifications}
+\label{fig:erd-subscription}
+\end{figure}
+
+This group governs subscription limits, Stripe transactions, challenges/attempts in multiplayer gaming, and system-wide notifications.
+
+\paragraph{Table: \texttt{plans}}
+Master catalogue of subscription plans (e.g.\ Free, Pro, Family). Stores base pricing in both monthly and annual cycles, plus per-unit pricing multipliers for flexible enterprise pricing.
+
+\begin{longtable}{|p{4.5cm}|p{3cm}|p{6cm}|}
+\hline \textbf{Column} & \textbf{Type} & \textbf{Description} \\ \hline
+id & INT (PK) & Auto-increment plan identifier. \\ \hline
+name & VARCHAR(50) & Internal slug: \texttt{free}, \texttt{pro}, \texttt{family}, \texttt{learning\_center}. \\ \hline
+vi\_name / en\_name & VARCHAR(100) & Bilingual marketing display names. \\ \hline
+price\_monthly / annually & DECIMAL(10,2) & Base price per billing cycle. \\ \hline
+max\_students / teachers / lessons & INT (null) & Feature usage caps; null means unlimited. \\ \hline
+effect\_from / effect\_to & TIMESTAMPTZ & Validity window enabling time-based pricing changes without deleting old plans. \\ \hline
+\end{longtable}
+
+\paragraph{Table: \texttt{subscription\_plans}}
+Each row is one active or historical subscription instance for a user. The \texttt{stripe\_subscription\_id} links to the Stripe subscription object for synchronisation via webhooks.
+
+\begin{longtable}{|p{4.5cm}|p{3cm}|p{6cm}|}
+\hline \textbf{Column} & \textbf{Type} & \textbf{Description} \\ \hline
+id & UUID (PK) & Subscription instance identifier. \\ \hline
+user\_id & UUID (FK) & Subscriber. \\ \hline
+plan\_id & INT (FK) & References \texttt{plans.id}. \\ \hline
+status & VARCHAR(20) & One of: \texttt{active}, \texttt{cancelled}, \texttt{expired}, \texttt{superseded}. \\ \hline
+billing\_cycle & VARCHAR(20) & \texttt{monthly} or \texttt{annually}. \\ \hline
+auto\_renew & BOOLEAN & Whether Stripe should attempt renewal at period end. \\ \hline
+stripe\_subscription\_id & TEXT (UNIQUE) & Stripe object ID, used for webhook upsert matching. \\ \hline
+max\_students / lessons / grades & INT (null) & Custom limits captured at checkout time for per-seat enterprise plans. \\ \hline
+\end{longtable}
+
+\paragraph{Table: \texttt{game\_challenges}}
+A competitive battle session created by a student. The \texttt{code} field is a short shareable room code. The \texttt{config} JSON stores the pre-generated question set for the challenge to ensure all participants answer the same questions.
+
+\begin{longtable}{|p{4.2cm}|p{3cm}|p{6.8cm}|}
+\hline \textbf{Column} & \textbf{Type} & \textbf{Description} \\ \hline
+id & UUID (PK) & Challenge identifier. \\ \hline
+code & VARCHAR(10) (UNIQUE) & Short room code shared with opponents. \\ \hline
+game\_type & VARCHAR(50) & Battle mode variant: \texttt{speed}, \texttt{climb}, \texttt{match}. \\ \hline
+grade\_id / lesson\_id & FK (null) & Scope of the challenge questions. \\ \hline
+created\_by & UUID (FK) & Creator; also the host. \\ \hline
+is\_active & BOOLEAN & Set to false when the challenge ends. \\ \hline
+config & JSON & Frozen question set for this challenge instance. \\ \hline
+\end{longtable}
+
+\paragraph{Table: \texttt{invoices}, \texttt{game\_attempts}, \texttt{notifications}, \texttt{audit\_logs}}
+Stores Stripe transactions, battle participation logs (including guests), polymorphic system-wide alerts, and immutable logs detailing sensitive admin actions or critical events.
+
+% ------------------------------------------
+\subsubsection{Schema Summary}
+% ------------------------------------------
+
+\begin{longtable}{|p{4.2cm}|p{3cm}|p{6.8cm}|}
+\caption{Complete Database Schema --- Table Summary (38 tables)}
+\label{table:schema_summary} \\
+\hline \textbf{Table} & \textbf{Group} & \textbf{Purpose} \\ \hline
+users & Auth & Core user account entity \\ \hline
+user\_securities & Auth & Security tokens, lockout state \\ \hline
+refresh\_tokens & Auth & JWT refresh token store \\ \hline
+oauth\_accounts & Auth & Social login provider links \\ \hline
+roles & Auth & RBAC role definitions \\ \hline
+actions / resources & Auth & RBAC action and resource catalogue \\ \hline
+role\_permissions & Auth & Role $\times$ Action $\times$ Resource permission matrix \\ \hline
+learn\_units & Auth & Group subscription unit (supervisor + members) \\ \hline
+subjects & Curriculum & Subject top-level catalogue \\ \hline
+grades & Curriculum & Grade/year level within a subject \\ \hline
+lessons & Curriculum & Theory content pages with bilingual Markdown \\ \hline
+question\_templates & Curriculum & Parameterised question blueprints \\ \hline
+user\_subject\_access\_requests & Curriculum & Access approval workflow for classified subjects \\ \hline
+role\_subject\_permissions & Curriculum & Subject-level permission overrides per role \\ \hline
+user\_learning\_profiles & Curriculum & Preferred subject stored per student \\ \hline
+test\_attempts & Practice & Practice or test session record \\ \hline
+question\_snapshots & Practice & Per-question instantiated attempt record \\ \hline
+user\_lesson\_mastery & Practice & Cumulative per-lesson performance state \\ \hline
+learning\_sessions & Practice & Reading session time log \\ \hline
+activity\_evidence & Practice & Uploaded evidence images per attempt \\ \hline
+question\_template\_reports & Practice & Student-flagged question error reports \\ \hline
+student\_stats & Gamification & XP, level, lives, coins, inventory, upgrades \\ \hline
+xp\_logs & Gamification & Immutable XP event ledger \\ \hline
+achievements & Gamification & Achievement definition catalogue \\ \hline
+user\_achievements & Gamification & Student $\times$ Achievement unlock junction \\ \hline
+themes & Gamification & CSS variable theme definitions \\ \hline
+user\_streaks & Gamification & Per-student streak state \\ \hline
+streak\_rewards & Gamification & Admin-configured milestone reward definitions \\ \hline
+user\_streak\_reward\_claims & Gamification & Anti-double-claim claim ledger \\ \hline
+user\_daily\_quests & Gamification & Daily generated quests per student \\ \hline
+user\_follows & Social & Student follow relationships \\ \hline
+notifications & System & Polymorphic notification store \\ \hline
+audit\_logs & System & Append-only system event log \\ \hline
+plans & Subscription & Subscription plan catalogue \\ \hline
+subscription\_plans & Subscription & Per-user subscription instances \\ \hline
+invoices & Subscription & Billing event records \\ \hline
+game\_challenges & Gaming & Battle session definitions \\ \hline
+game\_attempts & Gaming & Per-player battle participation records \\ \hline
+\end{longtable}

@@ -133,3 +133,11 @@ The repository defines environment variables for both frontend and backend execu
 \end{itemize}
 
 The backend startup process explicitly checks the achievement seeding flag before inserting seed data. This is a sound operational choice because it prevents accidental reseeding in every environment.
+
+To support standard containerised hosting on services like Render, the backend includes a custom \texttt{Dockerfile} built on the lightweight \texttt{node:22-alpine} base image. The configuration installs runtime dependencies such as \texttt{openssl} (required for the Prisma Client runtime) and \texttt{curl}. A container health check is declared natively using a Node.js fetch script targeting the backend health endpoint (\code{/api/v1/health}) on the configured port.
+
+A key operational challenge resolved in the deployment configuration involves build-time database constraints. During the Docker compilation phase on Render, the \code{DATABASE\_URL} environment variable is not injected (as it is scoped strictly to the application's runtime phase). The compiler initially failed when executing \code{npx prisma generate} because the local ORM configuration (\code{prisma.config.ts}) tried to resolve this variable dynamically using Prisma's \code{env()} configuration helper, which enforces lookup checks during build time. This constraint was resolved by refactoring the configuration file to reference the standard Node.js \code{process.env.DATABASE\_URL} lookup directly. This adjustment allows the client generation script to execute successfully during image compilation, decoupling the database connectivity verification from the build phase.
+
+\subsection{User Interface Presentation}
+
+The frontend interface features a responsive layout designed for both desktop side navigation and mobile layout constraints. For small screen widths, a floating navigation bar (\code{BottomNav.tsx}) provides touch-friendly route switching between student dashboard, roadmap, practice sessions, chatbot tutor, and settings. To enhance visual separation and ensure the bottom navigation stands out over the dynamic scrolling content, the element implements absolute layout positioning with a top border class (\code{border-t-2}) and dynamic slide-in entry animation.

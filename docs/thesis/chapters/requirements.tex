@@ -55,12 +55,12 @@ Figure \ref{fig:use-case-diagram} summarizes the main interactions between the i
   \node[systembox, fit=(uc1) (uc2) (uc3) (uc4) (uc5) (uc6) (uc7) (uc8), inner xsep=1.4cm, inner ysep=1.2cm] (system) {};
   \node[anchor=north west] at ($(system.north west)+(0.2,-0.2)$) {\textbf{Anhoc Platform}};
 
-  \node[actor] (guest) at (0,13.2) {Guest};
-  \node[actor] (free) at (0,10.9) {Free\\Student};
-  \node[actor] (sub) at (0,8.6) {Subscribed\\Student};
-  \node[actor] (teacher) at (13.6,10.9) {Teacher};
-  \node[actor] (supervisor) at (13.6,8.6) {Supervisor};
-  \node[actor] (admin) at (13.6,6.3) {Administrator};
+  \drawstickman{guest}{(0,13.2)}{Guest}
+  \drawstickman{free}{(0,10.9)}{Free\\Student}
+  \drawstickman{sub}{(0,8.6)}{Subscribed\\Student}
+  \drawstickman{teacher}{(13.6,10.9)}{Teacher}
+  \drawstickman{supervisor}{(13.6,8.6)}{Supervisor}
+  \drawstickman{admin}{(13.6,6.3)}{Administrator}
 
   \draw (guest.east) -- (uc1.west);
   \draw (free.east) -- (uc1.west);
@@ -87,6 +87,8 @@ Figure \ref{fig:use-case-diagram} summarizes the main interactions between the i
 \caption{Use case diagram of the Anhoc platform}
 \label{fig:use-case-diagram}
 \end{figure}
+
+\input{chapters/use_case_diagrams.tex}
 
 \subsection{Use Case Descriptions}
 

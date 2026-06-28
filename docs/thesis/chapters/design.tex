@@ -9,30 +9,30 @@ Anhoc uses a three-tier web architecture. A Next.js frontend built on React prov
 \resizebox{0.92\textwidth}{!}{
 \begin{tikzpicture}[font=\small, >=Latex]
   \tikzstyle{archlayer}=[draw, rounded corners, minimum width=14.8cm, minimum height=2.1cm, align=center]
-  \tikzstyle{archnode}=[draw, rounded corners, minimum width=2.7cm, minimum height=0.95cm, align=center, fill=blue!5]
-  \tikzstyle{archservice}=[draw, rounded corners, minimum width=2.5cm, minimum height=0.9cm, align=center, fill=green!5]
-  \tikzstyle{archdata}=[draw, cylinder, shape border rotate=90, aspect=0.28, minimum height=1.6cm, minimum width=2.3cm, align=center, fill=orange!8]
+  \tikzstyle{archnode}=[draw, rounded corners, minimum width=2.7cm, minimum height=0.95cm, align=center]
+  \tikzstyle{archservice}=[draw, rounded corners, minimum width=2.5cm, minimum height=0.9cm, align=center]
+  \tikzstyle{archdata}=[draw, cylinder, shape border rotate=90, aspect=0.28, minimum height=1.6cm, minimum width=2.3cm, align=center]
 
-  \node[archlayer, fill=blue!2] (client) at (0,0) {};
+  \node[archlayer] (client) at (0,0) {};
   \node[anchor=west, font=\bfseries] at ($(client.north west)+(0.25,-0.3)$) {Presentation Layer};
   \node[archnode] (browser) at (-4.2,-0.15) {Web Browser};
   \node[archnode] (frontend) at (0,-0.15) {Next.js Frontend};
   \node[archnode] (intl) at (4.2,-0.15) {Redux +\\next-intl};
 
-  \node[archlayer, fill=green!2] (app) at (0,-3.0) {};
+  \node[archlayer] (app) at (0,-3.0) {};
   \node[anchor=west, font=\bfseries] at ($(app.north west)+(0.25,-0.3)$) {Application Layer};
   \node[archnode] (api) at (-4.2,-3.15) {Express API};
   \node[archnode] (routes) at (0,-3.15) {Route Modules\\auth, lessons, tests, admin};
   \node[archnode] (middleware) at (4.2,-3.15) {JWT + RBAC\\Middleware};
 
-  \node[archlayer, fill=yellow!2] (service) at (0,-6.0) {};
+  \node[archlayer] (service) at (0,-6.0) {};
   \node[anchor=west, font=\bfseries] at ($(service.north west)+(0.25,-0.3)$) {Domain Service Layer};
   \node[archservice] (content) at (-4.8,-6.15) {Content\\Services};
   \node[archservice] (practice) at (-1.6,-6.15) {Practice/Test\\Services};
   \node[archservice] (progress) at (1.6,-6.15) {Progression\\Services};
   \node[archservice] (identity) at (4.8,-6.15) {Identity and\\Notification Services};
 
-  \node[archlayer, fill=orange!2, minimum height=2.5cm] (data) at (0,-9.25) {};
+  \node[archlayer, minimum height=2.5cm] (data) at (0,-9.25) {};
   \node[anchor=west, font=\bfseries] at ($(data.north west)+(0.25,-0.3)$) {Data and Infrastructure Layer};
   \node[archnode] (prisma) at (-4.2,-9.55) {Prisma ORM};
   \node[archdata] (postgres) at (0,-9.55) {PostgreSQL};
@@ -146,6 +146,8 @@ The database schema in \code{backend/prisma/schema.prisma} defines the education
 \code{audit\_logs}, \code{activity\_evidence} & Supports traceability and evidence collection. \\
 \bottomrule
 \end{longtable}
+
+\input{chapters/erd_diagrams.tex}
 
 \subsection{Question Snapshot Strategy}
 

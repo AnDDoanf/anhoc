@@ -2,23 +2,34 @@
 \addvspace {10\p@ }
 \addvspace {10\p@ }
 \contentsline {figure}{\numberline {3.1}{\ignorespaces Use case diagram of the Anhoc platform}}{9}{figure.3.1}%
-\contentsline {figure}{\numberline {3.2}{\ignorespaces Architecture design of the Anhoc platform}}{16}{figure.3.2}%
-\contentsline {figure}{\numberline {3.3}{\ignorespaces Sequence diagram for registration or login}}{20}{figure.3.3}%
-\contentsline {figure}{\numberline {3.4}{\ignorespaces Sequence diagram for studying a lesson}}{20}{figure.3.4}%
-\contentsline {figure}{\numberline {3.5}{\ignorespaces Sequence diagram for completing lesson practice}}{21}{figure.3.5}%
-\contentsline {figure}{\numberline {3.6}{\ignorespaces Sequence diagram for taking a grade-level test}}{21}{figure.3.6}%
-\contentsline {figure}{\numberline {3.7}{\ignorespaces Sequence diagram for viewing progress and achievements}}{22}{figure.3.7}%
-\contentsline {figure}{\numberline {3.8}{\ignorespaces Sequence diagram for managing content and question templates}}{22}{figure.3.8}%
-\contentsline {figure}{\numberline {3.9}{\ignorespaces Sequence diagram for managing learning unit members and seats}}{23}{figure.3.9}%
-\contentsline {figure}{\numberline {3.10}{\ignorespaces Sequence diagram for managing roles, access control, and dashboard data}}{23}{figure.3.10}%
+\contentsline {figure}{\numberline {3.2}{\ignorespaces Use case diagram --- Authentication and Account Management}}{10}{figure.3.2}%
+\contentsline {figure}{\numberline {3.3}{\ignorespaces Use case diagram --- Learning System}}{11}{figure.3.3}%
+\contentsline {figure}{\numberline {3.4}{\ignorespaces Use case diagram --- Practice and Assessment Engine}}{12}{figure.3.4}%
+\contentsline {figure}{\numberline {3.5}{\ignorespaces Use case diagram --- AI Math Tutor Chatbot}}{13}{figure.3.5}%
+\contentsline {figure}{\numberline {3.6}{\ignorespaces Use case diagram --- Gamification and Economy}}{14}{figure.3.6}%
+\contentsline {figure}{\numberline {3.7}{\ignorespaces Use case diagram --- Subscription and Payments}}{15}{figure.3.7}%
+\contentsline {figure}{\numberline {3.8}{\ignorespaces Architecture design of the Anhoc platform}}{22}{figure.3.8}%
+\contentsline {figure}{\numberline {3.9}{\ignorespaces ERD Group 1 --- User \& Authentication tables}}{26}{figure.3.9}%
+\contentsline {figure}{\numberline {3.10}{\ignorespaces ERD Group 2 --- Curriculum \& Content tables}}{29}{figure.3.10}%
+\contentsline {figure}{\numberline {3.11}{\ignorespaces ERD Group 3 --- Practice, Tests \& Progress tables}}{32}{figure.3.11}%
+\contentsline {figure}{\numberline {3.12}{\ignorespaces ERD Group 4 --- Gamification \& Economy tables}}{35}{figure.3.12}%
+\contentsline {figure}{\numberline {3.13}{\ignorespaces ERD Group 5 --- Subscriptions, Gaming and Notifications}}{37}{figure.3.13}%
+\contentsline {figure}{\numberline {3.14}{\ignorespaces Sequence diagram for registration or login}}{42}{figure.3.14}%
+\contentsline {figure}{\numberline {3.15}{\ignorespaces Sequence diagram for studying a lesson}}{42}{figure.3.15}%
+\contentsline {figure}{\numberline {3.16}{\ignorespaces Sequence diagram for completing lesson practice}}{43}{figure.3.16}%
+\contentsline {figure}{\numberline {3.17}{\ignorespaces Sequence diagram for taking a grade-level test}}{43}{figure.3.17}%
+\contentsline {figure}{\numberline {3.18}{\ignorespaces Sequence diagram for viewing progress and achievements}}{44}{figure.3.18}%
+\contentsline {figure}{\numberline {3.19}{\ignorespaces Sequence diagram for managing content and question templates}}{44}{figure.3.19}%
+\contentsline {figure}{\numberline {3.20}{\ignorespaces Sequence diagram for managing learning unit members and seats}}{45}{figure.3.20}%
+\contentsline {figure}{\numberline {3.21}{\ignorespaces Sequence diagram for managing roles, access control, and dashboard data}}{45}{figure.3.21}%
 \addvspace {10\p@ }
 \addvspace {10\p@ }
-\contentsline {figure}{\numberline {A.1}{\ignorespaces Student dashboard displaying experience points, active level, and unlocked achievements.}}{33}{figure.5.1}%
-\contentsline {figure}{\numberline {A.2}{\ignorespaces Grade-level learning pathway showing available lessons and bilingual subject content.}}{34}{figure.5.2}%
-\contentsline {figure}{\numberline {A.3}{\ignorespaces Interactive practice interface featuring a dynamically generated mathematics question and live evaluation feedback.}}{34}{figure.5.3}%
-\contentsline {figure}{\numberline {A.4}{\ignorespaces Achievements gallery displaying seeded badges and their associated experience point rewards.}}{35}{figure.5.4}%
-\contentsline {figure}{\numberline {A.5}{\ignorespaces Tutoring chatbot widget answering student queries with step-by-step mathematical reasoning.}}{35}{figure.5.5}%
-\contentsline {figure}{\numberline {A.6}{\ignorespaces Administrative overview panel showing system stats, active users, and lesson metrics.}}{36}{figure.5.6}%
-\contentsline {figure}{\numberline {A.7}{\ignorespaces Admin user management dashboard showing all registered users and their system roles.}}{36}{figure.5.7}%
-\contentsline {figure}{\numberline {A.8}{\ignorespaces Access control settings panel for configuring user seats and editing role-based permission profiles.}}{37}{figure.5.8}%
+\contentsline {figure}{\numberline {A.1}{\ignorespaces Student dashboard displaying experience points, active level, and unlocked achievements.}}{56}{figure.5.1}%
+\contentsline {figure}{\numberline {A.2}{\ignorespaces Grade-level learning pathway showing available lessons and bilingual subject content.}}{57}{figure.5.2}%
+\contentsline {figure}{\numberline {A.3}{\ignorespaces Interactive practice interface featuring a dynamically generated mathematics question and live evaluation feedback.}}{57}{figure.5.3}%
+\contentsline {figure}{\numberline {A.4}{\ignorespaces Achievements gallery displaying seeded badges and their associated experience point rewards.}}{58}{figure.5.4}%
+\contentsline {figure}{\numberline {A.5}{\ignorespaces Tutoring chatbot widget answering student queries with step-by-step mathematical reasoning.}}{58}{figure.5.5}%
+\contentsline {figure}{\numberline {A.6}{\ignorespaces Administrative overview panel showing system stats, active users, and lesson metrics.}}{59}{figure.5.6}%
+\contentsline {figure}{\numberline {A.7}{\ignorespaces Admin user management dashboard showing all registered users and their system roles.}}{59}{figure.5.7}%
+\contentsline {figure}{\numberline {A.8}{\ignorespaces Access control settings panel for configuring user seats and editing role-based permission profiles.}}{60}{figure.5.8}%
 \contentsfinish 

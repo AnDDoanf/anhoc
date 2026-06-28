@@ -18,7 +18,7 @@
 \usepackage{titletoc}
 \usepackage{fancyhdr}
 \usepackage{tikz}
-\usetikzlibrary{arrows.meta,calc,fit,positioning,shapes.geometric}
+\usetikzlibrary{arrows.meta,calc,fit,positioning,shapes.geometric,shapes.multipart}
 
 % Update these fields before formal submission.
 \newcommand{\thesistype}{Bachelor Thesis}
@@ -61,16 +61,26 @@
 }
 
 \tikzset{
-  actor/.style={draw, rounded corners, align=center, minimum width=2.2cm, minimum height=0.9cm, fill=blue!5},
-  usecase/.style={draw, ellipse, align=center, minimum width=3.4cm, minimum height=1.1cm, fill=green!5},
+  actor/.style={draw, rounded corners, align=center, minimum width=2.2cm, minimum height=0.9cm},
+  usecase/.style={draw, ellipse, align=center, minimum width=3.4cm, minimum height=1.1cm},
   systembox/.style={draw, rounded corners, inner sep=12pt},
-  lifelinehead/.style={draw, rounded corners, align=center, minimum width=2.2cm, minimum height=0.9cm, fill=black!5},
+  lifelinehead/.style={draw, rounded corners, align=center, minimum width=2.2cm, minimum height=0.9cm},
   seqmsg/.style={-{Latex[length=2.2mm]}, thick},
   seqreturn/.style={-{Latex[length=2.2mm]}, dashed}
 }
 
 \newcommand{\seqstep}[5]{%
   \draw[#1] ($(#2.center)+(0,#4)$) -- node[above, fill=white, inner sep=1pt] {#5} ($(#3.center)+(0,#4)$);%
+}
+
+\newcommand{\drawstickman}[3]{%
+  \node[coordinate] (#1) at #2 {};
+  \draw[thick] ($(#1)+(0,0.5)$) circle (0.18); % Head
+  \draw[thick] ($(#1)+(0,0.32)$) -- ($(#1)+(0,-0.2)$); % Torso
+  \draw[thick] ($(#1)+(-0.25,0.15)$) -- ($(#1)+(0.25,0.15)$); % Arms
+  \draw[thick] ($(#1)+(0,-0.2)$) -- ($(#1)+(-0.2,-0.65)$); % Left Leg
+  \draw[thick] ($(#1)+(0,-0.2)$) -- ($(#1)+(0.2,-0.65)$); % Right Leg
+  \node[align=center, font=\small, below=1.15cm of #1] (#1-label) {#3};
 }
 
 % Header and Footer configuration

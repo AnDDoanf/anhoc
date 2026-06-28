@@ -1,0 +1,335 @@
+% -------------------------------------------------------
+% Use Case Diagrams (all TikZ, no external images)
+% -------------------------------------------------------
+
+\subsection{Detailed Use Case Diagrams}
+
+The following subsections present a detailed use case diagram per functional subsystem, drawn using UML notation. Actors appear outside the system boundary rectangle. Ellipses represent use cases. Solid lines denote associations; dashed lines with open arrowheads denote \texttt{<<include>>} or \texttt{<<extend>>} relationships.
+
+% ------------------------------------------
+\subsubsection{Authentication and Account Management}
+% ------------------------------------------
+
+\begin{figure}[H]
+\centering
+\resizebox{0.9\textwidth}{!}{
+\begin{tikzpicture}[font=\small, node distance=1.5cm]
+
+  % Actors
+  \drawstickman{student}{(0, 1.1)}{Student}
+  \drawstickman{admin}{(0, -2.2)}{Administrator}
+
+  % Column 1 Use Cases (inside system)
+  \node[usecase] (reg) at (4.0, 5.5) {Register};
+  \node[usecase] (login) at (4.0, 3.3) {Login\\(Email/PW)};
+  \node[usecase] (oauth) at (4.0, 1.1) {Login\\(Google)};
+  \node[usecase] (logout) at (4.0, -1.1) {Logout};
+  \node[usecase] (reset) at (4.0, -3.3) {Reset Password};
+  \node[usecase] (refresh) at (4.0, -5.5) {Refresh Token};
+
+  % Column 2 Use Cases
+  \node[usecase] (verify) at (10.0, 5.5) {Email Verification};
+  \node[usecase] (session) at (10.0, 3.3) {Single-Session\\Enforcement};
+  \node[usecase] (lockout) at (10.0, 1.1) {Account Lockout};
+
+  % System Box
+  \node[systembox, fit=(reg)(login)(oauth)(logout)(reset)(refresh)(verify)(session)(lockout), inner xsep=0.8cm, inner ysep=0.8cm] (sys) {};
+  \node[anchor=south west, font=\bfseries] at (sys.north west) {Authentication System};
+
+  % Connections: Student
+  \draw (student.east) -- (reg.west);
+  \draw (student.east) -- (login.west);
+  \draw (student.east) -- (oauth.west);
+  \draw (student.east) -- (logout.west);
+  \draw (student.east) -- (reset.west);
+  \draw (student.east) -- (refresh.west);
+
+  % Connections: Admin
+  \draw (admin.east) -- (login.west);
+  \draw (admin.east) -- (logout.west);
+
+  % Relationships (dashed arrows)
+  \draw[->, dashed, >=stealth] (reg) -- node[above, sloped, font=\tiny] {<<include>>} (verify);
+  \draw[->, dashed, >=stealth] (login) -- node[above, sloped, font=\tiny] {<<include>>} (session);
+  \draw[->, dashed, >=stealth] (login) -- node[below, sloped, font=\tiny] {<<extend>>} (lockout);
+
+\end{tikzpicture}
+}
+\caption{Use case diagram --- Authentication and Account Management}
+\label{fig:uc-auth}
+\end{figure}
+
+% ------------------------------------------
+\subsubsection{Learning System}
+% ------------------------------------------
+
+\begin{figure}[H]
+\centering
+\resizebox{0.9\textwidth}{!}{
+\begin{tikzpicture}[font=\small]
+
+  % Actors
+  \drawstickman{student}{(0, 0)}{Student}
+  \drawstickman{admin}{(14, 1.1)}{Administrator}
+
+  % Column 1 Use Cases (Student)
+  \node[usecase] (browse) at (4.0, 5.5) {Browse Roadmap};
+  \node[usecase] (view) at (4.0, 3.3) {View Lesson};
+  \node[usecase] (resume) at (4.0, 1.1) {Resume Path};
+  \node[usecase] (track) at (4.0, -1.1) {Track Progress};
+  \node[usecase] (pdf) at (4.0, -3.3) {Export PDF};
+  \node[usecase] (access) at (4.0, -5.5) {Request Access};
+
+  % Column 2 Use Cases (Admin)
+  \node[usecase] (mlesson) at (10.0, 3.3) {Manage Lessons};
+  \node[usecase] (mgrade) at (10.0, 1.1) {Manage Grades};
+  \node[usecase] (review) at (10.0, -1.1) {Review Requests};
+
+  % System Box
+  \node[systembox, fit=(browse)(view)(resume)(track)(pdf)(access)(mlesson)(mgrade)(review), inner xsep=0.8cm, inner ysep=0.8cm] (sys) {};
+  \node[anchor=south west, font=\bfseries] at (sys.north west) {Learning System};
+
+  % Connections: Student
+  \draw (student.east) -- (browse.west);
+  \draw (student.east) -- (view.west);
+  \draw (student.east) -- (resume.west);
+  \draw (student.east) -- (track.west);
+  \draw (student.east) -- (pdf.west);
+  \draw (student.east) -- (access.west);
+
+  % Connections: Admin
+  \draw (admin.west) -- (mlesson.east);
+  \draw (admin.west) -- (mgrade.east);
+  \draw (admin.west) -- (review.east);
+
+\end{tikzpicture}
+}
+\caption{Use case diagram --- Learning System}
+\label{fig:uc-learning}
+\end{figure}
+
+% ------------------------------------------
+\subsubsection{Practice and Assessment Engine}
+% ------------------------------------------
+
+\begin{figure}[H]
+\centering
+\resizebox{0.95\textwidth}{!}{
+\begin{tikzpicture}[font=\small]
+
+  % Actors
+  \drawstickman{student}{(0, 0)}{Student}
+  \drawstickman{admin}{(14, -4.4)}{Administrator}
+
+  % Column 1 Use Cases (Student)
+  \node[usecase] (start) at (4.0, 5.5) {Start Practice};
+  \node[usecase] (answer) at (4.0, 3.3) {Answer Question};
+  \node[usecase] (finish) at (4.0, 1.1) {Complete Practice};
+  \node[usecase] (history) at (4.0, -1.1) {View History};
+  \node[usecase] (report) at (4.0, -3.3) {Report Error};
+  \node[usecase] (gtest) at (4.0, -5.5) {Start Grade Test};
+
+  % Column 2 Use Cases (System/Admin)
+  \node[usecase] (deduct) at (10.0, 5.5) {Deduct Life};
+  \node[usecase] (skip) at (10.0, 3.3) {Use Skip Guard};
+  \node[usecase] (award) at (10.0, 1.1) {Award XP \& Coins};
+  \node[usecase] (achieve) at (10.0, -1.1) {Check Achievements};
+  \node[usecase] (mtpl) at (10.0, -3.3) {Manage Templates};
+  \node[usecase] (mreport) at (10.0, -5.5) {Review Reports};
+
+  % System Box
+  \node[systembox, fit=(start)(answer)(finish)(history)(report)(gtest)(deduct)(skip)(award)(achieve)(mtpl)(mreport), inner xsep=0.8cm, inner ysep=0.8cm] (sys) {};
+  \node[anchor=south west, font=\bfseries] at (sys.north west) {Practice \& Assessment Engine};
+
+  % Connections: Student
+  \draw (student.east) -- (start.west);
+  \draw (student.east) -- (answer.west);
+  \draw (student.east) -- (finish.west);
+  \draw (student.east) -- (history.west);
+  \draw (student.east) -- (report.west);
+  \draw (student.east) -- (gtest.west);
+
+  % Connections: Admin
+  \draw (admin.west) -- (mtpl.east);
+  \draw (admin.west) -- (mreport.east);
+
+  % Relationships
+  \draw[->, dashed, >=stealth] (start) -- node[above, sloped, font=\tiny] {<<include>>} (deduct);
+  \draw[->, dashed, >=stealth] (skip) -- node[above, sloped, font=\tiny] {<<extend>>} (answer);
+  \draw[->, dashed, >=stealth] (finish) -- node[above, sloped, font=\tiny] {<<include>>} (award);
+  \draw[->, dashed, >=stealth] (finish) -- node[below, sloped, font=\tiny] {<<include>>} (achieve);
+
+\end{tikzpicture}
+}
+\caption{Use case diagram --- Practice and Assessment Engine}
+\label{fig:uc-practice}
+\end{figure}
+
+% ------------------------------------------
+\subsubsection{AI Math Tutor Chatbot}
+% ------------------------------------------
+
+\begin{figure}[H]
+\centering
+\resizebox{0.95\textwidth}{!}{
+\begin{tikzpicture}[font=\small]
+
+  % Actors
+  \drawstickman{student}{(0, 1.1)}{Student}
+  \node[actor] (gemini) at (14, -2.2) {Gemini API};
+  \node[actor] (sympy) at (14, 0) {SymPy Engine};
+
+  % Column 1 Use Cases (Student)
+  \node[usecase] (ask) at (4.0, 4.4) {Send Question};
+  \node[usecase] (hint) at (4.0, 2.2) {Request Hint};
+  \node[usecase] (step) at (4.0, 0) {Request Steps};
+  \node[usecase] (chathist) at (4.0, -2.2) {View Chat History};
+
+  % Column 2 Use Cases (System/External)
+  \node[usecase] (lang) at (10.0, 4.4) {Detect Language};
+  \node[usecase] (intent) at (10.0, 2.2) {Detect Intent};
+  \node[usecase] (calc) at (10.0, 0) {Compute (SymPy)};
+  \node[usecase] (llm) at (10.0, -2.2) {Generate Response};
+  \node[usecase] (memory) at (10.0, -4.4) {Update Memory};
+
+  % System Box
+  \node[systembox, fit=(ask)(hint)(step)(chathist)(lang)(intent)(calc)(llm)(memory), inner xsep=0.8cm, inner ysep=0.8cm] (sys) {};
+  \node[anchor=south west, font=\bfseries] at (sys.north west) {AI Math Tutor Chatbot};
+
+  % Connections: Student
+  \draw (student.east) -- (ask.west);
+  \draw (student.east) -- (hint.west);
+  \draw (student.east) -- (step.west);
+  \draw (student.east) -- (chathist.west);
+
+  % Connections: External
+  \draw (gemini.west) -- (llm.east);
+  \draw (sympy.west) -- (calc.east);
+
+  % Relationships (sloped and staggered to prevent overlapping lines/labels)
+  \draw[->, dashed, >=stealth] (ask) -- node[above, sloped, font=\tiny, pos=0.55] {<<include>>} (lang);
+  \draw[->, dashed, >=stealth] (ask) -- node[above, sloped, font=\tiny, pos=0.4] {<<include>>} (intent);
+  \draw[->, dashed, >=stealth] (intent) -- node[right, font=\tiny, midway] {<<include>>} (calc);
+  \draw[->, dashed, >=stealth] (ask) -- node[above, sloped, font=\tiny, pos=0.3] {<<include>>} (llm);
+  \draw[->, dashed, >=stealth] (ask) -- node[above, sloped, font=\tiny, pos=0.25] {<<include>>} (memory);
+
+\end{tikzpicture}
+}
+\caption{Use case diagram --- AI Math Tutor Chatbot}
+\label{fig:uc-chatbot}
+\end{figure}
+
+% ------------------------------------------
+\subsubsection{Gamification and Economy}
+% ------------------------------------------
+
+\begin{figure}[H]
+\centering
+\resizebox{0.95\textwidth}{!}{
+\begin{tikzpicture}[font=\small]
+
+  % Actors
+  \drawstickman{student}{(0, 0)}{Student}
+  \drawstickman{admin}{(14, -4.4)}{Administrator}
+
+  % Column 1 Use Cases (Student)
+  \node[usecase] (xp) at (4.0, 7.7) {Earn XP};
+  \node[usecase] (level) at (4.0, 5.5) {Level Up};
+  \node[usecase] (pts) at (4.0, 3.3) {Spend Points};
+  \node[usecase] (quest) at (4.0, 1.1) {Complete Quest};
+  \node[usecase] (streak) at (4.0, -1.1) {Claim Streak};
+  \node[usecase] (shield) at (4.0, -3.3) {Use Streak Shield};
+  \node[usecase] (buy) at (4.0, -5.5) {Purchase Shop Item};
+  \node[usecase] (equip) at (4.0, -7.7) {Equip Cosmetic};
+
+  % Column 2 Use Cases (System/Admin)
+  \node[usecase] (battle) at (10.0, 5.5) {Join Battle};
+  \node[usecase] (leader) at (10.0, 3.3) {View Leaderboard};
+  \node[usecase] (achiev) at (10.0, 1.1) {Unlock Achievement};
+  \node[usecase] (notif) at (10.0, -1.1) {Push Notification};
+  \node[usecase] (cfg) at (10.0, -3.3) {Configure Streak};
+  \node[usecase] (mshop) at (10.0, -5.5) {Manage Shop};
+
+  % System Box
+  \node[systembox, fit=(xp)(level)(pts)(quest)(streak)(shield)(buy)(equip)(battle)(leader)(achiev)(notif)(cfg)(mshop), inner xsep=0.8cm, inner ysep=0.8cm] (sys) {};
+  \node[anchor=south west, font=\bfseries] at (sys.north west) {Gamification \& Economy Subsystem};
+
+  % Connections: Student
+  \draw (student.east) -- (xp.west);
+  \draw (student.east) -- (level.west);
+  \draw (student.east) -- (pts.west);
+  \draw (student.east) -- (quest.west);
+  \draw (student.east) -- (streak.west);
+  \draw (student.east) -- (shield.west);
+  \draw (student.east) -- (buy.west);
+  \draw (student.east) -- (equip.west);
+  \draw (student.east) -- (battle.west);
+  \draw (student.east) -- (leader.west);
+
+  % Connections: Admin
+  \draw (admin.west) -- (cfg.east);
+  \draw (admin.west) -- (mshop.east);
+
+  % Relationships
+  \draw[->, dashed, >=stealth] (xp) -- node[above, sloped, font=\tiny] {<<include>>} (level);
+  \draw[->, dashed, >=stealth] (quest) -- node[above, sloped, font=\tiny] {<<include>>} (streak);
+  \draw[->, dashed, >=stealth] (shield) -- node[above, sloped, font=\tiny] {<<extend>>} (streak);
+  \draw[->, dashed, >=stealth] (achiev) -- node[above, sloped, font=\tiny] {<<include>>} (notif);
+
+\end{tikzpicture}
+}
+\caption{Use case diagram --- Gamification and Economy}
+\label{fig:uc-gamification}
+\end{figure}
+
+% ------------------------------------------
+\subsubsection{Subscription and Payments}
+% ------------------------------------------
+
+\begin{figure}[H]
+\centering
+\resizebox{0.95\textwidth}{!}{
+\begin{tikzpicture}[font=\small]
+
+  % Actors
+  \drawstickman{student}{(0, 0)}{Student /\\Supervisor}
+  \node[actor] (stripe) at (14, 1.1) {Stripe API};
+
+  % Column 1 Use Cases (Student)
+  \node[usecase] (plans) at (4.0, 5.5) {View Plans};
+  \node[usecase] (checkout) at (4.0, 3.3) {Start Checkout};
+  \node[usecase] (cancel) at (4.0, 1.1) {Cancel Subscription};
+  \node[usecase] (renew) at (4.0, -1.1) {Toggle Auto-Renew};
+  \node[usecase] (seats) at (4.0, -3.3) {Manage Seats};
+  \node[usecase] (assign) at (4.0, -5.5) {Assign Seat};
+
+  % Column 2 Use Cases (System/External)
+  \node[usecase] (verify) at (10.0, 3.3) {Verify Session};
+  \node[usecase] (webhook) at (10.0, 1.1) {Receive Webhook};
+  \node[usecase] (activate) at (10.0, -1.1) {Activate Premium};
+
+  % System Box
+  \node[systembox, fit=(plans)(checkout)(cancel)(renew)(seats)(assign)(verify)(webhook)(activate), inner xsep=0.8cm, inner ysep=0.8cm] (sys) {};
+  \node[anchor=south west, font=\bfseries] at (sys.north west) {Subscription \& Payments Subsystem};
+
+  % Connections: Student
+  \draw (student.east) -- (plans.west);
+  \draw (student.east) -- (checkout.west);
+  \draw (student.east) -- (cancel.west);
+  \draw (student.east) -- (renew.west);
+  \draw (student.east) -- (seats.west);
+  \draw (student.east) -- (assign.west);
+
+  % Connections: Stripe
+  \draw (stripe.west) -- (webhook.east);
+
+  % Relationships
+  \draw[->, dashed, >=stealth] (checkout) -- node[above, sloped, font=\tiny] {<<include>>} (verify);
+  \draw[->, dashed, >=stealth] (webhook) -- node[above, sloped, font=\tiny] {<<include>>} (activate);
+  \draw[->, dashed, >=stealth] (cancel) -- node[above, sloped, font=\tiny] {<<extend>>} (renew);
+
+\end{tikzpicture}
+}
+\caption{Use case diagram --- Subscription and Payments}
+\label{fig:uc-subscription}
+\end{figure}
