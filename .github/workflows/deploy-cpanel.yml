@@ -71,6 +71,8 @@ jobs:
           # Add the compiled backend files
           git add backend/dist/
           git add backend/passenger_entry.js
+          git add -f backend/node_modules/@prisma/client/
+          git add -f backend/node_modules/.prisma/
           
           git commit -m "build: compile assets for cpanel deployment"
           
