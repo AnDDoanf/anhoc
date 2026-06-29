@@ -45,4 +45,5 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           local_path: './'
           remote_path: ${{ secrets.FTP_REMOTE_PATH }}
+          sftp_only: true
           rsyncArgs: '--exclude=node_modules --exclude=.git --exclude=.github --exclude=chatbot/.venv --exclude=chatbot/__pycache__ --exclude=backend/*.log --exclude=docs --exclude=.gitignore --exclude=README.md --exclude=TODO.md --exclude=docker-compose.yml --exclude=run_all.*'
