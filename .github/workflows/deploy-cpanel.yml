@@ -1,20 +1,25 @@
-name: Deploy to cPanel via FTP
+name: Build and Push to cPanel Deploy Branch
 
 on:
   push:
     branches:
-      - main
       - master
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-and-deploy:
-    name: Build Frontend & Deploy via FTP
+    name: Build Frontend & Push to Deploy Branch
     runs-on: ubuntu-latest
 
     steps:
       - name: 🔍 Checkout Repository
         uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
 
       - name: 🟢 Setup Node.js
         uses: actions/setup-node@v4
@@ -31,27 +36,22 @@ jobs:
         run: |
           npm run build --prefix frontend
         env:
-          # Set build time environment variables if needed
           NEXT_PUBLIC_API_URL: /api/v1
           NEXT_PUBLIC_CHATBOT_API_URL: /
           NODE_ENV: production
 
-      - name: 🛠️ Install sshpass
-        run: sudo apt-get install -y sshpass
-
-      - name: 🚀 Deploy files via rsync over SSH
+      - name: 🚀 Force Commit and Push to deploy-cpanel branch
         run: |
-          sshpass -p "${{ secrets.FTP_PASSWORD }}" rsync -avz -e "ssh -p ${{ secrets.FTP_PORT || '22' }} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
-            --exclude="node_modules" \
-            --exclude=".git" \
-            --exclude=".github" \
-            --exclude="chatbot/.venv" \
-            --exclude="chatbot/__pycache__" \
-            --exclude="backend/*.log" \
-            --exclude="docs" \
-            --exclude=".gitignore" \
-            --exclude="README.md" \
-            --exclude="TODO.md" \
-            --exclude="docker-compose.yml" \
-            --exclude="run_all.*" \
-            ./ ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }}:${{ secrets.FTP_REMOTE_PATH }}/
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          
+          # Create and switch to deploy-cpanel branch
+          git checkout -B deploy-cpanel
+          
+          # Force add the built .next folder (even though it is in .gitignore)
+          git add -f frontend/.next/
+          
+          git commit -m "build: compile nextjs assets for cpanel deployment"
+          
+          # Push to deploy-cpanel branch, overwriting history to keep repo size clean
+          git push origin deploy-cpanel --force
