@@ -1,13 +1,19 @@
 // src/hooks/useTheme.ts
 import { useEffect, useState } from "react";
+import { reapplyStoredTheme } from "@/lib/appTheme";
 
 export const useTheme = () => {
   const [theme, setTheme] = useState<string | null>(null);
 
   useEffect(() => {
-    // Sync with the class applied by the head script in layout.tsx
-    const currentTheme = document.documentElement.classList.contains("dark") ? "dark" : "light";
-    setTheme(currentTheme);
+    // Read directly from localStorage or fallback to system preferences
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme === "dark" || savedTheme === "light") {
+      setTheme(savedTheme);
+    } else {
+      const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      setTheme(systemPrefersDark ? "dark" : "light");
+    }
   }, []);
 
   useEffect(() => {
@@ -15,7 +21,9 @@ export const useTheme = () => {
       const root = window.document.documentElement;
       root.classList.remove("light", "dark");
       root.classList.add(theme);
+      root.setAttribute("data-theme", theme);
       localStorage.setItem("theme", theme);
+      reapplyStoredTheme();
     }
   }, [theme]);
 

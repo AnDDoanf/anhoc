@@ -32,8 +32,14 @@ const MANAGED_THEME_VARIABLES = [
 ] as const;
 
 const getActiveMode = () => {
-  if (typeof document === "undefined") return "light";
-  return document.documentElement.classList.contains("dark") ? "dark" : "light";
+  if (typeof window === "undefined") return "light";
+  const saved = localStorage.getItem("theme");
+  if (saved === "dark" || saved === "light") return saved;
+  if (typeof document !== "undefined" && document.documentElement.classList.contains("dark")) {
+    return "dark";
+  }
+  const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  return systemPrefersDark ? "dark" : "light";
 };
 
 const getThemeVariablesForMode = (theme: StoredAppTheme) => {
