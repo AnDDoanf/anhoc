@@ -46,6 +46,8 @@ jobs:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
+          security: loose
+          timeout: 180000
           # Exclude node_modules, Python virtual environments, caches, git folders and documentation
           # as they are either generated on the server or not needed for production.
           exclude: |
