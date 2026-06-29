@@ -45,7 +45,7 @@ jobs:
           npm ci --prefix backend
           # Generate Prisma client
           npx prisma generate --schema=backend/prisma/schema.prisma
-          echo "PRISMA_CLIENT_ENGINE_TYPE=binary" >> $GITHUB_ENV
+          echo "PRISMA_CLIENT_ENGINE_TYPE=library" >> $GITHUB_ENV
 
       - name: 🚀 Build Backend (TS Compilation via Esbuild)
         run: |

@@ -1,5 +1,4 @@
 import { PrismaClient } from "@prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
 import { logger } from "./logger.ts";
 
@@ -29,10 +28,7 @@ pool.on("error", (err) => {
 });
 
 // ── Prisma Client ───────────────────────────────────────────────────
-const adapter = new PrismaPg(pool);
-
 const prisma = new PrismaClient({
-  adapter,
   log: [
     { emit: "event", level: "query" },
   ],
