@@ -36,34 +36,13 @@ jobs:
           NEXT_PUBLIC_CHATBOT_API_URL: /
           NODE_ENV: production
 
-      - name: 📝 Create .git-ftp-include for Next.js build artifacts
-        run: |
-          echo "!frontend/.next/" > .git-ftp-include
-
-      - name: 📂 Deploy files via FTP to cPanel
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      - name: 📂 Deploy files via SFTP to cPanel
+        uses: wlixcc/SFTP-Deploy-Action@v1.2.6
         with:
-          server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
+          server: ${{ secrets.FTP_SERVER }}
+          port: ${{ secrets.FTP_PORT || 22 }}
           password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps
-          security: loose
-          timeout: 180000
-          # Exclude node_modules, Python virtual environments, caches, git folders and documentation
-          # as they are either generated on the server or not needed for production.
-          exclude: |
-            **/node_modules/**
-            **/.git/**
-            **/.github/**
-            chatbot/.venv/**
-            chatbot/__pycache__/**
-            backend/check_lessons.log
-            backend/check_lessons_utf8.log
-            backend/oauth_debug.log
-            docs/**
-            .gitignore
-            README.md
-            TODO.md
-            docker-compose.yml
-            run_all.ps1
-            run_all.sh
+          local_path: './*'
+          remote_path: ${{ secrets.FTP_REMOTE_PATH }}
+          rsyncArgs: '--exclude="node_modules" --exclude=".git" --exclude=".github" --exclude="chatbot/.venv" --exclude="chatbot/__pycache__" --exclude="backend/*.log" --exclude="docs" --exclude=".gitignore" --exclude="README.md" --exclude="TODO.md" --exclude="docker-compose.yml" --exclude="run_all.*"'
