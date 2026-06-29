@@ -43,10 +43,11 @@ jobs:
       - name: 📦 Install Backend Dependencies
         run: |
           npm ci --prefix backend
+          npx prisma generate --schema=backend/prisma/schema.prisma
 
       - name: 🚀 Build Backend (TS Compilation via Esbuild)
         run: |
-          npx esbuild backend/server.ts --bundle --platform=node --target=node20 --outfile=backend/dist/server.cjs --external:pg-native --external:@prisma/client --format=cjs
+          npx esbuild backend/server.ts --bundle --platform=node --target=node20 --outfile=backend/dist/server.cjs --external:pg-native --format=cjs
 
       - name: 🚀 Force Commit and Push to deploy-cpanel branch
         run: |
