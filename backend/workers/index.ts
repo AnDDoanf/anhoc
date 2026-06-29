@@ -11,6 +11,12 @@ let achievementWorker: Worker | null = null;
 let analyticsWorker: Worker | null = null;
 
 export function startQueueWorkers() {
+  const isRedisDisabled = process.env.DISABLE_REDIS === "true" || !process.env.REDIS_URL;
+  if (isRedisDisabled) {
+    console.log("⚙️ Redis is disabled or not configured. Background queue workers will not be started.");
+    return;
+  }
+
   console.log("⚙️ Starting background queue workers...");
 
   emailWorker = new Worker(

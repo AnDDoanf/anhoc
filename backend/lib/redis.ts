@@ -38,11 +38,15 @@ client.on("end", () => {
 });
 
 // Immediately connect to Redis in a non-blocking way
-if (process.env.NODE_ENV !== "test") {
+const shouldDisableRedis = process.env.DISABLE_REDIS === "true" || !process.env.REDIS_URL;
+
+if (process.env.NODE_ENV !== "test" && !shouldDisableRedis) {
   client.connect().catch((err) => {
     console.warn("⚠️ Redis: Initial connection failed, running in fallback mode.", err.message || err);
     isConnected = false;
   });
+} else if (shouldDisableRedis) {
+  isConnected = false;
 }
 
 export const redisClient = client;

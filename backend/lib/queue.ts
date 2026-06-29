@@ -39,22 +39,24 @@ class MockQueue {
   }
 }
 
-export const emailQueue =
-  process.env.NODE_ENV === "test"
-    ? (new MockQueue("email") as any)
-    : new Queue("email", { connection });
+const useMock =
+  process.env.NODE_ENV === "test" ||
+  process.env.DISABLE_REDIS === "true" ||
+  !process.env.REDIS_URL;
 
-export const notificationQueue =
-  process.env.NODE_ENV === "test"
-    ? (new MockQueue("notification") as any)
-    : new Queue("notification", { connection });
+export const emailQueue = useMock
+  ? (new MockQueue("email") as any)
+  : new Queue("email", { connection });
 
-export const achievementQueue =
-  process.env.NODE_ENV === "test"
-    ? (new MockQueue("achievement") as any)
-    : new Queue("achievement", { connection });
+export const notificationQueue = useMock
+  ? (new MockQueue("notification") as any)
+  : new Queue("notification", { connection });
 
-export const analyticsQueue =
-  process.env.NODE_ENV === "test"
-    ? (new MockQueue("analytics") as any)
-    : new Queue("analytics", { connection });
+export const achievementQueue = useMock
+  ? (new MockQueue("achievement") as any)
+  : new Queue("achievement", { connection });
+
+export const analyticsQueue = useMock
+  ? (new MockQueue("analytics") as any)
+  : new Queue("analytics", { connection });
+

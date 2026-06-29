@@ -1,0 +1,66 @@
+name: Deploy to cPanel via FTP
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    name: Build Frontend & Deploy via FTP
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🔍 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: './frontend/package-lock.json'
+
+      - name: 📦 Install Frontend Dependencies
+        run: |
+          npm ci --prefix frontend
+
+      - name: 🚀 Build Frontend (Next.js)
+        run: |
+          npm run build --prefix frontend
+        env:
+          # Set build time environment variables if needed
+          NEXT_PUBLIC_API_URL: /api/v1
+          NEXT_PUBLIC_CHATBOT_API_URL: /
+          NODE_ENV: production
+
+      - name: 📝 Create .git-ftp-include for Next.js build artifacts
+        run: |
+          echo "!frontend/.next/" > .git-ftp-include
+
+      - name: 📂 Deploy files via FTP to cPanel
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          # Exclude node_modules, Python virtual environments, caches, git folders and documentation
+          # as they are either generated on the server or not needed for production.
+          exclude: |
+            **/node_modules/**
+            **/.git/**
+            **/.github/**
+            chatbot/.venv/**
+            chatbot/__pycache__/**
+            backend/check_lessons.log
+            backend/check_lessons_utf8.log
+            backend/oauth_debug.log
+            docs/**
+            .gitignore
+            README.md
+            TODO.md
+            docker-compose.yml
+            run_all.ps1
+            run_all.sh
