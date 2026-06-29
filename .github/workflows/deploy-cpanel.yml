@@ -43,11 +43,18 @@ jobs:
       - name: 📦 Install Backend Dependencies
         run: |
           npm ci --prefix backend
-          npx prisma generate --schema=backend/prisma/schema.prisma
+# Generate Prisma client with native binaries for Linux	npx prisma generate --schema=backend/prisma/schema.prisma --binary-targets=linux-glibc,linux-musl
+echo "PRISMA_CLIENT_ENGINE_TYPE=binary" >> $GITHUB_ENV
 
       - name: 🚀 Build Backend (TS Compilation via Esbuild)
         run: |
-          npx esbuild backend/server.ts --bundle --platform=node --target=node20 --outfile=backend/dist/server.cjs --external:pg-native --format=cjs
+          npx esbuild backend/server.ts \
+  --bundle \
+  --platform=node \
+  --target=node20 \
+  --outfile=backend/dist/server.cjs \
+  --external:@prisma/client \
+  --format=cjs
 
       - name: 🚀 Force Commit and Push to deploy-cpanel branch
         run: |
