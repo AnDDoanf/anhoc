@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@prisma/client": "6.13.0",
+    "anhoc-root": "file:..",
     "bcryptjs": "^3.0.3",
     "bullmq": "^5.78.1",
     "cors": "^2.8.6",
