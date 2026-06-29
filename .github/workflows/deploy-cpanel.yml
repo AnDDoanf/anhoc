@@ -36,15 +36,22 @@ jobs:
           NEXT_PUBLIC_CHATBOT_API_URL: /
           NODE_ENV: production
 
-      - name: 📂 Deploy files via SFTP to cPanel
-        uses: wlixcc/SFTP-Deploy-Action@v1.2.6
-        with:
-          username: ${{ secrets.FTP_USERNAME }}
-          server: ${{ secrets.FTP_SERVER }}
-          port: ${{ secrets.FTP_PORT || 22 }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          local_path: './'
-          remote_path: ${{ secrets.FTP_REMOTE_PATH }}
-          sftp_only: true
-          sftpArgs: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
-          rsyncArgs: '--exclude=node_modules --exclude=.git --exclude=.github --exclude=chatbot/.venv --exclude=chatbot/__pycache__ --exclude=backend/*.log --exclude=docs --exclude=.gitignore --exclude=README.md --exclude=TODO.md --exclude=docker-compose.yml --exclude=run_all.*'
+      - name: 🛠️ Install sshpass
+        run: sudo apt-get install -y sshpass
+
+      - name: 🚀 Deploy files via rsync over SSH
+        run: |
+          sshpass -p "${{ secrets.FTP_PASSWORD }}" rsync -avz -e "ssh -p ${{ secrets.FTP_PORT || '22' }} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
+            --exclude="node_modules" \
+            --exclude=".git" \
+            --exclude=".github" \
+            --exclude="chatbot/.venv" \
+            --exclude="chatbot/__pycache__" \
+            --exclude="backend/*.log" \
+            --exclude="docs" \
+            --exclude=".gitignore" \
+            --exclude="README.md" \
+            --exclude="TODO.md" \
+            --exclude="docker-compose.yml" \
+            --exclude="run_all.*" \
+            ./ ${{ secrets.FTP_USERNAME }}@${{ secrets.FTP_SERVER }}:${{ secrets.FTP_REMOTE_PATH }}/
