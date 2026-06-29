@@ -46,6 +46,8 @@ jobs:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
+          port: 22
+          protocol: sftp
           security: loose
           timeout: 180000
           # Exclude node_modules, Python virtual environments, caches, git folders and documentation
