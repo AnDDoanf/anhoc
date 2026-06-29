@@ -43,6 +43,6 @@ jobs:
           server: ${{ secrets.FTP_SERVER }}
           port: ${{ secrets.FTP_PORT || 22 }}
           password: ${{ secrets.FTP_PASSWORD }}
-          local_path: './*'
+          local_path: './'
           remote_path: ${{ secrets.FTP_REMOTE_PATH }}
-          rsyncArgs: '--exclude="node_modules" --exclude=".git" --exclude=".github" --exclude="chatbot/.venv" --exclude="chatbot/__pycache__" --exclude="backend/*.log" --exclude="docs" --exclude=".gitignore" --exclude="README.md" --exclude="TODO.md" --exclude="docker-compose.yml" --exclude="run_all.*"'
+          rsyncArgs: '--exclude=node_modules --exclude=.git --exclude=.github --exclude=chatbot/.venv --exclude=chatbot/__pycache__ --exclude=backend/*.log --exclude=docs --exclude=.gitignore --exclude=README.md --exclude=TODO.md --exclude=docker-compose.yml --exclude=run_all.*'
