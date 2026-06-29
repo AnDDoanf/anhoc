@@ -50,12 +50,12 @@ jobs:
       - name: 🚀 Build Backend (TS Compilation via Esbuild)
         run: |
           npx esbuild backend/server.ts \
-  --bundle \
-  --platform=node \
-  --target=node20 \
-  --outfile=backend/dist/server.cjs \
-  --external:@prisma/client \
-  --format=cjs
+            --bundle \
+            --platform=node \
+            --target=node20 \
+            --outfile=backend/dist/server.cjs \
+            --external:@prisma/client \
+            --format=cjs
 
       - name: 🚀 Force Commit and Push to deploy-cpanel branch
         run: |
