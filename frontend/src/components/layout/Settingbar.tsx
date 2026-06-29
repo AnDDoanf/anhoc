@@ -264,7 +264,7 @@ export default function SettingBar({ scrollContainerId, mobileAlignment }: Setti
   return (
     <div 
       ref={containerRef}
-      className={`fixed top-3 sm:top-4 z-50 overflow-x-clip transition-all duration-300 ${alignmentClass} ${isVisible || activePanel ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none"}`}
+      className={`fixed top-3 sm:top-4 z-50 overflow-visible transition-all duration-300 ${alignmentClass} ${isVisible || activePanel ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none"}`}
     >
       <div className="relative flex flex-col items-end">
         <div className="relative w-full rounded-full bg-sol-surface/45 px-2 py-1.5 backdrop-blur-2xl supports-[backdrop-filter]:bg-sol-surface/35 sm:w-auto">
@@ -368,7 +368,7 @@ export default function SettingBar({ scrollContainerId, mobileAlignment }: Setti
         </div>
 
         {isNotificationsOpen && (
-          <div className="absolute top-15 right-0 w-96 max-w-[calc(100vw-2rem)] rounded-2xl border border-sol-accent/20 bg-sol-surface shadow-2xl z-20 origin-top-right animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
+          <div className="absolute top-[60px] right-0 w-96 max-w-[calc(100vw-2rem)] rounded-2xl border border-sol-accent/20 bg-sol-surface shadow-2xl z-20 origin-top-right animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
             <div className="flex items-center justify-between border-b border-sol-border/10 px-4 py-3">
               <div>
                 <p className="text-sm font-black uppercase tracking-[0.16em] text-sol-accent">{t("notifications.title")}</p>
@@ -450,7 +450,7 @@ export default function SettingBar({ scrollContainerId, mobileAlignment }: Setti
         )}
 
         {isSettingsOpen && (
-          <div className="absolute top-15 right-0 w-72 bg-sol-surface border border-sol-accent/20 rounded-2xl shadow-2xl z-20 origin-top-right animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
+          <div className="absolute top-[60px] right-0 w-72 bg-sol-surface border border-sol-accent/20 rounded-2xl shadow-2xl z-20 origin-top-right animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
             <div className="p-3 pt-0 flex flex-col gap-1">
               <div className="space-y-3 px-1 py-2">
                 <div className="flex flex-col gap-1">
