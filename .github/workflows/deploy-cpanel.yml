@@ -43,8 +43,9 @@ jobs:
       - name: 📦 Install Backend Dependencies
         run: |
           npm ci --prefix backend
-# Generate Prisma client with native binaries for Linux	npx prisma generate --schema=backend/prisma/schema.prisma --binary-targets=linux-glibc,linux-musl
-echo "PRISMA_CLIENT_ENGINE_TYPE=binary" >> $GITHUB_ENV
+          # Generate Prisma client with native binaries for Linux
+          npx prisma generate --schema=backend/prisma/schema.prisma --binary-targets=linux-glibc,linux-musl
+          echo "PRISMA_CLIENT_ENGINE_TYPE=binary" >> $GITHUB_ENV
 
       - name: 🚀 Build Backend (TS Compilation via Esbuild)
         run: |
