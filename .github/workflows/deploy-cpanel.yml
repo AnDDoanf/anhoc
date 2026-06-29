@@ -46,4 +46,5 @@ jobs:
           local_path: './'
           remote_path: ${{ secrets.FTP_REMOTE_PATH }}
           sftp_only: true
+          sftpArgs: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
           rsyncArgs: '--exclude=node_modules --exclude=.git --exclude=.github --exclude=chatbot/.venv --exclude=chatbot/__pycache__ --exclude=backend/*.log --exclude=docs --exclude=.gitignore --exclude=README.md --exclude=TODO.md --exclude=docker-compose.yml --exclude=run_all.*'
