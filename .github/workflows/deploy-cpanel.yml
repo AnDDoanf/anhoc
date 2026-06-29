@@ -40,6 +40,14 @@ jobs:
           NEXT_PUBLIC_CHATBOT_API_URL: /
           NODE_ENV: production
 
+      - name: 📦 Install Backend Dependencies
+        run: |
+          npm ci --prefix backend
+
+      - name: 🚀 Build Backend (TS Compilation via Esbuild)
+        run: |
+          npx esbuild backend/server.ts --bundle --platform=node --target=node20 --outdir=backend/dist --external:pg-native --external:@prisma/client --format=esm
+
       - name: 🚀 Force Commit and Push to deploy-cpanel branch
         run: |
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
@@ -51,7 +59,11 @@ jobs:
           # Force add the built .next folder (even though it is in .gitignore)
           git add -f frontend/.next/
           
-          git commit -m "build: compile nextjs assets for cpanel deployment"
+          # Add the compiled backend files
+          git add backend/dist/
+          git add backend/passenger_entry.js
+          
+          git commit -m "build: compile assets for cpanel deployment"
           
           # Push to deploy-cpanel branch, overwriting history to keep repo size clean
           git push origin deploy-cpanel --force
