@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+// import { fileURLToPath } from 'node:url'; // not needed in CommonJS
 import prisma from "../lib/db.ts";
 import { cacheGet, cacheSet, cacheInvalidateUser, cacheDel } from "../lib/redis.ts";
 import { authenticate } from "../middleware/auth.ts";
@@ -1664,9 +1664,7 @@ router.post("/avatar", authenticate, async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Image size must be less than 5MB" });
     }
 
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
-    const uploadsDir = path.join(__dirname, "..", "uploads", "avatars");
+    const uploadsDir = path.join(process.cwd(), "uploads", "avatars");
 
     if (!fs.existsSync(uploadsDir)) {
       fs.mkdirSync(uploadsDir, { recursive: true });

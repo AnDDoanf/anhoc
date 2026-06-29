@@ -22,7 +22,7 @@ import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './swagger.ts';
 import helmet from 'helmet';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+// import { fileURLToPath } from 'node:url'; // not needed in CommonJS
 import { correlationId } from './middleware/correlation.ts';
 import { requestTimeout } from './middleware/timeout.ts';
 import { requestLogger } from './middleware/logging.ts';
@@ -30,8 +30,7 @@ import { errorHandler } from './middleware/errorHandler.ts';
 
 const app: Application = express();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// __filename and __dirname are provided by Node in CommonJS; no need to compute them.
 
 // Set correlation ID header for request tracing
 app.use(correlationId);
@@ -74,7 +73,7 @@ app.use('/api/v1/webhook', express.raw({ type: 'application/json' }), webhookRou
 app.use(express.json({ limit: '5mb' }));
 
 // Serve static uploaded files
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // Serve Swagger API Documentation at /api/docs
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
