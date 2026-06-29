@@ -36,7 +36,7 @@
   linkcolor=blue,
   citecolor=blue,
   urlcolor=blue,
-  pdftitle={Design and Implementation of Anhoc},
+  pdftitle={A Gamified E-Learning Platform for School Students},
   pdfauthor={}
 }
 
@@ -105,6 +105,27 @@
 }
 
 \let\cleardoublepage\clearpage
+\raggedbottom
+
+\usepackage{etoolbox}
+\makeatletter
+\newbool{LT@has@caption}
+\let\oldlongtable\longtable
+\let\oldendlongtable\endlongtable
+\renewenvironment{longtable}[2][]{%
+  \global\boolfalse{LT@has@caption}%
+  \oldlongtable[#1]{#2}%
+}{%
+  \oldendlongtable
+  \ifbool{LT@has@caption}{}{%
+    \addtocounter{table}{-1}%
+  }%
+}
+\let\oldLT@makecaption\LT@makecaption
+\def\LT@makecaption#1#2#3{%
+  \oldLT@makecaption#1{#2}{\global\booltrue{LT@has@caption}#3}%
+}
+\makeatother
 
 % Custom numbering to support Roman chapter numbers but Arabic section/figure/table prefixes
 \renewcommand{\thechapter}{\Roman{chapter}}
@@ -341,6 +362,21 @@ World Bank. \textit{E-learning in TVET in Vietnam: Rapid Assessment during COVID
 \bibitem{edtechhub-vietnam-scan}
 Honda, D., Halla, K., Thang, S., and Mazari, H. \textit{EdTech in Vietnam: A Rapid Scan}. EdTech Hub, 2024. Available at:
 \url{https://docs.edtechhub.org/lib/9RIJIM4K}. Accessed June 22, 2026.
+
+\bibitem{sympy-paper}
+A. Meurer, C. P. Smith, M. Paprocki, et al. \textit{SymPy: symbolic computing in Python}. PeerJ Computer Science, 3:e103, January 2017. Available at: \url{https://doi.org/10.7717/peerj-cs.103}.
+
+\bibitem{fastapi-docs}
+Sebastián Ramírez. \textit{FastAPI Documentation}. Available at: \url{https://fastapi.tiangolo.com/}. Accessed June 15, 2026.
+
+\bibitem{bullmq-docs}
+Taskforce.sh. \textit{BullMQ: Message Queue and Batch Processing for NodeJS}. Available at: \url{https://bullmq.io/}. Accessed June 15, 2026.
+
+\bibitem{gemini-api}
+Google. \textit{Gemini API Overview}. Available at: \url{https://ai.google.dev/gemini-api/docs}. Accessed June 22, 2026.
+
+\bibitem{tailwindcss-v4}
+Tailwind Labs Inc. \textit{Tailwind CSS v4.0 Documentation}. Available at: \url{https://tailwindcss.com/docs}. Accessed June 22, 2026.
 \end{thebibliography}
 
 \end{document}

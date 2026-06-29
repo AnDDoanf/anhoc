@@ -88,96 +88,320 @@ Figure \ref{fig:use-case-diagram} summarizes the main interactions between the i
 \label{fig:use-case-diagram}
 \end{figure}
 
+\subsubsection{Student Use Case Model}
+
+The student represents the primary consumer of learning materials and gamified features on the platform. The requirements partition the student role into free students (\code{free\_student}) and subscribed/premium students (\code{sub\_student}). Both versions share the core learning loop, but premium students enjoy expanded access scopes and unlimited AI tutoring privileges. The student use case model comprises the following interactions:
+\begin{itemize}
+  \item \textbf{UC-ST-01: Authentication and Profile Management} --- Allows guests to register a new account, verify it via email, log in using password credentials or Google OAuth, log out, update their settings, customize avatars, and manage follow/unfollow relations with other students.
+  \item \textbf{UC-ST-02: Content Browsing and Lesson Study} --- Enables students to browse through subjects, grades, and lessons, read bilingual content, and track study duration and mastery.
+  \item \textbf{UC-ST-03: Lesson Practice and Grading} --- Covers starting a practice attempt, submitting answers to generated questions, consuming lives, and reviewing practice attempts.
+  \item \textbf{UC-ST-04: Grade-Level Testing} --- Involves starting and completing comprehensive, timed assessments covering a whole grade when the student is eligible.
+  \item \textbf{UC-ST-05: Classified Subject Access Request} --- Allows students to submit requests to access subjects that are classified/restricted.
+  \item \textbf{UC-ST-06: Interactive Tutoring Chatbot Consultation} --- Involves opening the chatbot widget, asking for mathematical explanations, requesting hints, and viewing past chat logs.
+  \item \textbf{UC-ST-07: Gamification Progression and Economy} --- Covers tracking XP, leveling up, spending level points, completing daily quests, claiming streak rewards, buying shop items, and equipping cosmetics.
+  \item \textbf{UC-ST-08: Play Math Games and Challenges} --- Involves playing single-player or multiplayer math games, creating/joining challenge lobbies, and comparing scores on the leaderboard.
+  \item \textbf{UC-ST-09: Subscription Upgrade} --- Covers upgrading from a free tier to a premium subscription or moving into a supervisor account plan.
+\end{itemize}
+
+\subsubsection{Teacher Use Case Model}
+
+The teacher is modeled as a scoped content manager. The application focuses on enabling teachers to author learning and practice content rather than managing class lists or student seating. The teacher use case model consists of:
+\begin{itemize}
+  \item \textbf{UC-TE-01: Scoped Analytics Workspace} --- Enables teachers to access their management dashboard to view analytics scoped strictly to the subjects and grades they are allowed to access.
+  \item \textbf{UC-TE-02: Scoped Lesson Management} --- Covers the creation, editing, and deletion of lessons inside their assigned subject scope.
+  \item \textbf{UC-TE-03: Scoped Question Template Management} --- Involves writing, editing, previewing, and deleting reusable question templates attached to lessons.
+  \item \textbf{UC-TE-04: Organize Content Hierarchy} --- Allows teachers to categorize topics and structure lessons under their assigned subjects and grades.
+  \item \textbf{UC-TE-05: View Scoped Content \& Testing Data} --- Enables teachers to audit performance reports, error reports, and practice outcomes within their scope without having global administrative visibility.
+\end{itemize}
+
+\subsubsection{Supervisor Use Case Model}
+
+A supervisor manages a localized cohort of users called a learn unit. A supervisor operates within strict resource capacity limits and handles subscriptions and billing. The supervisor use case model includes:
+\begin{itemize}
+  \item \textbf{UC-SU-01: Learn Unit Registration \& Seat Management} --- Allows registering a new supervisor account or upgrading an existing profile, buying additional seat licenses, and reviewing billing invoices.
+  \item \textbf{UC-SU-02: Manage Learn Unit Members} --- Covers creating student and teacher credentials, viewing the roster, and allocating or revoking premium seats for members of their learn unit.
+  \item \textbf{UC-SU-03: Manage Private Content \& Resources} --- Enables supervisors to author private subjects, grades, lessons, and question templates dedicated exclusively to their learn unit.
+  \item \textbf{UC-SU-04: Organizational Limits Administration} --- Involves monitoring and adhering to capacities for teachers, students, lessons, and templates defined by their subscription tier.
+\end{itemize}
+
+\subsubsection{Administrator Use Case Model}
+
+Administrators possess system-wide control. They oversee all platform operations, manage global settings, and resolve user issues. The administrator use case model consists of:
+\begin{itemize}
+  \item \textbf{UC-AD-01: Global User Administration} --- Covers listing, creating, updating, deleting, and auditing all platform users, as well as reviewing detailed attempt history.
+  \item \textbf{UC-AD-02: Access Control \& Permissions Management} --- Enables managing roles and permission-driven access rules.
+  \item \textbf{UC-AD-03: Process Classified Subject Requests} --- Covers reviewing, approving, or rejecting student requests to access classified subjects.
+  \item \textbf{UC-AD-04: System Dashboard and Platform Stats} --- Involves monitoring system-wide logs, database usage, and platform performance dashboard.
+  \item \textbf{UC-AD-05: Manage Global Content Hierarchy} --- Enables managing subjects, grades, lessons, and templates globally across the entire platform.
+  \item \textbf{UC-AD-06: Review Question Reports} --- Covers reviewing problem reports submitted by students on buggy question snapshots and marking them as resolved.
+  \item \textbf{UC-AD-07: Configure Streaks and Achievements} --- Involves setting up daily quest parameters, streak milestone rewards, achievement badges, and economic shop prices.
+  \item \textbf{UC-AD-08: Oversee Supervisor Accounts} --- Covers auditing supervisor learn units, billing statuses, and adjusting capacity limits on the user-management side.
+\end{itemize}
+
 \input{chapters/use_case_diagrams.tex}
 
 \subsection{Use Case Descriptions}
 
-\subsubsection{Use Case 1: Register or Login}
+This subsection outlines detailed specifications for each of the use cases defined under the actor models.
 
+\subsubsection{UC-ST-01: Authentication and Profile Management}
 \begin{longtable}{L{0.28\textwidth}L{0.62\textwidth}}
-\textbf{Primary actor} & Guest or authenticated platform user \\ \hline
-\textbf{Goal} & Create an account or obtain a valid authenticated session. \\ \hline
-\textbf{Preconditions} & The user has network access to the frontend and backend services. Login additionally requires an existing account. \\ \hline
-\textbf{Trigger} & The user opens the authentication area and submits a registration or login form. \\ \hline
-\textbf{Main flow} & (1) The user chooses registration or login. (2) The frontend sends credentials and requested role information to the authentication API. (3) The backend validates the request, resolves the target role, and loads permission data. (4) The backend returns session tokens and profile information. (5) The frontend stores the session and redirects the user to the proper interface. \\ \hline
-\textbf{Postconditions} & A new account is created or an authenticated session is established with role-specific permissions. \\
+\textbf{Primary actor} & Guest, Student (\code{free\_student} or \code{sub\_student}) \\ \hline
+\textbf{Goal} & Create an account, log in, manage profile, change password, upload avatar, and follow/unfollow peers. \\ \hline
+\textbf{Preconditions} & The user has network connectivity. OAuth accounts require valid Google credentials. \\ \hline
+\textbf{Trigger} & The user accesses registration, login, settings, or a peer's profile page. \\ \hline
+\textbf{Main flow} & (1) User registers a new profile. (2) System sends activation link to email, which the user clicks to activate. (3) User logs in via credentials or Google OAuth. (4) System issues JWT session tokens with refresh rotation. (5) Student edits username, changes password, uploads avatar, or toggles follow status on a peer's profile. \\ \hline
+\textbf{Postconditions} & A profile is created, a secure session is active, and settings or social links are updated. \\
 \end{longtable}
 
-\subsubsection{Use Case 2: Study Lesson}
-
+\subsubsection{UC-ST-02: Content Browsing and Lesson Study}
 \begin{longtable}{L{0.28\textwidth}L{0.62\textwidth}}
-\textbf{Primary actor} & Free student or subscribed student \\ \hline
-\textbf{Goal} & Read lesson content for a chosen subject, grade, and lesson. \\ \hline
-\textbf{Preconditions} & The student is authenticated and has access to the selected subject. \\ \hline
-\textbf{Trigger} & The student opens a lesson from the learning area. \\ \hline
-\textbf{Main flow} & (1) The student browses grades and lessons. (2) The frontend requests lesson detail from the API. (3) The backend retrieves lesson metadata and markdown content. (4) The frontend renders the bilingual lesson page. (5) The frontend records study time while the student remains on the page. \\ \hline
-\textbf{Postconditions} & The lesson is displayed and study progress can be updated for the student. \\
+\textbf{Primary actor} & Student (\code{free\_student} / \code{sub\_student}) \\ \hline
+\textbf{Goal} & Browse grade roadmaps, read bilingual lesson content, and record study time. \\ \hline
+\textbf{Preconditions} & Student is authenticated and possesses access permissions for the target subject. \\ \hline
+\textbf{Trigger} & Student opens a subject roadmap or clicks a lesson card. \\ \hline
+\textbf{Main flow} & (1) Student selects a grade and lesson. (2) Frontend requests lesson markdown from the backend. (3) Backend checks permissions and returns content from the database. (4) Frontend renders content with KaTeX. (5) Frontend tracks active reading time and sends heartbeats to log study duration. \\ \hline
+\textbf{Postconditions} & Lesson content is displayed, and study duration is persisted in the database. \\
 \end{longtable}
 
-\subsubsection{Use Case 3: Complete Lesson Practice}
-
+\subsubsection{UC-ST-03: Lesson Practice and Grading}
 \begin{longtable}{L{0.28\textwidth}L{0.62\textwidth}}
-\textbf{Primary actor} & Free student or subscribed student \\ \hline
-\textbf{Goal} & Practice a lesson through generated questions and receive feedback. \\ \hline
-\textbf{Preconditions} & The student is authenticated and the lesson has available question templates. \\ \hline
-\textbf{Trigger} & The student starts practice from a lesson page. \\ \hline
-\textbf{Main flow} & (1) The frontend requests a practice attempt for the lesson. (2) The backend generates question snapshots from the lesson templates. (3) The student answers questions one by one. (4) The frontend submits responses. (5) The backend evaluates correctness, computes the score, updates mastery and XP, and checks achievements. (6) The result view is returned to the student. \\ \hline
-\textbf{Postconditions} & The attempt is stored with snapshot-level grading and the student progression state is updated. \\
+\textbf{Primary actor} & Student (\code{free\_student} / \code{sub\_student}) \\ \hline
+\textbf{Goal} & Answer generated questions, view correctness feedback, and log practice results. \\ \hline
+\textbf{Preconditions} & Student has at least one active life. Question templates exist for the lesson. \\ \hline
+\textbf{Trigger} & Student clicks "Start Practice" on a lesson page. \\ \hline
+\textbf{Main flow} & (1) System consumes one life from student. (2) System generates question snapshots using template variables. (3) Student answers questions one by one. (4) System evaluates answers, tracks correctness, and computes scores. (5) System rewards XP/coins, and updates the student's mastery record. \\ \hline
+\textbf{Postconditions} & Practice attempt is saved, lives and coins balances are updated, and achievements are checked. \\
 \end{longtable}
 
-\subsubsection{Use Case 4: Take Grade-Level Test}
-
+\subsubsection{UC-ST-04: Grade-Level Testing}
 \begin{longtable}{L{0.28\textwidth}L{0.62\textwidth}}
-\textbf{Primary actor} & Free student or subscribed student \\ \hline
-\textbf{Goal} & Assess broader understanding across the lessons of one grade. \\ \hline
-\textbf{Preconditions} & The student is authenticated and the grade has enough templates to assemble a test. \\ \hline
-\textbf{Trigger} & The student chooses a grade test from the practice or testing area. \\ \hline
-\textbf{Main flow} & (1) The frontend requests a grade-level test attempt. (2) The backend collects eligible templates from lessons in the grade. (3) Question snapshots are generated for the attempt. (4) The student submits answers. (5) The backend finalizes the attempt, calculates the score, and records progression outcomes. \\ \hline
-\textbf{Postconditions} & A completed grade-level test attempt is stored and can be reviewed later. \\
+\textbf{Primary actor} & Student (\code{free\_student} / \code{sub\_student}) \\ \hline
+\textbf{Goal} & Assess understanding of a whole grade level through a timed comprehensive test. \\ \hline
+\textbf{Preconditions} & Student is authenticated and has unlocked testing eligibility for the grade. \\ \hline
+\textbf{Trigger} & Student starts the test on the testing dashboard. \\ \hline
+\textbf{Main flow} & (1) System compiles question templates across all grade lessons. (2) System generates question snapshots and starts a countdown timer. (3) Student completes and submits answers. (4) System grades the test, updates test attempt status, and calculates final scores. \\ \hline
+\textbf{Postconditions} & The test attempt is stored, and grade-level test results are logged. \\
 \end{longtable}
 
-\subsubsection{Use Case 5: View Progress and Achievements}
-
+\subsubsection{UC-ST-05: Classified Subject Access Request}
 \begin{longtable}{L{0.28\textwidth}L{0.62\textwidth}}
-\textbf{Primary actor} & Free student or subscribed student \\ \hline
-\textbf{Goal} & Review learning progress, XP history, mastery, and earned achievements. \\ \hline
-\textbf{Preconditions} & The student is authenticated and has recorded activity in the system. \\ \hline
-\textbf{Trigger} & The student opens the dashboard, profile, or achievements page. \\ \hline
-\textbf{Main flow} & (1) The frontend requests student statistics and achievement data. (2) The backend loads profile, activity, mastery, and achievement records. (3) The frontend renders summary cards and achievement states. \\ \hline
-\textbf{Postconditions} & The student can inspect current progress and earned rewards. \\
+\textbf{Primary actor} & Student (\code{free\_student} / \code{sub\_student}) \\ \hline
+\textbf{Goal} & Submit a request to access classified or restricted subjects. \\ \hline
+\textbf{Preconditions} & Student is authenticated. \\ \hline
+\textbf{Trigger} & Student attempts to open a restricted subject and clicks "Request Access". \\ \hline
+\textbf{Main flow} & (1) Student submits an access request detailing justification. (2) Frontend posts request data to the backend. (3) Backend stores request as pending administrator review. \\ \hline
+\textbf{Postconditions} & The request is queued in the system database for administrator approval. \\
 \end{longtable}
 
-\subsubsection{Use Case 6: Manage Content and Question Templates}
-
+\subsubsection{UC-ST-06: Interactive Tutoring Chatbot Consultation}
 \begin{longtable}{L{0.28\textwidth}L{0.62\textwidth}}
-\textbf{Primary actor} & Teacher, supervisor, or administrator \\ \hline
-\textbf{Goal} & Maintain lessons and reusable question templates for the learning platform. \\ \hline
-\textbf{Preconditions} & The actor is authenticated and has the required lesson or test management permissions within the permitted subject scope. \\ \hline
-\textbf{Trigger} & The actor creates, updates, previews, or deletes a lesson or template in a management interface. \\ \hline
-\textbf{Main flow} & (1) The actor edits lesson or template data in the frontend. (2) The frontend sends the request to the backend. (3) The backend validates the JWT, permissions, and subject scope. (4) The backend persists the changes in the database. (5) The frontend refreshes the management view. \\ \hline
-\textbf{Postconditions} & The affected content records are updated and become available to the rest of the platform. \\
+\textbf{Primary actor} & Student (\code{free\_student} / \code{sub\_student}) \\ \hline
+\textbf{Goal} & Interact with the chatbot for math explanations, hints, and checks on formulas. \\ \hline
+\textbf{Preconditions} & Student is authenticated. Free students require active chatbot credits. \\ \hline
+\textbf{Trigger} & Student opens the tutoring chatbot widget. \\ \hline
+\textbf{Main flow} & (1) Student inputs a question. (2) Chatbot parses mathematical syntax. (3) Computations are solved by SymPy; textual reasoning is handled by Gemini LLM. (4) Chatbot returns a hint or step-by-step math explanation. (5) Chat history is recorded in MongoDB. \\ \hline
+\textbf{Postconditions} & The response is rendered, and chatbot credits or histories are updated. \\
 \end{longtable}
 
-\subsubsection{Use Case 7: Manage Learning Unit Members and Seats}
-
+\subsubsection{UC-ST-07: Gamification Progression and Economy}
 \begin{longtable}{L{0.28\textwidth}L{0.62\textwidth}}
-\textbf{Primary actor} & Supervisor or administrator \\ \hline
-\textbf{Goal} & Manage a learning unit by purchasing seats and creating member accounts. \\ \hline
-\textbf{Preconditions} & The actor is authenticated, has supervisor-level access, and is associated with a learn unit or is acting as an administrator over one. \\ \hline
-\textbf{Trigger} & The actor opens the member management area or seat management flow. \\ \hline
-\textbf{Main flow} & (1) The actor requests the current learn unit context. (2) The frontend sends member or seat management operations to the supervisor API. (3) The backend checks whether the user is the relevant supervisor or an administrator. (4) The backend updates seat counts, subscription records, or member accounts. (5) The frontend refreshes the roster and learn unit summary. \\ \hline
-\textbf{Postconditions} & Learning unit seats or member accounts are updated consistently with subscription and scope constraints. \\
+\textbf{Primary actor} & Student (\code{free\_student} / \code{sub\_student}) \\ \hline
+\textbf{Goal} & Track level/XP progress, spend level points, buy shop items, and equip profile cosmetics. \\ \hline
+\textbf{Preconditions} & Student is authenticated. Shop purchases require sufficient coin balances. \\ \hline
+\textbf{Trigger} & Student visits the dashboard, shop, or profile menu. \\ \hline
+\textbf{Main flow} & (1) Student views streaks, daily quests, and level progress. (2) Student buys titles, borders, themes, or streak shields using Ancoins. (3) Student spends level points to boost XP/coin rates or increase max lives. (4) Student equips titles or cosmetics. \\ \hline
+\textbf{Postconditions} & Coins/points are deducted, items are unlocked, and cosmetic changes are applied. \\
 \end{longtable}
 
-\subsubsection{Use Case 8: Manage Roles, Access Control, and Dashboard}
+\subsubsection{UC-ST-08: Play Math Games and Challenges}
+\begin{longtable}{L{0.28\textwidth}L{0.62\textwidth}}
+\textbf{Primary actor} & Student (\code{free\_student} / \code{sub\_student}) \\ \hline
+\textbf{Goal} & Play math games, create/share duels, join challenges, and view game leaderboards. \\ \hline
+\textbf{Preconditions} & Student is authenticated. \\ \hline
+\textbf{Trigger} & Student navigates to the game section or joins a challenge. \\ \hline
+\textbf{Main flow} & (1) Student launches a game mode. (2) Student answers questions under time limits. (3) System saves score and updates the leaderboard. (4) For challenges, student creates a duel lobby, shares the code, and plays against peers. \\ \hline
+\textbf{Postconditions} & Game attempt is recorded, and placement on leaderboards is updated. \\
+\end{longtable}
 
+\subsubsection{UC-ST-09: Subscription Upgrade}
+\begin{longtable}{L{0.28\textwidth}L{0.62\textwidth}}
+\textbf{Primary actor} & Student (\code{free\_student}) \\ \hline
+\textbf{Goal} & Upgrade to premium subscription tier or supervisor account. \\ \hline
+\textbf{Preconditions} & Student is authenticated. \\ \hline
+\textbf{Trigger} & Student selects a plan on the subscription screen. \\ \hline
+\textbf{Main flow} & (1) Student selects plan. (2) Frontend redirects to Stripe checkout. (3) Student submits payment information. (4) Stripe processes payment and fires webhook. (5) System upgrades user role. \\ \hline
+\textbf{Postconditions} & User is upgraded to premium status (\code{sub\_student} or \code{supervisor}). \\
+\end{longtable}
+
+\subsubsection{UC-TE-01: Scoped Analytics Workspace}
+\begin{longtable}{L{0.28\textwidth}L{0.62\textwidth}}
+\textbf{Primary actor} & Teacher \\ \hline
+\textbf{Goal} & Access management workspace dashboard for scoped content analytics. \\ \hline
+\textbf{Preconditions} & Teacher is authenticated with scoped workspace permissions. \\ \hline
+\textbf{Trigger} & Teacher logs in and opens the management workspace. \\ \hline
+\textbf{Main flow} & (1) System checks teacher's subject scope from their profile constraints. (2) System aggregates practice logs and error reports corresponding to the scoped subjects. (3) Workspace renders charts showing success rates and active templates. \\ \hline
+\textbf{Postconditions} & Scoped analytics are displayed without exposing global administrative dashboards. \\
+\end{longtable}
+
+\subsubsection{UC-TE-02: Scoped Lesson Management}
+\begin{longtable}{L{0.28\textwidth}L{0.62\textwidth}}
+\textbf{Primary actor} & Teacher \\ \hline
+\textbf{Goal} & Create, edit, and delete lessons under authorized subjects and grades. \\ \hline
+\textbf{Preconditions} & Teacher has write permission for the specific subject/grade. \\ \hline
+\textbf{Trigger} & Teacher initiates a CRUD operation on a lesson. \\ \hline
+\textbf{Main flow} & (1) Teacher edits the lesson title, chapter association, and markdown-based bilingual content. (2) Teacher saves changes. (3) System verifies permissions and updates the lesson record. \\ \hline
+\textbf{Postconditions} & Lesson changes are persisted in PostgreSQL and cached in Redis. \\
+\end{longtable}
+
+\subsubsection{UC-TE-03: Scoped Question Template Management}
+\begin{longtable}{L{0.28\textwidth}L{0.62\textwidth}}
+\textbf{Primary actor} & Teacher \\ \hline
+\textbf{Goal} & Create, edit, preview, and delete question templates. \\ \hline
+\textbf{Preconditions} & Teacher has write permission for the lesson's parent subject/grade. \\ \hline
+\textbf{Trigger} & Teacher selects template manager. \\ \hline
+\textbf{Main flow} & (1) Teacher writes parameter bindings, math constraints, and answer definitions in JSON. (2) Teacher triggers preview to test the generation logic and evaluate equations. (3) Teacher saves the question template. \\ \hline
+\textbf{Postconditions} & Question templates are validated and saved to the database. \\
+\end{longtable}
+
+\subsubsection{UC-TE-04: Organize Content Hierarchy}
+\begin{longtable}{L{0.28\textwidth}L{0.62\textwidth}}
+\textbf{Primary actor} & Teacher \\ \hline
+\textbf{Goal} & Organize learning content under available subjects/grades. \\ \hline
+\textbf{Preconditions} & Teacher has content organizational permissions. \\ \hline
+\textbf{Trigger} & Teacher modifies lesson structure or topic ordering. \\ \hline
+\textbf{Main flow} & (1) Teacher assigns topics to lessons or orders chapters. (2) System validates that the parent subjects are within the teacher's allowed scope. (3) System persists the new layout. \\ \hline
+\textbf{Postconditions} & Lessons and chapters are restructured under grades. \\
+\end{longtable}
+
+\subsubsection{UC-TE-05: View Scoped Content \& Testing Data}
+\begin{longtable}{L{0.28\textwidth}L{0.62\textwidth}}
+\textbf{Primary actor} & Teacher \\ \hline
+\textbf{Goal} & Review performance statistics and error reports for templates within scope. \\ \hline
+\textbf{Preconditions} & Teacher is authenticated. \\ \hline
+\textbf{Trigger} & Teacher inspects question performance page. \\ \hline
+\textbf{Main flow} & (1) System fetches aggregated question attempt logs matching the teacher's scope. (2) Teacher reviews success rates and reports to identify problematic templates. \\ \hline
+\textbf{Postconditions} & Analytics reports are loaded. \\
+\end{longtable}
+
+\subsubsection{UC-SU-01: Learn Unit Registration \& Seat Management}
+\begin{longtable}{L{0.28\textwidth}L{0.62\textwidth}}
+\textbf{Primary actor} & Supervisor \\ \hline
+\textbf{Goal} & Register supervisor account, establish learning unit, purchase seat licenses, and manage billing. \\ \hline
+\textbf{Preconditions} & Supervisor is authenticated. \\ \hline
+\textbf{Trigger} & User clicks "Create Supervisor Plan" or accesses billing options. \\ \hline
+\textbf{Main flow} & (1) User registers or upgrades to supervisor. (2) System initializes a unique Learn Unit. (3) Supervisor purchases seat allocations via Stripe billing portal. (4) System updates available seats count on the supervisor dashboard. \\ \hline
+\textbf{Postconditions} & Seat licensing levels are updated, and Stripe invoices are stored. \\
+\end{longtable}
+
+\subsubsection{UC-SU-02: Manage Learn Unit Members}
+\begin{longtable}{L{0.28\textwidth}L{0.62\textwidth}}
+\textbf{Primary actor} & Supervisor \\ \hline
+\textbf{Goal} & Create student/teacher accounts within the learn unit, and assign or revoke premium seats. \\ \hline
+\textbf{Preconditions} & Supervisor is authenticated and has free seat licenses. \\ \hline
+\textbf{Trigger} & Supervisor opens the member roster view. \\ \hline
+\textbf{Main flow} & (1) Supervisor creates a member credentials profile. (2) Supervisor assigns a paid premium seat to the member. (3) System flags member account as premium and reduces the available seat count. (4) Supervisor can revoke premium seats, returning them to the unit pool. \\ \hline
+\textbf{Postconditions} & Member accounts are created and seat allocations are sync'd. \\
+\end{longtable}
+
+\subsubsection{UC-SU-03: Manage Private Content \& Resources}
+\begin{longtable}{L{0.28\textwidth}L{0.62\textwidth}}
+\textbf{Primary actor} & Supervisor \\ \hline
+\textbf{Goal} & Create and manage private subjects, grades, lessons, and templates for learn unit members. \\ \hline
+\textbf{Preconditions} & Supervisor is authenticated and learn unit limits allow content creation. \\ \hline
+\textbf{Trigger} & Supervisor accesses the private workspace. \\ \hline
+\textbf{Main flow} & (1) Supervisor creates custom, private lessons and templates visible only to members of their learn unit. (2) System checks capacity limits (subjects count, lessons count) before persisting. \\ \hline
+\textbf{Postconditions} & Private learning materials are saved in PostgreSQL with a learn unit foreign key. \\
+\end{longtable}
+
+\subsubsection{UC-SU-04: Organizational Limits Administration}
+\begin{longtable}{L{0.28\textwidth}L{0.62\textwidth}}
+\textbf{Primary actor} & Supervisor \\ \hline
+\textbf{Goal} & Monitor and control capacity limits for teachers, students, and templates within the learn unit. \\ \hline
+\textbf{Preconditions} & Supervisor is authenticated. \\ \hline
+\textbf{Trigger} & Supervisor views the organization dashboard. \\ \hline
+\textbf{Main flow} & (1) Supervisor checks resource gauges showing current vs. maximum limits. (2) Supervisor allocates resources or disables inactive student accounts to fit limits. \\ \hline
+\textbf{Postconditions} & Resource utilization settings are adjusted. \\
+\end{longtable}
+
+\subsubsection{UC-AD-01: Global User Administration}
 \begin{longtable}{L{0.28\textwidth}L{0.62\textwidth}}
 \textbf{Primary actor} & Administrator \\ \hline
-\textbf{Goal} & Control platform-wide users, roles, permissions, subject access, and aggregate reports. \\ \hline
-\textbf{Preconditions} & The administrator is authenticated with full management privileges. \\ \hline
-\textbf{Trigger} & The administrator opens the admin dashboard or a user and permission management screen. \\ \hline
-\textbf{Main flow} & (1) The administrator requests role, user, or dashboard data. (2) The frontend calls the admin API. (3) The backend validates administrative authority. (4) The backend loads or updates users, roles, permissions, and statistical summaries. (5) The frontend renders the resulting dashboard or management state. \\ \hline
-\textbf{Postconditions} & Platform-level administration data is viewed or updated with persistent RBAC changes. \\
+\textbf{Goal} & Manage all system users, inspect profiles, view progress/attempt history, and adjust roles. \\ \hline
+\textbf{Preconditions} & Admin is authenticated. \\ \hline
+\textbf{Trigger} & Admin opens the user management console. \\ \hline
+\textbf{Main flow} & (1) Admin lists, searches, or updates any user profile. (2) Admin inspects detailed practice attempts, scores, and XP logs. (3) Admin updates user active status or deletes account. \\ \hline
+\textbf{Postconditions} & User accounts are updated or purged. \\
+\end{longtable}
+
+\subsubsection{UC-AD-02: Access Control \& Permissions Management}
+\begin{longtable}{L{0.28\textwidth}L{0.62\textwidth}}
+\textbf{Primary actor} & Administrator \\ \hline
+\textbf{Goal} & Configure role structures and action/resource-level permissions. \\ \hline
+\textbf{Preconditions} & Admin is authenticated. \\ \hline
+\textbf{Trigger} & Admin accesses permission settings. \\ \hline
+\textbf{Main flow} & (1) Admin inspects existing RBAC configurations. (2) Admin adjusts permissions associated with system roles. \\ \hline
+\textbf{Postconditions} & Role permissions are updated and cached in Redis. \\
+\end{longtable}
+
+\subsubsection{UC-AD-03: Process Classified Subject Requests}
+\begin{longtable}{L{0.28\textwidth}L{0.62\textwidth}}
+\textbf{Primary actor} & Administrator \\ \hline
+\textbf{Goal} & Review access requests for classified subjects and approve or reject them. \\ \hline
+\textbf{Preconditions} & Access requests exist in the inbox. \\ \hline
+\textbf{Trigger} & Admin opens requests inbox. \\ \hline
+\textbf{Main flow} & (1) Admin inspects student justifications. (2) Admin selects approve to grant custom subject permissions, or reject to deny. (3) System updates request record and grants subject access. \\ \hline
+\textbf{Postconditions} & Subject permission changes are updated. \\
+\end{longtable}
+
+\subsubsection{UC-AD-04: System Dashboard and Platform Stats}
+\begin{longtable}{L{0.28\textwidth}L{0.62\textwidth}}
+\textbf{Primary actor} & Administrator \\ \hline
+\textbf{Goal} & View global system analytics, database sizes, and platform-wide statistics. \\ \hline
+\textbf{Preconditions} & Admin is authenticated. \\ \hline
+\textbf{Trigger} & Admin accesses main dashboard. \\ \hline
+\textbf{Main flow} & (1) System compiles system-wide statistics (revenue, users count, attempt rates, chatbot usage). (2) Dashboard renders aggregate analytical reports. \\ \hline
+\textbf{Postconditions} & Global metrics are displayed. \\
+\end{longtable}
+
+\subsubsection{UC-AD-05: Manage Global Content Hierarchy}
+\begin{longtable}{L{0.28\textwidth}L{0.62\textwidth}}
+\textbf{Primary actor} & Administrator \\ \hline
+\textbf{Goal} & Create, edit, and delete all subjects, grades, lessons, and templates globally. \\ \hline
+\textbf{Preconditions} & Admin is authenticated. \\ \hline
+\textbf{Trigger} & Admin accesses global content panels. \\ \hline
+\textbf{Main flow} & (1) Admin modifies or deletes any public subject, grade, lesson, or question template. (2) System overrides any scoped rules and writes directly to PostgreSQL. \\ \hline
+\textbf{Postconditions} & Global content structure is updated. \\
+\end{longtable}
+
+\subsubsection{UC-AD-06: Review Question Reports}
+\begin{longtable}{L{0.28\textwidth}L{0.62\textwidth}}
+\textbf{Primary actor} & Administrator \\ \hline
+\textbf{Goal} & Review error reports submitted by learners for generated questions and update report status. \\ \hline
+\textbf{Preconditions} & Reports are submitted. \\ \hline
+\textbf{Trigger} & Admin opens the reports dashboard. \\ \hline
+\textbf{Main flow} & (1) Admin reviews student report description and question snapshot. (2) Admin fixes the source template or marks the report as resolved/rejected. \\ \hline
+\textbf{Postconditions} & Report status is updated. \\
+\end{longtable}
+
+\subsubsection{UC-AD-07: Configure Streaks and Achievements}
+\begin{longtable}{L{0.28\textwidth}L{0.62\textwidth}}
+\textbf{Primary actor} & Administrator \\ \hline
+\textbf{Goal} & Configure streak rewards, daily quests, and achievement-related milestones. \\ \hline
+\textbf{Preconditions} & Admin is authenticated. \\ \hline
+\textbf{Trigger} & Admin opens gamification configuration. \\ \hline
+\textbf{Main flow} & (1) Admin updates weekly streak reward tables or level threshold configurations. (2) System registers changes. \\ \hline
+\textbf{Postconditions} & Gamification engine constants are updated. \\
+\end{longtable}
+
+\subsubsection{UC-AD-08: Oversee Supervisor Accounts}
+\begin{longtable}{L{0.28\textwidth}L{0.62\textwidth}}
+\textbf{Primary actor} & Administrator \\ \hline
+\textbf{Goal} & Inspect supervisor learn units, billing status, and manually adjust capacities. \\ \hline
+\textbf{Preconditions} & Admin is authenticated. \\ \hline
+\textbf{Trigger} & Admin accesses supervisor settings page. \\ \hline
+\textbf{Main flow} & (1) Admin views learn unit listing. (2) Admin manually overrides capacities and limits (e.g. max seats, private template limits). \\ \hline
+\textbf{Postconditions} & Supervisor limits are altered. \\
 \end{longtable}
 
 \subsection{Non-Functional Requirements}

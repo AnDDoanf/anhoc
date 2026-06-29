@@ -1,0 +1,234 @@
+[
+  {
+    "route": "/api/v1/auth/register",
+    "method": "POST",
+    "summary": "Register a new user",
+    "description": "Creates a new student or supervisor account.",
+    "req_payload": "email",
+    "responses": "200, 400"
+  },
+  {
+    "route": "/api/v1/auth/login",
+    "method": "POST",
+    "summary": "User Login",
+    "description": "Login successful",
+    "req_payload": "email",
+    "responses": "200, 400"
+  },
+  {
+    "route": "/api/v1/auth/refresh",
+    "method": "POST",
+    "summary": "Refresh session/token",
+    "description": "Token refreshed",
+    "req_payload": "None",
+    "responses": "200, 401"
+  },
+  {
+    "route": "/api/v1/auth/upgrade-role",
+    "method": "POST",
+    "summary": "Upgrade role (e.g. to supervisor)",
+    "description": "Upgrade successful",
+    "req_payload": "requested_role",
+    "responses": "200, 400"
+  },
+  {
+    "route": "/api/v1/auth/activity",
+    "method": "GET",
+    "summary": "Get activity logs and learning time stats",
+    "description": "Activity stats retrieved",
+    "req_payload": "None",
+    "responses": "200"
+  },
+  {
+    "route": "/api/v1/lessons",
+    "method": "GET",
+    "summary": "Get paginated lessons catalog",
+    "description": "List of lessons",
+    "req_payload": "None",
+    "responses": "200"
+  },
+  {
+    "route": "/api/v1/lessons",
+    "method": "POST",
+    "summary": "Create a new lesson",
+    "description": "Lesson created successfully",
+    "req_payload": "grade_id",
+    "responses": "201, 403"
+  },
+  {
+    "route": "/api/v1/lessons/subjects",
+    "method": "GET",
+    "summary": "Get authorized subjects list for current user",
+    "description": "List of subjects",
+    "req_payload": "None",
+    "responses": "200"
+  },
+  {
+    "route": "/api/v1/lessons/subjects",
+    "method": "POST",
+    "summary": "Create a subject",
+    "description": "Subject created successfully",
+    "req_payload": "slug",
+    "responses": "201"
+  },
+  {
+    "route": "/api/v1/lessons/practice-available",
+    "method": "GET",
+    "summary": "Get available practice lessons",
+    "description": "List of practice-available lessons",
+    "req_payload": "None",
+    "responses": "200"
+  },
+  {
+    "route": "/api/v1/lessons/mastery/all",
+    "method": "GET",
+    "summary": "Get all user lesson masteries",
+    "description": "Lesson mastery details retrieved",
+    "req_payload": "None",
+    "responses": "200"
+  },
+  {
+    "route": "/api/v1/tests/grade-tests",
+    "method": "GET",
+    "summary": "Get available grade tests",
+    "description": "Available grade tests list",
+    "req_payload": "None",
+    "responses": "200"
+  },
+  {
+    "route": "/api/v1/tests/submit-answer",
+    "method": "POST",
+    "summary": "Submit answer to a snapshot question",
+    "description": "Question grading response",
+    "req_payload": "attemptId",
+    "responses": "200"
+  },
+  {
+    "route": "/api/v1/tests/templates",
+    "method": "GET",
+    "summary": "Get paginated question templates",
+    "description": "List of templates",
+    "req_payload": "None",
+    "responses": "200"
+  },
+  {
+    "route": "/api/v1/tests/templates",
+    "method": "POST",
+    "summary": "Create a new question template",
+    "description": "Created successfully",
+    "req_payload": "lesson_id",
+    "responses": "201"
+  },
+  {
+    "route": "/api/v1/tests/templates/filters",
+    "method": "GET",
+    "summary": "Get distinct template filters",
+    "description": "Distinct list of lessons, template types, and difficulties",
+    "req_payload": "None",
+    "responses": "200"
+  },
+  {
+    "route": "/api/v1/tests/my-practice-history",
+    "method": "GET",
+    "summary": "Get practice attempts history of user",
+    "description": "Paginated list of user practice history attempts",
+    "req_payload": "None",
+    "responses": "200, 200"
+  },
+  {
+    "route": "/api/v1/tests/my-practice-history",
+    "method": "GET",
+    "summary": "Get practice attempts history of user",
+    "description": "Paginated list of user practice history attempts",
+    "req_payload": "None",
+    "responses": "200, 200"
+  },
+  {
+    "route": "/api/v1/achievements/check",
+    "method": "POST",
+    "summary": "Trigger checking for general achievements",
+    "description": "Achievements checked",
+    "req_payload": "None",
+    "responses": "200"
+  },
+  {
+    "route": "/api/v1/games/available",
+    "method": "GET",
+    "summary": "Get available game levels and challenges",
+    "description": "Active maps / active game modes list",
+    "req_payload": "None",
+    "responses": "200"
+  },
+  {
+    "route": "/api/v1/games/mine",
+    "method": "GET",
+    "summary": "Get user created game challenges",
+    "description": "List of challenges",
+    "req_payload": "None",
+    "responses": "200"
+  },
+  {
+    "route": "/api/v1/games/attempts",
+    "method": "POST",
+    "summary": "Post a game play score attempt",
+    "description": "Score attempt recorded",
+    "req_payload": "challenge_id",
+    "responses": "201"
+  },
+  {
+    "route": "/api/v1/notifications",
+    "method": "GET",
+    "summary": "Get notification feeds",
+    "description": "Notifications list",
+    "req_payload": "None",
+    "responses": "200"
+  },
+  {
+    "route": "/api/v1/notifications/read-all",
+    "method": "POST",
+    "summary": "Mark all unread notifications as read",
+    "description": "All read status count response",
+    "req_payload": "None",
+    "responses": "200"
+  },
+  {
+    "route": "/api/v1/notifications/read-all",
+    "method": "GET",
+    "summary": "Get available subscription plans list",
+    "description": "Pricing plans details metadata",
+    "req_payload": "None",
+    "responses": "200"
+  },
+  {
+    "route": "/api/v1/subscription/toggle-auto-renew",
+    "method": "POST",
+    "summary": "Toggle auto-renew on active plan subscription",
+    "description": "Subscription auto renew status updated successfully",
+    "req_payload": "None",
+    "responses": "200"
+  },
+  {
+    "route": "/api/v1/supervisor/buy-slots",
+    "method": "POST",
+    "summary": "Buy slots to assign to supervised students",
+    "description": "Slots purchased",
+    "req_payload": "slots",
+    "responses": "200"
+  },
+  {
+    "route": "/api/v1/admin/roles",
+    "method": "GET",
+    "summary": "List roles",
+    "description": "Roles list details",
+    "req_payload": "None",
+    "responses": "200"
+  },
+  {
+    "route": "/api/v1/admin/subject-access-requests",
+    "method": "GET",
+    "summary": "List classified subject access requests",
+    "description": "Subject access requests list details",
+    "req_payload": "None",
+    "responses": "200"
+  }
+]

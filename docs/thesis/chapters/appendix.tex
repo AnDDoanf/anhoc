@@ -46,82 +46,41 @@ npm run dev
 \end{tabularx}
 \end{table}
 
-\section{Selected REST Endpoints}
-
-\begin{table}[H]
-\centering
-\caption{Example endpoints from the implemented API}
-\label{tab:endpoints}
-\begin{tabularx}{\textwidth}{L{0.18\textwidth}L{0.34\textwidth}Y}
-\toprule
-\textbf{Method} & \textbf{Path} & \textbf{Purpose} \\
-\midrule
-\code{POST} & \code{/api/v1/auth/login} & Authenticate a user and return token plus permission payload. \\
-\code{POST} & \code{/api/v1/lessons/:id/practice} & Start a lesson-based practice attempt. \\
-\code{POST} & \code{/api/v1/tests/submit-answer} & Submit an answer for a generated question snapshot. \\
-\code{POST} & \code{/api/v1/tests/attempts/:id/finish} & Complete an attempt and trigger progression updates. \\
-\code{GET} & \code{/api/v1/admin/access-control} & Retrieve data needed for role and permission administration. \\
-\bottomrule
-\end{tabularx}
-\end{table}
-
 \section{Application User Interface Screenshots}
 
-The following pages illustrate the implemented user interfaces of the Anhoc platform, captured during live local execution of both student and administrative portals.
+The following pages illustrate the key user interfaces of the Anhoc platform, captured during live local execution of both student and administrative portals.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.9\textwidth]{images/student_dashboard.png}
-    \caption{Student dashboard displaying experience points, active level, and unlocked achievements.}
-    \label{fig:student_dashboard}
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{images/student_dashboard.png}
+        \caption{Student dashboard showing XP, levels, and achievements.}
+        \label{fig:student_dashboard}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{images/lesson_practice.png}
+        \caption{Interactive mathematics practice interface.}
+        \label{fig:lesson_practice}
+    \end{minipage}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.9\textwidth]{images/student_learning.png}
-    \caption{Grade-level learning pathway showing available lessons and bilingual subject content.}
-    \label{fig:student_learning}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.9\textwidth]{images/lesson_practice.png}
-    \caption{Interactive practice interface featuring a dynamically generated mathematics question and live evaluation feedback.}
-    \label{fig:lesson_practice}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.9\textwidth]{images/achievements.png}
-    \caption{Achievements gallery displaying seeded badges and their associated experience point rewards.}
-    \label{fig:achievements}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.9\textwidth]{images/chatbot_widget.png}
-    \caption{Tutoring chatbot widget answering student queries with step-by-step mathematical reasoning.}
-    \label{fig:chatbot_widget}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.9\textwidth]{images/admin_dashboard.png}
-    \caption{Administrative overview panel showing system stats, active users, and lesson metrics.}
-    \label{fig:admin_dashboard}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.9\textwidth]{images/admin_users.png}
-    \caption{Admin user management dashboard showing all registered users and their system roles.}
-    \label{fig:admin_users}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.9\textwidth]{images/admin_roles.png}
-    \caption{Access control settings panel for configuring user seats and editing role-based permission profiles.}
-    \label{fig:admin_roles}
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{images/chatbot_widget.png}
+        \caption{AI tutoring chatbot widget with reasoning.}
+        \label{fig:chatbot_widget}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{images/admin_dashboard.png}
+        \caption{Administrative overview panel.}
+        \label{fig:admin_dashboard}
+    \end{minipage}
 \end{figure}
 

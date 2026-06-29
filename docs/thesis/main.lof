@@ -2,34 +2,48 @@
 \addvspace {10\p@ }
 \addvspace {10\p@ }
 \contentsline {figure}{\numberline {3.1}{\ignorespaces Use case diagram of the Anhoc platform}}{9}{figure.3.1}%
-\contentsline {figure}{\numberline {3.2}{\ignorespaces Use case diagram --- Authentication and Account Management}}{10}{figure.3.2}%
-\contentsline {figure}{\numberline {3.3}{\ignorespaces Use case diagram --- Learning System}}{11}{figure.3.3}%
-\contentsline {figure}{\numberline {3.4}{\ignorespaces Use case diagram --- Practice and Assessment Engine}}{12}{figure.3.4}%
-\contentsline {figure}{\numberline {3.5}{\ignorespaces Use case diagram --- AI Math Tutor Chatbot}}{13}{figure.3.5}%
-\contentsline {figure}{\numberline {3.6}{\ignorespaces Use case diagram --- Gamification and Economy}}{14}{figure.3.6}%
-\contentsline {figure}{\numberline {3.7}{\ignorespaces Use case diagram --- Subscription and Payments}}{15}{figure.3.7}%
-\contentsline {figure}{\numberline {3.8}{\ignorespaces Architecture design of the Anhoc platform}}{22}{figure.3.8}%
-\contentsline {figure}{\numberline {3.9}{\ignorespaces ERD Group 1 --- User \& Authentication tables}}{26}{figure.3.9}%
-\contentsline {figure}{\numberline {3.10}{\ignorespaces ERD Group 2 --- Curriculum \& Content tables}}{29}{figure.3.10}%
-\contentsline {figure}{\numberline {3.11}{\ignorespaces ERD Group 3 --- Practice, Tests \& Progress tables}}{32}{figure.3.11}%
-\contentsline {figure}{\numberline {3.12}{\ignorespaces ERD Group 4 --- Gamification \& Economy tables}}{35}{figure.3.12}%
-\contentsline {figure}{\numberline {3.13}{\ignorespaces ERD Group 5 --- Subscriptions, Gaming and Notifications}}{37}{figure.3.13}%
-\contentsline {figure}{\numberline {3.14}{\ignorespaces Sequence diagram for registration or login}}{42}{figure.3.14}%
-\contentsline {figure}{\numberline {3.15}{\ignorespaces Sequence diagram for studying a lesson}}{42}{figure.3.15}%
-\contentsline {figure}{\numberline {3.16}{\ignorespaces Sequence diagram for completing lesson practice}}{43}{figure.3.16}%
-\contentsline {figure}{\numberline {3.17}{\ignorespaces Sequence diagram for taking a grade-level test}}{43}{figure.3.17}%
-\contentsline {figure}{\numberline {3.18}{\ignorespaces Sequence diagram for viewing progress and achievements}}{44}{figure.3.18}%
-\contentsline {figure}{\numberline {3.19}{\ignorespaces Sequence diagram for managing content and question templates}}{44}{figure.3.19}%
-\contentsline {figure}{\numberline {3.20}{\ignorespaces Sequence diagram for managing learning unit members and seats}}{45}{figure.3.20}%
-\contentsline {figure}{\numberline {3.21}{\ignorespaces Sequence diagram for managing roles, access control, and dashboard data}}{45}{figure.3.21}%
+\contentsline {figure}{\numberline {3.2}{\ignorespaces Use case diagram --- Authentication and Account Management}}{13}{figure.3.2}%
+\contentsline {figure}{\numberline {3.3}{\ignorespaces Use case diagram --- Learning System}}{14}{figure.3.3}%
+\contentsline {figure}{\numberline {3.4}{\ignorespaces Use case diagram --- Practice and Assessment Engine}}{15}{figure.3.4}%
+\contentsline {figure}{\numberline {3.5}{\ignorespaces Use case diagram --- AI Math Tutor Chatbot}}{16}{figure.3.5}%
+\contentsline {figure}{\numberline {3.6}{\ignorespaces Use case diagram --- Gamification and Economy}}{17}{figure.3.6}%
+\contentsline {figure}{\numberline {3.7}{\ignorespaces Use case diagram --- Subscription and Payments}}{18}{figure.3.7}%
+\contentsline {figure}{\numberline {3.8}{\ignorespaces Architecture design of the Anhoc platform}}{31}{figure.3.8}%
+\contentsline {figure}{\numberline {3.9}{\ignorespaces ERD Group 1 --- User \& Authentication tables}}{35}{figure.3.9}%
+\contentsline {figure}{\numberline {3.10}{\ignorespaces ERD Group 2 --- Curriculum \& Content tables}}{38}{figure.3.10}%
+\contentsline {figure}{\numberline {3.11}{\ignorespaces ERD Group 3 --- Practice, Tests \& Progress tables}}{41}{figure.3.11}%
+\contentsline {figure}{\numberline {3.12}{\ignorespaces ERD Group 4 --- Gamification \& Economy tables}}{44}{figure.3.12}%
+\contentsline {figure}{\numberline {3.13}{\ignorespaces ERD Group 5 --- Subscriptions, Gaming and Notifications}}{46}{figure.3.13}%
+\contentsline {figure}{\numberline {3.14}{\ignorespaces Sequence diagram for UC-ST-01: Authentication and Profile Management}}{51}{figure.3.14}%
+\contentsline {figure}{\numberline {3.15}{\ignorespaces Sequence diagram for UC-ST-02: Content Browsing and Lesson Study}}{52}{figure.3.15}%
+\contentsline {figure}{\numberline {3.16}{\ignorespaces Sequence diagram for UC-ST-03: Lesson Practice and Grading}}{53}{figure.3.16}%
+\contentsline {figure}{\numberline {3.17}{\ignorespaces Sequence diagram for UC-ST-04: Grade-Level Testing}}{54}{figure.3.17}%
+\contentsline {figure}{\numberline {3.18}{\ignorespaces Sequence diagram for UC-ST-05: Classified Subject Access Request}}{55}{figure.3.18}%
+\contentsline {figure}{\numberline {3.19}{\ignorespaces Sequence diagram for UC-ST-06: Interactive Tutoring Chatbot Consultation}}{56}{figure.3.19}%
+\contentsline {figure}{\numberline {3.20}{\ignorespaces Sequence diagram for UC-ST-07: Gamification Progression and Economy}}{57}{figure.3.20}%
+\contentsline {figure}{\numberline {3.21}{\ignorespaces Sequence diagram for UC-ST-08: Play Math Games and Challenges}}{58}{figure.3.21}%
+\contentsline {figure}{\numberline {3.22}{\ignorespaces Sequence diagram for UC-ST-09: Subscription Upgrade}}{59}{figure.3.22}%
+\contentsline {figure}{\numberline {3.23}{\ignorespaces Sequence diagram for UC-TE-01: Scoped Analytics Workspace}}{60}{figure.3.23}%
+\contentsline {figure}{\numberline {3.24}{\ignorespaces Sequence diagram for UC-TE-02: Scoped Lesson Management}}{61}{figure.3.24}%
+\contentsline {figure}{\numberline {3.25}{\ignorespaces Sequence diagram for UC-TE-03: Scoped Question Template Management}}{62}{figure.3.25}%
+\contentsline {figure}{\numberline {3.26}{\ignorespaces Sequence diagram for UC-TE-04: Organize Content Hierarchy}}{63}{figure.3.26}%
+\contentsline {figure}{\numberline {3.27}{\ignorespaces Sequence diagram for UC-TE-05: View Scoped Content \& Testing Data}}{64}{figure.3.27}%
+\contentsline {figure}{\numberline {3.28}{\ignorespaces Sequence diagram for UC-SU-01: Learn Unit Registration \& Seat Management}}{65}{figure.3.28}%
+\contentsline {figure}{\numberline {3.29}{\ignorespaces Sequence diagram for UC-SU-02: Manage Learn Unit Members}}{66}{figure.3.29}%
+\contentsline {figure}{\numberline {3.30}{\ignorespaces Sequence diagram for UC-SU-03: Manage Private Content \& Resources}}{67}{figure.3.30}%
+\contentsline {figure}{\numberline {3.31}{\ignorespaces Sequence diagram for UC-SU-04: Organizational Capacity Limits Administration}}{68}{figure.3.31}%
+\contentsline {figure}{\numberline {3.32}{\ignorespaces Sequence diagram for UC-AD-01: Global User Administration}}{69}{figure.3.32}%
+\contentsline {figure}{\numberline {3.33}{\ignorespaces Sequence diagram for UC-AD-02: Access Control \& Permissions Management}}{69}{figure.3.33}%
+\contentsline {figure}{\numberline {3.34}{\ignorespaces Sequence diagram for UC-AD-03: Process Classified Subject Requests}}{70}{figure.3.34}%
+\contentsline {figure}{\numberline {3.35}{\ignorespaces Sequence diagram for UC-AD-04: System Dashboard and Platform Stats}}{70}{figure.3.35}%
+\contentsline {figure}{\numberline {3.36}{\ignorespaces Sequence diagram for UC-AD-05: Manage Global Content Hierarchy}}{71}{figure.3.36}%
+\contentsline {figure}{\numberline {3.37}{\ignorespaces Sequence diagram for UC-AD-06: Review Question Reports}}{71}{figure.3.37}%
+\contentsline {figure}{\numberline {3.38}{\ignorespaces Sequence diagram for UC-AD-07: Configure Streaks and Achievements}}{72}{figure.3.38}%
+\contentsline {figure}{\numberline {3.39}{\ignorespaces Sequence diagram for UC-AD-08: Oversee Supervisor Accounts}}{72}{figure.3.39}%
 \addvspace {10\p@ }
 \addvspace {10\p@ }
-\contentsline {figure}{\numberline {A.1}{\ignorespaces Student dashboard displaying experience points, active level, and unlocked achievements.}}{56}{figure.5.1}%
-\contentsline {figure}{\numberline {A.2}{\ignorespaces Grade-level learning pathway showing available lessons and bilingual subject content.}}{57}{figure.5.2}%
-\contentsline {figure}{\numberline {A.3}{\ignorespaces Interactive practice interface featuring a dynamically generated mathematics question and live evaluation feedback.}}{57}{figure.5.3}%
-\contentsline {figure}{\numberline {A.4}{\ignorespaces Achievements gallery displaying seeded badges and their associated experience point rewards.}}{58}{figure.5.4}%
-\contentsline {figure}{\numberline {A.5}{\ignorespaces Tutoring chatbot widget answering student queries with step-by-step mathematical reasoning.}}{58}{figure.5.5}%
-\contentsline {figure}{\numberline {A.6}{\ignorespaces Administrative overview panel showing system stats, active users, and lesson metrics.}}{59}{figure.5.6}%
-\contentsline {figure}{\numberline {A.7}{\ignorespaces Admin user management dashboard showing all registered users and their system roles.}}{59}{figure.5.7}%
-\contentsline {figure}{\numberline {A.8}{\ignorespaces Access control settings panel for configuring user seats and editing role-based permission profiles.}}{60}{figure.5.8}%
+\contentsline {figure}{\numberline {A.1}{\ignorespaces Student dashboard showing XP, levels, and achievements.}}{86}{figure.5.1}%
+\contentsline {figure}{\numberline {A.2}{\ignorespaces Interactive mathematics practice interface.}}{86}{figure.5.2}%
+\contentsline {figure}{\numberline {A.3}{\ignorespaces AI tutoring chatbot widget with reasoning.}}{86}{figure.5.3}%
+\contentsline {figure}{\numberline {A.4}{\ignorespaces Administrative overview panel.}}{86}{figure.5.4}%
 \contentsfinish 

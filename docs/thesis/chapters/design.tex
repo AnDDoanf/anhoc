@@ -47,10 +47,10 @@ Anhoc uses a three-tier web architecture. A Next.js frontend built on React prov
   \draw[->, thick] (api) -- (practice);
   \draw[->, thick] (api) -- (progress);
   \draw[->, thick] (api) -- (identity);
-  \draw[->, thick] (content.south) -- ++(0,-0.45) -| ($(prisma.north)+(-0.55,0)$);
-  \draw[->, thick] (practice.south) -- ++(0,-0.25) -| ($(prisma.north)+(-0.2,0)$);
-  \draw[->, thick] (progress.south) -- ++(0,-0.25) -| ($(prisma.north)+(0.2,0)$);
-  \draw[->, thick] (identity.south) -- ++(0,-0.45) -| ($(prisma.north)+(0.55,0)$);
+  \draw[->, thick] (content.south) -- ++(0,-0.70) -| ($(prisma.north)+(-0.55,0)$);
+  \draw[->, thick] (practice.south) -- ++(0,-0.39) -| ($(prisma.north)+(-0.2,0)$);
+  \draw[->, thick] (progress.south) -- ++(0,-0.39) -| ($(prisma.north)+(0.2,0)$);
+  \draw[->, thick] (identity.south) -- ++(0,-0.70) -| ($(prisma.north)+(0.55,0)$);
   \draw[->, thick] (prisma) -- (postgres);
   \draw[->, thick] (api) -- (redis);
 \end{tikzpicture}
@@ -171,250 +171,832 @@ Progression in Anhoc is not limited to a final score. The backend updates severa
   \item achievements that can also grant extra XP.
 \end{itemize}
 
-This design supports both immediate feedback and longitudinal tracking, which is more appropriate for learning software than a simple pass or fail test history.
-
+\subsection{Sequence Diagrams for Main Use Cases}
 \subsection{Sequence Diagrams for Main Use Cases}
 
-The following sequence diagrams refine the use cases introduced in the requirements chapter and map them to the implemented frontend, backend, service, and database layers.
+The following sequence diagrams refine the 26 use cases introduced in the requirements chapter and map them to the implemented frontend, backend routing, service, and data layers of the Anhoc platform.
 
-\subsubsection{Use case 1: Register or Login}
-
+% ----------------------------------------------------
+% Student Sequence Diagrams (UC-ST-01 to UC-ST-09)
+% ----------------------------------------------------
+\clearpage\subsubsection{UC-ST-01: Authentication and Profile Management}
 \begin{figure}[H]
 \centering
-\resizebox{\textwidth}{!}{
+\resizebox{0.95\textwidth}{!}{
 \begin{tikzpicture}[font=\footnotesize]
-  \node[lifelinehead] (a1) at (0,0) {Guest/User};
-  \node[lifelinehead] (a2) at (3.5,0) {Frontend};
-  \node[lifelinehead] (a3) at (7,0) {Auth Route};
-  \node[lifelinehead] (a4) at (10.5,0) {Auth Service};
-  \node[lifelinehead] (a5) at (14,0) {PostgreSQL};
+  \node[lifelinehead] (l1) at (0.0,0) {Student/Guest};
+  \node[lifelinehead] (l2) at (4.0,0) {Frontend};
+  \node[lifelinehead] (l3) at (8.0,0) {Auth Router};
+  \node[lifelinehead] (l4) at (12.0,0) {JWT Middleware};
+  \node[lifelinehead] (l5) at (16.0,0) {Identity Service};
+  \node[lifelinehead] (l6) at (20.0,0) {PostgreSQL};
 
-  \foreach \x in {a1,a2,a3,a4,a5} {
-    \draw[dashed] (\x.south) -- ++(0,-6.8);
+  \foreach \x in {l1,l2,l3,l4,l5,l6} {
+    \draw[dashed] (\x.south) -- ++(0,-18.2);
   }
 
-  \seqstep{seqmsg}{a1}{a2}{-1.2}{Submit registration or login form}
-  \seqstep{seqmsg}{a2}{a3}{-2.0}{POST /auth/register or /auth/login}
-  \seqstep{seqmsg}{a3}{a4}{-2.8}{Validate input and resolve role}
-  \seqstep{seqmsg}{a4}{a5}{-3.6}{Load or create user and permissions}
-  \seqstep{seqreturn}{a5}{a4}{-4.4}{User and role records}
-  \seqstep{seqreturn}{a4}{a3}{-5.2}{JWT, refresh token, profile payload}
-  \seqstep{seqreturn}{a3}{a2}{-6.0}{Authenticated session response}
-  \seqstep{seqreturn}{a2}{a1}{-6.6}{Redirect to role-specific area}
+  \seqstep{seqmsg}{l1}{l2}{-1.3}{Submit credentials (email, password)}
+  \seqstep{seqmsg}{l2}{l3}{-2.6}{POST /auth/login \{email, pw\}}
+  \seqstep{seqmsg}{l3}{l4}{-3.9}{Check Rate Limits (IP block count)}
+  \seqstep{seqreturn}{l4}{l3}{-5.2}{429 Too Many Requests (Fail path)}
+  \seqstep{seqmsg}{l3}{l5}{-6.5}{ValidateCredentials(email, pw)}
+  \seqstep{seqmsg}{l5}{l6}{-7.8}{Query user account \& password hash}
+  \seqstep{seqreturn}{l6}{l5}{-9.1}{User record + salt + locked status}
+  \seqstep{seqreturn}{l5}{l3}{-10.4}{Throw AuthError (bcrypt mismatch / lock)}
+  \seqstep{seqreturn}{l3}{l2}{-11.7}{401 Unauthorized (Fail path)}
+  \seqstep{seqmsg}{l5}{l6}{-13.0}{Create active session \& log login event}
+  \seqstep{seqreturn}{l5}{l3}{-14.3}{Generate \& sign JWT token (userId, role)}
+  \seqstep{seqreturn}{l3}{l2}{-15.6}{200 OK + JWT + User profile}
+  \seqstep{seqreturn}{l2}{l1}{-16.9}{Redirect to student dashboard}
 \end{tikzpicture}
 }
-\caption{Sequence diagram for registration or login}
-\label{fig:seq-authenticate-user}
+\caption{Sequence diagram for UC-ST-01: Authentication and Profile Management}
+\label{fig:seq-uc-st-01}
 \end{figure}
 
-\subsubsection{Use case 2: Study Lesson}
-
+\clearpage\subsubsection{UC-ST-02: Content Browsing and Lesson Study}
 \begin{figure}[H]
 \centering
-\resizebox{\textwidth}{!}{
+\resizebox{0.95\textwidth}{!}{
 \begin{tikzpicture}[font=\footnotesize]
-  \node[lifelinehead] (b1) at (0,0) {Student};
-  \node[lifelinehead] (b2) at (3.5,0) {Frontend};
-  \node[lifelinehead] (b3) at (7,0) {Lesson Route};
-  \node[lifelinehead] (b4) at (10.5,0) {Lesson Service};
-  \node[lifelinehead] (b5) at (14,0) {PostgreSQL};
+  \node[lifelinehead] (l1) at (0.0,0) {Student};
+  \node[lifelinehead] (l2) at (4.0,0) {Frontend};
+  \node[lifelinehead] (l3) at (8.0,0) {Lesson Router};
+  \node[lifelinehead] (l4) at (12.0,0) {JWT Middleware};
+  \node[lifelinehead] (l5) at (16.0,0) {Lesson Service};
+  \node[lifelinehead] (l6) at (20.0,0) {PostgreSQL};
 
-  \foreach \x in {b1,b2,b3,b4,b5} {
-    \draw[dashed] (\x.south) -- ++(0,-6.8);
+  \foreach \x in {l1,l2,l3,l4,l5,l6} {
+    \draw[dashed] (\x.south) -- ++(0,-18.2);
   }
 
-  \seqstep{seqmsg}{b1}{b2}{-1.2}{Choose subject, grade, and lesson}
-  \seqstep{seqmsg}{b2}{b3}{-2.0}{GET lesson detail}
-  \seqstep{seqmsg}{b3}{b4}{-2.8}{Check access and build lesson response}
-  \seqstep{seqmsg}{b4}{b5}{-3.6}{Query lesson, grade, and subject}
-  \seqstep{seqreturn}{b5}{b4}{-4.4}{Lesson content and metadata}
-  \seqstep{seqreturn}{b4}{b2}{-5.2}{Renderable lesson payload}
-  \seqstep{seqmsg}{b2}{b3}{-6.0}{POST study-time update}
-  \seqstep{seqmsg}{b3}{b5}{-6.6}{Persist study progress}
+  \seqstep{seqmsg}{l1}{l2}{-1.3}{Click lesson card}
+  \seqstep{seqmsg}{l2}{l3}{-2.6}{GET /lessons/:id \{Authorization: Bearer\}}
+  \seqstep{seqmsg}{l3}{l4}{-3.9}{Verify JWT token signature}
+  \seqstep{seqreturn}{l4}{l3}{-5.2}{Invalid token -> 401 Unauthorized}
+  \seqstep{seqmsg}{l3}{l5}{-6.5}{GetLessonContent(lessonId, userId)}
+  \seqstep{seqmsg}{l5}{l6}{-7.8}{Query subject access rules (ACL)}
+  \seqstep{seqreturn}{l6}{l5}{-9.1}{Access rights metadata}
+  \seqstep{seqreturn}{l5}{l3}{-10.4}{Access Forbidden (Ineligible role / group)}
+  \seqstep{seqreturn}{l3}{l2}{-11.7}{403 Forbidden (Fail path)}
+  \seqstep{seqmsg}{l5}{l6}{-13.0}{Query lesson content (Markdown/Bilingual)}
+  \seqstep{seqreturn}{l6}{l5}{-14.3}{Lesson content details}
+  \seqstep{seqreturn}{l5}{l3}{-15.6}{200 OK + Lesson Content Payload}
+  \seqstep{seqreturn}{l3}{l2}{-16.9}{Render lesson slides and interactive widgets}
 \end{tikzpicture}
 }
-\caption{Sequence diagram for studying a lesson}
-\label{fig:seq-study-lesson}
+\caption{Sequence diagram for UC-ST-02: Content Browsing and Lesson Study}
+\label{fig:seq-uc-st-02}
 \end{figure}
 
-\subsubsection{Use case 3: Complete Lesson Practice}
-
+\clearpage\subsubsection{UC-ST-03: Lesson Practice and Grading}
 \begin{figure}[H]
 \centering
-\resizebox{\textwidth}{!}{
+\resizebox{0.95\textwidth}{!}{
 \begin{tikzpicture}[font=\footnotesize]
-  \node[lifelinehead] (c1) at (0,0) {Student};
-  \node[lifelinehead] (c2) at (3.5,0) {Frontend};
-  \node[lifelinehead] (c3) at (7,0) {Lesson Route};
-  \node[lifelinehead] (c4) at (10.5,0) {Practice Services};
-  \node[lifelinehead] (c5) at (14,0) {PostgreSQL};
+  \node[lifelinehead] (l1) at (0.0,0) {Student};
+  \node[lifelinehead] (l2) at (4.0,0) {Frontend};
+  \node[lifelinehead] (l3) at (8.0,0) {Practice Route};
+  \node[lifelinehead] (l4) at (12.0,0) {Practice Service};
+  \node[lifelinehead] (l5) at (16.0,0) {SymPy Engine};
+  \node[lifelinehead] (l6) at (20.0,0) {PostgreSQL};
 
-  \foreach \x in {c1,c2,c3,c4,c5} {
-    \draw[dashed] (\x.south) -- ++(0,-8.4);
+  \foreach \x in {l1,l2,l3,l4,l5,l6} {
+    \draw[dashed] (\x.south) -- ++(0,-21.0);
   }
 
-  \seqstep{seqmsg}{c1}{c2}{-1.2}{Start lesson practice}
-  \seqstep{seqmsg}{c2}{c3}{-2.0}{POST start-practice}
-  \seqstep{seqmsg}{c3}{c4}{-2.8}{Create attempt from lesson templates}
-  \seqstep{seqmsg}{c4}{c5}{-3.6}{Persist attempt and question snapshots}
-  \seqstep{seqreturn}{c5}{c2}{-4.4}{Attempt with generated questions}
-  \seqstep{seqmsg}{c1}{c2}{-5.2}{Submit answers}
-  \seqstep{seqmsg}{c2}{c3}{-6.0}{POST attempt completion}
-  \seqstep{seqmsg}{c3}{c4}{-6.8}{Grade answers and compute XP and mastery}
-  \seqstep{seqmsg}{c4}{c5}{-7.6}{Store final score and progression state}
-  \seqstep{seqreturn}{c5}{c2}{-8.2}{Completed result and rewards}
+  \seqstep{seqmsg}{l1}{l2}{-1.3}{Click "Start Practice"}
+  \seqstep{seqmsg}{l2}{l3}{-2.6}{POST /practice/start \{lessonId\}}
+  \seqstep{seqmsg}{l3}{l4}{-3.9}{InitPracticeSession(lessonId)}
+  \seqstep{seqmsg}{l4}{l6}{-5.2}{Query user lives \& level}
+  \seqstep{seqreturn}{l6}{l4}{-6.5}{lives = 0 (free account)}
+  \seqstep{seqreturn}{l4}{l3}{-7.8}{LifeLimitError (Out of lives)}
+  \seqstep{seqreturn}{l3}{l2}{-9.1}{400 Bad Request (Fail path)}
+  \seqstep{seqmsg}{l4}{l6}{-10.4}{Deduct 1 life, save generated attempt snapshot}
+  \seqstep{seqreturn}{l6}{l4}{-11.7}{Question templates details}
+  \seqstep{seqreturn}{l4}{l3}{-13.0}{200 OK + Questions (no answers)}
+  \seqstep{seqmsg}{l1}{l2}{-14.3}{Submit answer: POST /practice/submit \{answers\}}
+  \seqstep{seqmsg}{l4}{l5}{-15.6}{Check algebraic equivalence: simplify(user - correct)}
+  \seqstep{seqreturn}{l5}{l4}{-16.9}{Equivalence check output (true/false)}
+  \seqstep{seqmsg}{l4}{l6}{-18.2}{Save scores, award coins \& progress XP}
+  \seqstep{seqreturn}{l4}{l2}{-19.5}{200 OK + attempt score + XP/coins}
 \end{tikzpicture}
 }
-\caption{Sequence diagram for completing lesson practice}
-\label{fig:seq-complete-practice}
+\caption{Sequence diagram for UC-ST-03: Lesson Practice and Grading}
+\label{fig:seq-uc-st-03}
 \end{figure}
 
-\subsubsection{Use case 4: Take Grade-Level Test}
-
+\clearpage\subsubsection{UC-ST-04: Grade-Level Testing}
 \begin{figure}[H]
 \centering
-\resizebox{\textwidth}{!}{
+\resizebox{0.95\textwidth}{!}{
 \begin{tikzpicture}[font=\footnotesize]
-  \node[lifelinehead] (d1) at (0,0) {Student};
-  \node[lifelinehead] (d2) at (3.5,0) {Frontend};
-  \node[lifelinehead] (d3) at (7,0) {Test Route};
-  \node[lifelinehead] (d4) at (10.5,0) {Test Services};
-  \node[lifelinehead] (d5) at (14,0) {PostgreSQL};
+  \node[lifelinehead] (l1) at (0.0,0) {Student};
+  \node[lifelinehead] (l2) at (4.0,0) {Frontend};
+  \node[lifelinehead] (l3) at (8.0,0) {Testing Route};
+  \node[lifelinehead] (l4) at (12.0,0) {Testing Service};
+  \node[lifelinehead] (l5) at (16.0,0) {PostgreSQL};
+  \node[lifelinehead] (l6) at (20.0,0) {Redis Cache};
 
-  \foreach \x in {d1,d2,d3,d4,d5} {
-    \draw[dashed] (\x.south) -- ++(0,-7.6);
+  \foreach \x in {l1,l2,l3,l4,l5,l6} {
+    \draw[dashed] (\x.south) -- ++(0,-22.3);
   }
 
-  \seqstep{seqmsg}{d1}{d2}{-1.2}{Select grade-level test}
-  \seqstep{seqmsg}{d2}{d3}{-2.0}{POST start grade test}
-  \seqstep{seqmsg}{d3}{d4}{-2.8}{Collect eligible grade templates}
-  \seqstep{seqmsg}{d4}{d5}{-3.6}{Create attempt and snapshots}
-  \seqstep{seqreturn}{d5}{d2}{-4.4}{Generated test session}
-  \seqstep{seqmsg}{d1}{d2}{-5.2}{Submit final answers}
-  \seqstep{seqmsg}{d2}{d3}{-6.0}{POST finish test}
-  \seqstep{seqmsg}{d3}{d5}{-6.8}{Persist graded attempt and score}
-  \seqstep{seqreturn}{d5}{d2}{-7.4}{Completed test result}
+  \seqstep{seqmsg}{l1}{l2}{-1.3}{Click "Start Grade Test"}
+  \seqstep{seqmsg}{l2}{l3}{-2.6}{POST /tests/grade \{gradeId\}}
+  \seqstep{seqmsg}{l3}{l4}{-3.9}{CheckTestEligibility(userId, gradeId)}
+  \seqstep{seqmsg}{l4}{l5}{-5.2}{Count completed lessons in grade}
+  \seqstep{seqreturn}{l5}{l4}{-6.5}{completion\_rate < 80\%}
+  \seqstep{seqreturn}{l4}{l3}{-7.8}{IneligibleError -> 403 Forbidden}
+  \seqstep{seqmsg}{l4}{l5}{-9.1}{Generate random grade test questions}
+  \seqstep{seqmsg}{l4}{l5}{-10.4}{Save test session details \& expiry}
+  \seqstep{seqreturn}{l4}{l3}{-11.7}{200 OK + Test Session Payload}
+  \seqstep{seqmsg}{l1}{l2}{-13.0}{Submit final test answers}
+  \seqstep{seqmsg}{l3}{l4}{-14.3}{SubmitGradeTest(sessionId, answers)}
+  \seqstep{seqmsg}{l4}{l5}{-15.6}{Check if submission time > expiry}
+  \seqstep{seqreturn}{l5}{l4}{-16.9}{Time limit exceeded -> score 0}
+  \seqstep{seqmsg}{l4}{l5}{-18.2}{Grade test answers, write mastery\_level}
+  \seqstep{seqmsg}{l4}{l6}{-19.5}{Clear user progress caching keys}
+  \seqstep{seqreturn}{l4}{l2}{-20.8}{200 OK + Grade Test Scorecard}
 \end{tikzpicture}
 }
-\caption{Sequence diagram for taking a grade-level test}
-\label{fig:seq-grade-test}
+\caption{Sequence diagram for UC-ST-04: Grade-Level Testing}
+\label{fig:seq-uc-st-04}
 \end{figure}
 
-\subsubsection{Use case 5: View Progress and Achievements}
-
+\clearpage\subsubsection{UC-ST-05: Classified Subject Access Request}
 \begin{figure}[H]
 \centering
-\resizebox{\textwidth}{!}{
+\resizebox{0.95\textwidth}{!}{
 \begin{tikzpicture}[font=\footnotesize]
-  \node[lifelinehead] (e1) at (0,0) {Student};
-  \node[lifelinehead] (e2) at (3.5,0) {Frontend};
-  \node[lifelinehead] (e3) at (7,0) {Profile Routes};
-  \node[lifelinehead] (e4) at (10.5,0) {Progress Services};
-  \node[lifelinehead] (e5) at (14,0) {PostgreSQL};
+  \node[lifelinehead] (l1) at (0.0,0) {Student};
+  \node[lifelinehead] (l2) at (4.0,0) {Frontend};
+  \node[lifelinehead] (l3) at (8.0,0) {Subject Route};
+  \node[lifelinehead] (l4) at (12.0,0) {Access Service};
+  \node[lifelinehead] (l5) at (16.0,0) {PostgreSQL};
 
-  \foreach \x in {e1,e2,e3,e4,e5} {
-    \draw[dashed] (\x.south) -- ++(0,-6.8);
+  \foreach \x in {l1,l2,l3,l4,l5} {
+    \draw[dashed] (\x.south) -- ++(0,-14.5);
   }
 
-  \seqstep{seqmsg}{e1}{e2}{-1.2}{Open dashboard or achievements page}
-  \seqstep{seqmsg}{e2}{e3}{-2.0}{GET profile, stats, and achievements}
-  \seqstep{seqmsg}{e3}{e4}{-2.8}{Assemble progress summary}
-  \seqstep{seqmsg}{e4}{e5}{-3.6}{Query XP, mastery, and reward records}
-  \seqstep{seqreturn}{e5}{e4}{-4.4}{Progress and achievement data}
-  \seqstep{seqreturn}{e4}{e2}{-5.2}{Dashboard payload}
-  \seqstep{seqreturn}{e2}{e1}{-6.0}{Rendered charts, badges, and history}
+  \seqstep{seqmsg}{l1}{l2}{-1.3}{Click "Request Access" for restricted subject}
+  \seqstep{seqmsg}{l2}{l3}{-2.6}{POST /requests/subject \{subjectId\}}
+  \seqstep{seqmsg}{l3}{l4}{-3.9}{CheckPendingRequest(userId, subjectId)}
+  \seqstep{seqmsg}{l4}{l5}{-5.2}{Query subject\_access\_requests table}
+  \seqstep{seqreturn}{l5}{l4}{-6.5}{Active request status (PENDING)}
+  \seqstep{seqreturn}{l4}{l3}{-7.8}{Throw DuplicateRequestError}
+  \seqstep{seqreturn}{l3}{l2}{-9.1}{400 Bad Request: Active request exists}
+  \seqstep{seqmsg}{l4}{l5}{-10.4}{Insert new request record (status = PENDING)}
+  \seqstep{seqreturn}{l5}{l4}{-11.7}{Request record saved}
+  \seqstep{seqreturn}{l4}{l2}{-13.0}{201 Created + confirmation payload}
 \end{tikzpicture}
 }
-\caption{Sequence diagram for viewing progress and achievements}
-\label{fig:seq-progress-achievements}
+\caption{Sequence diagram for UC-ST-05: Classified Subject Access Request}
+\label{fig:seq-uc-st-05}
 \end{figure}
 
-\subsubsection{Use case 6: Manage Content and Question Templates}
-
+\clearpage\subsubsection{UC-ST-06: Interactive Tutoring Chatbot Consultation}
 \begin{figure}[H]
 \centering
-\resizebox{\textwidth}{!}{
+\resizebox{0.95\textwidth}{!}{
 \begin{tikzpicture}[font=\footnotesize]
-  \node[lifelinehead] (f1) at (0,0) {Teacher/Supervisor/Admin};
-  \node[lifelinehead] (f2) at (3.5,0) {Frontend};
-  \node[lifelinehead] (f3) at (7,0) {Admin/Test Routes};
-  \node[lifelinehead] (f4) at (10.5,0) {Content Services};
-  \node[lifelinehead] (f5) at (14,0) {PostgreSQL};
+  \node[lifelinehead] (l1) at (0.0,0) {Student};
+  \node[lifelinehead] (l2) at (4.0,0) {Frontend};
+  \node[lifelinehead] (l3) at (8.0,0) {Chatbot Route};
+  \node[lifelinehead] (l4) at (12.0,0) {FastAPI Tutor};
+  \node[lifelinehead] (l5) at (16.0,0) {SymPy Engine};
+  \node[lifelinehead] (l6) at (20.0,0) {Gemini LLM};
+  \node[lifelinehead] (l7) at (24.0,0) {PostgreSQL};
+  \node[lifelinehead] (l8) at (28.0,0) {MongoDB};
 
-  \foreach \x in {f1,f2,f3,f4,f5} {
-    \draw[dashed] (\x.south) -- ++(0,-7.6);
+  \foreach \x in {l1,l2,l3,l4,l5,l6,l7,l8} {
+    \draw[dashed] (\x.south) -- ++(0,-18.2);
   }
 
-  \seqstep{seqmsg}{f1}{f2}{-1.2}{Create or edit lesson/template}
-  \seqstep{seqmsg}{f2}{f3}{-2.0}{POST, PUT, or DELETE management request}
-  \seqstep{seqmsg}{f3}{f4}{-2.8}{Check permission and subject scope}
-  \seqstep{seqmsg}{f4}{f5}{-3.6}{Load current data and save changes}
-  \seqstep{seqreturn}{f5}{f4}{-4.4}{Updated record set}
-  \seqstep{seqreturn}{f4}{f3}{-5.2}{Validated management response}
-  \seqstep{seqreturn}{f3}{f2}{-6.0}{Refreshed content payload}
-  \seqstep{seqreturn}{f2}{f1}{-6.8}{Updated management view}
+  \seqstep{seqmsg}{l1}{l2}{-1.3}{Submit mathematical problem or question}
+  \seqstep{seqmsg}{l2}{l3}{-2.6}{POST /chatbot/message \{message\}}
+  \seqstep{seqmsg}{l3}{l7}{-3.9}{Query remaining AI tutoring credits}
+  \seqstep{seqreturn}{l7}{l3}{-5.2}{Credits balance = 0}
+  \seqstep{seqreturn}{l3}{l2}{-6.5}{403 Forbidden: Out of credits}
+  \seqstep{seqmsg}{l3}{l4}{-7.8}{Forward message payload for processing}
+  \seqstep{seqmsg}{l4}{l5}{-9.1}{Parse \& compute formulas symbolically}
+  \seqstep{seqreturn}{l5}{l4}{-10.4}{SymPy variables extraction report}
+  \seqstep{seqmsg}{l4}{l8}{-11.7}{Retrieve context history records}
+  \seqstep{seqreturn}{l8}{l4}{-13.0}{Previous conversation logs}
+  \seqstep{seqmsg}{l4}{l6}{-14.3}{Stream explanations API call}
+  \seqstep{seqreturn}{l6}{l2}{-15.6}{Bilingual tutoring stream response}
+  \seqstep{seqmsg}{l3}{l7}{-16.9}{Decrement user tutoring credit in Postgres}
 \end{tikzpicture}
 }
-\caption{Sequence diagram for managing content and question templates}
-\label{fig:seq-manage-content}
+\caption{Sequence diagram for UC-ST-06: Interactive Tutoring Chatbot Consultation}
+\label{fig:seq-uc-st-06}
 \end{figure}
 
-\subsubsection{Use case 7: Manage Learning Unit Members and Seats}
-
+\clearpage\subsubsection{UC-ST-07: Gamification Progression and Economy}
 \begin{figure}[H]
 \centering
-\resizebox{\textwidth}{!}{
+\resizebox{0.95\textwidth}{!}{
 \begin{tikzpicture}[font=\footnotesize]
-  \node[lifelinehead] (g1) at (0,0) {Supervisor/Admin};
-  \node[lifelinehead] (g2) at (3.5,0) {Frontend};
-  \node[lifelinehead] (g3) at (7,0) {Supervisor Route};
-  \node[lifelinehead] (g4) at (10.5,0) {Learn Unit Service};
-  \node[lifelinehead] (g5) at (14,0) {PostgreSQL};
+  \node[lifelinehead] (l1) at (0.0,0) {Student};
+  \node[lifelinehead] (l2) at (4.0,0) {Frontend};
+  \node[lifelinehead] (l3) at (8.0,0) {Gamify Route};
+  \node[lifelinehead] (l4) at (12.0,0) {Progression Service};
+  \node[lifelinehead] (l5) at (16.0,0) {PostgreSQL};
 
-  \foreach \x in {g1,g2,g3,g4,g5} {
-    \draw[dashed] (\x.south) -- ++(0,-7.6);
+  \foreach \x in {l1,l2,l3,l4,l5} {
+    \draw[dashed] (\x.south) -- ++(0,-16.0);
   }
 
-  \seqstep{seqmsg}{g1}{g2}{-1.2}{Open member or seat management}
-  \seqstep{seqmsg}{g2}{g3}{-2.0}{POST /supervisor/members or /buy-slots}
-  \seqstep{seqmsg}{g3}{g4}{-2.8}{Resolve learn unit context}
-  \seqstep{seqmsg}{g4}{g5}{-3.6}{Load supervisor, unit, and limits}
-  \seqstep{seqreturn}{g5}{g4}{-4.4}{Unit state and entitlement data}
-  \seqstep{seqmsg}{g4}{g5}{-5.2}{Persist member account or seat purchase}
-  \seqstep{seqreturn}{g5}{g3}{-6.0}{Updated learn unit state}
-  \seqstep{seqreturn}{g3}{g1}{-6.8}{Refreshed roster or slot summary}
+  \seqstep{seqmsg}{l1}{l2}{-1.3}{Select item to purchase from Shop}
+  \seqstep{seqmsg}{l2}{l3}{-2.6}{POST /shop/purchase \{itemId\}}
+  \seqstep{seqmsg}{l3}{l4}{-3.9}{BuyShopItem(userId, itemId)}
+  \seqstep{seqmsg}{l4}{l5}{-5.2}{Query user coin balance and item price}
+  \seqstep{seqreturn}{l5}{l4}{-6.5}{coins = 15, price = 50}
+  \seqstep{seqreturn}{l4}{l3}{-7.8}{Throw InsufficientFundsError}
+  \seqstep{seqreturn}{l3}{l2}{-9.1}{400 Bad Request: Insufficient coins}
+  \seqstep{seqmsg}{l4}{l5}{-10.4}{SQL Transaction: Deduct coins, unlock cosmetic}
+  \seqstep{seqreturn}{l5}{l4}{-11.7}{Transaction success confirmation}
+  \seqstep{seqreturn}{l4}{l2}{-13.0}{200 OK + new balance + unlocked cosmetic}
+  \seqstep{seqreturn}{l2}{l1}{-14.3}{Render updated cosmetics inventory}
 \end{tikzpicture}
 }
-\caption{Sequence diagram for managing learning unit members and seats}
-\label{fig:seq-manage-learning-unit}
+\caption{Sequence diagram for UC-ST-07: Gamification Progression and Economy}
+\label{fig:seq-uc-st-07}
 \end{figure}
 
-\subsubsection{Use case 8: Manage Roles, Access Control, and Dashboard}
-
+\clearpage\subsubsection{UC-ST-08: Play Math Games and Challenges}
 \begin{figure}[H]
 \centering
-\resizebox{\textwidth}{!}{
+\resizebox{0.95\textwidth}{!}{
 \begin{tikzpicture}[font=\footnotesize]
-  \node[lifelinehead] (h1) at (0,0) {Administrator};
-  \node[lifelinehead] (h2) at (3.5,0) {Frontend};
-  \node[lifelinehead] (h3) at (7,0) {Admin Route};
-  \node[lifelinehead] (h4) at (10.5,0) {Admin Services};
-  \node[lifelinehead] (h5) at (14,0) {PostgreSQL};
+  \node[lifelinehead] (l1) at (0.0,0) {Student};
+  \node[lifelinehead] (l2) at (4.0,0) {Frontend};
+  \node[lifelinehead] (l3) at (8.0,0) {Game Route};
+  \node[lifelinehead] (l4) at (12.0,0) {Matchmaker};
+  \node[lifelinehead] (l5) at (16.0,0) {Game Room WS};
+  \node[lifelinehead] (l6) at (20.0,0) {PostgreSQL};
+  \node[lifelinehead] (l7) at (24.0,0) {Redis Lobby};
 
-  \foreach \x in {h1,h2,h3,h4,h5} {
-    \draw[dashed] (\x.south) -- ++(0,-7.6);
+  \foreach \x in {l1,l2,l3,l4,l5,l6,l7} {
+    \draw[dashed] (\x.south) -- ++(0,-17.0);
   }
 
-  \seqstep{seqmsg}{h1}{h2}{-1.2}{Open users, roles, or dashboard view}
-  \seqstep{seqmsg}{h2}{h3}{-2.0}{GET or PUT admin management request}
-  \seqstep{seqmsg}{h3}{h4}{-2.8}{Verify admin authority}
-  \seqstep{seqmsg}{h4}{h5}{-3.6}{Load or update users, roles, permissions, stats}
-  \seqstep{seqreturn}{h5}{h4}{-4.4}{Administrative records and aggregates}
-  \seqstep{seqreturn}{h4}{h3}{-5.2}{Dashboard or update response}
-  \seqstep{seqreturn}{h3}{h2}{-6.0}{Renderable admin payload}
-  \seqstep{seqreturn}{h2}{h1}{-6.8}{Updated dashboard or access-control view}
+  \seqstep{seqmsg}{l1}{l2}{-1.3}{Join multiplayer math battle lobby}
+  \seqstep{seqmsg}{l2}{l3}{-2.6}{POST /games/lobby/create \{gameMode\}}
+  \seqstep{seqmsg}{l3}{l6}{-3.9}{Query game ticket balance}
+  \seqstep{seqreturn}{l6}{l3}{-5.2}{tickets = 0}
+  \seqstep{seqreturn}{l3}{l2}{-6.5}{400 Bad Request: Ticket required}
+  \seqstep{seqmsg}{l3}{l7}{-7.8}{Deduct ticket from DB, initialize Redis room}
+  \seqstep{seqreturn}{l3}{l2}{-9.1}{200 OK + lobby code}
+  \seqstep{seqmsg}{l2}{l5}{-10.4}{Connect WebSocket to ws://games/room/:code}
+  \seqstep{seqmsg}{l4}{l5}{-11.7}{Pair opponents and broadcast start event}
+  \seqstep{seqmsg}{l2}{l6}{-13.0}{POST /games/match/:id/score \{score\}}
+  \seqstep{seqreturn}{l6}{l2}{-14.3}{Leaderboard listings updated (Success)}
 \end{tikzpicture}
 }
-\caption{Sequence diagram for managing roles, access control, and dashboard data}
-\label{fig:seq-admin-rbac-dashboard}
+\caption{Sequence diagram for UC-ST-08: Play Math Games and Challenges}
+\label{fig:seq-uc-st-08}
+\end{figure}
+
+\clearpage\subsubsection{UC-ST-09: Subscription Upgrade}
+\begin{figure}[H]
+\centering
+\resizebox{0.95\textwidth}{!}{
+\begin{tikzpicture}[font=\footnotesize]
+  \node[lifelinehead] (l1) at (0.0,0) {Student};
+  \node[lifelinehead] (l2) at (4.0,0) {Frontend};
+  \node[lifelinehead] (l3) at (8.0,0) {Billing Route};
+  \node[lifelinehead] (l4) at (12.0,0) {Stripe API};
+  \node[lifelinehead] (l5) at (16.0,0) {PostgreSQL};
+
+  \foreach \x in {l1,l2,l3,l4,l5} {
+    \draw[dashed] (\x.south) -- ++(0,-15.6);
+  }
+
+  \seqstep{seqmsg}{l1}{l2}{-1.3}{Click premium upgrade pricing tier}
+  \seqstep{seqmsg}{l2}{l3}{-2.6}{POST /subscription/checkout \{planId\}}
+  \seqstep{seqmsg}{l3}{l4}{-3.9}{Create Stripe Billing Checkout Session}
+  \seqstep{seqreturn}{l4}{l2}{-5.2}{Redirection checkout URL link}
+  \seqstep{seqmsg}{l4}{l3}{-6.5}{Webhooks signature verification}
+  \seqstep{seqmsg}{l3}{l5}{-7.8}{Upgrade user subscription status (sub\_student)}
+  \seqstep{seqreturn}{l5}{l3}{-9.1}{Database update committed}
+  \seqstep{seqmsg}{l4}{l3}{-10.4}{Stripe Webhook: checkout.session.completed}
+  \seqstep{seqreturn}{l3}{l2}{-11.7}{Updated premium session active (Success)}
+  \seqstep{seqreturn}{l2}{l1}{-13.0}{Unlock premium content dashboard}
+\end{tikzpicture}
+}
+\caption{Sequence diagram for UC-ST-09: Subscription Upgrade}
+\label{fig:seq-uc-st-09}
+\end{figure}
+
+% ----------------------------------------------------
+% Teacher Sequence Diagrams (UC-TE-01 to UC-TE-05)
+% ----------------------------------------------------
+\clearpage\subsubsection{UC-TE-01: Scoped Analytics Workspace}
+\begin{figure}[H]
+\centering
+\resizebox{0.95\textwidth}{!}{
+\begin{tikzpicture}[font=\footnotesize]
+  \node[lifelinehead] (l1) at (0.0,0) {Teacher};
+  \node[lifelinehead] (l2) at (4.0,0) {Frontend};
+  \node[lifelinehead] (l3) at (8.0,0) {Analytics Route};
+  \node[lifelinehead] (l4) at (12.0,0) {Analytics Service};
+  \node[lifelinehead] (l5) at (16.0,0) {PostgreSQL};
+
+  \foreach \x in {l1,l2,l3,l4,l5} {
+    \draw[dashed] (\x.south) -- ++(0,-14.5);
+  }
+
+  \seqstep{seqmsg}{l1}{l2}{-1.3}{Open teacher dashboard analytics}
+  \seqstep{seqmsg}{l2}{l3}{-2.6}{GET /teacher/analytics}
+  \seqstep{seqmsg}{l3}{l4}{-3.9}{CheckTeacherRole(userId)}
+  \seqstep{seqreturn}{l4}{l3}{-5.2}{Invalid role -> 403 Forbidden}
+  \seqstep{seqmsg}{l4}{l5}{-6.5}{Query subjects mapped to teacher's ID}
+  \seqstep{seqreturn}{l5}{l4}{-7.8}{List of assigned subject IDs}
+  \seqstep{seqmsg}{l4}{l5}{-9.1}{Query aggregated attempts \& student stats}
+  \seqstep{seqreturn}{l5}{l4}{-10.4}{Aggregated data rows}
+  \seqstep{seqreturn}{l4}{l2}{-11.7}{200 OK + Scoped Analytics Payload}
+  \seqstep{seqreturn}{l2}{l1}{-13.0}{Render charts and statistics}
+\end{tikzpicture}
+}
+\caption{Sequence diagram for UC-TE-01: Scoped Analytics Workspace}
+\label{fig:seq-uc-te-01}
+\end{figure}
+
+\subsubsection{UC-TE-02: Scoped Lesson Management}
+\begin{figure}[H]
+\centering
+\resizebox{0.95\textwidth}{!}{
+\begin{tikzpicture}[font=\footnotesize]
+  \node[lifelinehead] (l1) at (0.0,0) {Teacher};
+  \node[lifelinehead] (l2) at (4.0,0) {Frontend};
+  \node[lifelinehead] (l3) at (8.0,0) {Lesson Route};
+  \node[lifelinehead] (l4) at (12.0,0) {Lesson Service};
+  \node[lifelinehead] (l5) at (16.0,0) {Redis Cache};
+  \node[lifelinehead] (l6) at (20.0,0) {PostgreSQL};
+
+  \foreach \x in {l1,l2,l3,l4,l5,l6} {
+    \draw[dashed] (\x.south) -- ++(0,-13.2);
+  }
+
+  \seqstep{seqmsg}{l1}{l2}{-1.3}{Submit lesson contents}
+  \seqstep{seqmsg}{l2}{l3}{-2.6}{POST /lessons \{subjectId, chapterId, markdown\}}
+  \seqstep{seqmsg}{l3}{l4}{-3.9}{VerifyTeacherSubjectScope(userId, subjectId)}
+  \seqstep{seqreturn}{l4}{l3}{-5.2}{Unauthorized scope -> 403 Forbidden}
+  \seqstep{seqmsg}{l4}{l6}{-6.5}{Write markdown details to lessons table}
+  \seqstep{seqreturn}{l6}{l4}{-7.8}{Lesson record created}
+  \seqstep{seqmsg}{l4}{l5}{-9.1}{Delete cache: cache:subject:subjectId:lessons}
+  \seqstep{seqreturn}{l4}{l2}{-10.4}{201 Created + lesson record payload}
+  \seqstep{seqreturn}{l2}{l1}{-11.7}{Refresh lesson lists view}
+\end{tikzpicture}
+}
+\caption{Sequence diagram for UC-TE-02: Scoped Lesson Management}
+\label{fig:seq-uc-te-02}
+\end{figure}
+
+\clearpage\subsubsection{UC-TE-03: Scoped Question Template Management}
+\begin{figure}[H]
+\centering
+\resizebox{0.95\textwidth}{!}{
+\begin{tikzpicture}[font=\footnotesize]
+  \node[lifelinehead] (l1) at (0.0,0) {Teacher};
+  \node[lifelinehead] (l2) at (4.0,0) {Frontend};
+  \node[lifelinehead] (l3) at (8.0,0) {Template Route};
+  \node[lifelinehead] (l4) at (12.0,0) {Template Service};
+  \node[lifelinehead] (l5) at (16.0,0) {SymPy Engine};
+  \node[lifelinehead] (l6) at (20.0,0) {PostgreSQL};
+
+  \foreach \x in {l1,l2,l3,l4,l5,l6} {
+    \draw[dashed] (\x.south) -- ++(0,-16.0);
+  }
+
+  \seqstep{seqmsg}{l1}{l2}{-1.3}{Save JSON question template configuration}
+  \seqstep{seqmsg}{l2}{l3}{-2.6}{POST /templates \{lessonId, configJSON\}}
+  \seqstep{seqmsg}{l3}{l4}{-3.9}{VerifyLessonWriteScope(userId, lessonId)}
+  \seqstep{seqmsg}{l4}{l4}{-5.2}{Validate configJSON schema parameters}
+  \seqstep{seqmsg}{l4}{l5}{-6.5}{Evaluate formula variables bounds}
+  \seqstep{seqreturn}{l5}{l4}{-7.8}{Validation response (success/failure)}
+  \seqstep{seqreturn}{l4}{l3}{-9.1}{Constraint validation fail -> 400 Bad Request}
+  \seqstep{seqmsg}{l4}{l6}{-10.4}{Write config to question\_templates table}
+  \seqstep{seqreturn}{l6}{l4}{-11.7}{Template record created}
+  \seqstep{seqreturn}{l4}{l2}{-13.0}{201 Created + template payload}
+  \seqstep{seqreturn}{l2}{l1}{-14.3}{Render question previews}
+\end{tikzpicture}
+}
+\caption{Sequence diagram for UC-TE-03: Scoped Question Template Management}
+\label{fig:seq-uc-te-03}
+\end{figure}
+
+\clearpage\subsubsection{UC-TE-04: Organize Content Hierarchy}
+\begin{figure}[H]
+\centering
+\resizebox{0.95\textwidth}{!}{
+\begin{tikzpicture}[font=\footnotesize]
+  \node[lifelinehead] (l1) at (0.0,0) {Teacher};
+  \node[lifelinehead] (l2) at (4.0,0) {Frontend};
+  \node[lifelinehead] (l3) at (8.0,0) {Content Route};
+  \node[lifelinehead] (l4) at (12.0,0) {Hierarchy Service};
+  \node[lifelinehead] (l5) at (16.0,0) {PostgreSQL};
+
+  \foreach \x in {l1,l2,l3,l4,l5} {
+    \draw[dashed] (\x.south) -- ++(0,-12.0);
+  }
+
+  \seqstep{seqmsg}{l1}{l2}{-1.3}{Drag/Rearrange topics tree structures}
+  \seqstep{seqmsg}{l2}{l3}{-2.6}{PUT /hierarchy/arrange \{lessonId, parentId\}}
+  \seqstep{seqmsg}{l3}{l4}{-3.9}{VerifyAccessScope(userId, parentId)}
+  \seqstep{seqreturn}{l4}{l3}{-5.2}{Scope mismatch -> 403 Forbidden}
+  \seqstep{seqmsg}{l4}{l5}{-6.5}{Update parent associations \& sort indexes}
+  \seqstep{seqreturn}{l5}{l4}{-7.8}{Hierarchy mapping updated}
+  \seqstep{seqreturn}{l4}{l2}{-9.1}{200 OK + updated order index}
+  \seqstep{seqreturn}{l2}{l1}{-10.4}{Refresh dynamic topics tree display}
+\end{tikzpicture}
+}
+\caption{Sequence diagram for UC-TE-04: Organize Content Hierarchy}
+\label{fig:seq-uc-te-04}
+\end{figure}
+
+\subsubsection{UC-TE-05: View Scoped Content \& Testing Data}
+\begin{figure}[H]
+\centering
+\resizebox{0.95\textwidth}{!}{
+\begin{tikzpicture}[font=\footnotesize]
+  \node[lifelinehead] (l1) at (0.0,0) {Teacher};
+  \node[lifelinehead] (l2) at (4.0,0) {Frontend};
+  \node[lifelinehead] (l3) at (8.0,0) {Reports Route};
+  \node[lifelinehead] (l4) at (12.0,0) {Reports Service};
+  \node[lifelinehead] (l5) at (16.0,0) {PostgreSQL};
+
+  \foreach \x in {l1,l2,l3,l4,l5} {
+    \draw[dashed] (\x.south) -- ++(0,-12.0);
+  }
+
+  \seqstep{seqmsg}{l1}{l2}{-1.3}{Open students progress reports}
+  \seqstep{seqmsg}{l2}{l3}{-2.6}{GET /workspace/content-data}
+  \seqstep{seqmsg}{l3}{l4}{-3.9}{VerifyTeacherAssignment(userId)}
+  \seqstep{seqreturn}{l4}{l3}{-5.2}{403 Forbidden: Restricted access}
+  \seqstep{seqmsg}{l4}{l5}{-6.5}{Query student attempts grouped by template ID}
+  \seqstep{seqreturn}{l5}{l4}{-7.8}{Failure rates and logs outputs}
+  \seqstep{seqreturn}{l4}{l2}{-9.1}{200 OK + aggregate metrics payload}
+  \seqstep{seqreturn}{l2}{l1}{-10.4}{Display reports table grids}
+\end{tikzpicture}
+}
+\caption{Sequence diagram for UC-TE-05: View Scoped Content \& Testing Data}
+\label{fig:seq-uc-te-05}
+\end{figure}
+
+% ----------------------------------------------------
+% Supervisor Sequence Diagrams (UC-SU-01 to UC-SU-04)
+% ----------------------------------------------------
+\clearpage\subsubsection{UC-SU-01: Learn Unit Registration \& Seat Management}
+\begin{figure}[H]
+\centering
+\resizebox{0.95\textwidth}{!}{
+\begin{tikzpicture}[font=\footnotesize]
+  \node[lifelinehead] (l1) at (0.0,0) {Supervisor};
+  \node[lifelinehead] (l2) at (4.0,0) {Frontend};
+  \node[lifelinehead] (l3) at (8.0,0) {Billing Route};
+  \node[lifelinehead] (l4) at (12.0,0) {Stripe API};
+  \node[lifelinehead] (l5) at (16.0,0) {PostgreSQL};
+
+  \foreach \x in {l1,l2,l3,l4,l5} {
+    \draw[dashed] (\x.south) -- ++(0,-17.0);
+  }
+
+  \seqstep{seqmsg}{l1}{l2}{-1.3}{Select seats upgrade package}
+  \seqstep{seqmsg}{l2}{l3}{-2.6}{POST /supervisor/checkout \{slotsCount\}}
+  \seqstep{seqmsg}{l3}{l5}{-3.9}{VerifySupervisorRole(userId)}
+  \seqstep{seqmsg}{l3}{l4}{-5.2}{POST /v1/checkout/sessions}
+  \seqstep{seqreturn}{l4}{l2}{-6.5}{Checkout session redirection link}
+  \seqstep{seqreturn}{l2}{l1}{-7.8}{Redirect user to Stripe checkout window}
+  \seqstep{seqmsg}{l4}{l3}{-9.1}{Stripe Webhook: invoice.payment\_succeeded}
+  \seqstep{seqmsg}{l3}{l5}{-10.4}{Create learn\_units \& update seats quota}
+  \seqstep{seqreturn}{l5}{l3}{-11.7}{Database transaction committed}
+  \seqstep{seqreturn}{l3}{l2}{-13.0}{Updated premium seats balance (Success)}
+  \seqstep{seqreturn}{l2}{l1}{-14.3}{Render updated seat usage details}
+\end{tikzpicture}
+}
+\caption{Sequence diagram for UC-SU-01: Learn Unit Registration \& Seat Management}
+\label{fig:seq-uc-su-01}
+\end{figure}
+
+\clearpage\subsubsection{UC-SU-02: Manage Learn Unit Members}
+\begin{figure}[H]
+\centering
+\resizebox{0.95\textwidth}{!}{
+\begin{tikzpicture}[font=\footnotesize]
+  \node[lifelinehead] (l1) at (0.0,0) {Supervisor};
+  \node[lifelinehead] (l2) at (4.0,0) {Frontend};
+  \node[lifelinehead] (l3) at (8.0,0) {Unit Route};
+  \node[lifelinehead] (l4) at (12.0,0) {Unit Service};
+  \node[lifelinehead] (l5) at (16.0,0) {PostgreSQL};
+
+  \foreach \x in {l1,l2,l3,l4,l5} {
+    \draw[dashed] (\x.south) -- ++(0,-16.0);
+  }
+
+  \seqstep{seqmsg}{l1}{l2}{-1.3}{Add student account (email, role)}
+  \seqstep{seqmsg}{l2}{l3}{-2.6}{POST /unit/members \{email, role\}}
+  \seqstep{seqmsg}{l3}{l4}{-3.9}{CheckLearnUnitSeats(supervisorId)}
+  \seqstep{seqmsg}{l4}{l5}{-5.2}{Count unit student records}
+  \seqstep{seqreturn}{l5}{l4}{-6.5}{Current count >= seats quota}
+  \seqstep{seqreturn}{l4}{l3}{-7.8}{SeatLimitExceededError -> 400 Bad Request}
+  \seqstep{seqmsg}{l4}{l5}{-9.1}{Hash password, insert user record}
+  \seqstep{seqmsg}{l4}{l5}{-10.4}{Insert unit membership associations}
+  \seqstep{seqreturn}{l5}{l4}{-11.7}{Transaction committed successfully}
+  \seqstep{seqreturn}{l4}{l2}{-13.0}{201 Created + student profile record}
+  \seqstep{seqreturn}{l2}{l1}{-14.3}{Render rosters table update notification}
+\end{tikzpicture}
+}
+\caption{Sequence diagram for UC-SU-02: Manage Learn Unit Members}
+\label{fig:seq-uc-su-02}
+\end{figure}
+
+\clearpage\subsubsection{UC-SU-03: Manage Private Content \& Resources}
+\begin{figure}[H]
+\centering
+\resizebox{0.95\textwidth}{!}{
+\begin{tikzpicture}[font=\footnotesize]
+  \node[lifelinehead] (l1) at (0.0,0) {Supervisor};
+  \node[lifelinehead] (l2) at (4.0,0) {Frontend};
+  \node[lifelinehead] (l3) at (8.0,0) {Content Route};
+  \node[lifelinehead] (l4) at (12.0,0) {Workspace Service};
+  \node[lifelinehead] (l5) at (16.0,0) {PostgreSQL};
+
+  \foreach \x in {l1,l2,l3,l4,l5} {
+    \draw[dashed] (\x.south) -- ++(0,-14.5);
+  }
+
+  \seqstep{seqmsg}{l1}{l2}{-1.3}{Create private lesson or template}
+  \seqstep{seqmsg}{l2}{l3}{-2.6}{POST /unit/private-content \{lessonDetails\}}
+  \seqstep{seqmsg}{l3}{l4}{-3.9}{VerifyUnitLimits(unitId)}
+  \seqstep{seqmsg}{l4}{l5}{-5.2}{Count private lessons created by unit}
+  \seqstep{seqreturn}{l5}{l4}{-6.5}{Count >= private capacity limit (10)}
+  \seqstep{seqreturn}{l4}{l3}{-7.8}{CapacityLimitExceeded -> 400 Bad Request}
+  \seqstep{seqmsg}{l4}{l5}{-9.1}{Insert private lesson record with unit ID}
+  \seqstep{seqreturn}{l5}{l4}{-10.4}{Record committed}
+  \seqstep{seqreturn}{l4}{l2}{-11.7}{201 Created + private lesson metadata}
+  \seqstep{seqreturn}{l2}{l1}{-13.0}{Refresh library listings display}
+\end{tikzpicture}
+}
+\caption{Sequence diagram for UC-SU-03: Manage Private Content \& Resources}
+\label{fig:seq-uc-su-03}
+\end{figure}
+
+\subsubsection{UC-SU-04: Organizational Capacity Limits Administration}
+\begin{figure}[H]
+\centering
+\resizebox{0.95\textwidth}{!}{
+\begin{tikzpicture}[font=\footnotesize]
+  \node[lifelinehead] (l1) at (0.0,0) {Supervisor};
+  \node[lifelinehead] (l2) at (4.0,0) {Frontend};
+  \node[lifelinehead] (l3) at (8.0,0) {Limits Route};
+  \node[lifelinehead] (l4) at (12.0,0) {Workspace Service};
+  \node[lifelinehead] (l5) at (16.0,0) {PostgreSQL};
+
+  \foreach \x in {l1,l2,l3,l4,l5} {
+    \draw[dashed] (\x.south) -- ++(0,-11.0);
+  }
+
+  \seqstep{seqmsg}{l1}{l2}{-1.3}{Open capacity metrics screen}
+  \seqstep{seqmsg}{l2}{l3}{-2.6}{GET /unit/limits}
+  \seqstep{seqmsg}{l3}{l4}{-3.9}{GetUnitLimitMetrics(supervisorId)}
+  \seqstep{seqmsg}{l4}{l5}{-5.2}{Count active members \& customized templates}
+  \seqstep{seqreturn}{l5}{l4}{-6.5}{Active users count \& resources count data}
+  \seqstep{seqreturn}{l4}{l2}{-7.8}{200 OK + metrics utilization values}
+  \seqstep{seqreturn}{l2}{l1}{-9.1}{Render capacity gauges dashboard}
+\end{tikzpicture}
+}
+\caption{Sequence diagram for UC-SU-04: Organizational Capacity Limits Administration}
+\label{fig:seq-uc-su-04}
+\end{figure}
+
+% ----------------------------------------------------
+% Admin Sequence Diagrams (UC-AD-01 to UC-AD-08)
+% ----------------------------------------------------
+\clearpage\subsubsection{UC-AD-01: Global User Administration}
+\begin{figure}[H]
+\centering
+\resizebox{0.95\textwidth}{!}{
+\begin{tikzpicture}[font=\footnotesize]
+  \node[lifelinehead] (l1) at (0.0,0) {Admin};
+  \node[lifelinehead] (l2) at (4.0,0) {Frontend};
+  \node[lifelinehead] (l3) at (8.0,0) {User Route};
+  \node[lifelinehead] (l4) at (12.0,0) {Admin Service};
+  \node[lifelinehead] (l5) at (16.0,0) {PostgreSQL};
+
+  \foreach \x in {l1,l2,l3,l4,l5} {
+    \draw[dashed] (\x.south) -- ++(0,-12.0);
+  }
+
+  \seqstep{seqmsg}{l1}{l2}{-1.3}{Request global profile logs}
+  \seqstep{seqmsg}{l2}{l3}{-2.6}{GET /admin/users/:id}
+  \seqstep{seqmsg}{l3}{l4}{-3.9}{VerifyAdminPermissions(adminId)}
+  \seqstep{seqreturn}{l4}{l3}{-5.2}{Access Denied -> 403 Forbidden}
+  \seqstep{seqmsg}{l4}{l5}{-6.5}{Query user profiles tables joined with logs}
+  \seqstep{seqreturn}{l5}{l4}{-7.8}{Full database profile \& security logs}
+  \seqstep{seqreturn}{l4}{l2}{-9.1}{200 OK + audit data details}
+  \seqstep{seqreturn}{l2}{l1}{-10.4}{Display profile statistics grids}
+\end{tikzpicture}
+}
+\caption{Sequence diagram for UC-AD-01: Global User Administration}
+\label{fig:seq-uc-ad-01}
+\end{figure}
+
+\subsubsection{UC-AD-02: Access Control \& Permissions Management}
+\begin{figure}[H]
+\centering
+\resizebox{0.95\textwidth}{!}{
+\begin{tikzpicture}[font=\footnotesize]
+  \node[lifelinehead] (l1) at (0.0,0) {Admin};
+  \node[lifelinehead] (l2) at (4.0,0) {Frontend};
+  \node[lifelinehead] (l3) at (8.0,0) {RBAC Route};
+  \node[lifelinehead] (l4) at (12.0,0) {RBAC Service};
+  \node[lifelinehead] (l5) at (16.0,0) {Redis Cache};
+  \node[lifelinehead] (l6) at (20.0,0) {PostgreSQL};
+
+  \foreach \x in {l1,l2,l3,l4,l5,l6} {
+    \draw[dashed] (\x.south) -- ++(0,-12.0);
+  }
+
+  \seqstep{seqmsg}{l1}{l2}{-1.3}{Update role-to-permissions policy map}
+  \seqstep{seqmsg}{l2}{l3}{-2.6}{PUT /admin/roles/:role/permissions}
+  \seqstep{seqmsg}{l3}{l4}{-3.9}{CheckAdminPrivileges(adminId)}
+  \seqstep{seqmsg}{l4}{l6}{-5.2}{Update database role\_permissions tables}
+  \seqstep{seqreturn}{l6}{l4}{-6.5}{PostgreSQL database update success}
+  \seqstep{seqmsg}{l4}{l5}{-7.8}{Flush permissions cached key entries}
+  \seqstep{seqreturn}{l4}{l2}{-9.1}{200 OK + operation success message}
+  \seqstep{seqreturn}{l2}{l1}{-10.4}{Display updates alert dialog}
+\end{tikzpicture}
+}
+\caption{Sequence diagram for UC-AD-02: Access Control \& Permissions Management}
+\label{fig:seq-uc-ad-02}
+\end{figure}
+
+\clearpage\subsubsection{UC-AD-03: Process Classified Subject Requests}
+\begin{figure}[H]
+\centering
+\resizebox{0.95\textwidth}{!}{
+\begin{tikzpicture}[font=\footnotesize]
+  \node[lifelinehead] (l1) at (0.0,0) {Admin};
+  \node[lifelinehead] (l2) at (4.0,0) {Frontend};
+  \node[lifelinehead] (l3) at (8.0,0) {Access Route};
+  \node[lifelinehead] (l4) at (12.0,0) {Access Service};
+  \node[lifelinehead] (l5) at (16.0,0) {PostgreSQL};
+
+  \foreach \x in {l1,l2,l3,l4,l5} {
+    \draw[dashed] (\x.south) -- ++(0,-11.0);
+  }
+
+  \seqstep{seqmsg}{l1}{l2}{-1.3}{Approve classified access request}
+  \seqstep{seqmsg}{l2}{l3}{-2.6}{PUT /requests/:id/approve}
+  \seqstep{seqmsg}{l3}{l4}{-3.9}{ProcessSubjectRequest(reqId, APPROVED)}
+  \seqstep{seqmsg}{l4}{l5}{-5.2}{Update request status \& insert role\_subject\_permission}
+  \seqstep{seqreturn}{l5}{l4}{-6.5}{Permissions registry committed}
+  \seqstep{seqreturn}{l4}{l2}{-7.8}{200 OK + approval confirmation status}
+  \seqstep{seqreturn}{l2}{l1}{-9.1}{Refresh access requests listings}
+\end{tikzpicture}
+}
+\caption{Sequence diagram for UC-AD-03: Process Classified Subject Requests}
+\label{fig:seq-uc-ad-03}
+\end{figure}
+
+\subsubsection{UC-AD-04: System Dashboard and Platform Stats}
+\begin{figure}[H]
+\centering
+\resizebox{0.95\textwidth}{!}{
+\begin{tikzpicture}[font=\footnotesize]
+  \node[lifelinehead] (l1) at (0.0,0) {Admin};
+  \node[lifelinehead] (l2) at (4.0,0) {Frontend};
+  \node[lifelinehead] (l3) at (8.0,0) {Stats Route};
+  \node[lifelinehead] (l4) at (12.0,0) {Admin Service};
+  \node[lifelinehead] (l5) at (16.0,0) {PostgreSQL};
+
+  \foreach \x in {l1,l2,l3,l4,l5} {
+    \draw[dashed] (\x.south) -- ++(0,-11.0);
+  }
+
+  \seqstep{seqmsg}{l1}{l2}{-1.3}{Open platform metrics screen}
+  \seqstep{seqmsg}{l2}{l3}{-2.6}{GET /admin/system-stats}
+  \seqstep{seqmsg}{l3}{l4}{-3.9}{GetSystemPerformanceMetrics()}
+  \seqstep{seqmsg}{l4}{l5}{-5.2}{Count total attempts, billing metrics, database size}
+  \seqstep{seqreturn}{l5}{l4}{-6.5}{Platform statistics counters details}
+  \seqstep{seqreturn}{l4}{l2}{-7.8}{200 OK + global performance metrics}
+  \seqstep{seqreturn}{l2}{l1}{-9.1}{Render dashboard chart widgets}
+\end{tikzpicture}
+}
+\caption{Sequence diagram for UC-AD-04: System Dashboard and Platform Stats}
+\label{fig:seq-uc-ad-04}
+\end{figure}
+
+\clearpage\subsubsection{UC-AD-05: Manage Global Content Hierarchy}
+\begin{figure}[H]
+\centering
+\resizebox{0.95\textwidth}{!}{
+\begin{tikzpicture}[font=\footnotesize]
+  \node[lifelinehead] (l1) at (0.0,0) {Admin};
+  \node[lifelinehead] (l2) at (4.0,0) {Frontend};
+  \node[lifelinehead] (l3) at (8.0,0) {Content Route};
+  \node[lifelinehead] (l4) at (12.0,0) {Content Service};
+  \node[lifelinehead] (l5) at (16.0,0) {PostgreSQL};
+
+  \foreach \x in {l1,l2,l3,l4,l5} {
+    \draw[dashed] (\x.south) -- ++(0,-11.0);
+  }
+
+  \seqstep{seqmsg}{l1}{l2}{-1.3}{Modify course layout structural mapping}
+  \seqstep{seqmsg}{l2}{l3}{-2.6}{PUT /admin/content/:id \{details\}}
+  \seqstep{seqmsg}{l3}{l4}{-3.9}{UpdateGlobalContentMap(subjectId, details)}
+  \seqstep{seqmsg}{l4}{l5}{-5.2}{Update parent chapters and sorting fields}
+  \seqstep{seqreturn}{l5}{l4}{-6.5}{Roadmaps tables values updated}
+  \seqstep{seqreturn}{l4}{l2}{-7.8}{200 OK + global course mapping}
+  \seqstep{seqreturn}{l2}{l1}{-9.1}{Refresh curriculum structure table}
+\end{tikzpicture}
+}
+\caption{Sequence diagram for UC-AD-05: Manage Global Content Hierarchy}
+\label{fig:seq-uc-ad-05}
+\end{figure}
+
+\subsubsection{UC-AD-06: Review Question Reports}
+\begin{figure}[H]
+\centering
+\resizebox{0.95\textwidth}{!}{
+\begin{tikzpicture}[font=\footnotesize]
+  \node[lifelinehead] (l1) at (0.0,0) {Admin};
+  \node[lifelinehead] (l2) at (4.0,0) {Frontend};
+  \node[lifelinehead] (l3) at (8.0,0) {Report Route};
+  \node[lifelinehead] (l4) at (12.0,0) {Report Service};
+  \node[lifelinehead] (l5) at (16.0,0) {PostgreSQL};
+
+  \foreach \x in {l1,l2,l3,l4,l5} {
+    \draw[dashed] (\x.south) -- ++(0,-11.0);
+  }
+
+  \seqstep{seqmsg}{l1}{l2}{-1.3}{Open template reports dashboard}
+  \seqstep{seqmsg}{l2}{l3}{-2.6}{GET /admin/reports}
+  \seqstep{seqmsg}{l3}{l4}{-3.9}{GetActiveReportsList()}
+  \seqstep{seqmsg}{l4}{l5}{-5.2}{Query unresolved items in reports table}
+  \seqstep{seqreturn}{l5}{l4}{-6.5}{Template errors reports \& screenshot mappings}
+  \seqstep{seqreturn}{l4}{l2}{-7.8}{200 OK + active template reports list}
+  \seqstep{seqreturn}{l2}{l1}{-9.1}{Display errors listing items}
+\end{tikzpicture}
+}
+\caption{Sequence diagram for UC-AD-06: Review Question Reports}
+\label{fig:seq-uc-ad-06}
+\end{figure}
+
+\clearpage\subsubsection{UC-AD-07: Configure Streaks and Achievements}
+\begin{figure}[H]
+\centering
+\resizebox{0.95\textwidth}{!}{
+\begin{tikzpicture}[font=\footnotesize]
+  \node[lifelinehead] (l1) at (0.0,0) {Admin};
+  \node[lifelinehead] (l2) at (4.0,0) {Frontend};
+  \node[lifelinehead] (l3) at (8.0,0) {Gamify Route};
+  \node[lifelinehead] (l4) at (12.0,0) {Progression Service};
+  \node[lifelinehead] (l5) at (16.0,0) {PostgreSQL};
+
+  \foreach \x in {l1,l2,l3,l4,l5} {
+    \draw[dashed] (\x.south) -- ++(0,-11.0);
+  }
+
+  \seqstep{seqmsg}{l1}{l2}{-1.3}{Submit new streaks config details}
+  \seqstep{seqmsg}{l2}{l3}{-2.6}{POST /admin/gamify/streaks \{rules\}}
+  \seqstep{seqmsg}{l3}{l4}{-3.9}{SetProgressionRules(rules)}
+  \seqstep{seqmsg}{l4}{l5}{-5.2}{Update milestones configurations}
+  \seqstep{seqreturn}{l5}{l4}{-6.5}{Database records mapping updated}
+  \seqstep{seqreturn}{l4}{l2}{-7.8}{200 OK + updated rules configs}
+  \seqstep{seqreturn}{l2}{l1}{-9.1}{Display streak configuration alerts}
+\end{tikzpicture}
+}
+\caption{Sequence diagram for UC-AD-07: Configure Streaks and Achievements}
+\label{fig:seq-uc-ad-07}
+\end{figure}
+
+\subsubsection{UC-AD-08: Oversee Supervisor Accounts}
+\begin{figure}[H]
+\centering
+\resizebox{0.95\textwidth}{!}{
+\begin{tikzpicture}[font=\footnotesize]
+  \node[lifelinehead] (l1) at (0.0,0) {Admin};
+  \node[lifelinehead] (l2) at (4.0,0) {Frontend};
+  \node[lifelinehead] (l3) at (8.0,0) {Supervisor Route};
+  \node[lifelinehead] (l4) at (12.0,0) {Admin Service};
+  \node[lifelinehead] (l5) at (16.0,0) {PostgreSQL};
+
+  \foreach \x in {l1,l2,l3,l4,l5} {
+    \draw[dashed] (\x.south) -- ++(0,-11.0);
+  }
+
+  \seqstep{seqmsg}{l1}{l2}{-1.3}{Inspect supervisor seats utilization data}
+  \seqstep{seqmsg}{l2}{l3}{-2.6}{GET /admin/supervisors/:id}
+  \seqstep{seqmsg}{l3}{l4}{-3.9}{GetSupervisorAuditData(supId)}
+  \seqstep{seqmsg}{l4}{l5}{-5.2}{Query learn units and capacity logs}
+  \seqstep{seqreturn}{l5}{l4}{-6.5}{Supervisor quota metadata details}
+  \seqstep{seqreturn}{l4}{l2}{-7.8}{200 OK + seat limits metrics}
+  \seqstep{seqreturn}{l2}{l1}{-9.1}{Display supervisors audit reports panels}
+\end{tikzpicture}
+}
+\caption{Sequence diagram for UC-AD-08: Oversee Supervisor Accounts}
+\label{fig:seq-uc-ad-08}
 \end{figure}
