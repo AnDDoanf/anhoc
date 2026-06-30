@@ -1,31 +1,8 @@
 import { PrismaClient } from "../prisma/client/index.js";
-import pg from "pg";
 import { logger } from "./logger.ts";
 
 // ── Pool Configuration (tunable via environment variables) ──────────
 const connectionString = process.env.DATABASE_URL!;
-
-const pool = new pg.Pool({
-  connectionString,
-  max: parseInt(process.env.DB_POOL_MAX || "10", 10),
-  idleTimeoutMillis: parseInt(process.env.DB_POOL_IDLE_TIMEOUT || "30000", 10),
-  connectionTimeoutMillis: parseInt(process.env.DB_POOL_CONNECTION_TIMEOUT || "5000", 10),
-});
-
-// ── Pool Observability ──────────────────────────────────────────────
-pool.on("connect", () => {
-  logger.debug("pg pool: new client connected (total: %d, idle: %d, waiting: %d)",
-    pool.totalCount, pool.idleCount, pool.waitingCount);
-});
-
-pool.on("remove", () => {
-  logger.debug("pg pool: client removed (total: %d, idle: %d, waiting: %d)",
-    pool.totalCount, pool.idleCount, pool.waitingCount);
-});
-
-pool.on("error", (err) => {
-  logger.error({ err }, "pg pool: unexpected error on idle client");
-});
 
 // ── Prisma Client ───────────────────────────────────────────────────
 const prisma = new PrismaClient({
@@ -84,17 +61,16 @@ export const describeDatabaseTarget = () => {
 
 // ── Pool Stats (for health checks / diagnostics) ────────────────────
 export const getPoolStats = () => ({
-  totalCount: pool.totalCount,
-  idleCount: pool.idleCount,
-  waitingCount: pool.waitingCount,
+  totalCount: 0,
+  idleCount: 0,
+  waitingCount: 0,
 });
 
 // ── Graceful Shutdown ───────────────────────────────────────────────
 export const shutdownPool = async () => {
-  logger.info("shutting down pg pool…");
+  logger.info("shutting down prisma client…");
   await prisma.$disconnect();
-  await pool.end();
-  logger.info("pg pool shut down");
+  logger.info("prisma client disconnected");
 };
 
 export default prisma;
