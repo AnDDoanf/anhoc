@@ -41,6 +41,15 @@ const reasoningTechniques = [
 ] as const;
 
 export default function ChatbotWidget() {
+  const disableChatbot = process.env.NEXT_PUBLIC_DISABLE_CHATBOT === "true" || process.env.DISABLE_CHATBOT === "true";
+
+  useEffect(() => {
+    if (disableChatbot && typeof window !== "undefined") {
+      (window as any).__chatbotVisible = false;
+      window.dispatchEvent(new CustomEvent("chatbot-visible-change", { detail: false }));
+    }
+  }, [disableChatbot]);
+
   const { user, isAuthenticated } = useAuth();
   const locale = useLocale();
   const t = useTranslations("Chatbot");
@@ -333,7 +342,7 @@ export default function ChatbotWidget() {
     }
   }, [isOpen, activeSection]);
 
-  const isChatbotVisible = !!(isAuthenticated && isAvailable && user);
+  const isChatbotVisible = !disableChatbot && !!(isAuthenticated && isAvailable && user);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -348,7 +357,7 @@ export default function ChatbotWidget() {
     };
   }, [isChatbotVisible]);
 
-  if (!isAuthenticated || !isAvailable || !user) return null;
+  if (disableChatbot || !isAuthenticated || !isAvailable || !user) return null;
 
   const providerTypeSystem = t("providerTypes.system");
   const providerTypeByok = t("providerTypes.byok");
