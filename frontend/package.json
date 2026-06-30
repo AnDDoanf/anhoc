@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev -p 5000",
     "build": "next build",
-    "start": "node passenger_entry.js",
+    "start": "node -e \"if (process.env.PORT) { require('./passenger_entry.js') } else { console.log('To run Next.js locally in production, use: npm run start:local'); process.exit(0); }\"",
     "start:local": "next start -p 5000",
     "lint": "eslint"
   },
