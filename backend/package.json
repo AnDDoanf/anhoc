@@ -6,7 +6,6 @@
   "scripts": {
     "build": "node ./node_modules/prisma/build/index.js generate",
     "lint": "tsc --noEmit",
-    "start": "node -e \"if (process.env.PORT) { import('./dist/server.cjs') } else { console.log('To run backend locally in production, run node dist/server.cjs'); process.exit(0); }\"",
     "dev": "node ./node_modules/tsx/dist/cli.mjs watch server.ts",
     "prisma:generate": "node ./node_modules/prisma/build/index.js generate",
     "prisma:migrate": "node ./node_modules/prisma/build/index.js migrate dev",
