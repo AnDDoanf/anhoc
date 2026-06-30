@@ -17,6 +17,7 @@ build/
 .env.production.local
 dev.db
 dev.db-journal
+backend/prisma/client/
 
 # Debugging and Logs
 npm-debug.log*

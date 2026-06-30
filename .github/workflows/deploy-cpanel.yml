@@ -69,11 +69,10 @@ jobs:
           # Force add the built .next folder (even though it is in .gitignore)
           git add -f frontend/.next/
           
-          # Add the compiled backend files
+          # Add the compiled backend files and the custom generated prisma client
           git add backend/dist/
           git add backend/passenger_entry.js
-          git add -f backend/node_modules/@prisma/client/
-          git add -f backend/node_modules/.prisma/
+          git add -f backend/prisma/client/
           
           git commit -m "build: compile assets for cpanel deployment"
           
