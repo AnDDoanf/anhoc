@@ -1,0 +1,764 @@
+generator client {
+  provider      = "prisma-client-js"
+  output        = "./client"
+  binaryTargets = ["native", "debian-openssl-1.1.x", "debian-openssl-3.0.x", "rhel-openssl-1.1.x", "rhel-openssl-3.0.x", "linux-musl", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  user
+  admin
+}
+
+model User {
+  id                    String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  username              String     @unique @db.VarChar(50)
+  email                 String     @unique @db.VarChar(255)
+  country               String?    @db.VarChar(100)
+  password_hash         String
+  account_status        String     @default("active") @db.VarChar(20)
+  role_id               Int
+  role                  Role       @relation(fields: [role_id], references: [id])
+  learn_unit_id         String?    @db.Uuid
+  slots_purchased       Int        @default(0)
+  learn_unit            LearnUnit? @relation("LearnUnitMembers", fields: [learn_unit_id], references: [id], onDelete: SetNull)
+  supervised_learn_unit LearnUnit? @relation("LearnUnitSupervisor")
+  created_at            DateTime   @default(now()) @db.Timestamptz
+  first_name            String?    @db.VarChar(100)
+  last_name             String?    @db.VarChar(100)
+  login_id              String?    @db.VarChar(80)
+  avatar_url            String?    @db.VarChar(255)
+  stripe_customer_id    String?    @unique
+  active_session_id     String?
+
+  // Relations to content & tracking
+  subjects_created  Subject[]                @relation("SubjectsCreated")
+  grades_created    Grade[]                  @relation("GradesCreated")
+  lessons_created   Lesson[]
+  templates_created QuestionTemplate[]       @relation("TemplatesCreated")
+  test_attempts     TestAttempt[]
+  learning_sessions LearningSession[]
+  lesson_mastery    UserLessonMastery[]
+  xp_logs           XpLog[]
+  achievements      UserAchievement[]
+  student_stats     StudentStats?
+  user_streak       UserStreak?
+  streak_claims     UserStreakRewardClaim[]
+  daily_quests      UserDailyQuest[]
+  evidence          ActivityEvidence[]
+  audit_logs        AuditLog[]
+  question_reports  QuestionTemplateReport[]
+  following         UserFollow[]             @relation("UserFollowing")
+  followers         UserFollow[]             @relation("UserFollowers")
+
+  // Relations to gaming
+  game_challenges                  GameChallenge[]
+  game_attempts                    GameAttempt[]
+  subject_access_requests          UserSubjectAccessRequest[] @relation("UserSubjectAccessRequests")
+  reviewed_subject_access_requests UserSubjectAccessRequest[] @relation("UserSubjectAccessReviews")
+  notifications_received           Notification[]             @relation("UserNotifications")
+  notifications_sent               Notification[]             @relation("ActorNotifications")
+  subscriptions                    SubscriptionPlan[]
+  invoices                         Invoice[]
+  refresh_tokens                   RefreshToken[]
+  oauth_accounts                   OAuthAccount[]
+
+  // Security & Learning Profile modular associations
+  security         UserSecurity?
+  learning_profile UserLearningProfile?
+
+  @@index([learn_unit_id])
+  @@map("users")
+}
+
+model UserSecurity {
+  user_id                    String    @id @db.Uuid
+  user                       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  email_verification_token   String?   @unique @db.VarChar(255)
+  email_verification_sent_at DateTime? @db.Timestamptz
+  email_verified_at          DateTime? @db.Timestamptz
+  first_login_at             DateTime? @db.Timestamptz
+  inactive_cleanup_at        DateTime? @db.Timestamptz
+  failed_login_attempts      Int       @default(0)
+  lockout_until              DateTime? @db.Timestamptz
+  password_reset_token       String?   @unique @db.VarChar(255)
+  password_reset_sent_at     DateTime? @db.Timestamptz
+
+  @@map("user_securities")
+}
+
+model UserLearningProfile {
+  user_id              String   @id @db.Uuid
+  user                 User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  preferred_subject_id Int?
+  preferred_subject    Subject? @relation(fields: [preferred_subject_id], references: [id], onDelete: SetNull)
+
+  @@map("user_learning_profiles")
+}
+
+model LearnUnit {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String   @db.VarChar(120)
+  code          String   @unique @db.VarChar(30)
+  supervisor_id String?  @unique @db.Uuid
+  max_subjects  Int?
+  max_grades    Int?
+  max_lessons   Int?
+  max_templates Int?
+  max_teachers  Int?
+  max_students  Int?
+  created_at    DateTime @default(now()) @db.Timestamptz
+
+  supervisor User?  @relation("LearnUnitSupervisor", fields: [supervisor_id], references: [id], onDelete: SetNull)
+  users      User[] @relation("LearnUnitMembers")
+
+  @@map("learn_units")
+}
+
+// ... No changes to Role, Action, Resource, RolePermission ...
+
+model Role {
+  id                  Int                     @id @default(autoincrement())
+  name                String                  @unique @db.VarChar(50) // e.g., "admin", "free_student"
+  permissions         RolePermission[]
+  subject_permissions RoleSubjectPermission[]
+  users               User[]
+
+  @@map("roles")
+}
+
+model Action {
+  id          Int              @id @default(autoincrement())
+  name        String           @unique @db.VarChar(50)
+  permissions RolePermission[]
+
+  @@map("actions")
+}
+
+model Resource {
+  id          Int              @id @default(autoincrement())
+  name        String           @unique @db.VarChar(50)
+  permissions RolePermission[]
+
+  @@map("resources")
+}
+
+model RolePermission {
+  id          Int @id @default(autoincrement())
+  role_id     Int
+  action_id   Int
+  resource_id Int
+
+  role     Role     @relation(fields: [role_id], references: [id], onDelete: Cascade)
+  action   Action   @relation(fields: [action_id], references: [id], onDelete: Cascade)
+  resource Resource @relation(fields: [resource_id], references: [id], onDelete: Cascade)
+
+  @@unique([role_id, action_id, resource_id])
+  @@map("role_permissions")
+}
+
+// --- EDUCATION HIERARCHY ---
+
+model Grade {
+  id         Int      @id @default(autoincrement())
+  slug       String   @unique @db.VarChar(50) // e.g., "grade-6"
+  title_en   String   @db.VarChar(100)
+  title_vi   String   @db.VarChar(100)
+  subject_id Int?
+  subject    Subject? @relation(fields: [subject_id], references: [id], onDelete: SetNull)
+  lessons    Lesson[]
+  created_by String?  @db.Uuid
+  creator    User?    @relation("GradesCreated", fields: [created_by], references: [id], onDelete: SetNull)
+
+  // Relations to gaming
+  game_challenges GameChallenge[]
+
+  @@map("grades")
+}
+
+model Subject {
+  id                 Int                        @id @default(autoincrement())
+  slug               String                     @unique @db.VarChar(50) // e.g., "math"
+  title_en           String                     @db.VarChar(100)
+  title_vi           String                     @db.VarChar(100)
+  color              String?                    @db.VarChar(20)
+  is_classified      Boolean                    @default(false)
+  created_by         String?                    @db.Uuid
+  creator            User?                      @relation("SubjectsCreated", fields: [created_by], references: [id], onDelete: SetNull)
+  grades             Grade[]
+  lessons            Lesson[]
+  role_permissions   RoleSubjectPermission[]
+  preferred_by_users UserLearningProfile[]
+  access_requests    UserSubjectAccessRequest[]
+
+  @@map("subjects")
+}
+
+model UserSubjectAccessRequest {
+  id           Int       @id @default(autoincrement())
+  user_id      String    @db.Uuid
+  subject_id   Int
+  status       String    @default("pending") @db.VarChar(20)
+  requested_at DateTime  @default(now()) @db.Timestamptz
+  reviewed_at  DateTime? @db.Timestamptz
+  reviewed_by  String?   @db.Uuid
+
+  user     User    @relation("UserSubjectAccessRequests", fields: [user_id], references: [id], onDelete: Cascade)
+  subject  Subject @relation(fields: [subject_id], references: [id], onDelete: Cascade)
+  reviewer User?   @relation("UserSubjectAccessReviews", fields: [reviewed_by], references: [id], onDelete: SetNull)
+
+  @@unique([user_id, subject_id])
+  @@index([status, requested_at])
+  @@map("user_subject_access_requests")
+}
+
+model RoleSubjectPermission {
+  id         Int @id @default(autoincrement())
+  role_id    Int
+  subject_id Int
+
+  role    Role    @relation(fields: [role_id], references: [id], onDelete: Cascade)
+  subject Subject @relation(fields: [subject_id], references: [id], onDelete: Cascade)
+
+  @@unique([role_id, subject_id])
+  @@map("role_subject_permissions")
+}
+
+model Lesson {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  grade_id            Int
+  subject_id          Int
+  title_en            String   @db.VarChar(255)
+  title_vi            String   @db.VarChar(255)
+  content_markdown_en String
+  content_markdown_vi String
+  order_index         Int?
+  created_by          String?  @db.Uuid
+  is_premium          Boolean  @default(false)
+  updated_at          DateTime @default(now()) @db.Timestamptz
+
+  grade   Grade   @relation(fields: [grade_id], references: [id])
+  subject Subject @relation(fields: [subject_id], references: [id])
+  creator User?   @relation(fields: [created_by], references: [id])
+
+  templates         QuestionTemplate[]
+  template_reports  QuestionTemplateReport[]
+  sessions          LearningSession[]
+  mastery_records   UserLessonMastery[]
+  practice_attempts TestAttempt[]
+
+  // Relations to gaming
+  game_challenges GameChallenge[]
+
+  @@index([grade_id, subject_id])
+  @@index([created_by])
+  @@map("lessons")
+}
+
+// --- QUESTIONS & TESTS ---
+
+model QuestionTemplate {
+  id            String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  lesson_id     String? @db.Uuid
+  created_by    String? @db.Uuid
+  template_type String  @db.VarChar(50)
+  difficulty    String  @default("medium") @db.VarChar(20)
+  is_premium    Boolean @default(false)
+
+  // Multilingual Templates
+  body_template_en        String
+  body_template_vi        String
+  explanation_template_en String?
+  explanation_template_vi String?
+
+  logic_config      Json     @default("{}")
+  accepted_formulas String[] @default([])
+  tags              String[] @default([])
+  created_at        DateTime @default(now()) @db.Timestamptz
+
+  lesson    Lesson?                  @relation(fields: [lesson_id], references: [id], onDelete: Cascade)
+  creator   User?                    @relation("TemplatesCreated", fields: [created_by], references: [id], onDelete: SetNull)
+  snapshots QuestionSnapshot[]
+  reports   QuestionTemplateReport[]
+
+  @@index([lesson_id])
+  @@map("question_templates")
+}
+
+model TestAttempt {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id      String?   @db.Uuid
+  lesson_id    String?   @db.Uuid
+  total_score  Decimal?  @db.Decimal(5, 2)
+  is_completed Boolean?  @default(false)
+  is_practice  Boolean   @default(false)
+  started_at   DateTime  @default(now()) @db.Timestamptz
+  completed_at DateTime? @db.Timestamptz // Required to calculate Speed
+
+  user      User?                    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  lesson    Lesson?                  @relation(fields: [lesson_id], references: [id])
+  snapshots QuestionSnapshot[]
+  evidence  ActivityEvidence[]
+  reports   QuestionTemplateReport[]
+
+  @@index([user_id])
+  @@index([lesson_id])
+  @@index([user_id, started_at])
+  @@index([user_id, is_practice])
+  @@map("test_attempts")
+}
+
+model QuestionSnapshot {
+  id                  String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  attempt_id          String?                  @db.Uuid
+  template_id         String?                  @db.Uuid
+  generated_variables Json
+  student_answer      String?
+  right_answers       String[]                 @default([])
+  is_correct          Boolean?                 @default(false)
+  points_earned       Int?                     @default(0)
+  responded_at        DateTime?                @db.Timestamptz
+  attempt             TestAttempt?             @relation(fields: [attempt_id], references: [id], onDelete: Cascade)
+  template            QuestionTemplate?        @relation(fields: [template_id], references: [id])
+  evidence            ActivityEvidence[]
+  reports             QuestionTemplateReport[]
+
+  @@index([attempt_id])
+  @@index([template_id])
+  @@map("question_snapshots")
+}
+
+model QuestionTemplateReport {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  template_id String   @db.Uuid
+  snapshot_id String?  @db.Uuid
+  attempt_id  String?  @db.Uuid
+  lesson_id   String?  @db.Uuid
+  reporter_id String?  @db.Uuid
+  reason      String
+  status      String   @default("open") @db.VarChar(20)
+  created_at  DateTime @default(now()) @db.Timestamptz
+  updated_at  DateTime @default(now()) @db.Timestamptz
+
+  template QuestionTemplate  @relation(fields: [template_id], references: [id], onDelete: Cascade)
+  snapshot QuestionSnapshot? @relation(fields: [snapshot_id], references: [id], onDelete: SetNull)
+  attempt  TestAttempt?      @relation(fields: [attempt_id], references: [id], onDelete: SetNull)
+  lesson   Lesson?           @relation(fields: [lesson_id], references: [id], onDelete: SetNull)
+  reporter User?             @relation(fields: [reporter_id], references: [id], onDelete: SetNull)
+
+  @@index([template_id])
+  @@index([snapshot_id])
+  @@index([reporter_id])
+  @@index([status])
+  @@map("question_template_reports")
+}
+
+// --- TRACKING & PERFORMANCE ---
+
+model LearningSession {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id      String    @db.Uuid
+  lesson_id    String    @db.Uuid
+  started_at   DateTime  @default(now()) @db.Timestamptz
+  ended_at     DateTime? @db.Timestamptz
+  duration_sec Int?
+
+  user   User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lesson_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, lesson_id])
+  @@map("learning_sessions")
+}
+
+model UserLessonMastery {
+  user_id           String   @db.Uuid
+  lesson_id         String   @db.Uuid
+  mastery_score     Decimal  @default(0.0) @db.Decimal(5, 2) // Weighted performance
+  total_study_time  Int      @default(0) // Seconds
+  total_test_time   Int      @default(0) // Seconds
+  completion_status String   @default("not_started") // not_started, in_progress, completed
+  last_activity_at  DateTime @default(now()) @db.Timestamptz
+
+  user   User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lesson_id], references: [id], onDelete: Cascade)
+
+  @@id([user_id, lesson_id])
+  @@index([user_id, last_activity_at])
+  @@map("user_lesson_mastery")
+}
+
+// --- GAMIFICATION ---
+
+model XpLog {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String   @db.Uuid
+  amount      Int
+  reason      String   @db.VarChar(100) // e.g., "lesson_completion", "test_perfect_score"
+  occurred_at DateTime @default(now()) @db.Timestamptz
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, occurred_at])
+  @@map("xp_logs")
+}
+
+model Achievement {
+  id             String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug           String            @unique @db.VarChar(50)
+  theme_id       String?           @db.Uuid
+  title_en       String
+  title_vi       String
+  description_en String            @default("")
+  description_vi String            @default("")
+  category       String            @default("general") @db.VarChar(50)
+  xp_reward      Int               @default(0)
+  icon           String?           @db.VarChar(50)
+  theme          Theme?            @relation(fields: [theme_id], references: [id], onDelete: SetNull)
+  users          UserAchievement[]
+
+  @@map("achievements")
+}
+
+model Theme {
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug            String        @unique @db.VarChar(50)
+  title_en        String
+  title_vi        String
+  description_en  String        @default("")
+  description_vi  String        @default("")
+  preview_color   String?       @db.VarChar(20)
+  light_variables Json          @default("{}")
+  dark_variables  Json          @default("{}")
+  achievements    Achievement[]
+
+  @@map("themes")
+}
+
+model UserAchievement {
+  user_id        String   @db.Uuid
+  achievement_id String   @db.Uuid
+  earned_at      DateTime @default(now()) @db.Timestamptz
+
+  user        User        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievement_id], references: [id], onDelete: Cascade)
+
+  @@id([user_id, achievement_id])
+  @@map("user_achievements")
+}
+
+model UserFollow {
+  follower_id  String   @db.Uuid
+  following_id String   @db.Uuid
+  created_at   DateTime @default(now()) @db.Timestamptz
+
+  follower  User @relation("UserFollowing", fields: [follower_id], references: [id], onDelete: Cascade)
+  following User @relation("UserFollowers", fields: [following_id], references: [id], onDelete: Cascade)
+
+  @@id([follower_id, following_id])
+  @@index([following_id])
+  @@map("user_follows")
+}
+
+model Notification {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  recipient_id String    @db.Uuid
+  actor_id     String?   @db.Uuid
+  type         String    @db.VarChar(60)
+  entity_type  String?   @db.VarChar(60)
+  entity_id    String?   @db.VarChar(120)
+  payload      Json      @default("{}")
+  read_at      DateTime? @db.Timestamptz
+  created_at   DateTime  @default(now()) @db.Timestamptz
+
+  recipient User  @relation("UserNotifications", fields: [recipient_id], references: [id], onDelete: Cascade)
+  actor     User? @relation("ActorNotifications", fields: [actor_id], references: [id], onDelete: SetNull)
+
+  @@index([recipient_id, read_at, created_at])
+  @@index([type, created_at])
+  @@map("notifications")
+}
+
+model StudentStats {
+  user_id           String   @id @db.Uuid
+  lessons_completed Int?     @default(0)
+  total_xp          Int?     @default(0)
+  level             Int      @default(1)
+  average_score     Decimal? @default(0) @db.Decimal(5, 2)
+  last_active       DateTime @default(now()) @db.Timestamptz
+  user              User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  // Student Economy extensions
+  lives                 Int      @default(6)
+  last_life_restored_at DateTime @default(now()) @db.Timestamptz
+  coins                 Int      @default(100)
+  level_points          Int      @default(0)
+  coin_transactions     Json     @default("[]")
+  inventory             Json     @default("{}")
+  equipped_items        Json     @default("{}")
+  upgrades              Json     @default("{}")
+
+  @@map("student_stats")
+}
+
+// --- EVIDENCE & AUDIT ---
+
+model ActivityEvidence {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String   @db.Uuid
+  attempt_id  String?  @db.Uuid
+  snapshot_id String?  @db.Uuid
+  image_url   String
+  caption     String?  @db.VarChar(255)
+  uploaded_at DateTime @default(now()) @db.Timestamptz
+
+  user     User              @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  attempt  TestAttempt?      @relation(fields: [attempt_id], references: [id], onDelete: SetNull)
+  snapshot QuestionSnapshot? @relation(fields: [snapshot_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id])
+  @@map("activity_evidence")
+}
+
+model AuditLog {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String   @db.Uuid
+  event_type  String   @db.VarChar(50) // e.g., "TEST_START", "EVIDENCE_UPLOAD"
+  metadata    Json?    @default("{}")
+  occurred_at DateTime @default(now()) @db.Timestamptz
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, occurred_at])
+  @@map("audit_logs")
+}
+
+// --- GAMING SECTIONS ---
+
+model GameChallenge {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code       String   @unique @db.VarChar(10) // E.g., short shareable code
+  game_type  String   @db.VarChar(50) // "speed", "climb", "match"
+  grade_id   Int?
+  lesson_id  String?  @db.Uuid
+  created_by String   @db.Uuid
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamptz
+  config     Json     @default("{}") // Hold challenge questions / seed configs
+
+  creator  User          @relation(fields: [created_by], references: [id], onDelete: Cascade)
+  lesson   Lesson?       @relation(fields: [lesson_id], references: [id], onDelete: SetNull)
+  grade    Grade?        @relation(fields: [grade_id], references: [id], onDelete: SetNull)
+  attempts GameAttempt[]
+
+  @@index([created_by, is_active])
+  @@map("game_challenges")
+}
+
+model GameAttempt {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  challenge_id String   @db.Uuid
+  user_id      String?  @db.Uuid
+  guest_name   String?  @db.VarChar(100)
+  guest_token  String?  @db.VarChar(100)
+  score        Int // Points or floor reached
+  time_spent   Int // Seconds
+  completed_at DateTime @default(now()) @db.Timestamptz
+
+  challenge GameChallenge @relation(fields: [challenge_id], references: [id], onDelete: Cascade)
+  user      User?         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([challenge_id, guest_token])
+  @@index([user_id])
+  @@index([challenge_id, completed_at])
+  @@map("game_attempts")
+}
+
+model Plan {
+  id             Int     @id @default(autoincrement())
+  name           String  @db.VarChar(50) // "free", "pro", "family", "learning_center"
+  vi_name        String  @default("") @db.VarChar(100)
+  en_name        String  @default("") @db.VarChar(100)
+  description    String? @db.VarChar(255)
+  price_monthly  Decimal @db.Decimal(10, 2)
+  price_annually Decimal @db.Decimal(10, 2)
+  max_students   Int?
+  max_teachers   Int?
+  max_lessons    Int?
+  max_templates  Int?
+  max_subjects   Int?
+  max_grades     Int?
+
+  // Dynamic pricing multipliers
+  price_per_student_monthly   Decimal @default(0.00) @db.Decimal(10, 2)
+  price_per_student_annually  Decimal @default(0.00) @db.Decimal(10, 2)
+  price_per_teacher_monthly   Decimal @default(0.00) @db.Decimal(10, 2)
+  price_per_teacher_annually  Decimal @default(0.00) @db.Decimal(10, 2)
+  price_per_lesson_monthly    Decimal @default(0.00) @db.Decimal(10, 2)
+  price_per_lesson_annually   Decimal @default(0.00) @db.Decimal(10, 2)
+  price_per_grade_monthly     Decimal @default(0.00) @db.Decimal(10, 2)
+  price_per_grade_annually    Decimal @default(0.00) @db.Decimal(10, 2)
+  price_per_template_monthly  Decimal @default(0.00) @db.Decimal(10, 2)
+  price_per_template_annually Decimal @default(0.00) @db.Decimal(10, 2)
+
+  effect_from DateTime  @default(now()) @db.Timestamptz
+  effect_to   DateTime? @db.Timestamptz
+  created_at  DateTime  @default(now()) @db.Timestamptz
+
+  subscriptions SubscriptionPlan[]
+
+  @@index([name, effect_from, effect_to])
+  @@map("plans")
+}
+
+model SubscriptionPlan {
+  id                     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id                String    @db.Uuid
+  plan_id                Int
+  status                 String    @db.VarChar(20) // "active", "cancelled", "expired", "superseded"
+  billing_cycle          String    @db.VarChar(20) // "monthly", "annually"
+  start_date             DateTime  @default(now()) @db.Timestamptz
+  end_date               DateTime? @db.Timestamptz
+  auto_renew             Boolean   @default(true) // true = continuous payment, false = stop payment
+  slots_purchased        Int       @default(0)
+  stripe_subscription_id String?   @unique
+
+  // Customized limits captured at checkout
+  max_students  Int?
+  max_teachers  Int?
+  max_lessons   Int?
+  max_templates Int?
+  max_grades    Int?
+  max_subjects  Int?
+
+  effect_from DateTime  @default(now()) @db.Timestamptz
+  effect_to   DateTime? @db.Timestamptz
+  created_at  DateTime  @default(now()) @db.Timestamptz
+  updated_at  DateTime  @default(now()) @db.Timestamptz
+
+  user     User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  plan     Plan      @relation(fields: [plan_id], references: [id])
+  invoices Invoice[]
+
+  @@index([user_id, status, effect_from, effect_to])
+  @@map("subscription_plans")
+}
+
+model Invoice {
+  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id              String   @db.Uuid
+  subscription_plan_id String?  @db.Uuid
+  amount               Decimal  @db.Decimal(10, 2)
+  billing_date         DateTime @default(now()) @db.Timestamptz
+  status               String   @default("paid") @db.VarChar(20) // "paid", "failed", "pending"
+  stripe_invoice_id    String?  @unique
+  description          String?  @db.VarChar(255)
+  created_at           DateTime @default(now()) @db.Timestamptz
+
+  user              User              @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  subscription_plan SubscriptionPlan? @relation(fields: [subscription_plan_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id, billing_date])
+  @@map("invoices")
+}
+
+model RefreshToken {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  token      String    @unique
+  user_id    String    @db.Uuid
+  user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  expires_at DateTime  @db.Timestamptz
+  created_at DateTime  @default(now()) @db.Timestamptz
+  revoked_at DateTime? @db.Timestamptz
+
+  @@index([token])
+  @@index([user_id])
+  @@map("refresh_tokens")
+}
+
+model OAuthAccount {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id          String   @db.Uuid
+  provider         String   @db.VarChar(50) // "google", "facebook", "microsoft"
+  provider_user_id String   @db.VarChar(255)
+  created_at       DateTime @default(now()) @db.Timestamptz
+  updated_at       DateTime @default(now()) @db.Timestamptz
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([provider, provider_user_id])
+  @@index([user_id])
+  @@map("oauth_accounts")
+}
+
+model UserStreak {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id               String    @unique @db.Uuid
+  current_streak        Int       @default(0)
+  longest_streak        Int       @default(0)
+  weekly_streak         Int       @default(0)
+  last_active_date      String?   @db.VarChar(10) // "YYYY-MM-DD"
+  streak_start_date     DateTime? @db.Timestamptz
+  missed_days           Int       @default(0)
+  rewards_generated_at  DateTime? @db.Timestamptz
+  precalculated_rewards Json? // JSON array of 14 precalculated rewards
+  created_at            DateTime  @default(now()) @db.Timestamptz
+  updated_at            DateTime  @default(now()) @db.Timestamptz
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("user_streaks")
+}
+
+model StreakReward {
+  id             String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String                  @db.VarChar(100)
+  description    String?
+  reward_type    String                  @db.VarChar(50) // "milestone" or "specific_day"
+  specific_date  String?                 @db.VarChar(10) // "YYYY-MM-DD" for specific day
+  required_days  Int? // Nullable for specific day
+  reward_payload Json? // e.g. { "coins": 100 }
+  message_en     String?
+  message_vi     String?
+  is_repeatable  Boolean                 @default(false)
+  is_active      Boolean                 @default(true)
+  created_at     DateTime                @default(now()) @db.Timestamptz
+  updated_at     DateTime                @default(now()) @db.Timestamptz
+  claims         UserStreakRewardClaim[]
+
+  @@map("streak_rewards")
+}
+
+model UserStreakRewardClaim {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id          String   @db.Uuid
+  streak_reward_id String   @db.Uuid
+  streak_day       Int      @default(0) // The streak day they claimed this at (0 for specific day)
+  claimed_at       DateTime @default(now()) @db.Timestamptz
+
+  user          User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  streak_reward StreakReward @relation(fields: [streak_reward_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, streak_reward_id, streak_day])
+  @@map("user_streak_reward_claims")
+}
+
+model UserDailyQuest {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id       String   @db.Uuid
+  quest_type    String   @db.VarChar(50) // "complete_lesson", "finish_quiz", "submit_practice", "play_game", "earn_xp"
+  target_count  Int
+  current_count Int      @default(0)
+  xp_reward     Int
+  is_completed  Boolean  @default(false)
+  date          String   @db.VarChar(10) // "YYYY-MM-DD"
+  created_at    DateTime @default(now()) @db.Timestamptz
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, quest_type, date])
+  @@map("user_daily_quests")
+}

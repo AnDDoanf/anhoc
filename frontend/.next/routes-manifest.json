@@ -1,0 +1,252 @@
+{
+  "version": 3,
+  "pages404": true,
+  "appType": "app",
+  "caseSensitive": false,
+  "basePath": "",
+  "redirects": [
+    {
+      "source": "/:path+/",
+      "destination": "/:path+",
+      "internal": true,
+      "priority": true,
+      "statusCode": 308,
+      "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))/$"
+    }
+  ],
+  "headers": [],
+  "onMatchHeaders": [],
+  "rewrites": {
+    "beforeFiles": [],
+    "afterFiles": [
+      {
+        "source": "/api/v1/:path*",
+        "destination": "https://backend.anhoc.com/api/v1/:path*",
+        "regex": "^/api/v1(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?(?:/)?$"
+      }
+    ],
+    "fallback": []
+  },
+  "dynamicRoutes": [
+    {
+      "page": "/admin/users/[userId]",
+      "regex": "^/admin/users/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPuserId": "nxtPuserId"
+      },
+      "namedRegex": "^/admin/users/(?<nxtPuserId>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/admin/users/[userId]/attempts/[attemptId]",
+      "regex": "^/admin/users/([^/]+?)/attempts/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPuserId": "nxtPuserId",
+        "nxtPattemptId": "nxtPattemptId"
+      },
+      "namedRegex": "^/admin/users/(?<nxtPuserId>[^/]+?)/attempts/(?<nxtPattemptId>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/student/games/challenge/[code]",
+      "regex": "^/student/games/challenge/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPcode": "nxtPcode"
+      },
+      "namedRegex": "^/student/games/challenge/(?<nxtPcode>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/student/learning/[gradeId]",
+      "regex": "^/student/learning/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPgradeId": "nxtPgradeId"
+      },
+      "namedRegex": "^/student/learning/(?<nxtPgradeId>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/student/learning/[gradeId]/[lessonId]",
+      "regex": "^/student/learning/([^/]+?)/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPgradeId": "nxtPgradeId",
+        "nxtPlessonId": "nxtPlessonId"
+      },
+      "namedRegex": "^/student/learning/(?<nxtPgradeId>[^/]+?)/(?<nxtPlessonId>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/student/practice/[attemptId]",
+      "regex": "^/student/practice/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPattemptId": "nxtPattemptId"
+      },
+      "namedRegex": "^/student/practice/(?<nxtPattemptId>[^/]+?)(?:/)?$"
+    }
+  ],
+  "staticRoutes": [
+    {
+      "page": "/",
+      "regex": "^/(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/(?:/)?$"
+    },
+    {
+      "page": "/_global-error",
+      "regex": "^/_global\\-error(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_global\\-error(?:/)?$"
+    },
+    {
+      "page": "/_not-found",
+      "regex": "^/_not\\-found(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_not\\-found(?:/)?$"
+    },
+    {
+      "page": "/activate",
+      "regex": "^/activate(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/activate(?:/)?$"
+    },
+    {
+      "page": "/admin",
+      "regex": "^/admin(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin(?:/)?$"
+    },
+    {
+      "page": "/admin/dashboard",
+      "regex": "^/admin/dashboard(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/dashboard(?:/)?$"
+    },
+    {
+      "page": "/admin/questions",
+      "regex": "^/admin/questions(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/questions(?:/)?$"
+    },
+    {
+      "page": "/admin/reports",
+      "regex": "^/admin/reports(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/reports(?:/)?$"
+    },
+    {
+      "page": "/admin/streak",
+      "regex": "^/admin/streak(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/streak(?:/)?$"
+    },
+    {
+      "page": "/admin/subscription",
+      "regex": "^/admin/subscription(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/subscription(?:/)?$"
+    },
+    {
+      "page": "/admin/users",
+      "regex": "^/admin/users(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/users(?:/)?$"
+    },
+    {
+      "page": "/login",
+      "regex": "^/login(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/login(?:/)?$"
+    },
+    {
+      "page": "/oauth-success",
+      "regex": "^/oauth\\-success(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/oauth\\-success(?:/)?$"
+    },
+    {
+      "page": "/onboarding/subject",
+      "regex": "^/onboarding/subject(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/onboarding/subject(?:/)?$"
+    },
+    {
+      "page": "/signup",
+      "regex": "^/signup(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/signup(?:/)?$"
+    },
+    {
+      "page": "/student",
+      "regex": "^/student(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/student(?:/)?$"
+    },
+    {
+      "page": "/student/achievements",
+      "regex": "^/student/achievements(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/student/achievements(?:/)?$"
+    },
+    {
+      "page": "/student/games",
+      "regex": "^/student/games(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/student/games(?:/)?$"
+    },
+    {
+      "page": "/student/games/play",
+      "regex": "^/student/games/play(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/student/games/play(?:/)?$"
+    },
+    {
+      "page": "/student/learning",
+      "regex": "^/student/learning(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/student/learning(?:/)?$"
+    },
+    {
+      "page": "/student/members",
+      "regex": "^/student/members(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/student/members(?:/)?$"
+    },
+    {
+      "page": "/student/settings",
+      "regex": "^/student/settings(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/student/settings(?:/)?$"
+    },
+    {
+      "page": "/student/shop",
+      "regex": "^/student/shop(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/student/shop(?:/)?$"
+    },
+    {
+      "page": "/student/upgrade",
+      "regex": "^/student/upgrade(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/student/upgrade(?:/)?$"
+    },
+    {
+      "page": "/subscription",
+      "regex": "^/subscription(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/subscription(?:/)?$"
+    }
+  ],
+  "dataRoutes": [],
+  "rsc": {
+    "header": "rsc",
+    "varyHeader": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+    "prefetchHeader": "next-router-prefetch",
+    "didPostponeHeader": "x-nextjs-postponed",
+    "contentTypeHeader": "text/x-component",
+    "suffix": ".rsc",
+    "prefetchSegmentHeader": "next-router-segment-prefetch",
+    "prefetchSegmentSuffix": ".segment.rsc",
+    "prefetchSegmentDirSuffix": ".segments",
+    "clientParamParsing": false,
+    "dynamicRSCPrerender": false
+  },
+  "rewriteHeaders": {
+    "pathHeader": "x-nextjs-rewritten-path",
+    "queryHeader": "x-nextjs-rewritten-query"
+  }
+}

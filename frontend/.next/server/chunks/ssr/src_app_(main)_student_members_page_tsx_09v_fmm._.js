@@ -1,0 +1,3 @@
+module.exports=[529087,a=>{"use strict";var b=a.i(187924),c=a.i(572131),d=a.i(50944);a.s(["default",0,function(){let a=(0,d.useRouter)();return(0,c.useEffect)(()=>{a.replace("/admin/subscription")},[a]),(0,b.jsx)("div",{className:"flex items-center justify-center min-h-[60vh]",children:(0,b.jsx)("div",{className:"animate-spin h-8 w-8 border-4 border-sol-accent border-t-transparent rounded-full"})})}])}];
+
+//# sourceMappingURL=src_app_%28main%29_student_members_page_tsx_09v_fmm._.js.map
