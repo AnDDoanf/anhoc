@@ -47,3 +47,16 @@ Thumbs.db
 # Vercel & Production
 .vercel
 .turbo
+
+# LaTeX intermediate build files (thesis)
+docs/thesis/*.aux
+docs/thesis/*.fdb_latexmk
+docs/thesis/*.fls
+docs/thesis/*.lof
+docs/thesis/*.log
+docs/thesis/*.lot
+docs/thesis/*.out
+docs/thesis/*.synctex.gz
+docs/thesis/*.toc
+docs/thesis/*.bbl
+docs/thesis/*.blg

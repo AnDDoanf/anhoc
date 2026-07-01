@@ -416,6 +416,21 @@ The repository implies the following non-functional requirements:
   \item \textbf{Deployability:} the architecture should run in a common cloud arrangement using Vercel, Render, and Neon.
 \end{itemize}
 
+In addition to these technical qualities, the platform should satisfy learner-centered non-functional requirements related to pacing, clarity, and healthy engagement.
+
+\begin{longtable}{|L{0.22\textwidth}|L{0.46\textwidth}|L{0.22\textwidth}|}
+\hline
+\textbf{Requirement} & \textbf{Description} & \textbf{Evaluation Method} \\ \hline
+\textbf{Medium-paced interaction} & The interface shall maintain a moderate interaction pace, avoiding excessive animations, rapid reward loops, or constant interruptions that encourage compulsive use, while remaining more engaging than a traditional LMS. & Inspect interaction flows and count forced interruptions, auto-triggered animations, and reward prompts during a standard lesson or practice session. \\ \hline
+\textbf{Learning-first design} & Gamification shall reinforce learning objectives rather than distract from educational content. & Review representative screens and verify that rewards, badges, and progress indicators appear after or alongside meaningful learning actions rather than replacing them. \\ \hline
+\textbf{Cognitive load management} & Only essential information shall be displayed at any given time to minimize cognitive overload. & Conduct heuristic UI review of lesson and practice screens to confirm that only task-relevant controls, text, and feedback are visible at each step. \\ \hline
+\textbf{Progressive disclosure} & Advanced features and statistics should appear only when relevant to the learner's current progress. & Test beginner and advanced user paths to verify that detailed statistics, secondary controls, and optional features appear only in appropriate contexts. \\ \hline
+\textbf{Encouraging feedback} & Feedback should motivate learners after mistakes without creating unnecessary frustration. & Review incorrect-answer states and error messages to confirm that wording is constructive, specific, and oriented toward retry or improvement. \\ \hline
+\textbf{Healthy reward frequency} & Rewards should be meaningful and tied to learning milestones rather than every interaction, reducing reward dependency. & Trace reward events across practice, lessons, and achievements to confirm that rewards are linked to completion, mastery, or milestone progress rather than every click or answer. \\ \hline
+\textbf{Session continuity} & Learners should be able to pause and resume activities without losing progress. & Execute pause, refresh, logout, and return scenarios for lessons and practice attempts, then verify that saved state and progress are restored correctly. \\ \hline
+\textbf{Minimal interruption} & Pop-ups, notifications, and animations should not interrupt active learning tasks unless necessary. & Perform task-based walkthroughs and record whether notifications, modals, or visual effects block reading or answering without a clear functional reason. \\ \hline
+\end{longtable}
+
 \subsection{Learning Content Requirements}
 
 Educational content in Anhoc is organized around a hierarchy of subjects, grades, and lessons. Lessons contain bilingual titles and markdown-based content bodies. This leads to several domain requirements:

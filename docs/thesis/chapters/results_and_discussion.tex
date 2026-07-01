@@ -35,7 +35,7 @@ Functional testing verifies that every feature in Anhoc works exactly according 
 \begin{itemize}
   \item \textbf{Form Validation:} Forms in the Next.js frontend (e.g., student registration, profile updates, and supervisor slots forms) enforce strict input checks, character limits, and email format rules before dispatching requests. Input values are validated using custom backend assertion logic and regex checks (such as password complexity requirements) in Express, combined with Prisma database constraint assertions, ensuring database constraints in PostgreSQL are never violated.
   \item \textbf{Link Integrity:} User interactions such as clicking lesson cards, starting attempts, and claiming streak rewards trigger direct API requests. Verification of these routes confirms that response handlers execute successfully and direct users to correct states.
-  \item \textbf{Dynamic Routing:} The app router under \code{frontend/src/app} manages path transitions based on roles. Access to restricted areas (e.g., \code{/admin/*} or \code{/supervisor/*}) triggers client-side role guards that inspect the active user's permissions.
+  \item \textbf{Dynamic Routing:} The app router under \code{frontend/src/app} manages role-based navigation. Access to restricted areas such as \code{/admin/} and \code{/supervisor/} triggers client-side guards that inspect the active user's permissions.
   \item \textbf{Error Handling:} Navigating to non-existent URLs gracefully triggers a custom, user-friendly 404 page (defined in \code{frontend/src/app/not-found.tsx}) containing links to redirect users back to their dashboard.
 \end{itemize}
 
@@ -43,7 +43,7 @@ Functional testing verifies that every feature in Anhoc works exactly according 
 
 Performance evaluation measures how fast, stable, and scalable the application remains under varied traffic conditions:
 \begin{itemize}
-  \item \textbf{Page Speed:} Using Google PageSpeed Insights and Webpage Grader, the Next.js static asset bundling and Redis cached lesson routes show rapid load times. Main page loads reach a Time to Interactive (TTI) of 1.8 seconds.
+  \item \textbf{Page Speed:} Google PageSpeed Insights and Webpage Grader show fast load times for the Next.js frontend and Redis-cached lesson routes. Main page loads reach a Time to Interactive (TTI) of 1.8 seconds.
   \item \textbf{Load Testing:} Under simulated concurrent user spikes (up to 150 virtual users executing simultaneous grading operations), the backend Node.js thread pool demonstrates stable response times under 250ms for lesson lookups and 450ms for SymPy symbolic computations.
   \item \textbf{Stress Testing:} Pushing the application to its limits reveals that database connection pool exhaustion (Prisma Client limits) is the primary structural bottleneck. Connection timeouts occur when exceeding 300 concurrent database transactions, indicating a need for database read replicas.
 \end{itemize}
@@ -70,7 +70,7 @@ The security model is inspected for common vulnerabilities before deploying to p
 
 Compatibility tests verify that the app delivers a uniform layout and experience across fragmented software markets:
 \begin{itemize}
-  \item \textbf{Cross-Browser Rendering:} Functionality is tested on Chromium (Chrome/Edge), WebKit (Safari), and Gecko (Firefox). The UI displays consistently across these rendering engines, with consistent KaTeX math notation alignment.
+  \item \textbf{Cross-Browser Rendering:} Functionality is tested on Chromium, WebKit, and Gecko browsers. The UI remains visually consistent across Chrome, Edge, Safari, and Firefox, including KaTeX math rendering.
   \item \textbf{Network Bandwidth Throttling:} Throttling connections to Slow 3G viewports shows that loading skeletons and dynamic spinners display properly while API payloads resolve, keeping the user interface interactive.
 \end{itemize}
 
@@ -111,4 +111,9 @@ The implementation choices in Anhoc involve several engineering tradeoffs:
   \item The snapshot persistence model increases database storage size, but the benefit of reproducible grading and precise error reporting justifies the cost.
   \item Flexible RBAC permissions improve system management flexibility but require careful caching optimization in Redis to maintain low latency.
 \end{itemize}
+
+Beyond these technical tradeoffs, the project also faces several product-design difficulties. One challenge is creating child-friendly animation and visual motion that feels lively and welcoming without becoming distracting, overstimulating, or too similar to entertainment-first applications. A second challenge is interface design balance: the platform must appear more playful and approachable than a conventional LMS, while still preserving clarity, moderate pacing, and a learning-first structure. This is especially difficult in mathematics interfaces, where formulas, hints, scoring feedback, and progression indicators can easily crowd the screen if not carefully staged.
+
+Operational and deployment concerns create another layer of difficulty. Releasing the system responsibly requires staged deployment, infrastructure monitoring, and controlled user testing rather than immediate public launch. In addition, sustainable deployment depends on practical pricing decisions, server-cost estimation, maintenance workload planning, and long-term content operations. These issues are not purely technical details; they directly affect whether the platform can remain stable, affordable, and continuously improved after initial development.
+
 Overall, the evaluation demonstrates that Anhoc is a coherent, functional, and secure platform. It satisfies both the functional requirements for distinct user roles and the non-functional performance benchmarks needed for online educational delivery.
